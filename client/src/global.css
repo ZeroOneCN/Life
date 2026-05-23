@@ -12,24 +12,15 @@
   --color-surface-1: #0f1011;
   --color-surface-2: #141516;
   --color-surface-3: #18191a;
-  --color-surface-4: #191a1b;
   --color-hairline: #23252a;
   --color-hairline-strong: #34343a;
-  --color-hairline-tertiary: #3e3e44;
   --color-success: #27a644;
   --color-danger: #e5484d;
-  --font-sans: 'Inter', 'SF Pro Display', -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', ui-monospace, monospace;
-  --radius-xs: 4px;
-  --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-xxl: 24px;
   --radius-pill: 9999px;
 }
 
-/* ── Base ── */
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -45,21 +36,16 @@ body {
   background: #010102;
 }
 
-/* ── Input / Select ── */
 input[type="text"],
 input[type="number"],
-input[type="search"],
-input[type="date"],
-input[type="time"],
 textarea {
   background-color: var(--color-surface-1);
   color: var(--color-ink);
   border: 1px solid var(--color-hairline);
   border-radius: var(--radius-md);
-  padding: 10px 14px;
-  font-size: 15px;
+  padding: 8px 12px;
+  font-size: 16px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 input:focus, textarea:focus {
   border-color: var(--color-primary-focus);
@@ -70,28 +56,22 @@ input::placeholder, textarea::placeholder { color: var(--color-ink-tertiary); }
 select {
   appearance: none;
   -webkit-appearance: none;
-  -moz-appearance: none;
   background-color: var(--color-surface-1);
   color: var(--color-ink);
   border: 1px solid var(--color-hairline);
   border-radius: var(--radius-md);
-  padding: 10px 36px 10px 14px;
-  font-size: 15px;
-  font-weight: 400;
+  padding: 8px 32px 8px 12px;
+  font-size: 16px;
   outline: none;
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235e6ad2' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
-  background-size: 10px 6px;
 }
-select:hover { border-color: var(--color-hairline-strong); background-color: var(--color-surface-2); }
-select:focus { border-color: var(--color-primary-focus); background-color: var(--color-surface-1); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-focus) 50%, transparent); outline: none; }
-select option { background-color: var(--color-surface-2); color: var(--color-ink); padding: 10px 14px; font-size: 15px; }
+select:hover { border-color: var(--color-hairline-strong); }
+select:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 50%, transparent); }
+select option { background: var(--color-surface-2); color: var(--color-ink); }
 
-/* ── Page title: headline (28px) ── */
 .page-title {
   font-size: 28px;
   font-weight: 600;
@@ -101,7 +81,6 @@ select option { background-color: var(--color-surface-2); color: var(--color-ink
   margin: 0 0 4px;
 }
 
-/* ── Page subtitle: body (16px, muted) ── */
 .page-subtitle {
   font-size: 17px;
   font-weight: 400;
@@ -111,7 +90,6 @@ select option { background-color: var(--color-surface-2); color: var(--color-ink
   margin: 0;
 }
 
-/* ── Linear-style Card ── */
 .linear-card {
   background: #0f1011;
   border: 1px solid #23252a;
@@ -120,25 +98,19 @@ select option { background-color: var(--color-surface-2); color: var(--color-ink
 }
 .linear-card p { color: #8a8f98; margin: 0; }
 
-/* ═══ Dark mode (default) — Ant Design overrides ═══ */
 .ant-layout { background: #010102 !important; }
 .ant-layout-sider { background: #18191a !important; }
-
 .ant-menu-dark { background: transparent !important; }
 .ant-menu-dark .ant-menu-item-selected { background: rgba(94, 106, 210, 0.15) !important; color: #5e6ad2 !important; }
 .ant-menu-dark .ant-menu-item:hover { background: rgba(255, 255, 255, 0.04) !important; }
 .ant-menu-dark .ant-menu-submenu-title:hover { color: #f7f8f8 !important; }
-
 .ant-breadcrumb { font-size: 14px; }
 .ant-breadcrumb a, .ant-breadcrumb span { color: #8a8f98 !important; }
 .ant-breadcrumb li:last-child span { color: #f7f8f8 !important; }
 .ant-breadcrumb-separator { color: #62666d !important; }
-
 .ant-layout-sider-trigger { background: #141516 !important; height: 48px !important; line-height: 48px !important; color: #8a8f98 !important; }
 
-/* ═══ Light mode ═══ */
 .light {
-  --color-primary: #5e6ad2;
   --color-ink: #1d1d1f;
   --color-ink-muted: #3a3d42;
   --color-ink-subtle: #6b6f76;
@@ -147,33 +119,23 @@ select option { background-color: var(--color-surface-2); color: var(--color-ink
   --color-surface-1: #ffffff;
   --color-surface-2: #f0f1f2;
   --color-surface-3: #eeeeef;
-  --color-surface-4: #e8e9ea;
   --color-hairline: #d8dade;
   --color-hairline-strong: #c4c6ca;
-  --color-hairline-tertiary: #b0b2b6;
-  --color-success: #27a644;
-  --color-danger: #e5484d;
 }
-.light body { color: #1d1d1f; background: #f5f6f7; }
 
+.light body { color: #1d1d1f; background: #f5f6f7; }
 .light .page-title { color: #1d1d1f; }
 .light .page-subtitle { color: #8a8f98; }
-
 .light .linear-card { background: #ffffff; border-color: #e5e7eb; }
 .light .linear-card p { color: #8a8f98; }
-
 .light .ant-layout { background: #f5f6f7 !important; }
 .light .ant-layout-sider { background: #f0f1f2 !important; border-right-color: #e5e7eb !important; }
-
 .light .ant-menu-item { color: #62666d !important; }
 .light .ant-menu-item-selected { color: #5e6ad2 !important; background: rgba(94, 106, 210, 0.08) !important; }
-.light .ant-menu-item:hover { color: #1d1d1f !important; background: rgba(0, 0, 0, 0.03) !important; }
+.light .ant-menu-item:hover { color: #1d1d1f !important; }
 .light .ant-menu-submenu-title { color: #1d1d1f !important; }
 .light .ant-menu-submenu-title:hover { color: #5e6ad2 !important; }
-.light .ant-menu-sub { background: transparent !important; }
-
 .light .ant-breadcrumb a, .light .ant-breadcrumb span { color: #8a8f98 !important; }
 .light .ant-breadcrumb li:last-child span { color: #1d1d1f !important; }
 .light .ant-breadcrumb-separator { color: #d0d6e0 !important; }
-
 .light .ant-layout-sider-trigger { background: #e5e7eb !important; color: #62666d !important; }
