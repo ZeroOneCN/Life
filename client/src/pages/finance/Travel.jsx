@@ -108,7 +108,7 @@ function useIsLight() {
   });
   useEffect(() => {
     const el = document.documentElement;
-    const observer = new MutationObserver(() => setIsLight(el.classList.contains('light')));
+    const observer = new MutationObserver(() => setIsLight(el.getAttribute('data-theme') === 'light'));
     observer.observe(el, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
   }, []);

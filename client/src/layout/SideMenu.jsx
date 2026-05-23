@@ -37,7 +37,7 @@ const menuItems = [
     children: [
       { key: '/health/step', icon: <FireOutlined />, label: '运动步数' },
       { key: '/health/fitness', icon: <RiseOutlined />, label: '健身减肥' },
-      { key: '/health/checkup', icon: <FileTextOutlined />, label: '体检数据' },
+      { key: '/health/checkup', icon: <FileTextOutlined />, label: '体检数据（待开发）' },
       { key: '/health/medication', icon: <MedicineBoxOutlined />, label: '日常用药' },
     ],
   },
@@ -49,7 +49,7 @@ const menuItems = [
       { key: '/finance/shopping', icon: <ShoppingCartOutlined />, label: '网上购物' },
       { key: '/finance/travel', icon: <CompassOutlined />, label: '旅行游玩' },
       { key: '/finance/loan', icon: <SwapOutlined />, label: '借款还款' },
-      { key: '/finance/subscription', icon: <CalendarOutlined />, label: '服务订阅' },
+      { key: '/finance/subscription', icon: <CalendarOutlined />, label: '服务订阅（待开发）' },
       { key: '/finance/rent', icon: <HomeOutlined />, label: '房租水电' },
     ],
   },
@@ -69,9 +69,9 @@ const menuItems = [
     label: '投资中心',
     children: [
       { key: '/investment/forex', icon: <GlobalOutlined />, label: '外汇市场' },
-      { key: '/investment/crypto', icon: <SafetyOutlined />, label: '加密市场' },
-      { key: '/investment/hk-stock', icon: <BarChartOutlined />, label: '港股市场' },
-      { key: '/investment/us-stock', icon: <LineChartOutlined />, label: '美股市场' },
+      { key: '/investment/crypto', icon: <SafetyOutlined />, label: '加密市场（待开发）' },
+      { key: '/investment/hk-stock', icon: <BarChartOutlined />, label: '港股市场（待开发）' },
+      { key: '/investment/us-stock', icon: <LineChartOutlined />, label: '美股市场（待开发）' },
     ],
   },
 ];

@@ -118,7 +118,7 @@ export default function MainLayout() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('light', !isDark);
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
   const breadcrumbItems = useMemo(() => {
