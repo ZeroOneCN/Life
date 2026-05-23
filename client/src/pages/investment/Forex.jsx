@@ -63,7 +63,7 @@ export default function Forex() {
     { key: 'capital', label: '资金管理' },
   ];
   return (
-    <div className="p-8 space-y-6">
+    <div className="space-y-6">
       <h1 className="page-title">外汇市场</h1>
       <div style={{ display: 'flex', gap: 4, backgroundColor: 'var(--color-surface-1)', border: '1px solid var(--color-hairline)', borderRadius: 'var(--radius-lg)', padding: 4 }}>
         {TABS.map(t => (

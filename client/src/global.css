@@ -127,6 +127,23 @@ body {
 .ant-layout-sider-trigger { background: #141516 !important; height: 48px !important; line-height: 48px !important; color: #8a8f98 !important; }
 
 /* Light mode */
+.light {
+  --color-primary: #5e6ad2;
+  --color-ink: #1d1d1f;
+  --color-ink-muted: #3a3d42;
+  --color-ink-subtle: #6b6f76;
+  --color-ink-tertiary: #8f939a;
+  --color-canvas: #f5f6f7;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #f0f1f2;
+  --color-surface-3: #eeeeef;
+  --color-surface-4: #e8e9ea;
+  --color-hairline: #d8dade;
+  --color-hairline-strong: #c4c6ca;
+  --color-hairline-tertiary: #b0b2b6;
+  --color-success: #27a644;
+  --color-danger: #e5484d;
+}
 .light body { color: #1d1d1f; background: #f5f6f7; }
 .light .page-title { color: #1d1d1f; }
 .light .page-subtitle { color: #8a8f98; }
