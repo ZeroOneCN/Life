@@ -41,7 +41,7 @@ function seedMock() {
       lot_size: String(lot), commission: String(parseFloat((-lot * 6).toFixed(2))),
       pnl: String(pnl), open_time: '10:' + String(rand(0, 59)).padStart(2, '0') + ':00',
       close_time: '11:' + String(rand(0, 59)).padStart(2, '0') + ':00',
-      hold_time: rand(10, 120) + '分钟', remark: '',
+      hold_time: (() => { const m = rand(10, 180); return m >= 60 ? `${Math.floor(m / 60)}小时${m % 60 > 0 ? m % 60 + '分' : ''}` : m + '分钟'; })(), remark: '',
     });
   }
   return { trades, capitals: [
@@ -375,6 +375,16 @@ function TradesTab({ data, setData }) {
   };
   const calcComm = (lot) => { const n = parseFloat(lot); return isNaN(n) || n <= 0 ? '0' : String(Math.round(-n * 6 * 100) / 100); };
 
+  const calcHoldTime = (openTime, closeTime) => {
+    if (!openTime || !closeTime) return '';
+    const parts = t => { const p = t.split(':').map(Number); return p[0] * 3600 + p[1] * 60 + (p[2] || 0); };
+    let diff = parts(closeTime) - parts(openTime);
+    if (diff < 0) diff += 86400;
+    const h = Math.floor(diff / 3600), m = Math.floor((diff % 3600) / 60);
+    if (h > 0) return m > 0 ? `${h}小时${m}分钟` : `${h}小时`;
+    return `${m}分钟`;
+  };
+
   const emptyForm = () => ({ trade_date: today(), instrument: 'XAUUSD', order_type: 'buy', open_price: '', lot_size: '0.01', commission: '-0.06', close_price: '', pnl: '', open_time: '', close_time: '', hold_time: '', remark: '' });
 
   const openCreate = () => { setForm(emptyForm()); setEditingId(null); setShowForm(true); };
@@ -386,6 +396,8 @@ function TradesTab({ data, setData }) {
       if (key === 'lot_size') next.commission = calcComm(value);
       if (['order_type', 'open_price', 'close_price', 'lot_size', 'instrument'].includes(key))
         next.pnl = calcPnl(key === 'order_type' ? value : next.order_type, key === 'open_price' ? value : next.open_price, key === 'close_price' ? value : next.close_price, key === 'lot_size' ? value : next.lot_size, key === 'instrument' ? value : next.instrument);
+      if (key === 'open_time' || key === 'close_time')
+        next.hold_time = calcHoldTime(key === 'open_time' ? value : next.open_time, key === 'close_time' ? value : next.close_time);
       return next;
     });
   };
@@ -402,6 +414,14 @@ function TradesTab({ data, setData }) {
     if (!deleteConfirm) return;
     setData(p => ({ ...p, trades: p.trades.filter(t => t.id !== deleteConfirm.id) }));
     showToast('success', '记录已删除'); setDeleteConfirm(null);
+  };
+
+  const handleDownloadTemplate = () => {
+    const csv = 'trade_date,instrument,order_type,open_price,lot_size,commission,close_price,open_time,close_time,remark\n2026/05/24,XAUUSD,buy,2000.00,0.01,-0.06,,10:00:00,11:00:00,示例交易';
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'forex_trade_template.csv'; a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleFile = (file) => {
@@ -424,7 +444,7 @@ function TradesTab({ data, setData }) {
           </select>
         </div>
         <div className="flex items-center gap-3">
-          <button style={BTN_GHOST}>下载模板</button>
+          <button style={BTN_GHOST} onClick={handleDownloadTemplate}>下载模板</button>
           <button style={BTN_SECONDARY} onClick={() => fileRef.current?.click()} disabled={importing}>{importing ? '导入中...' : '导入数据'}</button>
           <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" onChange={e => { handleFile(e.target.files?.[0]); e.target.value = ''; }} style={{ display: 'none' }} />
           <button style={BTN_PRIMARY} onClick={openCreate}>+ 新增记录</button>
