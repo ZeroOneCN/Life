@@ -291,20 +291,16 @@ export default function Fitness() {
   }
 
   /* ── render styles ── */
-  const inputStyle = {
-    background: c.surfaceTint, border: '1px solid ' + c.border,
-    borderRadius: 8, color: c.text, height: 42, lineHeight: '42px',
-  };
-  const labelStyle = { color: c.textSecondary, fontWeight: 500, fontSize: 14, marginBottom: 6, display: 'block' };
+  const labelStyle = { display: 'block', fontSize: 13, marginBottom: 6, color: 'var(--color-ink-subtle)', fontWeight: 500 };
 
   /* ── stat card component ── */
   const StatCard = ({ label, value, unit, color, accent, children }) => (
     <div className="linear-card" style={{ padding: 16, textAlign: 'center' }}>
-      <div style={{ fontSize: 13, color: c.muted, marginBottom: 8 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 700, color: accent || c.text, lineHeight: 1.2 }}>
+      <div style={{ fontSize: 13, color: 'var(--color-ink-subtle)', marginBottom: 8 }}>{label}</div>
+      <div style={{ fontSize: 28, fontWeight: 700, color: accent || 'var(--color-ink)', lineHeight: 1.2 }}>
         {value ?? '-'}
       </div>
-      {unit && <div style={{ fontSize: 12, color: c.muted2, marginTop: 4 }}>{unit}</div>}
+      {unit && <div style={{ fontSize: 12, color: 'var(--color-ink-tertiary)', marginTop: 4 }}>{unit}</div>}
       {children}
     </div>
   );
@@ -345,7 +341,7 @@ export default function Fitness() {
           Tab Content: Diet
           ═══════════════════════════════════ */}
       {activeTab === 'diet' && <DietTab
-        c={c} data={data} inputStyle={inputStyle} labelStyle={labelStyle}
+        c={c} data={data} labelStyle={labelStyle}
         pages={pages} setPages={setPages} selIds={selIds} setSelIds={setSelIds}
         addRecord={addRecord} deleteRecord={deleteRecord}
         openEdit={openEdit} batchDelete={batchDelete} showToast={showToast}
@@ -355,7 +351,7 @@ export default function Fitness() {
           Tab Content: Exercise
           ═══════════════════════════════════ */}
       {activeTab === 'exercise' && <ExerciseTab
-        c={c} data={data} inputStyle={inputStyle} labelStyle={labelStyle}
+        c={c} data={data} labelStyle={labelStyle}
         pages={pages} setPages={setPages} selIds={selIds} setSelIds={setSelIds}
         addRecord={addRecord} deleteRecord={deleteRecord}
         openEdit={openEdit} batchDelete={batchDelete} showToast={showToast}
@@ -365,7 +361,7 @@ export default function Fitness() {
           Tab Content: Shopping
           ═══════════════════════════════════ */}
       {activeTab === 'shopping' && <ShoppingTab
-        c={c} data={data} inputStyle={inputStyle} labelStyle={labelStyle}
+        c={c} data={data} labelStyle={labelStyle}
         pages={pages} setPages={setPages} selIds={selIds} setSelIds={setSelIds}
         addRecord={addRecord} deleteRecord={deleteRecord}
         openEdit={openEdit} batchDelete={batchDelete} showToast={showToast}
@@ -375,7 +371,7 @@ export default function Fitness() {
           Tab Content: Weight
           ═══════════════════════════════════ */}
       {activeTab === 'weight' && <WeightTab
-        c={c} data={data} inputStyle={inputStyle} labelStyle={labelStyle}
+        c={c} data={data} labelStyle={labelStyle}
         pages={pages} setPages={setPages} selIds={selIds} setSelIds={setSelIds}
         addRecord={addRecord} deleteRecord={deleteRecord}
         openEdit={openEdit} batchDelete={batchDelete} showToast={showToast}
@@ -396,9 +392,9 @@ export default function Fitness() {
         onClose={() => { setEditOpen(false); setEditRec(null); setEditType(null); }}
         footer={[
           <Btn key="cancel" onClick={() => { setEditOpen(false); setEditRec(null); setEditType(null); }}
-            style={{ background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 }}>{'取消'}</Btn>,
+           >{'取消'}</Btn>,
           <Btn key="save" type="primary" onClick={saveEdit}
-            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 }}>{'保存'}</Btn>,
+           >{'保存'}</Btn>,
         ]}
         width={500}
       >
@@ -407,22 +403,22 @@ export default function Fitness() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
                 <label style={labelStyle}>{'食物名称'}</label>
-                <input value={editRec.foodName} onChange={e => setEditRec(p => ({ ...p, foodName: e.target.value }))} style={inputStyle} className="w-full" />
+                <input type="text" value={editRec.foodName} onChange={e => setEditRec(p => ({ ...p, foodName: e.target.value }))} className="w-full" />
               </div>
               <div>
                 <label style={labelStyle}>{'分量 (g)'}</label>
-                <input value={editRec.grams} onChange={e => setEditRec(p => ({ ...p, grams: parseInt(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
+                <input type="text" value={editRec.grams} onChange={e => setEditRec(p => ({ ...p, grams: parseInt(e.target.value) || 0 }))} className="w-full" />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
                 <label style={labelStyle}>{'热量 (kcal)'}</label>
-                <input value={editRec.calories} onChange={e => setEditRec(p => ({ ...p, calories: parseInt(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
+                <input type="text" value={editRec.calories} onChange={e => setEditRec(p => ({ ...p, calories: parseInt(e.target.value) || 0 }))} className="w-full" />
               </div>
               <div>
                 <label style={labelStyle}>{'餐别'}</label>
                 <select value={editRec.mealType} onChange={e => setEditRec(p => ({ ...p, mealType: e.target.value }))}
-                  style={{ ...inputStyle, width: '100%' }}>
+                  className="w-full">
                   {MEAL_TYPES.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
@@ -431,7 +427,7 @@ export default function Fitness() {
             </div>
             <div>
               <label style={labelStyle}>{'日期'}</label>
-              <input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} style={inputStyle} className="w-full" />
+              <input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} className="w-full" />
             </div>
           </div>
         ) : editType === 'exercise' ? (
@@ -439,12 +435,12 @@ export default function Fitness() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
                 <label style={labelStyle}>{'运动名称'}</label>
-                <input value={editRec.name} onChange={e => setEditRec(p => ({ ...p, name: e.target.value }))} style={inputStyle} className="w-full" />
+                <input type="text" value={editRec.name} onChange={e => setEditRec(p => ({ ...p, name: e.target.value }))} className="w-full" />
               </div>
               <div>
                 <label style={labelStyle}>{'类型'}</label>
                 <select value={editRec.type} onChange={e => setEditRec(p => ({ ...p, type: e.target.value }))}
-                  style={{ ...inputStyle, width: '100%' }}>
+                  className="w-full">
                   <option value="cardio">{'有氧'}</option>
                   <option value="strength">{'力量'}</option>
                   <option value="flexibility">{'柔韧'}</option>
@@ -454,16 +450,16 @@ export default function Fitness() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
                 <label style={labelStyle}>{'时长 (分钟)'}</label>
-                <input value={editRec.duration} onChange={e => setEditRec(p => ({ ...p, duration: parseInt(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
+                <input type="text" value={editRec.duration} onChange={e => setEditRec(p => ({ ...p, duration: parseInt(e.target.value) || 0 }))} className="w-full" />
               </div>
               <div>
                 <label style={labelStyle}>{'消耗 (kcal)'}</label>
-                <input value={editRec.calories} onChange={e => setEditRec(p => ({ ...p, calories: parseInt(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
+                <input type="text" value={editRec.calories} onChange={e => setEditRec(p => ({ ...p, calories: parseInt(e.target.value) || 0 }))} className="w-full" />
               </div>
             </div>
             <div>
               <label style={labelStyle}>{'日期'}</label>
-              <input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} style={inputStyle} className="w-full" />
+              <input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} className="w-full" />
             </div>
           </div>
         ) : editType === 'shopping' ? (
@@ -471,30 +467,30 @@ export default function Fitness() {
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
               <div>
                 <label style={labelStyle}>{'食材名称'}</label>
-                <input value={editRec.itemName} onChange={e => setEditRec(p => ({ ...p, itemName: e.target.value }))} style={inputStyle} className="w-full" />
+                <input type="text" value={editRec.itemName} onChange={e => setEditRec(p => ({ ...p, itemName: e.target.value }))} className="w-full" />
               </div>
               <div>
                 <label style={labelStyle}>{'数量'}</label>
-                <input value={editRec.quantity} onChange={e => setEditRec(p => ({ ...p, quantity: parseInt(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
+                <input type="text" value={editRec.quantity} onChange={e => setEditRec(p => ({ ...p, quantity: parseInt(e.target.value) || 0 }))} className="w-full" />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
               <div>
                 <label style={labelStyle}>{'规格'}</label>
-                <input value={editRec.unit} onChange={e => setEditRec(p => ({ ...p, unit: e.target.value }))} style={inputStyle} className="w-full" />
+                <input type="text" value={editRec.unit} onChange={e => setEditRec(p => ({ ...p, unit: e.target.value }))} className="w-full" />
               </div>
               <div>
                 <label style={labelStyle}>{'单价 (元)'}</label>
-                <input value={editRec.price} onChange={e => setEditRec(p => ({ ...p, price: parseFloat(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
+                <input type="text" value={editRec.price} onChange={e => setEditRec(p => ({ ...p, price: parseFloat(e.target.value) || 0 }))} className="w-full" />
               </div>
               <div>
                 <label style={labelStyle}>{'总额'}</label>
-                <input value={editRec.total} onChange={e => setEditRec(p => ({ ...p, total: parseFloat(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
+                <input type="text" value={editRec.total} onChange={e => setEditRec(p => ({ ...p, total: parseFloat(e.target.value) || 0 }))} className="w-full" />
               </div>
             </div>
             <div>
               <label style={labelStyle}>{'日期'}</label>
-              <input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} style={inputStyle} className="w-full" />
+              <input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} className="w-full" />
             </div>
           </div>
         ) : (
@@ -502,21 +498,21 @@ export default function Fitness() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
                 <label style={labelStyle}>{'体重 (kg)'}</label>
-                <input value={editRec.weight} onChange={e => setEditRec(p => ({ ...p, weight: parseFloat(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
+                <input type="text" value={editRec.weight} onChange={e => setEditRec(p => ({ ...p, weight: parseFloat(e.target.value) || 0 }))} className="w-full" />
               </div>
               <div>
                 <label style={labelStyle}>{'体脂率 (%)'}</label>
-                <input value={editRec.bodyFat || ''} onChange={e => setEditRec(p => ({ ...p, bodyFat: parseFloat(e.target.value) || null }))} style={inputStyle} className="w-full" />
+                <input type="text" value={editRec.bodyFat || ''} onChange={e => setEditRec(p => ({ ...p, bodyFat: parseFloat(e.target.value) || null }))} className="w-full" />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
                 <label style={labelStyle}>{'身高 (cm)'}</label>
-                <input value={editRec.height} onChange={e => setEditRec(p => ({ ...p, height: parseFloat(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
+                <input type="text" value={editRec.height} onChange={e => setEditRec(p => ({ ...p, height: parseFloat(e.target.value) || 0 }))} className="w-full" />
               </div>
               <div>
                 <label style={labelStyle}>{'日期'}</label>
-                <input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} style={inputStyle} className="w-full" />
+                <input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} className="w-full" />
               </div>
             </div>
           </div>
@@ -539,11 +535,11 @@ export default function Fitness() {
    ═══════════════════════════════════════ */
 
 /* ── Pagination widget ── */
-function TablePagination({ c, inputStyle, page, totalPages, onPageChange, pageSize, onPageSizeChange, total }) {
+function TablePagination({ c,page, totalPages, onPageChange, pageSize, onPageSizeChange, total }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 12 }}>
       <select value={pageSize} onChange={e => { onPageSizeChange(Number(e.target.value)); onPageChange(1); }}
-        style={{ ...inputStyle, width: 120 }}>
+        style={{ width: 120 }}>
         {[
           { value: 10, label: '10 条/页' },
           { value: 20, label: '20 条/页' },
@@ -555,17 +551,17 @@ function TablePagination({ c, inputStyle, page, totalPages, onPageChange, pageSi
       </select>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <Btn disabled={page <= 1} onClick={() => onPageChange(1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'首页'}</Btn>
+         >{'首页'}</Btn>
         <Btn disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'上一页'}</Btn>
+         >{'上一页'}</Btn>
         <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>{'第 '}{page} / {totalPages} {' 页'}</span>
         <input type="number" min={1} max={totalPages}
           onKeyDown={e => { if (e.key === 'Enter') { const v = parseInt(e.target.value); if (v >= 1 && v <= totalPages) onPageChange(v); } }}
-          style={{ ...inputStyle, width: 56, height: 36, textAlign: 'center' }} placeholder={'页'} className="w-full" />
+          style={{ width: 56, height: 36, textAlign: 'center' }} placeholder={'页'} className="w-full" />
         <Btn disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'下一页'}</Btn>
+         >{'下一页'}</Btn>
         <Btn disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'末页'}</Btn>
+         >{'末页'}</Btn>
       </div>
       <span style={{ color: c.muted, fontSize: 13 }}>{'共 '}{total}{' 条'}</span>
     </div>
@@ -573,7 +569,7 @@ function TablePagination({ c, inputStyle, page, totalPages, onPageChange, pageSi
 }
 
 /* ── Diet Tab ── */
-function DietTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete, showToast }) {
+function DietTab({ c, data,labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete, showToast }) {
   const [form, setForm] = useState({ date: todayStr(), mealType: 'lunch', foodName: '', grams: 100, calories: '', protein: '', carbs: '', fat: '' });
   const [filterMeal, setFilterMeal] = useState(null);
   const [pageSize, setPageSize] = useState(10);
@@ -632,11 +628,11 @@ function DietTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, set
       key: 'action', title: '操作', width: 160,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Btn type="ghost" onClick={() => openEdit('diet', rec)} style={{ color: c.muted, fontSize: 13 }}>
+          <Btn type="ghost" onClick={() => openEdit('diet', rec)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
             {'编辑'}
           </Btn>
-          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)} style={{ fontSize: 13 }}>
+          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
             {'删除'}
           </Btn>
@@ -651,12 +647,12 @@ function DietTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, set
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr) auto', gap: 12, marginBottom: 20, alignItems: 'end' }}>
         <div style={{ gridColumn: 'span 2' }}>
           <label style={labelStyle}>{'食物名称'}</label>
-          <input value={form.foodName} onChange={e => setForm(f => ({ ...f, foodName: e.target.value }))} placeholder={'如：鸡胸肉'} style={inputStyle} className="w-full" />
+          <input type="text" value={form.foodName} onChange={e => setForm(f => ({ ...f, foodName: e.target.value }))} placeholder={'如：鸡胸肉'} className="w-full" />
         </div>
         <div>
           <label style={labelStyle}>{'餐别'}</label>
           <select value={form.mealType} onChange={e => setForm(f => ({ ...f, mealType: e.target.value }))}
-            style={{ ...inputStyle, width: '100%' }}>
+            className="w-full">
             {MEAL_TYPES.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
@@ -664,26 +660,26 @@ function DietTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, set
         </div>
         <div>
           <label style={labelStyle}>{'分量 (g)'}</label>
-          <input value={form.grams} onChange={e => setForm(f => ({ ...f, grams: e.target.value.replace(/\D/g, '') }))} style={inputStyle} className="w-full" />
+          <input type="text" value={form.grams} onChange={e => setForm(f => ({ ...f, grams: e.target.value.replace(/\D/g, '') }))} className="w-full" />
         </div>
         <div>
           <label style={labelStyle}>{'热量'}</label>
-          <input value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value.replace(/\D/g, '') }))} placeholder={'可选'} style={inputStyle} className="w-full" />
+          <input type="text" value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value.replace(/\D/g, '') }))} placeholder={'可选'} className="w-full" />
         </div>
         <div>
           <label style={labelStyle}>{'蛋白质'}</label>
-          <input value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'可选'} style={inputStyle} className="w-full" />
+          <input type="text" value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'可选'} className="w-full" />
         </div>
         <div>
           <label style={labelStyle}>{'碳水'}</label>
-          <input value={form.carbs} onChange={e => setForm(f => ({ ...f, carbs: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'可选'} style={inputStyle} className="w-full" />
+          <input type="text" value={form.carbs} onChange={e => setForm(f => ({ ...f, carbs: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'可选'} className="w-full" />
         </div>
         <div>
           <label style={labelStyle}>{'脂肪'}</label>
-          <input value={form.fat} onChange={e => setForm(f => ({ ...f, fat: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'可选'} style={inputStyle} className="w-full" />
+          <input type="text" value={form.fat} onChange={e => setForm(f => ({ ...f, fat: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'可选'} className="w-full" />
         </div>
         <Btn type="primary" onClick={handleAdd}
-          style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 20px', marginBottom: 0 }}>
+         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
           {'添加'}
         </Btn>
@@ -694,7 +690,7 @@ function DietTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, set
         <div>
           <label style={labelStyle}>{'餐别筛选'}</label>
           <select value={filterMeal === null ? '' : filterMeal} onChange={e => { setFilterMeal(e.target.value === '' ? null : e.target.value); setPages(p => ({ ...p, diet: 1 })); }}
-            style={{ ...inputStyle, width: 120 }}>
+            style={{ width: 120 }}>
             <option value="">{'全部'}</option>
             {MEAL_TYPES.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -702,7 +698,7 @@ function DietTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, set
           </select>
         </div>
         <Btn type="danger" disabled={!selIds.length} onClick={() => batchDelete('diet')}
-          style={{ borderRadius: 8, height: 42 }}>
+         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
           {'批量删除'}
         </Btn>
@@ -711,7 +707,7 @@ function DietTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, set
 
       <DataTable data={pageData} columns={columns} rowKey="id"
         emptyText={<span style={{ color: c.muted2 }}>{'暂无饮食记录'}</span>} />
-      <TablePagination c={c} inputStyle={inputStyle} page={page} totalPages={totalPages}
+      <TablePagination c={c} page={page} totalPages={totalPages}
         onPageChange={fn => setPages(p => ({ ...p, diet: typeof fn === 'function' ? fn(p.diet) : fn }))}
         pageSize={pageSize} onPageSizeChange={setPageSize} total={list.length} />
 
@@ -723,7 +719,7 @@ function DietTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, set
 }
 
 /* ── Exercise Tab ── */
-function ExerciseTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete, showToast }) {
+function ExerciseTab({ c, data,labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete, showToast }) {
   const [form, setForm] = useState({ date: todayStr(), name: '', type: 'cardio', duration: '', intensity: 'medium', calories: '' });
   const [filterType, setFilterType] = useState(null);
   const [pageSize, setPageSize] = useState(10);
@@ -782,11 +778,11 @@ function ExerciseTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
       key: 'action', title: '操作', width: 160,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Btn type="ghost" onClick={() => openEdit('exercise', rec)} style={{ color: c.muted, fontSize: 13 }}>
+          <Btn type="ghost" onClick={() => openEdit('exercise', rec)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
             {'编辑'}
           </Btn>
-          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)} style={{ fontSize: 13 }}>
+          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
             {'删除'}
           </Btn>
@@ -800,12 +796,12 @@ function ExerciseTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr) auto', gap: 12, marginBottom: 20, alignItems: 'end' }}>
         <div style={{ gridColumn: 'span 2' }}>
           <label style={labelStyle}>{'运动名称'}</label>
-          <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={'如：跑步'} style={inputStyle} className="w-full" />
+          <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={'如：跑步'} className="w-full" />
         </div>
         <div>
           <label style={labelStyle}>{'类型'}</label>
           <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-            style={{ ...inputStyle, width: '100%' }}>
+            className="w-full">
             <option value="cardio">{'有氧'}</option>
             <option value="strength">{'力量'}</option>
             <option value="flexibility">{'柔韧'}</option>
@@ -813,12 +809,12 @@ function ExerciseTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
         </div>
         <div>
           <label style={labelStyle}>{'时长 (分钟)'}</label>
-          <input value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value.replace(/\D/g, '') }))} placeholder={'如：30'} style={inputStyle} className="w-full" />
+          <input type="text" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value.replace(/\D/g, '') }))} placeholder={'如：30'} className="w-full" />
         </div>
         <div>
           <label style={labelStyle}>{'强度'}</label>
           <select value={form.intensity} onChange={e => setForm(f => ({ ...f, intensity: e.target.value }))}
-            style={{ ...inputStyle, width: '100%' }}>
+            className="w-full">
             {INTENSITY_LEVELS.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
@@ -826,10 +822,10 @@ function ExerciseTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
         </div>
         <div style={{ gridColumn: 'span 2' }}>
           <label style={labelStyle}>{'消耗 (kcal)'}</label>
-          <input value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value.replace(/\D/g, '') }))} placeholder={'自动估算'} style={inputStyle} className="w-full" />
+          <input type="text" value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value.replace(/\D/g, '') }))} placeholder={'自动估算'} className="w-full" />
         </div>
         <Btn type="primary" onClick={handleAdd}
-          style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 20px' }}>
+         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
           {'添加'}
         </Btn>
@@ -839,7 +835,7 @@ function ExerciseTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
         <div>
           <label style={labelStyle}>{'类型筛选'}</label>
           <select value={filterType === null ? '' : filterType} onChange={e => { setFilterType(e.target.value === '' ? null : e.target.value); setPages(p => ({ ...p, exercise: 1 })); }}
-            style={{ ...inputStyle, width: 120 }}>
+            style={{ width: 120 }}>
             <option value="">{'全部'}</option>
             <option value="cardio">{'有氧'}</option>
             <option value="strength">{'力量'}</option>
@@ -847,7 +843,7 @@ function ExerciseTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
           </select>
         </div>
         <Btn type="danger" disabled={!selIds.length} onClick={() => batchDelete('exercise')}
-          style={{ borderRadius: 8, height: 42 }}>
+         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
           {'批量删除'}
         </Btn>
@@ -856,7 +852,7 @@ function ExerciseTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
 
       <DataTable data={pageData} columns={columns} rowKey="id"
         emptyText={<span style={{ color: c.muted2 }}>{'暂无运动记录'}</span>} />
-      <TablePagination c={c} inputStyle={inputStyle} page={page} totalPages={totalPages}
+      <TablePagination c={c} page={page} totalPages={totalPages}
         onPageChange={fn => setPages(p => ({ ...p, exercise: typeof fn === 'function' ? fn(p.exercise) : fn }))}
         pageSize={pageSize} onPageSizeChange={setPageSize} total={list.length} />
 
@@ -868,7 +864,7 @@ function ExerciseTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
 }
 
 /* ── Shopping Tab ── */
-function ShoppingTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete, showToast }) {
+function ShoppingTab({ c, data,labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete, showToast }) {
   const [form, setForm] = useState({ date: todayStr(), itemName: '', unit: '500g', quantity: 1, price: '', location: '' });
   const [pageSize, setPageSize] = useState(10);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -917,11 +913,11 @@ function ShoppingTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
       key: 'action', title: '操作', width: 160,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Btn type="ghost" onClick={() => openEdit('shopping', rec)} style={{ color: c.muted, fontSize: 13 }}>
+          <Btn type="ghost" onClick={() => openEdit('shopping', rec)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
             {'编辑'}
           </Btn>
-          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)} style={{ fontSize: 13 }}>
+          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
             {'删除'}
           </Btn>
@@ -935,12 +931,12 @@ function ShoppingTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr) auto', gap: 12, marginBottom: 20, alignItems: 'end' }}>
         <div style={{ gridColumn: 'span 2' }}>
           <label style={labelStyle}>{'食材名称'}</label>
-          <input value={form.itemName} onChange={e => setForm(f => ({ ...f, itemName: e.target.value }))} placeholder={'如：鸡胸肉'} style={inputStyle} className="w-full" />
+          <input type="text" value={form.itemName} onChange={e => setForm(f => ({ ...f, itemName: e.target.value }))} placeholder={'如：鸡胸肉'} className="w-full" />
         </div>
         <div>
           <label style={labelStyle}>{'规格'}</label>
           <select value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
-            style={{ ...inputStyle, width: '100%' }}>
+            className="w-full">
             <option value="500g">{'500g'}</option>
             <option value="1000g">{'1000g'}</option>
             <option value="个">{'个'}</option>
@@ -950,18 +946,18 @@ function ShoppingTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
         </div>
         <div>
           <label style={labelStyle}>{'数量'}</label>
-          <input value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value.replace(/\D/g, '') }))} style={inputStyle} className="w-full" />
+          <input type="text" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value.replace(/\D/g, '') }))} className="w-full" />
         </div>
         <div>
           <label style={labelStyle}>{'单价 (元)'}</label>
-          <input value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'如：25'} style={inputStyle} className="w-full" />
+          <input type="text" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'如：25'} className="w-full" />
         </div>
         <div style={{ gridColumn: 'span 2' }}>
           <label style={labelStyle}>{'地点（可选）'}</label>
-          <input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder={'如：盒马'} style={inputStyle} className="w-full" />
+          <input type="text" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder={'如：盒马'} className="w-full" />
         </div>
         <Btn type="primary" onClick={handleAdd}
-          style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 20px' }}>
+         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
           {'添加'}
         </Btn>
@@ -969,7 +965,7 @@ function ShoppingTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
 
       <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <Btn type="danger" disabled={!selIds.length} onClick={() => batchDelete('shopping')}
-          style={{ borderRadius: 8, height: 42 }}>
+         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
           {'批量删除'}
         </Btn>
@@ -978,7 +974,7 @@ function ShoppingTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
 
       <DataTable data={pageData} columns={columns} rowKey="id"
         emptyText={<span style={{ color: c.muted2 }}>{'暂无购买记录'}</span>} />
-      <TablePagination c={c} inputStyle={inputStyle} page={page} totalPages={totalPages}
+      <TablePagination c={c} page={page} totalPages={totalPages}
         onPageChange={fn => setPages(p => ({ ...p, shopping: typeof fn === 'function' ? fn(p.shopping) : fn }))}
         pageSize={pageSize} onPageSizeChange={setPageSize} total={list.length} />
 
@@ -990,7 +986,7 @@ function ShoppingTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
 }
 
 /* ── Weight Tab ── */
-function WeightTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete, showToast }) {
+function WeightTab({ c, data,labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete, showToast }) {
   const [form, setForm] = useState({ date: todayStr(), weight: '', height: '170', bodyFat: '' });
   const [pageSize, setPageSize] = useState(10);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -1035,11 +1031,11 @@ function WeightTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, s
       key: 'action', title: '操作', width: 160,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Btn type="ghost" onClick={() => openEdit('weight', rec)} style={{ color: c.muted, fontSize: 13 }}>
+          <Btn type="ghost" onClick={() => openEdit('weight', rec)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
             {'编辑'}
           </Btn>
-          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)} style={{ fontSize: 13 }}>
+          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
             {'删除'}
           </Btn>
@@ -1053,22 +1049,22 @@ function WeightTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, s
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr) auto', gap: 12, marginBottom: 20, alignItems: 'end' }}>
         <div style={{ gridColumn: 'span 2' }}>
           <label style={labelStyle}>{'日期'}</label>
-          <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} style={inputStyle} className="w-full" />
+          <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className="w-full" />
         </div>
         <div>
           <label style={labelStyle}>{'体重 (kg)'}</label>
-          <input value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'如：72.5'} style={inputStyle} className="w-full" />
+          <input type="text" value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'如：72.5'} className="w-full" />
         </div>
         <div>
           <label style={labelStyle}>{'身高 (cm)'}</label>
-          <input value={form.height} onChange={e => setForm(f => ({ ...f, height: e.target.value.replace(/[^0-9.]/g, '') }))} style={inputStyle} className="w-full" />
+          <input type="text" value={form.height} onChange={e => setForm(f => ({ ...f, height: e.target.value.replace(/[^0-9.]/g, '') }))} className="w-full" />
         </div>
         <div>
           <label style={labelStyle}>{'体脂率 (%)'}</label>
-          <input value={form.bodyFat} onChange={e => setForm(f => ({ ...f, bodyFat: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'可选'} style={inputStyle} className="w-full" />
+          <input type="text" value={form.bodyFat} onChange={e => setForm(f => ({ ...f, bodyFat: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'可选'} className="w-full" />
         </div>
         <Btn type="primary" onClick={handleAdd}
-          style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 20px' }}>
+         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
           {'添加'}
         </Btn>
@@ -1076,7 +1072,7 @@ function WeightTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, s
 
       <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <Btn type="danger" disabled={!selIds.length} onClick={() => batchDelete('weight')}
-          style={{ borderRadius: 8, height: 42 }}>
+         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
           {'批量删除'}
         </Btn>
@@ -1085,7 +1081,7 @@ function WeightTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, s
 
       <DataTable data={pageData} columns={columns} rowKey="id"
         emptyText={<span style={{ color: c.muted2 }}>{'暂无体重记录'}</span>} />
-      <TablePagination c={c} inputStyle={inputStyle} page={page} totalPages={totalPages}
+      <TablePagination c={c} page={page} totalPages={totalPages}
         onPageChange={fn => setPages(p => ({ ...p, weight: typeof fn === 'function' ? fn(p.weight) : fn }))}
         pageSize={pageSize} onPageSizeChange={setPageSize} total={list.length} />
 
