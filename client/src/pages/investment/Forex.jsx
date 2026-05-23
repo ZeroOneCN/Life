@@ -417,7 +417,7 @@ function TradesTab({ data, setData }) {
   };
 
   const handleDownloadTemplate = () => {
-    const csv = 'trade_date,instrument,order_type,open_price,lot_size,commission,close_price,open_time,close_time,remark\n2026/05/24,XAUUSD,buy,2000.00,0.01,-0.06,,10:00:00,11:00:00,示例交易';
+    const csv = '日期,品种,类型,开仓价,手数,手续费,平仓价,开仓时间,平仓时间,备注\n2026/05/24,XAUUSD,buy,2000.00,0.01,-0.06,,10:00:00,11:00:00,示例交易';
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = 'forex_trade_template.csv'; a.click();
@@ -517,9 +517,9 @@ function TradesTab({ data, setData }) {
               <FormField label="手续费" value={form.commission} onChange={v => setForm(f => ({ ...f, commission: v }))} type="number" />
               <FormField label="平仓价格" value={form.close_price} onChange={v => updateForm('close_price', v)} type="number" />
               <FormField label="盈亏金额（自动）" value={form.pnl} onChange={v => setForm(f => ({ ...f, pnl: v }))} type="number" placeholder="自动计算" readOnly />
-              <FormField label="开仓时间" value={form.open_time} onChange={v => setForm(f => ({ ...f, open_time: v }))} placeholder="00:00:00" />
-              <FormField label="平仓时间" value={form.close_time} onChange={v => setForm(f => ({ ...f, close_time: v }))} placeholder="00:00:00" />
-              <FormField label="持仓时间" value={form.hold_time} onChange={v => setForm(f => ({ ...f, hold_time: v }))} placeholder="自动填充" />
+              <FormField label="开仓时间" value={form.open_time} onChange={v => updateForm('open_time', v)} placeholder="00:00:00" />
+              <FormField label="平仓时间" value={form.close_time} onChange={v => updateForm('close_time', v)} placeholder="00:00:00" />
+              <FormField label="持仓时间" value={form.hold_time} onChange={v => updateForm('hold_time', v)} placeholder="自动计算" />
               <div className="col-span-2">
                 <label className="block text-[13px] mb-1.5" style={{ color: 'var(--color-ink-subtle)' }}>备注</label>
                 <input type="text" value={form.remark} onChange={e => setForm(f => ({ ...f, remark: e.target.value }))} className="w-full" />
