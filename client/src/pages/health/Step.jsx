@@ -96,7 +96,12 @@ export default function Step() {
   const [hourSel, setHourSel] = useState(null);      // null = 全天
   const [recordTime, setRecordTime] = useState(dayjs().format('YYYY-MM-DDTHH:mm'));
   const [filterUserId, setFilterUserId] = useState('user01');
-  const [tab, setTab] = useState('daily');
+  const [tab, setTab] = useState(() => window.location.hash?.slice(1) || 'daily');
+  useEffect(() => {
+    const onHashChange = () => { const h = window.location.hash?.slice(1); if (h) setTab(h); };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
   const [filterMonth, setFilterMonth] = useState(dayjs().format('YYYY-MM'));
   const [filterYear, setFilterYear] = useState(dayjs().year());
   const [chartHour, setChartHour] = useState(null);
@@ -498,7 +503,7 @@ export default function Step() {
       <div className="linear-card" style={{ marginBottom: 24, padding: 28 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
           <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, margin: 0 }}>数据统计</h2>
-          <Segmented value={tab} onChange={v => { setTab(v); setStatsPage(1); }}
+          <Segmented value={tab} onChange={v => { setTab(v); window.location.hash = v; setStatsPage(1); }}
             options={[
               { value: 'daily', label: '每天' },
               { value: 'monthly', label: '每月' },
@@ -594,7 +599,7 @@ export default function Step() {
                     {item.record_count} 条记录
                   </div>
                   <div style={{ fontSize: 13, color: '#5e6ad2', fontWeight: 600, marginTop: 8 }}>
-                    🏃 {item.distance_km} 公里
+                    {item.distance_km} 公里
                   </div>
                 </div>
               ))}
@@ -743,7 +748,7 @@ export default function Step() {
 
       {/* ═══════ Confirm Modal (duplicate) ═══════ */}
       <Modal
-        title={<span style={{ color: c.text, fontWeight: 600 }}>⚠️ 重复记录提示</span>}
+        title={<span style={{ color: c.text, fontWeight: 600 }}>重复记录提示</span>}
         open={confirmOpen}
         onCancel={() => overwriteDup(false)}
         footer={[

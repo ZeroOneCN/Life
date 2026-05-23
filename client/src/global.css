@@ -73,7 +73,7 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', sans-serif;
+  font-family: var(--font-sans);
   font-size: 17px;
   font-weight: 400;
   line-height: 1.50;
@@ -81,6 +81,7 @@ body {
   color: #f7f8f8;
   background: #010102;
 }
+pre, code, .font-mono { font-family: var(--font-mono); }
 
 /* Title */
 .page-title {
@@ -125,6 +126,48 @@ body {
 .ant-breadcrumb-separator { color: #62666d !important; }
 
 .ant-layout-sider-trigger { background: #141516 !important; height: 48px !important; line-height: 48px !important; color: #8a8f98 !important; }
+
+/* Segmented — capsule pill style */
+.ant-segmented {
+  background: var(--color-surface-1) !important;
+  border: 1px solid var(--color-hairline) !important;
+  border-radius: var(--radius-pill) !important;
+  padding: 3px !important;
+}
+.ant-segmented .ant-segmented-item {
+  border-radius: var(--radius-pill) !important;
+}
+.ant-segmented .ant-segmented-item-selected {
+  background: var(--color-surface-2) !important;
+  color: var(--color-ink) !important;
+}
+.ant-segmented .ant-segmented-thumb {
+  border-radius: var(--radius-pill) !important;
+  background: var(--color-surface-2) !important;
+}
+
+/* DatePicker / Calendar — match theme */
+.ant-picker {
+  background: var(--color-surface-1) !important;
+  border-color: var(--color-hairline) !important;
+}
+.ant-picker input { color: var(--color-ink) !important; }
+.ant-picker-dropdown .ant-picker-panel-container {
+  background: var(--color-surface-2) !important;
+}
+.ant-picker-cell-in-view { color: var(--color-ink-muted) !important; }
+.ant-picker-cell-selected .ant-picker-cell-inner { background: var(--color-primary) !important; }
+
+/* Select — match theme */
+.ant-select-selector {
+  background: var(--color-surface-1) !important;
+  border-color: var(--color-hairline) !important;
+}
+.ant-select-selection-item { color: var(--color-ink) !important; }
+.ant-select-arrow { color: var(--color-primary) !important; }
+.ant-select-dropdown { background: var(--color-surface-2) !important; }
+.ant-select-item { color: var(--color-ink-muted) !important; }
+.ant-select-item-option-selected { background: var(--color-surface-3) !important; color: var(--color-ink) !important; }
 
 /* Light mode */
 .light {

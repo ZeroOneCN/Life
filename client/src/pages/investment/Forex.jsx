@@ -55,8 +55,24 @@ function seedMock() {
    ═══════════════════════════════════════ */
 export default function Forex() {
   const [data, setData] = useState(seedMock);
-  const [tab, setTab] = useState('overview');
+  const getTab = () => {
+    const h = window.location.hash?.slice(1);
+    return ['overview','trades','calculator','capital'].includes(h) ? h : 'overview';
+  };
+  const [tab, setTab] = useState(getTab);
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }, [data]);
+  useEffect(() => {
+    const onHashChange = () => {
+      const h = window.location.hash?.slice(1);
+      if (['overview','trades','calculator','capital'].includes(h)) setTab(h);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    window.addEventListener('popstate', onHashChange);
+    return () => {
+      window.removeEventListener('hashchange', onHashChange);
+      window.removeEventListener('popstate', onHashChange);
+    };
+  }, []);
   const TABS = [
     { key: 'overview', label: '统计分析' },
     { key: 'trades', label: '交易记录' },
@@ -68,7 +84,7 @@ export default function Forex() {
       <h1 className="page-title">外汇市场</h1>
       <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
         {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
+          <button key={t.key} onClick={() => { setTab(t.key); window.location.hash = t.key; }}
             style={{
               padding: '6px 18px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500,
               backgroundColor: tab === t.key ? 'var(--color-surface-2)' : 'var(--color-canvas)',

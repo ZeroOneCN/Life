@@ -120,7 +120,12 @@ export default function Medication() {
   }), [isLight]);
 
   const [data, setData] = useState(seedMock);
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState(() => window.location.hash?.slice(1) || 'home');
+  useEffect(() => {
+    const onHashChange = () => { const h = window.location.hash?.slice(1); if (h) setActiveTab(h); };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -138,7 +143,7 @@ export default function Medication() {
 
       <style>{`.med-tabs .ant-segmented-item { margin-right: 4px; } .med-tabs .ant-segmented-item:last-child { margin-right: 0; }`}</style>
       <div style={{ marginBottom: 24 }}>
-        <Segmented value={activeTab} onChange={v => setActiveTab(v)}
+        <Segmented value={activeTab} onChange={v => { setActiveTab(v); window.location.hash = v; }}
           options={[
             { value: 'home', label: '用药记录' },
             { value: 'analysis', label: '数据分析' },

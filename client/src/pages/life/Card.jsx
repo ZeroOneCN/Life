@@ -1015,7 +1015,14 @@ export default function CardMgmt() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
   }, [data]);
 
-  const [tab, setTab] = useState('cards');
+  const defaultTab = 'cards';
+  const [tab, setTab] = useState(() => window.location.hash?.slice(1) || defaultTab);
+  const handleTabChange = (v) => { setTab(v); window.location.hash = v; };
+  useEffect(() => {
+    const onHashChange = () => { const h = window.location.hash?.slice(1); if (h) setTab(h); };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   const tabItems = [
     { value: 'cards', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><PhoneOutlined />号卡管理</span> },
@@ -1037,7 +1044,7 @@ export default function CardMgmt() {
   return (
     <div>
       <h1 className="page-title" style={{ marginBottom: 24 }}>号卡管理</h1>
-      <Segmented value={tab} onChange={v => setTab(v)} options={tabItems}
+      <Segmented value={tab} onChange={handleTabChange} options={tabItems}
         style={{ marginBottom: 20, background: c.surfaceTint, borderRadius: 10, padding: 3 }} />
       {renderTab()}
     </div>

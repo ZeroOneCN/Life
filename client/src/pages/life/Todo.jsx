@@ -105,7 +105,14 @@ function TablePagination({ c, inputStyle, page, totalPages, onPageChange }) {
 
 export default function Todo() {
   const isLight = useIsLight();
-  const [tab, setTab] = useState('任务列表');
+  const defaultTab = '任务列表';
+  const [tab, setTab] = useState(() => window.location.hash?.slice(1) || defaultTab);
+  const handleTabChange = (v) => { setTab(v); window.location.hash = v; };
+  useEffect(() => {
+    const onHashChange = () => { const h = window.location.hash?.slice(1); if (h) setTab(h); };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
   const [data, setData] = useState(seedMock);
   const [dirty, setDirty] = useState(0);
   const increment = () => setDirty(v => v + 1);
@@ -148,7 +155,7 @@ export default function Todo() {
   return (
     <div>
       <h1 className="page-title" style={{ marginBottom: 24 }}>待办事项</h1>
-      <Segmented value={tab} onChange={setTab} options={tabItems}
+      <Segmented value={tab} onChange={handleTabChange} options={tabItems}
         style={{ marginBottom: 20, background: c.surfaceTint, borderRadius: 10, padding: 3 }} />
 
       {tab === '任务列表' && <TasksTab c={c} fs={fs} data={data} setData={setData} inputStyle={inputStyle} labelStyle={labelStyle} />}
@@ -342,9 +349,9 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
             <Select value={priority} onChange={v => setPriority(v)}
               style={{ width: 140 }} dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
               options={[
-                { value: 'high', label: '🔴 高优先级' },
-                { value: 'medium', label: '🟡 中优先级' },
-                { value: 'low', label: '🟢 低优先级' },
+                { value: 'high', label: '高优先级' },
+                { value: 'medium', label: '中优先级' },
+                { value: 'low', label: '低优先级' },
               ]} />
             <Input value={tags} onChange={e => setTags(e.target.value)}
               placeholder="标签（逗号分隔）" style={{ ...inputStyle, width: 180, height: 40 }} />
@@ -365,9 +372,9 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
         <Select value={filterPriority} onChange={v => setFilterPriority(v)} placeholder="全部优先级" allowClear
           style={{ width: 140 }} dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
           options={[
-            { value: 'high', label: '🔴 高' },
-            { value: 'medium', label: '🟡 中' },
-            { value: 'low', label: '🟢 低' },
+            { value: 'high', label: '高' },
+            { value: 'medium', label: '中' },
+            { value: 'low', label: '低' },
           ]} />
         <Select value={filterTag} onChange={v => setFilterTag(v)} placeholder="全部标签" allowClear
           style={{ width: 140 }} dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
@@ -422,11 +429,11 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
                     ))}
                     {item.due_date && (
                       <span style={{ fontSize: 11, color: dayjs(item.due_date).isBefore(dayjs(), 'day') && item.status === 'active' ? '#ef4444' : c.muted }}>
-                        📅 {item.due_date}
+                        <span style={{ fontSize: 13 }}>{item.due_date}</span>
                       </span>
                     )}
-                    {item.is_daily && <span style={{ fontSize: 11, color: '#8b5cf6' }}>🔄 每日</span>}
-                    {item.description && <span style={{ fontSize: 11, color: c.muted2 }}>📄 有描述</span>}
+                    {item.is_daily && <span style={{ fontSize: 11, color: '#8b5cf6' }}>每日</span>}
+                    {item.description && <span style={{ fontSize: 11, color: c.muted2 }}>有描述</span>}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
@@ -474,19 +481,19 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
             <div>
               <div style={{ color: c.muted, fontSize: 12, marginBottom: 4 }}>状态</div>
               <span style={{ color: detailItem?.status === 'completed' ? '#10b981' : '#3b82f6', fontSize: 13, fontWeight: 500 }}>
-                {detailItem?.status === 'completed' ? '✅ 已完成' : '🔄 进行中'}
+                {detailItem?.status === 'completed' ? '已完成' : '进行中'}
               </span>
             </div>
             {detailItem?.due_date && (
               <div>
                 <div style={{ color: c.muted, fontSize: 12, marginBottom: 4 }}>截止日期</div>
-                <span style={{ color: dayjs(detailItem.due_date).isBefore(dayjs(), 'day') && detailItem.status === 'active' ? '#ef4444' : c.text, fontSize: 13 }}>📅 {detailItem.due_date}</span>
+                <span style={{ color: dayjs(detailItem.due_date).isBefore(dayjs(), 'day') && detailItem.status === 'active' ? '#ef4444' : c.text, fontSize: 13 }}>{detailItem.due_date}</span>
               </div>
             )}
             {detailItem?.is_daily && (
               <div>
                 <div style={{ color: c.muted, fontSize: 12, marginBottom: 4 }}>重复</div>
-                <span style={{ color: '#8b5cf6', fontSize: 13 }}>🔄 每日任务</span>
+                <span style={{ color: '#8b5cf6', fontSize: 13 }}>每日任务</span>
               </div>
             )}
           </div>
@@ -529,9 +536,9 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
               <Select value={editForm.priority} onChange={v => setEditForm(p => ({ ...p, priority: v }))}
                 style={{ width: '100%' }} dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
                 options={[
-                  { value: 'high', label: '🔴 高' },
-                  { value: 'medium', label: '🟡 中' },
-                  { value: 'low', label: '🟢 低' },
+                  { value: 'high', label: '高' },
+                  { value: 'medium', label: '中' },
+                  { value: 'low', label: '低' },
                 ]} />
             </div>
             <div>

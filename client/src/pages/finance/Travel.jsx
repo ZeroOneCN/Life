@@ -815,7 +815,13 @@ export default function Travel() {
   }), [isLight]);
 
   const [data, setData] = useState(seedMock);
-  const [activeTab, setActiveTab] = useState('books');
+  const [activeTab, setActiveTab] = useState(() => window.location.hash?.slice(1) || 'books');
+
+  useEffect(() => {
+    const onHashChange = () => { const h = window.location.hash?.slice(1); if (h) setActiveTab(h); };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -842,7 +848,7 @@ export default function Travel() {
       <h1 className="page-title" style={{ marginBottom: 24 }}>旅行游玩</h1>
 
       <div style={{ marginBottom: 24 }}>
-        <Segmented value={activeTab} onChange={setActiveTab}
+        <Segmented value={activeTab} onChange={(v) => { setActiveTab(v); window.location.hash = v; }}
           options={[
             { value: 'books', label: '账本管理' },
             { value: 'expense', label: '花销记录' },

@@ -1061,7 +1061,13 @@ export default function Loan() {
   }), [isLight]);
 
   const [data, setData] = useState(seedMock);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => window.location.hash?.slice(1) || 'dashboard');
+
+  useEffect(() => {
+    const onHashChange = () => { const h = window.location.hash?.slice(1); if (h) setActiveTab(h); };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -1086,7 +1092,7 @@ export default function Loan() {
       <h1 className="page-title" style={{ marginBottom: 24 }}>借款还款</h1>
 
       <div style={{ marginBottom: 24 }}>
-        <Segmented value={activeTab} onChange={setActiveTab}
+        <Segmented value={activeTab} onChange={(v) => { setActiveTab(v); window.location.hash = v; }}
           options={[
             { value: 'dashboard', label: '数据概览' },
             { value: 'platforms', label: '借款平台' },

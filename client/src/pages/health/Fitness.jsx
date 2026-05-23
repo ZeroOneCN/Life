@@ -175,7 +175,12 @@ export default function Fitness() {
 
   /* ── state ── */
   const [data, setData] = useState(seedMock);
-  const [activeTab, setActiveTab] = useState('diet');
+  const [activeTab, setActiveTab] = useState(() => window.location.hash?.slice(1) || 'diet');
+  useEffect(() => {
+    const onHashChange = () => { const h = window.location.hash?.slice(1); if (h) setActiveTab(h); };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   /* pagination per tab */
   const [pages, setPages] = useState({ diet: 1, exercise: 1, shopping: 1, weight: 1 });
@@ -320,7 +325,7 @@ export default function Fitness() {
       {/* ═══════ Tabs ═══════ */}
       <div style={{ marginBottom: 24 }}>
         <style>{`.fit-tabs .ant-segmented-item { margin-right: 4px; } .fit-tabs .ant-segmented-item:last-child { margin-right: 0; }`}</style>
-        <Segmented value={activeTab} onChange={v => { setActiveTab(v); setSelIds([]); setPages(p => ({ ...p, [v]: 1 })); }}
+        <Segmented value={activeTab} onChange={v => { setActiveTab(v); window.location.hash = v; setSelIds([]); setPages(p => ({ ...p, [v]: 1 })); }}
           options={[
             { value: 'diet', label: '饮食记录' },
             { value: 'exercise', label: '运动记录' },

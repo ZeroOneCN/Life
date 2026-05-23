@@ -484,12 +484,11 @@ function AddTab({ c, fs, data, setData, inputStyle, labelStyle }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             {feeFields.map(f => (
               <div key={f.key}>
-                <label style={labelStyle}>{f.label}</label>
+                <label style={labelStyle}>{f.label}（元）</label>
                 <InputNumber value={form[f.key]} onChange={v => set(f.key, v || 0)}
                   min={0} step={0.01} precision={2}
                   style={{ width: '100%', ...inputStyle }}
-                  inputStyle={{ textAlign: 'right' }}
-                  addonAfter={<span style={{ color: c.muted, fontSize: 13 }}>元</span>} />
+                  inputStyle={{ textAlign: 'right' }} />
               </div>
             ))}
           </div>
@@ -849,7 +848,14 @@ export default function Rent() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
   }, [data]);
 
-  const [tab, setTab] = useState('records');
+  const defaultTab = 'records';
+  const [tab, setTab] = useState(() => window.location.hash?.slice(1) || defaultTab);
+  const handleTabChange = (v) => { setTab(v); window.location.hash = v; };
+  useEffect(() => {
+    const onHashChange = () => { const h = window.location.hash?.slice(1); if (h) setTab(h); };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   const tabItems = [
     { value: 'records', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><HomeOutlined />住房记录</span> },
@@ -871,7 +877,7 @@ export default function Rent() {
   return (
     <div>
       <h1 className="page-title" style={{ marginBottom: 24 }}>房租水电</h1>
-      <Segmented value={tab} onChange={v => setTab(v)} options={tabItems}
+      <Segmented value={tab} onChange={handleTabChange} options={tabItems}
         style={{ marginBottom: 20, background: c.surfaceTint, borderRadius: 10, padding: 3 }} />
       {renderTab()}
     </div>
