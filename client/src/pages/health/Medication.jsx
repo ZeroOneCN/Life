@@ -133,7 +133,7 @@ export default function Medication() {
     background: c.surfaceTint, border: '1px solid ' + c.border,
     borderRadius: 8, color: c.text, height: 42, lineHeight: '42px',
   };
-  const labelStyle = { color: c.textSecondary, fontWeight: 500, fontSize: 14, marginBottom: 6, display: 'block' };
+  const labelStyle = { display: 'block', fontSize: 13, marginBottom: 6, color: 'var(--color-ink-subtle)', fontWeight: 500 };
 
   return (
     <div>
@@ -169,7 +169,7 @@ function TablePagination({ c, inputStyle, page, totalPages, onPageChange, pageSi
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 12 }}>
       <select value={pageSize} onChange={e => { onPageSizeChange(Number(e.target.value)); onPageChange(1); }}
-        style={{ ...inputStyle, width: 120 }}>
+        style={{ width: 120 }}>
         {[
           { value: 10, label: '10 条/页' },
           { value: 20, label: '20 条/页' },
@@ -180,18 +180,14 @@ function TablePagination({ c, inputStyle, page, totalPages, onPageChange, pageSi
         ))}
       </select>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Btn disabled={page <= 1} onClick={() => onPageChange(1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'首页'}</Btn>
-        <Btn disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'上一页'}</Btn>
+        <Btn type="ghost" disabled={page <= 1} onClick={() => onPageChange(1)}>{'首页'}</Btn>
+        <Btn type="ghost" disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}>{'上一页'}</Btn>
         <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>{'第 '}{page} / {totalPages} {' 页'}</span>
         <input type="number" min={1} max={totalPages}
           onKeyDown={e => { if (e.key === 'Enter') { const v = parseInt(e.target.value); if (v >= 1 && v <= totalPages) onPageChange(v); } }}
-          style={{ ...inputStyle, width: 56, height: 36, textAlign: 'center' }} placeholder={'页'} className="w-full" />
-        <Btn disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'下一页'}</Btn>
-        <Btn disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'末页'}</Btn>
+          placeholder={'页'} />
+        <Btn type="ghost" disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}>{'下一页'}</Btn>
+        <Btn type="ghost" disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}>{'末页'}</Btn>
       </div>
       <span style={{ color: c.muted, fontSize: 13 }}>{'共 '}{total}{' 条'}</span>
     </div>
@@ -378,11 +374,11 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
       key: 'action', title: '操作', width: 160,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Btn type="ghost" onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: 13 }}>
+          <Btn type="ghost" onClick={() => openEdit(rec)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
             {'编辑'}
           </Btn>
-          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)} style={{ fontSize: 13 }}>
+          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
             {'删除'}
           </Btn>
@@ -424,20 +420,19 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div>
             <label style={labelStyle}>{'药品名称'}</label>
-            <input value={filterName} onChange={e => setFilterName(e.target.value)} placeholder={'搜索药品'} style={{ ...inputStyle, width: 160 }} className="w-full" />
+            <input type="text" value={filterName} onChange={e => setFilterName(e.target.value)} placeholder={'搜索药品'} className="w-full" />
           </div>
           <div>
             <label style={labelStyle}>{'最小用量'}</label>
-            <input type="number" value={filterMin === null ? '' : filterMin} onChange={e => setFilterMin(e.target.value === '' ? null : Number(e.target.value))} min={0} style={{ ...inputStyle, width: 100, textAlign: 'center' }} className="w-full" />
+            <input type="number" value={filterMin === null ? '' : filterMin} onChange={e => setFilterMin(e.target.value === '' ? null : Number(e.target.value))} min={0} className="w-full" />
           </div>
           <div>
             <label style={labelStyle}>{'最大用量'}</label>
-            <input type="number" value={filterMax === null ? '' : filterMax} onChange={e => setFilterMax(e.target.value === '' ? null : Number(e.target.value))} min={0} style={{ ...inputStyle, width: 100, textAlign: 'center' }} className="w-full" />
+            <input type="number" value={filterMax === null ? '' : filterMax} onChange={e => setFilterMax(e.target.value === '' ? null : Number(e.target.value))} min={0} className="w-full" />
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <Btn onClick={resetFilters} style={{ ...inputStyle, height: 42, background: c.surfaceTint, borderColor: c.border, color: c.text }}>{'重置'}</Btn>
-            <Btn type="primary" onClick={openAdd}
-              style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42 }}>
+            <Btn type="ghost" onClick={resetFilters}>{'重置'}</Btn>
+            <Btn type="primary" onClick={openAdd}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
               {'添加记录'}
             </Btn>
@@ -448,8 +443,7 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
       {/* Table */}
       <div className="linear-card" style={{ padding: 24 }}>
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <Btn type="danger" disabled={!selIds.length} onClick={batchDelete}
-            style={{ borderRadius: 8, height: 42 }}>
+          <Btn type="danger" disabled={!selIds.length} onClick={batchDelete}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
             {'批量删除'}
           </Btn>
@@ -469,13 +463,13 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
             <div style={{ fontSize: 16, fontWeight: 600, color: c.text, marginBottom: 16 }}>{'用药日历'}</div>
             <div style={{ border: '1px solid ' + c.border, borderRadius: 12, padding: 16, background: c.surfaceTint2 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                <Btn type="ghost" onClick={() => setSelSummaryDate(d => d.subtract(1, 'month'))} style={{ fontSize: 13 }}>{'‹ 上月'}</Btn>
+                <Btn type="ghost" onClick={() => setSelSummaryDate(d => d.subtract(1, 'month'))}>{'‹ 上月'}</Btn>
                 <span style={{ flex: 1, textAlign: 'center', fontWeight: 600, color: c.text }}>{selSummaryDate.format('YYYY年MM月')}</span>
-                <Btn type="ghost" onClick={() => setSelSummaryDate(d => d.add(1, 'month'))} style={{ fontSize: 13 }}>{'下月 ›'}</Btn>
+                <Btn type="ghost" onClick={() => setSelSummaryDate(d => d.add(1, 'month'))}>{'下月 ›'}</Btn>
               </div>
               <input type="date" value={selSummaryDate.format('YYYY-MM-DD')}
                 onChange={e => setSelSummaryDate(dayjs(e.target.value))}
-                style={{ ...inputStyle, width: '100%' }} className="w-full" />
+                className="w-full" />
             </div>
             {savedSummaryList.length > 0 && (
               <div style={{ marginTop: 16, borderTop: '1px solid ' + c.border, paddingTop: 16 }}>
@@ -504,8 +498,7 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
               style={{ width: '100%', background: c.surfaceTint2, border: '1px solid ' + c.border, borderRadius: 8, padding: 12, color: c.text, fontSize: 14, resize: 'vertical', outline: 'none' }}
             />
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-              <Btn type="primary" onClick={saveSummary}
-                style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 24px' }}>{'保存总结'}</Btn>
+              <Btn type="primary" onClick={saveSummary}>{'保存总结'}</Btn>
             </div>
           </div>
         </div>
@@ -517,10 +510,8 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         footer={[
-          <Btn key="cancel" onClick={() => setModalOpen(false)}
-            style={{ background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 }}>{'取消'}</Btn>,
-          <Btn key="ok" type="primary" onClick={handleOk}
-            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 }}>{'确定'}</Btn>,
+          <Btn key="cancel" type="ghost" onClick={() => setModalOpen(false)}>{'取消'}</Btn>,
+          <Btn key="ok" type="primary" onClick={handleOk}>{'确定'}</Btn>,
         ]}
         width={500}
       >
@@ -528,25 +519,25 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
               <label style={labelStyle}>{'日期'}</label>
-              <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} style={inputStyle} className="w-full" />
+              <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className="w-full" />
             </div>
             <div>
               <label style={labelStyle}>{'药品名称'}</label>
-              <input value={form.medicineName} onChange={e => setForm(f => ({ ...f, medicineName: e.target.value }))} placeholder={'输入药品名称'} style={inputStyle} className="w-full" />
+              <input type="text" value={form.medicineName} onChange={e => setForm(f => ({ ...f, medicineName: e.target.value }))} placeholder={'输入药品名称'} className="w-full" />
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
             <div>
               <label style={labelStyle}>{'早餐用量'}</label>
-              <input type="number" value={form.breakfast} onChange={e => setForm(f => ({ ...f, breakfast: parseInt(e.target.value) || 0 }))} min={0} style={{ ...inputStyle, width: '100%' }} className="w-full" />
+              <input type="number" value={form.breakfast} onChange={e => setForm(f => ({ ...f, breakfast: parseInt(e.target.value) || 0 }))} min={0} className="w-full" />
             </div>
             <div>
               <label style={labelStyle}>{'午餐用量'}</label>
-              <input type="number" value={form.lunch} onChange={e => setForm(f => ({ ...f, lunch: parseInt(e.target.value) || 0 }))} min={0} style={{ ...inputStyle, width: '100%' }} className="w-full" />
+              <input type="number" value={form.lunch} onChange={e => setForm(f => ({ ...f, lunch: parseInt(e.target.value) || 0 }))} min={0} className="w-full" />
             </div>
             <div>
               <label style={labelStyle}>{'晚餐用量'}</label>
-              <input type="number" value={form.dinner} onChange={e => setForm(f => ({ ...f, dinner: parseInt(e.target.value) || 0 }))} min={0} style={{ ...inputStyle, width: '100%' }} className="w-full" />
+              <input type="number" value={form.dinner} onChange={e => setForm(f => ({ ...f, dinner: parseInt(e.target.value) || 0 }))} min={0} className="w-full" />
             </div>
           </div>
           {!isEdit && (
@@ -768,13 +759,8 @@ function AnalysisTab({ c, isLight, data, inputStyle, labelStyle }) {
           <div style={{ display: 'flex', gap: 4 }}>
             {['7', '30', '90'].map(v => (
               <Btn key={v}
+                type={trendRange === v ? 'primary' : 'ghost'}
                 onClick={() => setTrendRange(v)}
-                style={{
-                  background: trendRange === v ? '#5e6ad2' : c.surfaceTint,
-                  borderColor: trendRange === v ? '#5e6ad2' : c.border,
-                  color: trendRange === v ? '#fff' : c.text,
-                  borderRadius: 6, fontSize: 12,
-                }}
               >{'近'}{v}{'天'}</Btn>
             ))}
           </div>
@@ -799,7 +785,7 @@ function AnalysisTab({ c, isLight, data, inputStyle, labelStyle }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: 0 }}>{'用药日历热力图'}</h2>
           <select value={calendarYear} onChange={e => setCalendarYear(Number(e.target.value))}
-            style={{ ...inputStyle, width: 100, height: 36 }}>
+            style={{ width: 100, height: 36 }}>
             {yearOptions.map(y => (
               <option key={y} value={y}>{y}{'年'}</option>
             ))}
@@ -962,11 +948,11 @@ function PurchaseTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
       key: 'action', title: '操作', width: 160,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Btn type="ghost" onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: 13 }}>
+          <Btn type="ghost" onClick={() => openEdit(rec)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
             {'编辑'}
           </Btn>
-          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)} style={{ fontSize: 13 }}>
+          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
             {'删除'}
           </Btn>
@@ -1005,10 +991,9 @@ function PurchaseTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div>
             <label style={labelStyle}>{'药品名称'}</label>
-            <input value={filterName} onChange={e => { setFilterName(e.target.value); setPage(1); }} placeholder={'搜索药品'} style={{ ...inputStyle, width: 200 }} className="w-full" />
+            <input type="text" value={filterName} onChange={e => { setFilterName(e.target.value); setPage(1); }} placeholder={'搜索药品'} className="w-full" />
           </div>
-          <Btn type="primary" onClick={openAdd}
-            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42 }}>
+          <Btn type="primary" onClick={openAdd}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             {'添加记录'}
           </Btn>
@@ -1018,8 +1003,7 @@ function PurchaseTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
       {/* Table */}
       <div className="linear-card" style={{ padding: 24 }}>
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <Btn type="danger" disabled={!selIds.length} onClick={batchDelete}
-            style={{ borderRadius: 8, height: 42 }}>
+          <Btn type="danger" disabled={!selIds.length} onClick={batchDelete}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
             {'批量删除'}
           </Btn>
@@ -1038,10 +1022,8 @@ function PurchaseTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         footer={[
-          <Btn key="cancel" onClick={() => setModalOpen(false)}
-            style={{ background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 }}>{'取消'}</Btn>,
-          <Btn key="ok" type="primary" onClick={handleOk}
-            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 }}>{'确定'}</Btn>,
+          <Btn key="cancel" type="ghost" onClick={() => setModalOpen(false)}>{'取消'}</Btn>,
+          <Btn key="ok" type="primary" onClick={handleOk}>{'确定'}</Btn>,
         ]}
         width={600}
       >
@@ -1049,22 +1031,22 @@ function PurchaseTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
               <label style={labelStyle}>{'购买日期'}</label>
-              <input type="date" value={form.purchaseDate} onChange={e => setForm(f => ({ ...f, purchaseDate: e.target.value }))} style={inputStyle} className="w-full" />
+              <input type="date" value={form.purchaseDate} onChange={e => setForm(f => ({ ...f, purchaseDate: e.target.value }))} className="w-full" />
             </div>
             <div>
               <label style={labelStyle}>{'药品名称'}</label>
-              <input value={form.medicineName} onChange={e => setForm(f => ({ ...f, medicineName: e.target.value }))} placeholder={'输入药品名称'} style={inputStyle} className="w-full" />
+              <input type="text" value={form.medicineName} onChange={e => setForm(f => ({ ...f, medicineName: e.target.value }))} placeholder={'输入药品名称'} className="w-full" />
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
             <div>
               <label style={labelStyle}>{'数量'}</label>
-              <input type="number" value={form.quantity} onChange={e => { setForm(f => ({ ...f, quantity: parseInt(e.target.value) || 0 })); setTimeout(calcTotal, 0); }} min={0} style={{ ...inputStyle, width: '100%' }} className="w-full" />
+              <input type="number" value={form.quantity} onChange={e => { setForm(f => ({ ...f, quantity: parseInt(e.target.value) || 0 })); setTimeout(calcTotal, 0); }} min={0} className="w-full" />
             </div>
             <div>
               <label style={labelStyle}>{'单位'}</label>
               <select value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
-                style={{ ...inputStyle, width: '100%' }}>
+                className="w-full">
                 {UNIT_OPTIONS.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
@@ -1073,7 +1055,7 @@ function PurchaseTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
             <div>
               <label style={labelStyle}>{'购买渠道'}</label>
               <select value={form.channel} onChange={e => setForm(f => ({ ...f, channel: e.target.value }))}
-                style={{ ...inputStyle, width: '100%' }}>
+                className="w-full">
                 {CHANNEL_OPTIONS.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
@@ -1083,16 +1065,16 @@ function PurchaseTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
               <label style={labelStyle}>{'单价 (元)'}</label>
-              <input type="number" value={form.unitPrice} onChange={e => { setForm(f => ({ ...f, unitPrice: parseFloat(e.target.value) || 0 })); setTimeout(calcTotal, 0); }} min={0} step={0.1} style={{ ...inputStyle, width: '100%' }} className="w-full" />
+              <input type="number" value={form.unitPrice} onChange={e => { setForm(f => ({ ...f, unitPrice: parseFloat(e.target.value) || 0 })); setTimeout(calcTotal, 0); }} min={0} step={0.1} className="w-full" />
             </div>
             <div>
               <label style={labelStyle}>{'总价 (元)'}</label>
-              <input type="number" value={form.totalPrice} onChange={e => setForm(f => ({ ...f, totalPrice: parseFloat(e.target.value) || 0 }))} min={0} step={0.1} style={{ ...inputStyle, width: '100%' }} className="w-full" />
+              <input type="number" value={form.totalPrice} onChange={e => setForm(f => ({ ...f, totalPrice: parseFloat(e.target.value) || 0 }))} min={0} step={0.1} className="w-full" />
             </div>
           </div>
           <div>
             <label style={labelStyle}>{'备注'}</label>
-            <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder={'可选'} style={inputStyle} className="w-full" />
+            <input type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder={'可选'} className="w-full" />
           </div>
         </div>
       </Modal>

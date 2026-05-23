@@ -377,12 +377,11 @@ export default function Step() {
       key: 'action', title: '操作', width: 140,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Btn type="ghost" onClick={() => openEdit(rec)}
-            style={{ color: c.muted, fontSize: 13 }}>
+          <Btn type="ghost" onClick={() => openEdit(rec)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
             {'编辑'}
           </Btn>
-          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)} style={{ fontSize: 13 }}>
+          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
             {'删除'}
           </Btn>
@@ -399,7 +398,7 @@ export default function Step() {
     color: c.text,
     height: 42,
   };
-  const labelStyle = { color: c.textSecondary, fontWeight: 500, fontSize: 14, marginBottom: 6, display: 'block' };
+  const labelStyle = { display: 'block', fontSize: 13, marginBottom: 6, color: 'var(--color-ink-subtle)', fontWeight: 500 };
 
   return (
     <div>
@@ -424,13 +423,13 @@ export default function Step() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
           <div>
             <label style={labelStyle}>{'用户 ID'}</label>
-            <input value={userId} onChange={e => setUserId(e.target.value)}
-              placeholder={'输入用户 ID'} style={{ ...inputStyle, height: 42 }} className="w-full" />
+            <input type="text" value={userId} onChange={e => setUserId(e.target.value)}
+              placeholder={'输入用户 ID'} className="w-full" />
           </div>
           <div>
             <label style={labelStyle}>{'步数'}</label>
-            <input value={steps} onChange={e => setSteps(e.target.value.replace(/\D/g, ''))}
-              placeholder={'输入步数'} style={{ ...inputStyle, height: 42 }}
+            <input type="text" value={steps} onChange={e => setSteps(e.target.value.replace(/\D/g, ''))}
+              placeholder={'输入步数'}
               onKeyDown={e => e.key === 'Enter' && addRecord()} className="w-full" />
           </div>
         </div>
@@ -440,25 +439,11 @@ export default function Step() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {HOURS.map(h => (
               <Btn key={h}
-                style={{
-                  width: 44, height: 38,
-                  background: hourSel === h ? '#5e6ad2' : c.surfaceTint,
-                  borderColor: hourSel === h ? '#5e6ad2' : c.border,
-                  color: hourSel === h ? '#fff' : c.textSecondary,
-                  fontWeight: hourSel === h ? 600 : 400,
-                  borderRadius: 8,
-                }}
+                type={hourSel === h ? 'primary' : 'ghost'}
                 onClick={() => setHourSel(prev => prev === h ? null : h)}>{h}</Btn>
             ))}
             <Btn
-              style={{
-                width: 44, height: 38,
-                background: hourSel === null ? '#5e6ad2' : c.surfaceTint,
-                borderColor: hourSel === null ? '#5e6ad2' : c.border,
-                color: hourSel === null ? '#fff' : c.textSecondary,
-                fontWeight: hourSel === null ? 600 : 400,
-                borderRadius: 8,
-              }}
+              type={hourSel === null ? 'primary' : 'ghost'}
               onClick={() => setHourSel(null)}>{'全'}</Btn>
           </div>
         </div>
@@ -467,17 +452,17 @@ export default function Step() {
           <label style={labelStyle}>{'记录时间'}</label>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
             <input type="datetime-local" value={recordTime} onChange={e => setRecordTime(e.target.value)}
-              style={{ ...inputStyle, width: 240, height: 42 }} className="w-full" />
+              className="w-full" />
             <span style={{ color: c.muted, fontSize: 13 }}>{'快速：'}</span>
             {[7, 8, 9, 12, 18, 23].map(h => (
-              <Btn key={h} style={{ ...inputStyle, height: 32, padding: '0 14px', fontSize: 13 }}
+              <Btn key={h} type="ghost"
                 onClick={() => {
                   const now = dayjs();
                   setRecordTime(now.hour(h).minute(h === 23 ? 59 : 0).format('YYYY-MM-DDTHH:mm'));
                   if (h !== 23) setHourSel(h);
                 }}>{h}:00</Btn>
             ))}
-            <Btn style={{ ...inputStyle, height: 32, padding: '0 14px', fontSize: 13 }}
+            <Btn type="ghost"
               onClick={() => {
                 const yes = dayjs().subtract(1, 'day');
                 setRecordTime(yes.hour(23).minute(59).format('YYYY-MM-DDTHH:mm'));
@@ -487,8 +472,7 @@ export default function Step() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Btn type="primary" onClick={addRecord}
-            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 28px', fontWeight: 500, fontSize: 15 }}>
+          <Btn type="primary" onClick={addRecord}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             {'添加记录'}
           </Btn>
@@ -512,25 +496,25 @@ export default function Step() {
         <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
           <div>
             <label style={labelStyle}>{'用户 ID'}</label>
-            <input value={filterUserId} onChange={e => { setFilterUserId(e.target.value); setPage(1); setStatsPage(1); }}
-              placeholder={'输入用户 ID'} style={{ ...inputStyle, width: 160 }} className="w-full" />
+            <input type="text" value={filterUserId} onChange={e => { setFilterUserId(e.target.value); setPage(1); setStatsPage(1); }}
+              placeholder={'输入用户 ID'} className="w-full" />
           </div>
           <div>
             <label style={labelStyle}>{'步幅（米）'}</label>
             <input type="number" value={stride} onChange={e => setStride(parseFloat(e.target.value) || DEFAULT_STRIDE)}
-              step={0.01} min={0.1} max={2} style={{ ...inputStyle, width: 120 }} className="w-full" />
+              step={0.01} min={0.1} max={2} className="w-full" />
           </div>
           {tab === 'daily' ? (
             <div>
               <label style={labelStyle}>{'月份'}</label>
               <input type="month" value={filterMonth} onChange={e => { setFilterMonth(e.target.value); setStatsPage(1); }}
-                style={{ ...inputStyle, width: 160 }} className="w-full" />
+                className="w-full" />
             </div>
           ) : (
             <div>
               <label style={labelStyle}>{'年份'}</label>
               <input type="number" value={filterYear} onChange={e => { setFilterYear(parseInt(e.target.value) || dayjs().year()); setStatsPage(1); }}
-                style={{ ...inputStyle, width: 120 }} className="w-full" />
+                className="w-full" />
             </div>
           )}
         </div>
@@ -538,21 +522,11 @@ export default function Step() {
         {/* Hour filter for chart */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
           <span style={{ color: c.muted, fontSize: 13 }}>{'时间段筛选：'}</span>
-          <Btn style={{
-            minWidth: 32, height: 30,
-            background: chartHour === null ? '#5e6ad2' : c.surfaceTint,
-            borderColor: chartHour === null ? '#5e6ad2' : c.border,
-            color: chartHour === null ? '#fff' : c.textSecondary,
-            borderRadius: 8,
-          }} onClick={() => setChartHour(null)}>{'全部'}</Btn>
+          <Btn type={chartHour === null ? 'primary' : 'ghost'}
+            onClick={() => setChartHour(null)}>{'全部'}</Btn>
           {HOURS.map(h => (
-            <Btn key={h} style={{
-              minWidth: 32, height: 30,
-              background: chartHour === h ? '#5e6ad2' : c.surfaceTint,
-              borderColor: chartHour === h ? '#5e6ad2' : c.border,
-              color: chartHour === h ? '#fff' : c.textSecondary,
-              borderRadius: 8,
-            }} onClick={() => setChartHour(prev => prev === h ? null : h)}>{h}</Btn>
+            <Btn key={h} type={chartHour === h ? 'primary' : 'ghost'}
+              onClick={() => setChartHour(prev => prev === h ? null : h)}>{h}</Btn>
           ))}
         </div>
 
@@ -602,10 +576,8 @@ export default function Step() {
               ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 20, paddingTop: 16, borderTop: '1px solid ' + c.border }}>
-              <Btn disabled={statsPage <= 1} onClick={() => setStatsPage(1)}
-                style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'首页'}</Btn>
-              <Btn disabled={statsPage <= 1} onClick={() => setStatsPage(p => p - 1)}
-                style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'上一页'}</Btn>
+              <Btn type="ghost" disabled={statsPage <= 1} onClick={() => setStatsPage(1)}>{'首页'}</Btn>
+              <Btn type="ghost" disabled={statsPage <= 1} onClick={() => setStatsPage(p => p - 1)}>{'上一页'}</Btn>
               <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>{'第 '}{statsPage} / {statsTotalPages} {' 页'}</span>
               <input type="number" min={1} max={statsTotalPages}
                 onKeyDown={e => {
@@ -614,12 +586,9 @@ export default function Step() {
                     if (v >= 1 && v <= statsTotalPages) setStatsPage(v);
                   }
                 }}
-                style={{ ...inputStyle, width: 56, height: 36, textAlign: 'center' }}
-                placeholder={'页'} className="w-full" />
-              <Btn disabled={statsPage >= statsTotalPages} onClick={() => setStatsPage(p => p + 1)}
-                style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'下一页'}</Btn>
-              <Btn disabled={statsPage >= statsTotalPages} onClick={() => setStatsPage(statsTotalPages)}
-                style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'末页'}</Btn>
+                placeholder={'页'} />
+              <Btn type="ghost" disabled={statsPage >= statsTotalPages} onClick={() => setStatsPage(p => p + 1)}>{'下一页'}</Btn>
+              <Btn type="ghost" disabled={statsPage >= statsTotalPages} onClick={() => setStatsPage(statsTotalPages)}>{'末页'}</Btn>
             </div>
           </>
         ) : (
@@ -634,11 +603,10 @@ export default function Step() {
         <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div>
             <label style={labelStyle}>{'用户 ID'}</label>
-            <input value={filterUserId} onChange={e => { setFilterUserId(e.target.value); setPage(1); }}
-              placeholder={'输入用户 ID'} style={{ ...inputStyle, width: 180, height: 42 }} className="w-full" />
+            <input type="text" value={filterUserId} onChange={e => { setFilterUserId(e.target.value); setPage(1); }}
+              placeholder={'输入用户 ID'} className="w-full" />
           </div>
-          <Btn type="danger" disabled={!selIds.length} onClick={batchDelete}
-            style={{ borderRadius: 8, height: 42 }}>
+          <Btn type="danger" disabled={!selIds.length} onClick={batchDelete}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
             {'批量删除'}
           </Btn>
@@ -654,7 +622,7 @@ export default function Step() {
         {/* Custom pagination */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, flexWrap: 'wrap', gap: 12 }}>
           <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
-            style={{ ...inputStyle, width: 120 }}>
+            style={{ width: 120 }}>
             {[
               { value: 10, label: '10 条/页' },
               { value: 20, label: '20 条/页' },
@@ -665,10 +633,8 @@ export default function Step() {
             ))}
           </select>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Btn disabled={page <= 1} onClick={() => setPage(1)}
-              style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'首页'}</Btn>
-            <Btn disabled={page <= 1} onClick={() => setPage(p => p - 1)}
-              style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'上一页'}</Btn>
+            <Btn type="ghost" disabled={page <= 1} onClick={() => setPage(1)}>{'首页'}</Btn>
+            <Btn type="ghost" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>{'上一页'}</Btn>
             <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>{'第 '}{page} / {totalPages} {' 页'}</span>
             <input type="number" min={1} max={totalPages}
               onKeyDown={e => {
@@ -677,12 +643,9 @@ export default function Step() {
                   if (v >= 1 && v <= totalPages) setPage(v);
                 }
               }}
-              style={{ ...inputStyle, width: 56, height: 36, textAlign: 'center' }}
-              placeholder={'页'} className="w-full" />
-            <Btn disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
-              style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'下一页'}</Btn>
-            <Btn disabled={page >= totalPages} onClick={() => setPage(totalPages)}
-              style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'末页'}</Btn>
+              placeholder={'页'} />
+            <Btn type="ghost" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>{'下一页'}</Btn>
+            <Btn type="ghost" disabled={page >= totalPages} onClick={() => setPage(totalPages)}>{'末页'}</Btn>
           </div>
           <span style={{ color: c.muted, fontSize: 13 }}>{'共 '}{filteredRecords.length}{' 条'}</span>
         </div>
@@ -694,10 +657,8 @@ export default function Step() {
         open={editOpen}
         onClose={() => { setEditOpen(false); setEditRec(null); }}
         footer={[
-          <Btn key="cancel" onClick={() => { setEditOpen(false); setEditRec(null); }}
-            style={{ background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 }}>{'取消'}</Btn>,
-          <Btn key="save" type="primary" onClick={saveEdit}
-            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 }}>{'保存'}</Btn>,
+          <Btn key="cancel" type="ghost" onClick={() => { setEditOpen(false); setEditRec(null); }}>{'取消'}</Btn>,
+          <Btn key="save" type="primary" onClick={saveEdit}>{'保存'}</Btn>,
         ]}
         width={480}
       >
@@ -705,19 +666,18 @@ export default function Step() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
               <label style={labelStyle}>{'用户 ID'}</label>
-              <input value={editRec.user_id} onChange={e => setEditRec(p => ({ ...p, user_id: e.target.value }))}
-                style={inputStyle} className="w-full" />
+              <input type="text" value={editRec.user_id} onChange={e => setEditRec(p => ({ ...p, user_id: e.target.value }))}
+                className="w-full" />
             </div>
             <div>
               <label style={labelStyle}>{'步数'}</label>
-              <input value={editRec.steps} onChange={e => setEditRec(p => ({ ...p, steps: parseInt(e.target.value) || 0 }))}
-                style={inputStyle} className="w-full" />
+              <input type="text" value={editRec.steps} onChange={e => setEditRec(p => ({ ...p, steps: parseInt(e.target.value) || 0 }))}
+                className="w-full" />
             </div>
             <div>
               <label style={labelStyle}>{'时间段'}</label>
               <select value={editRec.hour === null ? '' : editRec.hour}
-                onChange={e => setEditRec(p => ({ ...p, hour: e.target.value === '' ? null : Number(e.target.value) }))}
-                style={{ ...inputStyle, width: '100%' }}>
+                onChange={e => setEditRec(p => ({ ...p, hour: e.target.value === '' ? null : Number(e.target.value) }))}>
                 <option value="">{'全天'}</option>
                 {HOURS.map(h => (
                   <option key={h} value={h}>{String(h).padStart(2, '0')}:00 - {String(h + 1).padStart(2, '0')}:00</option>
@@ -728,7 +688,7 @@ export default function Step() {
               <label style={labelStyle}>{'记录时间'}</label>
               <input type="datetime-local" value={toDTLocal(editRec.record_time)}
                 onChange={e => setEditRec(p => ({ ...p, record_time: e.target.value }))}
-                style={inputStyle} className="w-full" />
+                className="w-full" />
             </div>
           </div>
         )}
@@ -740,10 +700,8 @@ export default function Step() {
         open={confirmOpen}
         onClose={() => overwriteDup(false)}
         footer={[
-          <Btn key="cancel" onClick={() => overwriteDup(false)}
-            style={{ background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 }}>{'取消'}</Btn>,
-          <Btn key="ok" type="primary" onClick={() => overwriteDup(true)}
-            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 }}>{'确定'}</Btn>,
+          <Btn key="cancel" type="ghost" onClick={() => overwriteDup(false)}>{'取消'}</Btn>,
+          <Btn key="ok" type="primary" onClick={() => overwriteDup(true)}>{'确定'}</Btn>,
         ]}
         width={440}
       >

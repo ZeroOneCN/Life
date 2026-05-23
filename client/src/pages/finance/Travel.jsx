@@ -123,25 +123,21 @@ function TablePagination({ c, inputStyle, page, totalPages, onPageChange, pageSi
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 12 }}>
       <select value={pageSize} onChange={e => { onPageSizeChange(Number(e.target.value)); onPageChange(1); }}
-        style={{ background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, height: 36, fontSize: 13, width: 120, cursor: 'pointer', padding: '0 8px' }}>
+        style={{ width: 120 }}>
         <option value={10}>10 条/页</option>
         <option value={20}>20 条/页</option>
         <option value={50}>50 条/页</option>
         <option value={100}>100 条/页</option>
       </select>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Btn disabled={page <= 1} onClick={() => onPageChange(1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>首页</Btn>
-        <Btn disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>上一页</Btn>
+        <Btn type="ghost" disabled={page <= 1} onClick={() => onPageChange(1)}>首页</Btn>
+        <Btn type="ghost" disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}>上一页</Btn>
         <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>第 {page} / {totalPages} 页</span>
         <input type="number" min={1} max={totalPages}
           onKeyDown={e => { if (e.key === 'Enter') { const v = parseInt(e.target.value); if (v >= 1 && v <= totalPages) onPageChange(v); } }}
-          style={{ ...inputStyle, width: 56, height: 36, textAlign: 'center' }} placeholder="页" />
-        <Btn disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>下一页</Btn>
-        <Btn disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>末页</Btn>
+          placeholder="页" />
+        <Btn type="ghost" disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}>下一页</Btn>
+        <Btn type="ghost" disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}>末页</Btn>
       </div>
       <span style={{ color: c.muted, fontSize: 13 }}>共 {total} 条</span>
     </div>
@@ -218,8 +214,8 @@ function BooksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>操作</span>, width: 160,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 4 }}>
-          <Btn type="ghost" onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: fs.tableCell.fontSize }}><IconEdit /> 编辑</Btn>
-          <Btn type="danger" onClick={() => handleDelete(rec)} style={{ fontSize: fs.tableCell.fontSize }}><IconDelete /> 删除</Btn>
+          <Btn type="ghost" onClick={() => openEdit(rec)}><IconEdit /> 编辑</Btn>
+          <Btn type="danger" onClick={() => handleDelete(rec)}><IconDelete /> 删除</Btn>
         </div>
       ),
     },
@@ -228,8 +224,7 @@ function BooksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <Btn type="primary" onClick={openCreate}
-          style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}><IconPlus /> 新建账本</Btn>
+        <Btn type="primary" onClick={openCreate}><IconPlus /> 新建账本</Btn>
       </div>
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20 }}>
         <DataTable data={paged} columns={columns} rowKey="id"
@@ -243,16 +238,16 @@ function BooksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       </div>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editBook ? '编辑账本' : '新建账本'} width={460}
-        footer={<><Btn onClick={() => setModalOpen(false)}>取消</Btn><Btn type="primary" onClick={handleSave}>确定</Btn></>}>
+        footer={<><Btn type="ghost" onClick={() => setModalOpen(false)}>取消</Btn><Btn type="primary" onClick={handleSave}>确定</Btn></>}>
         <div style={{ display: 'grid', gap: 16, marginTop: 16 }}>
           <div>
             <label style={labelStyle}>账本名称 <span style={{ color: '#ef4444' }}>*</span></label>
-            <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="如：北京之旅" style={inputStyle} className="w-full" />
+            <input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="如：北京之旅" className="w-full" />
           </div>
           <div>
             <label style={labelStyle}>描述</label>
             <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-              placeholder="可选" rows={3} style={inputStyle} className="w-full" />
+              placeholder="可选" rows={3} className="w-full" />
           </div>
         </div>
       </Modal>
@@ -395,8 +390,8 @@ function ExpenseTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>操作</span>, width: 120,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 4 }}>
-          <Btn type="ghost" onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: fs.tableCell.fontSize }}><IconEdit /> 编辑</Btn>
-          <Btn type="danger" onClick={() => setDelExpenseId(rec.id)} style={{ fontSize: fs.tableCell.fontSize }}><IconDelete /> 删除</Btn>
+          <Btn type="ghost" onClick={() => openEdit(rec)}><IconEdit /> 编辑</Btn>
+          <Btn type="danger" onClick={() => setDelExpenseId(rec.id)}><IconDelete /> 删除</Btn>
         </div>
       ),
     },
@@ -411,8 +406,7 @@ function ExpenseTab({ c, fs, data, setData, inputStyle, labelStyle }) {
           {books.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
         {selBookId && (
-          <Btn type="primary" onClick={openCreate}
-            style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}><IconPlus /> 添加花销</Btn>
+          <Btn type="primary" onClick={openCreate}><IconPlus /> 添加花销</Btn>
         )}
       </div>
 
@@ -447,10 +441,9 @@ function ExpenseTab({ c, fs, data, setData, inputStyle, labelStyle }) {
               <div style={{ color: c.text, ...fs.sectionTitle, marginBottom: 8 }}>出行总结</div>
               <textarea value={summaryDraft} onChange={e => setSummaryDraft(e.target.value)}
                 placeholder="记录这次出行的复盘：哪些地方做得好/哪些地方可以优化…"
-                rows={3} style={inputStyle} className="w-full" />
+                rows={3} className="w-full" />
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-                <Btn onClick={saveSummary}
-                  style={{ ...inputStyle, height: 34, fontSize: fs.tableCell.fontSize, borderColor: c.border, color: c.muted }}>保存总结</Btn>
+                <Btn type="ghost" onClick={saveSummary}>保存总结</Btn>
               </div>
             </div>
           )}
@@ -473,12 +466,11 @@ function ExpenseTab({ c, fs, data, setData, inputStyle, labelStyle }) {
               {PAY_CHANNELS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
             <input type="date" value={dateRange?.[0] ? dateRange[0].format('YYYY-MM-DD') : ''} onChange={e => { setDateRange([e.target.value ? dayjs(e.target.value) : null, dateRange?.[1] || null]); setPage(1); }}
-              style={{ ...inputStyle, height: 36, width: 150 }} />
+              style={{ width: 150 }} />
             <input type="date" value={dateRange?.[1] ? dateRange[1].format('YYYY-MM-DD') : ''} onChange={e => { setDateRange([dateRange?.[0] || null, e.target.value ? dayjs(e.target.value) : null]); setPage(1); }}
-              style={{ ...inputStyle, height: 36, width: 150 }} />
+              style={{ width: 150 }} />
             {hasFilters && (
-              <Btn onClick={clearFilters}
-                style={{ ...inputStyle, height: 36, fontSize: fs.tableCell.fontSize, color: c.muted }}><IconClear /> 清除</Btn>
+              <Btn type="ghost" onClick={clearFilters}><IconClear /> 清除</Btn>
             )}
           </div>
 
@@ -494,42 +486,42 @@ function ExpenseTab({ c, fs, data, setData, inputStyle, labelStyle }) {
           </div>
 
           <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editExp ? '编辑花销' : '添加花销'} width={520}
-            footer={<><Btn onClick={() => setModalOpen(false)}>取消</Btn><Btn type="primary" onClick={handleSave}>确定</Btn></>}>
+            footer={<><Btn type="ghost" onClick={() => setModalOpen(false)}>取消</Btn><Btn type="primary" onClick={handleSave}>确定</Btn></>}>
             <div style={{ display: 'grid', gap: 14, marginTop: 16 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={labelStyle}>日期 <span style={{ color: '#ef4444' }}>*</span></label>
                   <input type="date" value={form.date ? form.date.format('YYYY-MM-DD') : ''}
                     onChange={e => setForm(p => ({ ...p, date: e.target.value ? dayjs(e.target.value) : dayjs() }))}
-                    style={{ width: '100%', ...inputStyle }} />
+                    className="w-full" />
                 </div>
                 <div>
                   <label style={labelStyle}>分类 <span style={{ color: '#ef4444' }}>*</span></label>
                   <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
-                    style={{ width: '100%', height: 42, ...inputStyle, cursor: 'pointer', padding: '0 12px' }}>
+                    className="w-full">
                     {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                   </select>
                 </div>
               </div>
               <div>
                 <label style={labelStyle}>事项/项目 <span style={{ color: '#ef4444' }}>*</span></label>
-                <input value={form.project} onChange={e => setForm(p => ({ ...p, project: e.target.value }))} placeholder="如：午餐/景区门票/酒店住宿" style={inputStyle} className="w-full" />
+                <input type="text" value={form.project} onChange={e => setForm(p => ({ ...p, project: e.target.value }))} placeholder="如：午餐/景区门票/酒店住宿" className="w-full" />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={labelStyle}>原价 <span style={{ color: '#ef4444' }}>*</span></label>
                   <input type="number" value={form.original_cost ?? ''} onChange={e => setForm(p => ({ ...p, original_cost: e.target.value === '' ? null : Number(e.target.value) }))}
-                    min={0} step={0.01} placeholder="0.00" style={{ width: '100%', ...inputStyle }} />
+                    min={0} step={0.01} placeholder="0.00" className="w-full" />
                 </div>
                 <div>
                   <label style={labelStyle}>优惠/节省</label>
                   <input type="number" value={form.discount} onChange={e => setForm(p => ({ ...p, discount: e.target.value === '' ? 0 : Number(e.target.value) }))}
-                    min={0} step={0.01} placeholder="0.00" style={{ width: '100%', ...inputStyle }} />
+                    min={0} step={0.01} placeholder="0.00" className="w-full" />
                 </div>
                 <div>
                   <label style={labelStyle}>支付方式 <span style={{ color: '#ef4444' }}>*</span></label>
                   <select value={form.platform} onChange={e => setForm(p => ({ ...p, platform: e.target.value }))}
-                    style={{ width: '100%', height: 42, ...inputStyle, cursor: 'pointer', padding: '0 12px' }}>
+                    className="w-full">
                     {PAY_CHANNELS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                   </select>
                 </div>
@@ -537,16 +529,16 @@ function ExpenseTab({ c, fs, data, setData, inputStyle, labelStyle }) {
               {form.category === 'TRANSPORT' && (
                 <div>
                   <label style={labelStyle}>交通信息</label>
-                  <input value={form.vehicle} onChange={e => setForm(p => ({ ...p, vehicle: e.target.value }))} placeholder="如：地铁2号线/网约车/航班MU1234" style={inputStyle} className="w-full" />
+                  <input type="text" value={form.vehicle} onChange={e => setForm(p => ({ ...p, vehicle: e.target.value }))} placeholder="如：地铁2号线/网约车/航班MU1234" className="w-full" />
                 </div>
               )}
               <div>
                 <label style={labelStyle}>优惠说明</label>
-                <input value={form.discount_note} onChange={e => setForm(p => ({ ...p, discount_note: e.target.value }))} placeholder="如：积分兑换/满减/支付立减" style={inputStyle} className="w-full" />
+                <input type="text" value={form.discount_note} onChange={e => setForm(p => ({ ...p, discount_note: e.target.value }))} placeholder="如：积分兑换/满减/支付立减" className="w-full" />
               </div>
               <div>
                 <label style={labelStyle}>备注</label>
-                <input value={form.remarks} onChange={e => setForm(p => ({ ...p, remarks: e.target.value }))} placeholder="可选" style={inputStyle} className="w-full" />
+                <input type="text" value={form.remarks} onChange={e => setForm(p => ({ ...p, remarks: e.target.value }))} placeholder="可选" className="w-full" />
               </div>
             </div>
           </Modal>
@@ -831,7 +823,7 @@ export default function Travel() {
     background: c.surfaceTint, border: '1px solid ' + c.border,
     borderRadius: 8, color: c.text, height: 42, lineHeight: '42px',
   };
-  const labelStyle = { color: c.textSecondary, fontWeight: 500, fontSize: 14, marginBottom: 6, display: 'block' };
+  const labelStyle = { display: 'block', fontSize: 13, marginBottom: 6, color: 'var(--color-ink-subtle)', fontWeight: 500 };
 
   const fs = {
     pageTitle: { fontSize: 22, fontWeight: 700 },
