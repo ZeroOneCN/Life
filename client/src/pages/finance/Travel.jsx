@@ -287,7 +287,7 @@ function ExpenseTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editExp, setEditExp] = useState(null);
   const [form, setForm] = useState({
-    date: dayjs().format('YYYY-MM-DD'), category: 'FOOD', project: '',
+    date: dayjs(), category: 'FOOD', project: '',
     original_cost: null, discount: 0, discount_note: '', vehicle: '', platform: 'ALIPAY', remarks: '',
   });
 
@@ -329,14 +329,14 @@ function ExpenseTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const openCreate = () => {
     if (!selBookId) { message.warning('请先选择账本'); return; }
     setEditExp(null);
-    setForm({ date: dayjs().format('YYYY-MM-DD'), category: 'FOOD', project: '', original_cost: null, discount: 0, discount_note: '', vehicle: '', platform: 'ALIPAY', remarks: '' });
+    setForm({ date: dayjs(), category: 'FOOD', project: '', original_cost: null, discount: 0, discount_note: '', vehicle: '', platform: 'ALIPAY', remarks: '' });
     setModalOpen(true);
   };
 
   const openEdit = (exp) => {
     setEditExp(exp);
     setForm({
-      date: exp.date, category: exp.category, project: exp.project,
+      date: dayjs(exp.date), category: exp.category, project: exp.project,
       original_cost: exp.original_cost, discount: exp.discount, discount_note: exp.discount_note || '',
       vehicle: exp.vehicle || '', platform: exp.platform, remarks: exp.remarks || '',
     });
@@ -348,6 +348,7 @@ function ExpenseTab({ c, fs, data, setData, inputStyle, labelStyle }) {
     const discountAmt = form.discount || 0;
     const payload = {
       ...form,
+      date: form.date.format('YYYY-MM-DD'),
       original_cost: parseFloat(form.original_cost),
       discount: parseFloat(discountAmt),
       cost: parseFloat((parseFloat(form.original_cost) - parseFloat(discountAmt)).toFixed(2)),
@@ -500,7 +501,9 @@ function ExpenseTab({ c, fs, data, setData, inputStyle, labelStyle }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={labelStyle}>日期 <span style={{ color: '#ef4444' }}>*</span></label>
-                  <Input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} style={inputStyle} />
+                  <DatePicker value={form.date} onChange={d => setForm(p => ({ ...p, date: d }))}
+                    style={{ width: '100%', height: 42, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8 }}
+                    popupStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }} />
                 </div>
                 <div>
                   <label style={labelStyle}>分类 <span style={{ color: '#ef4444' }}>*</span></label>
@@ -648,7 +651,7 @@ function StatsTab({ c, fs, isLight, data }) {
             </div>
           </div>
 
-          <TrendChart c={c} isLight={isLight} expenses={expenses} />
+          <TrendChart c={c} fs={fs} isLight={isLight} expenses={expenses} />
         </>
       )}
     </div>
@@ -656,7 +659,7 @@ function StatsTab({ c, fs, isLight, data }) {
 }
 
 /* ── Trend Chart ── */
-function TrendChart({ c, isLight, expenses }) {
+function TrendChart({ c, fs, isLight, expenses }) {
   const chartId = useMemo(() => 'trend-' + Math.random().toString(36).slice(2, 8), []);
 
   const dailyData = useMemo(() => {
@@ -820,7 +823,7 @@ export default function Travel() {
 
   const inputStyle = {
     background: c.surfaceTint, border: '1px solid ' + c.border,
-    borderRadius: 8, color: c.text, height: 42,
+    borderRadius: 8, color: c.text, height: 42, lineHeight: '42px',
   };
   const labelStyle = { color: c.textSecondary, fontWeight: 500, fontSize: 14, marginBottom: 6, display: 'block' };
 
@@ -836,7 +839,7 @@ export default function Travel() {
 
   return (
     <div>
-      <h1 className="page-title" style={{ marginBottom: 24, ...fs.pageTitle, color: c.text }}>旅行游玩</h1>
+      <h1 className="page-title" style={{ marginBottom: 24 }}>旅行游玩</h1>
 
       <div style={{ marginBottom: 24 }}>
         <Segmented value={activeTab} onChange={setActiveTab}

@@ -282,7 +282,7 @@ export default function Fitness() {
   /* ── render styles ── */
   const inputStyle = {
     background: c.surfaceTint, border: '1px solid ' + c.border,
-    borderRadius: 8, color: c.text, height: 42,
+    borderRadius: 8, color: c.text, height: 42, lineHeight: '42px',
   };
   const labelStyle = { color: c.textSecondary, fontWeight: 500, fontSize: 14, marginBottom: 6, display: 'block' };
 
