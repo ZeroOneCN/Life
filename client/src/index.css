@@ -184,26 +184,50 @@ button {
   animation: none !important;
 }
 
-/* ═══ Ant Design overrides ═══ */
-.ant-layout { background: var(--color-canvas) !important; }
-.ant-layout-sider { background: var(--color-surface-3) !important; }
-.ant-menu-dark { background: transparent !important; }
-.ant-menu-dark .ant-menu-item-selected { background: color-mix(in srgb, var(--color-primary) 15%, transparent) !important; color: var(--color-primary) !important; }
-.ant-menu-dark .ant-menu-item:hover { background: rgba(255, 255, 255, 0.04) !important; }
-.ant-menu-dark .ant-menu-submenu-title:hover { color: var(--color-ink) !important; }
-.ant-breadcrumb { font-size: 14px; }
-.ant-breadcrumb a, .ant-breadcrumb span { color: var(--color-ink-subtle) !important; }
-.ant-breadcrumb li:last-child span { color: var(--color-ink) !important; }
-.ant-breadcrumb-separator { color: var(--color-ink-tertiary) !important; }
-.ant-layout-sider-trigger { background: var(--color-surface-2) !important; height: 48px !important; line-height: 48px !important; color: var(--color-ink-subtle) !important; }
-.ant-table { background: transparent !important; color: var(--color-ink) !important; }
-.ant-table-thead > tr > th { background: var(--color-surface-1) !important; color: var(--color-ink-subtle) !important; border-bottom-color: var(--color-hairline) !important; }
-.ant-table-tbody > tr > td { border-bottom-color: var(--color-hairline) !important; }
-.ant-table-tbody > tr:hover > td { background: var(--color-surface-1) !important; }
-.ant-modal-content { background: var(--color-surface-2) !important; }
-.ant-modal-header { background: transparent !important; }
-.ant-modal-title { color: var(--color-ink) !important; }
-.ant-modal-close { color: var(--color-ink-subtle) !important; }
-.ant-popconfirm .ant-popover-inner { background: var(--color-surface-2) !important; }
-.ant-popconfirm .ant-popover-message { color: var(--color-ink) !important; }
-.ant-tag { border: none !important; }
+/* ── Page title ── */
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.20;
+  letter-spacing: -0.6px;
+  color: var(--color-ink);
+  margin: 0 0 4px;
+}
+
+/* ── Table base ── */
+table {
+  border-collapse: collapse;
+  color: var(--color-ink-muted);
+}
+thead tr {
+  border-bottom: 1px solid var(--color-hairline);
+}
+th {
+  font-weight: 500;
+  color: var(--color-ink-subtle);
+}
+tbody tr {
+  border-bottom: 1px solid var(--color-hairline);
+}
+tbody tr:hover {
+  filter: brightness(1.1);
+}
+
+/* ── Card ── */
+.linear-card {
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+}
+
+/* ── Modal backdrop ── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.6);
+}
