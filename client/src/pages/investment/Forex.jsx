@@ -502,7 +502,7 @@ function TradesTab({ data, setData }) {
               <FormField label="持仓时间" value={form.hold_time} onChange={v => setForm(f => ({ ...f, hold_time: v }))} placeholder="自动填充" />
               <div className="col-span-2">
                 <label className="block text-[13px] mb-1.5" style={{ color: 'var(--color-ink-subtle)' }}>备注</label>
-                <input value={form.remark} onChange={e => setForm(f => ({ ...f, remark: e.target.value }))} className="w-full" />
+                <input type="text" value={form.remark} onChange={e => setForm(f => ({ ...f, remark: e.target.value }))} className="w-full" />
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-7">
