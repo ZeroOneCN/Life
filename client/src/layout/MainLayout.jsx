@@ -52,6 +52,14 @@ const darkTheme = {
       darkItemSelectedColor: '#5e6ad2',
       darkSubMenuItemBg: 'transparent',
     },
+    Segmented: {
+      trackBg: 'transparent',
+      itemActiveBg: '#5e6ad2',
+      itemColor: '#8a8f98',
+      itemHoverBg: 'rgba(94,106,210,0.12)',
+      itemSelectedBg: '#5e6ad2',
+      itemSelectedColor: '#ffffff',
+    },
   },
 };
 
@@ -73,6 +81,14 @@ const lightTheme = {
   },
   components: {
     Layout: { headerBg: 'transparent', siderBg: '#f0f1f2', bodyBg: '#f5f6f7' },
+    Segmented: {
+      trackBg: 'transparent',
+      itemActiveBg: '#5e6ad2',
+      itemColor: '#6b6f76',
+      itemHoverBg: 'rgba(94,106,210,0.08)',
+      itemSelectedBg: '#5e6ad2',
+      itemSelectedColor: '#ffffff',
+    },
   },
 };
 
