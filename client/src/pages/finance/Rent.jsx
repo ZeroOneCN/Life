@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Input, Button, Select, Modal, Popconfirm, message, Table, Segmented, DatePicker, InputNumber,
 } from 'antd';
 import {
   PlusOutlined, DeleteOutlined, EditOutlined,
   SearchOutlined, ReloadOutlined,
-  HomeOutlined, DollarOutlined, SettingOutlined, BarChartOutlined,
+  HomeOutlined, SettingOutlined, BarChartOutlined,
 } from '@ant-design/icons';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
@@ -215,9 +215,9 @@ function HomeTab({ c, fs, data, setData, inputStyle, labelStyle }) {
           style={{ ...inputStyle, width: 240, height: 36 }} />
         <Select value={channelFilter} onChange={v => setChannelFilter(v)}
           placeholder="全部渠道" allowClear
-          style={{ width: 150 }} popupStyle={{ background: c.dropdownBg }}
+          style={{ width: 150 }}
           dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-          options={[{ value: null, label: '全部渠道' }, ...channelOptions]} />
+          options={channelOptions} />
         <Button icon={<ReloadOutlined />} onClick={() => { setKeyword(''); setChannelFilter(null); }}
           style={{ height: 36, fontSize: fs.tableCell.fontSize, color: c.muted }}>重置</Button>
       </div>
@@ -425,77 +425,80 @@ function AddTab({ c, fs, data, setData, inputStyle, labelStyle }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Housing info */}
-      <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 24 }}>
-        <div style={{ ...fs.sectionTitle, color: c.text, marginBottom: 18 }}>住房信息</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <label style={labelStyle}>详细地址 <span style={{ color: '#ef4444' }}>*</span></label>
-            <Input value={form.address} onChange={e => { set('address', e.target.value); setErrors(p => ({ ...p, address: '' })); }}
-              placeholder="请输入详细的住房地址"
-              style={{ ...inputStyle, borderColor: errors.address ? '#ef4444' : undefined }} />
-            {errors.address && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>{errors.address}</div>}
+      {/* Two columns: left = housing info + other info, right = fee info */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
+        {/* Left column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Housing info */}
+          <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 24 }}>
+            <div style={{ ...fs.sectionTitle, color: c.text, marginBottom: 18 }}>住房信息</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={labelStyle}>详细地址 <span style={{ color: '#ef4444' }}>*</span></label>
+                <Input value={form.address} onChange={e => { set('address', e.target.value); setErrors(p => ({ ...p, address: '' })); }}
+                  placeholder="请输入详细的住房地址"
+                  style={{ ...inputStyle, borderColor: errors.address ? '#ef4444' : undefined }} />
+                {errors.address && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>{errors.address}</div>}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div>
+                  <label style={labelStyle}>入住日期 <span style={{ color: '#ef4444' }}>*</span></label>
+                  <DatePicker value={form.move_in_date} onChange={v => { set('move_in_date', v); setErrors(p => ({ ...p, move_in_date: '' })); }}
+                    style={{ width: '100%', ...inputStyle }} placeholder="选择入住日期" />
+                  {errors.move_in_date && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>{errors.move_in_date}</div>}
+                </div>
+                <div>
+                  <label style={labelStyle}>退租日期</label>
+                  <DatePicker value={form.move_out_date} onChange={v => set('move_out_date', v)}
+                    style={{ width: '100%', ...inputStyle }} placeholder="选择退租日期（可选）" />
+                </div>
+              </div>
+            </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div>
-              <label style={labelStyle}>入住日期 <span style={{ color: '#ef4444' }}>*</span></label>
-              <DatePicker value={form.move_in_date} onChange={v => { set('move_in_date', v); setErrors(p => ({ ...p, move_in_date: '' })); }}
-                style={{ width: '100%', ...inputStyle }} placeholder="选择入住日期" />
-              {errors.move_in_date && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>{errors.move_in_date}</div>}
+
+          {/* Other info */}
+          <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 24 }}>
+            <div style={{ ...fs.sectionTitle, color: c.text, marginBottom: 18 }}>其他信息</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={labelStyle}>住房渠道</label>
+                <Select value={form.housing_channel_id} onChange={v => set('housing_channel_id', v)}
+                  placeholder="请选择住房渠道" allowClear
+                  style={{ width: '100%' }}
+                  dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
+                  options={data.channels.map(c => ({ value: c.id, label: c.name }))} />
+              </div>
+              <div>
+                <label style={labelStyle}>备注信息</label>
+                <Input.TextArea value={form.notes} onChange={e => set('notes', e.target.value)}
+                  placeholder="请输入备注信息（如居住体验、注意事项等）" rows={4}
+                  style={{ background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text }} />
+              </div>
             </div>
-            <div>
-              <label style={labelStyle}>退租日期</label>
-              <DatePicker value={form.move_out_date} onChange={v => set('move_out_date', v)}
-                style={{ width: '100%', ...inputStyle }} placeholder="选择退租日期（可选）" />
-            </div>
+          </div>
+        </div>
+
+        {/* Right column: Fee info */}
+        <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 24 }}>
+          <div style={{ ...fs.sectionTitle, color: c.text, marginBottom: 18 }}>费用信息</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            {feeFields.map(f => (
+              <div key={f.key}>
+                <label style={labelStyle}>{f.label}</label>
+                <InputNumber value={form[f.key]} onChange={v => set(f.key, v || 0)}
+                  min={0} step={0.01} precision={2}
+                  style={{ width: '100%', ...inputStyle }}
+                  inputStyle={{ textAlign: 'right' }}
+                  addonAfter={<span style={{ color: c.muted, fontSize: 13 }}>元</span>} />
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Fee info */}
+      {/* Cost preview — no gradient, theme-aware */}
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 24 }}>
-        <div style={{ ...fs.sectionTitle, color: c.text, marginBottom: 18 }}>费用信息</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-          {feeFields.map(f => (
-            <div key={f.key}>
-              <label style={labelStyle}>{f.label}</label>
-              <InputNumber value={form[f.key]} onChange={v => set(f.key, v || 0)}
-                min={0} step={0.01} precision={2}
-                style={{ width: '100%', ...inputStyle }}
-                inputStyle={{ textAlign: 'right' }}
-                addonAfter={<span style={{ color: c.muted, fontSize: 13 }}>元</span>} />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Other info */}
-      <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 24 }}>
-        <div style={{ ...fs.sectionTitle, color: c.text, marginBottom: 18 }}>其他信息</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <label style={labelStyle}>住房渠道</label>
-            <Select value={form.housing_channel_id} onChange={v => set('housing_channel_id', v)}
-              placeholder="请选择住房渠道" allowClear
-              style={{ width: '100%' }} popupStyle={{ background: c.dropdownBg }}
-              dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-              options={data.channels.map(c => ({ value: c.id, label: c.name }))} />
-          </div>
-          <div>
-            <label style={labelStyle}>备注信息</label>
-            <Input.TextArea value={form.notes} onChange={e => set('notes', e.target.value)}
-              placeholder="请输入备注信息（如居住体验、注意事项等）" rows={3}
-              style={{ background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text }} />
-          </div>
-        </div>
-      </div>
-
-      {/* Cost preview */}
-      <div style={{
-        background: 'linear-gradient(135deg, #5e6ad2 0%, #3b47ad 100%)',
-        borderRadius: 12, padding: 24, boxShadow: '0 4px 16px rgba(94,106,210,0.25)',
-      }}>
-        <div style={{ ...fs.sectionTitle, color: '#fff', marginBottom: 18 }}>费用预览</div>
+        <div style={{ ...fs.sectionTitle, color: c.text, marginBottom: 18 }}>费用预览</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
           {[
             { label: '居住天数', value: costPreview.stayDays + ' 天' },
@@ -504,9 +507,9 @@ function AddTab({ c, fs, data, setData, inputStyle, labelStyle }) {
             { label: '单月租金', value: '¥' + costPreview.monthlyRent.toFixed(2) },
             { label: '季度租金', value: '¥' + costPreview.quarterlyRent.toFixed(2) },
           ].map(s => (
-            <div key={s.label} style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 10, padding: '16px 14px', textAlign: 'center' }}>
-              <div style={{ fontSize: 12, color: '#666', marginBottom: 6, fontWeight: 500 }}>{s.label}</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: s.accent ? '#5e6ad2' : '#333' }}>{s.value}</div>
+            <div key={s.label} style={{ background: c.surfaceTint2, borderRadius: 10, padding: '16px 14px', textAlign: 'center' }}>
+              <div style={{ fontSize: 12, color: c.muted, marginBottom: 6, fontWeight: 500 }}>{s.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: s.accent ? '#5e6ad2' : c.text }}>{s.value}</div>
             </div>
           ))}
         </div>
