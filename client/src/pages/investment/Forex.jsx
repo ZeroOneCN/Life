@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 /* ═══════════════════════════════════════
    Constants & helpers
@@ -65,13 +66,14 @@ export default function Forex() {
   return (
     <div>
       <h1 className="page-title">外汇市场</h1>
-      <div style={{ display: 'flex', gap: 4, backgroundColor: 'var(--color-surface-1)', border: '1px solid var(--color-hairline)', borderRadius: 'var(--radius-lg)', padding: 4, marginTop: 24 }}>
+      <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{
-              flex: 1, padding: '10px 16px', borderRadius: 'var(--radius-md)', border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 500,
-              backgroundColor: tab === t.key ? 'var(--color-surface-2)' : 'transparent',
+              padding: '6px 18px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500,
+              backgroundColor: tab === t.key ? 'var(--color-surface-2)' : 'var(--color-canvas)',
               color: tab === t.key ? 'var(--color-ink)' : 'var(--color-ink-subtle)',
+              transition: 'all 0.15s',
             }}>
             {t.label}
           </button>
@@ -91,7 +93,10 @@ export default function Forex() {
    Shared components
    ═══════════════════════════════════════ */
 function StatCard({ label, value, prefix, color }) {
-  const displayValue = typeof value === 'number' ? (prefix || '') + value.toFixed(2) : value;
+  const num = typeof value === 'number' ? value : NaN;
+  const displayValue = typeof value === 'number'
+    ? (prefix || '') + (prefix ? num.toFixed(2) : num.toLocaleString())
+    : value;
   return (
     <div style={CARD_STAT}>
       <div className="text-[14px] mb-1.5" style={{ color: 'var(--color-ink-subtle)' }}>{label}</div>
@@ -220,6 +225,8 @@ function OverviewTab({ data }) {
     return Object.entries(map).map(([k, v]) => ({ instrument: k, ...v, avgPnl: v.cnt > 0 ? v.totalPnl / v.cnt : 0, winRate: v.cnt > 0 ? ((v.wins / v.cnt) * 100).toFixed(0) : '0' }));
   }, [trades]);
 
+  const winRateData = [{ name: '盈利', value: stats.wins, color: 'var(--color-success)' }, { name: '亏损', value: stats.losses, color: 'var(--color-danger)' }];
+
   const capSummary = useMemo(() => {
     const deposits = capitals.filter(c => c.flow_type === 'deposit').reduce((s, c) => s + (c.amount || 0), 0);
     const withdrawals = capitals.filter(c => c.flow_type === 'withdrawal').reduce((s, c) => s + (c.amount || 0), 0);
@@ -252,42 +259,32 @@ function OverviewTab({ data }) {
         <StatCard label="收益率" value={`${capSummary.roi}%`} color={parseFloat(capSummary.roi) >= 0 ? 'var(--color-success)' : 'var(--color-danger)'} />
       </div>
 
-      {/* Row 3: Charts (2 columns) — stat cards as chart placeholder */}
+      {/* Row 3: Charts (2 columns) */}
       <div className="grid grid-cols-2 gap-6">
         <div style={CARD}>
           <h3 className="text-[18px] font-medium mb-5" style={{ color: 'var(--color-ink)' }}>每日盈亏曲线</h3>
           {dailyPnl.length > 0 ? (
-            <div>
-              <div className="flex items-end gap-1" style={{ height: 120 }}>
-                {dailyPnl.slice(-30).map((d, i) => {
-                  const maxAbs = Math.max(...dailyPnl.map(x => Math.abs(x.total_pnl)), 1);
-                  const h = Math.abs(d.total_pnl) / maxAbs * 100;
-                  return <div key={i} title={`${d.trade_date}: $${d.total_pnl}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: d.total_pnl >= 0 ? 'flex-end' : 'flex-start', height: '100%' }}>
-                    <div style={{ height: `${Math.max(h, 2)}%`, backgroundColor: d.total_pnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)', borderRadius: '2px 2px 0 0', opacity: 0.7, minHeight: 2 }} />
-                  </div>;
-                })}
-              </div>
-              <div className="flex justify-between mt-2 text-[11px]" style={{ color: 'var(--color-ink-tertiary)' }}>
-                <span>{dailyPnl[0]?.trade_date}</span><span>{dailyPnl[dailyPnl.length - 1]?.trade_date}</span>
-              </div>
-            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={dailyPnl}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-hairline)" />
+                <XAxis dataKey="trade_date" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 11 }} interval={0} angle={-45} textAnchor="end" height={60} />
+                <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                <Tooltip contentStyle={{ backgroundColor: 'var(--color-surface-2)', border: '1px solid var(--color-hairline-strong)', borderRadius: '8px', color: 'var(--color-ink)', fontSize: 14 }} formatter={(v) => [`$${v}`, '盈亏']} />
+                <Line type="monotone" dataKey="total_pnl" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
           ) : <p className="text-[15px] py-12 text-center" style={{ color: 'var(--color-ink-subtle)' }}>暂无数据</p>}
         </div>
         <div style={CARD}>
           <h3 className="text-[18px] font-medium mb-5" style={{ color: 'var(--color-ink)' }}>盈亏分布</h3>
-          <div className="flex items-center justify-center" style={{ height: 150 }}>
-            <div className="flex items-center gap-8">
-              <div className="text-center">
-                <div className="text-[32px] font-semibold font-mono" style={{ color: 'var(--color-success)' }}>{stats.wins}</div>
-                <div className="text-[13px] mt-1" style={{ color: 'var(--color-ink-subtle)' }}>盈利</div>
-              </div>
-              <div className="text-[20px] font-mono" style={{ color: 'var(--color-ink-tertiary)' }}>:</div>
-              <div className="text-center">
-                <div className="text-[32px] font-semibold font-mono" style={{ color: 'var(--color-danger)' }}>{stats.losses}</div>
-                <div className="text-[13px] mt-1" style={{ color: 'var(--color-ink-subtle)' }}>亏损</div>
-              </div>
-            </div>
-          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie data={winRateData} cx="50%" cy="50%" innerRadius={75} outerRadius={110} paddingAngle={4} dataKey="value">
+                {winRateData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+              </Pie>
+              <Tooltip contentStyle={{ backgroundColor: 'var(--color-surface-2)', border: '1px solid var(--color-hairline-strong)', borderRadius: '8px', color: 'var(--color-ink)', fontSize: 14 }} />
+            </PieChart>
+          </ResponsiveContainer>
           <div className="flex justify-center gap-8 mt-3">
             <div className="flex items-center gap-2.5"><div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: 'var(--color-success)' }} /><span className="text-[15px]" style={{ color: 'var(--color-ink-muted)' }}>盈利 {stats.wins} 笔</span></div>
             <div className="flex items-center gap-2.5"><div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: 'var(--color-danger)' }} /><span className="text-[15px]" style={{ color: 'var(--color-ink-muted)' }}>亏损 {stats.losses} 笔</span></div>
@@ -485,26 +482,26 @@ function TradesTab({ data, setData }) {
 
       {trades.length > pageSize && <Pagination page={page} totalPages={totalPages} totalItems={trades.length} onPageChange={setPage} />}
 
-      {/* Form Modal */}
+      {/* Form Modal — matching Trades.jsx pattern */}
       {showForm && form && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
           onMouseDown={e => { if (e.target === e.currentTarget) { setShowForm(false); setEditingId(null); } }}>
-          <div onMouseDown={e => e.stopPropagation()} style={{ backgroundColor: 'var(--color-surface-2)', border: '1px solid var(--color-hairline-strong)', borderRadius: 'var(--radius-lg)', padding: '32px', width: '560px', maxHeight: '85vh', overflow: 'auto' }}>
+          <div onMouseDown={e => e.stopPropagation()} style={{ backgroundColor: 'var(--color-surface-2)', border: '1px solid var(--color-hairline-strong)', borderRadius: 'var(--radius-lg)', padding: '32px', width: '640px', maxHeight: '85vh', overflow: 'auto' }}>
             <h2 className="text-[22px] font-semibold mb-6 tracking-[-0.4px]" style={{ color: 'var(--color-ink)' }}>{editingId ? '编辑交易记录' : '新增交易记录'}</h2>
             <div className="grid grid-cols-2 gap-5">
               <FormField label="日期" value={form.trade_date} onChange={v => setForm(f => ({ ...f, trade_date: v }))} placeholder="yyyy/mm/dd" />
-              <FormSelect label="品种" value={form.instrument} onChange={v => updateForm('instrument', v)} options={[{ value: 'XAUUSD', label: 'XAUUSD 黄金' }, { value: 'XAGUSD', label: 'XAGUSD 白银' }, { value: 'EURUSD', label: 'EURUSD 欧元' }, { value: 'GBPUSD', label: 'GBPUSD 英镑' }, { value: 'USDJPY', label: 'USDJPY 日元' }]} />
-              <FormSelect label="类型" value={form.order_type} onChange={v => updateForm('order_type', v)} options={[{ value: 'buy', label: '做多 Buy' }, { value: 'sell', label: '做空 Sell' }]} />
+              <FormSelect label="品种" value={form.instrument} onChange={v => updateForm('instrument', v)} options={INSTRUMENTS.map(i => ({ value: i.value, label: i.value }))} />
+              <FormSelect label="类型" value={form.order_type} onChange={v => updateForm('order_type', v)} options={[{ value: 'buy', label: 'buy' }, { value: 'sell', label: 'sell' }]} />
               <FormField label="开仓价格" value={form.open_price} onChange={v => updateForm('open_price', v)} type="number" />
               <FormField label="手数" value={form.lot_size} onChange={v => updateForm('lot_size', v)} type="number" />
               <FormField label="手续费" value={form.commission} onChange={v => setForm(f => ({ ...f, commission: v }))} type="number" />
               <FormField label="平仓价格" value={form.close_price} onChange={v => updateForm('close_price', v)} type="number" />
-              <FormField label="盈亏金额" value={form.pnl} onChange={v => setForm(f => ({ ...f, pnl: v }))} type="number" placeholder="自动计算" readOnly />
+              <FormField label="盈亏金额（自动）" value={form.pnl} onChange={v => setForm(f => ({ ...f, pnl: v }))} type="number" placeholder="自动计算" readOnly />
               <FormField label="开仓时间" value={form.open_time} onChange={v => setForm(f => ({ ...f, open_time: v }))} placeholder="00:00:00" />
               <FormField label="平仓时间" value={form.close_time} onChange={v => setForm(f => ({ ...f, close_time: v }))} placeholder="00:00:00" />
               <FormField label="持仓时间" value={form.hold_time} onChange={v => setForm(f => ({ ...f, hold_time: v }))} placeholder="自动填充" />
               <div className="col-span-2">
-                <label className="block text-[14px] mb-1.5" style={{ color: 'var(--color-ink-subtle)' }}>备注</label>
+                <label className="block text-[13px] mb-1.5" style={{ color: 'var(--color-ink-subtle)' }}>备注</label>
                 <input value={form.remark} onChange={e => setForm(f => ({ ...f, remark: e.target.value }))} className="w-full" />
               </div>
             </div>
