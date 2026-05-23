@@ -167,7 +167,7 @@ function cancelBtn(c) {
 /* ═══════════════════════════════════════
    Books Tab — 账本管理
    ═══════════════════════════════════════ */
-function BooksTab({ c, data, setData, inputStyle, labelStyle }) {
+function BooksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
@@ -218,17 +218,17 @@ function BooksTab({ c, data, setData, inputStyle, labelStyle }) {
   };
 
   const columns = [
-    { title: '账本名称', dataIndex: 'name', width: 160, render: v => <span style={{ fontWeight: 500, color: c.text }}>{v}</span> },
-    { title: '描述', dataIndex: 'description', width: 240, render: v => <span style={{ color: c.muted2 }}>{v || '-'}</span> },
-    { title: '创建时间', dataIndex: 'created_at', width: 150, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
-    { title: '更新时间', dataIndex: 'updated_at', width: 150, render: v => <span style={{ color: c.textSecondary }}>{v || '-'}</span> },
+    { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>账本名称</span>, dataIndex: 'name', width: 160, render: v => <span style={{ fontWeight: 500, color: c.text, fontSize: fs.tableCell.fontSize }}>{v}</span> },
+    { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>描述</span>, dataIndex: 'description', width: 240, render: v => <span style={{ color: c.muted2, fontSize: fs.tableCellSm.fontSize }}>{v || '-'}</span> },
+    { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>创建时间</span>, dataIndex: 'created_at', width: 150, render: v => <span style={{ color: c.textSecondary, fontSize: fs.tableCellSm.fontSize }}>{v}</span> },
+    { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>更新时间</span>, dataIndex: 'updated_at', width: 150, render: v => <span style={{ color: c.textSecondary, fontSize: fs.tableCellSm.fontSize }}>{v || '-'}</span> },
     {
-      title: '操作', width: 160, fixed: 'right',
+      title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>操作</span>, width: 160, fixed: 'right',
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 4 }}>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: 13 }}>编辑</Button>
+          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: fs.tableCell.fontSize }}>编辑</Button>
           <Popconfirm title={`确定删除"${rec.name}"？`} onConfirm={() => handleDelete(rec)} okText="确定" cancelText="取消">
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: 13 }}>删除</Button>
+            <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: fs.tableCell.fontSize }}>删除</Button>
           </Popconfirm>
         </div>
       ),
@@ -239,7 +239,7 @@ function BooksTab({ c, data, setData, inputStyle, labelStyle }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}
-          style={{ height: 36, fontSize: 13, fontWeight: 500 }}>新建账本</Button>
+          style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}>新建账本</Button>
       </div>
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20 }}>
         <Table dataSource={paged} columns={columns} rowKey="id" pagination={false} size="middle"
@@ -276,7 +276,7 @@ function BooksTab({ c, data, setData, inputStyle, labelStyle }) {
 /* ═══════════════════════════════════════
    Expense Tab — 花销记录
    ═══════════════════════════════════════ */
-function ExpenseTab({ c, data, setData, inputStyle, labelStyle }) {
+function ExpenseTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const [selBookId, setSelBookId] = useState(null);
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
@@ -389,20 +389,20 @@ function ExpenseTab({ c, data, setData, inputStyle, labelStyle }) {
   const hasFilters = keyword || catFilter || payFilter || dateRange;
 
   const columns = [
-    { title: '日期', dataIndex: 'date', width: 105, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
-    { title: '事项', dataIndex: 'project', width: 140, render: v => <span style={{ fontWeight: 500, color: c.text }}>{v}</span> },
-    { title: '分类', dataIndex: 'category', width: 68, render: v => <span style={{ color: c.muted }}>{CATEGORY_MAP[v] || v}</span> },
-    { title: '原价', dataIndex: 'original_cost', width: 85, align: 'right', render: v => <span style={{ color: c.textSecondary }}>¥{v.toFixed(2)}</span> },
-    { title: '实付', dataIndex: 'cost', width: 85, align: 'right', render: v => <span style={{ fontWeight: 600, color: '#ef4444' }}>¥{v.toFixed(2)}</span> },
-    { title: '节省', dataIndex: 'discount', width: 75, align: 'right', render: v => v > 0 ? <span style={{ color: '#10B981' }}>-¥{v.toFixed(2)}</span> : <span style={{ color: c.muted2 }}>-</span> },
-    { title: '支付方式', dataIndex: 'platform', width: 95, render: v => <span style={{ color: c.textSecondary }}>{PAY_MAP[v] || v}</span> },
+    { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>日期</span>, dataIndex: 'date', width: 115, render: v => <span style={{ color: c.textSecondary, fontSize: fs.tableCellSm.fontSize }}>{dayjs(v).format('YYYY年M月D日')}</span> },
+    { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>事项</span>, dataIndex: 'project', width: 140, render: v => <span style={{ fontWeight: 500, color: c.text, fontSize: fs.tableCell.fontSize }}>{v}</span> },
+    { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>分类</span>, dataIndex: 'category', width: 68, render: v => <span style={{ color: c.muted, fontSize: fs.tableCellSm.fontSize }}>{CATEGORY_MAP[v] || v}</span> },
+    { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>原价</span>, dataIndex: 'original_cost', width: 85, align: 'right', render: v => <span style={{ color: c.textSecondary, fontSize: fs.tableCellSm.fontSize }}>¥{v.toFixed(2)}</span> },
+    { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>实付</span>, dataIndex: 'cost', width: 85, align: 'right', render: v => <span style={{ fontWeight: 600, color: '#ef4444', fontSize: fs.tableCell.fontSize }}>¥{v.toFixed(2)}</span> },
+    { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>节省</span>, dataIndex: 'discount', width: 75, align: 'right', render: v => v > 0 ? <span style={{ color: '#10B981', fontSize: fs.tableCellSm.fontSize }}>-¥{v.toFixed(2)}</span> : <span style={{ color: c.muted2, fontSize: fs.tableCellSm.fontSize }}>-</span> },
+    { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>支付方式</span>, dataIndex: 'platform', width: 95, render: v => <span style={{ color: c.textSecondary, fontSize: fs.tableCellSm.fontSize }}>{PAY_MAP[v] || v}</span> },
     {
-      title: '操作', width: 120, fixed: 'right',
+      title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>操作</span>, width: 120, fixed: 'right',
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 4 }}>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: 13 }}>编辑</Button>
+          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: fs.tableCell.fontSize }}>编辑</Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(rec.id)} okText="确定" cancelText="取消">
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: 13 }}>删除</Button>
+            <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: fs.tableCell.fontSize }}>删除</Button>
           </Popconfirm>
         </div>
       ),
@@ -418,7 +418,7 @@ function ExpenseTab({ c, data, setData, inputStyle, labelStyle }) {
           options={bookOptions} />
         {selBookId && (
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}
-            style={{ height: 36, fontSize: 13, fontWeight: 500 }}>添加花销</Button>
+            style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}>添加花销</Button>
         )}
       </div>
 
@@ -441,8 +441,8 @@ function ExpenseTab({ c, data, setData, inputStyle, labelStyle }) {
                   <s.icon />
                 </div>
                 <div>
-                  <div style={{ color: c.muted, fontSize: 12, marginBottom: 2 }}>{s.label}</div>
-                  <div style={{ color: c.text, fontSize: 20, fontWeight: 600, letterSpacing: '-0.3px' }}>{s.value}</div>
+                  <div style={{ color: c.muted, ...fs.cardLabel, marginBottom: 2 }}>{s.label}</div>
+                  <div style={{ color: c.text, ...fs.cardValue }}>{s.value}</div>
                 </div>
               </div>
             ))}
@@ -450,13 +450,13 @@ function ExpenseTab({ c, data, setData, inputStyle, labelStyle }) {
 
           {selectedBook && (
             <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '14px 18px', marginBottom: 16 }}>
-              <div style={{ color: c.text, fontWeight: 600, fontSize: 14, marginBottom: 8 }}>出行总结</div>
+              <div style={{ color: c.text, ...fs.sectionTitle, marginBottom: 8 }}>出行总结</div>
               <Input.TextArea value={summaryDraft} onChange={e => setSummaryDraft(e.target.value)}
                 placeholder="记录这次出行的复盘：哪些地方做得好/哪些地方可以优化…"
                 rows={3} style={inputStyle} />
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
                 <Button onClick={saveSummary}
-                  style={{ ...inputStyle, height: 34, fontSize: 13, borderColor: c.border, color: c.muted }}>保存总结</Button>
+                  style={{ ...inputStyle, height: 34, fontSize: fs.tableCell.fontSize, borderColor: c.border, color: c.muted }}>保存总结</Button>
               </div>
             </div>
           )}
@@ -476,7 +476,7 @@ function ExpenseTab({ c, data, setData, inputStyle, labelStyle }) {
               style={{ height: 36, background: c.surfaceTint, border: '1px solid ' + c.border }} />
             {hasFilters && (
               <Button icon={<ClearOutlined />} onClick={clearFilters}
-                style={{ ...inputStyle, height: 36, fontSize: 13, color: c.muted }}>清除</Button>
+                style={{ ...inputStyle, height: 36, fontSize: fs.tableCell.fontSize, color: c.muted }}>清除</Button>
             )}
           </div>
 
@@ -558,7 +558,7 @@ function ExpenseTab({ c, data, setData, inputStyle, labelStyle }) {
 /* ═══════════════════════════════════════
    Stats Tab — 统计分析
    ═══════════════════════════════════════ */
-function StatsTab({ c, isLight, data }) {
+function StatsTab({ c, fs, isLight, data }) {
   const [selBookId, setSelBookId] = useState(null);
   const ddStyle = { background: c.dropdownBg, border: '1px solid ' + c.border };
   const books = data.books;
@@ -596,14 +596,14 @@ function StatsTab({ c, isLight, data }) {
   const topChannel = summary.byPayChannel.length ? PAY_MAP[summary.byPayChannel[0].name] || summary.byPayChannel[0].name : '暂无';
 
   const tableCols = (nameKey, labelMap) => [
-    { title: nameKey, dataIndex: 'name', render: v => <span style={{ color: c.text }}>{labelMap[v] || v}</span> },
-    { title: '记录数', dataIndex: 'count', width: 80, align: 'right', render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
+    { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>{nameKey}</span>, dataIndex: 'name', render: v => <span style={{ color: c.text, fontSize: fs.tableCell.fontSize }}>{labelMap[v] || v}</span> },
+    { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>记录数</span>, dataIndex: 'count', width: 80, align: 'right', render: v => <span style={{ color: c.textSecondary, fontSize: fs.tableCellSm.fontSize }}>{v}</span> },
     {
-      title: '金额', dataIndex: 'totalAmount', width: 170, align: 'right',
+      title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>金额</span>, dataIndex: 'totalAmount', width: 170, align: 'right',
       render: (_, rec) => (
         <div>
-          <div style={{ fontWeight: 600, color: c.text, fontSize: 13 }}>¥{(rec.totalAmount - rec.savedAmount).toFixed(2)}</div>
-          <div style={{ fontSize: 11, color: c.muted2 }}>原价 ¥{rec.totalAmount.toFixed(2)} · 节省 ¥{rec.savedAmount.toFixed(2)}</div>
+          <div style={{ fontWeight: 600, color: c.text, fontSize: fs.tableCell.fontSize }}>¥{(rec.totalAmount - rec.savedAmount).toFixed(2)}</div>
+          <div style={{ fontSize: fs.tableCellSm.fontSize, color: c.muted2 }}>原价 ¥{rec.totalAmount.toFixed(2)} · 节省 ¥{rec.savedAmount.toFixed(2)}</div>
         </div>
       ),
     },
@@ -629,20 +629,20 @@ function StatsTab({ c, isLight, data }) {
               { label: '最大渠道', value: topChannel, color: '#3B82F6' },
             ].map(s => (
               <div key={s.label} style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '14px 18px' }}>
-                <div style={{ color: c.muted, fontSize: 12, marginBottom: 4 }}>{s.label}</div>
-                <div style={{ color: s.color, fontSize: 20, fontWeight: 700, letterSpacing: '-0.3px' }}>{s.value}</div>
+                <div style={{ color: c.muted, ...fs.cardLabel, marginBottom: 4 }}>{s.label}</div>
+                <div style={{ color: s.color, ...fs.cardValue }}>{s.value}</div>
               </div>
             ))}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
             <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 18 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: c.text, marginBottom: 12 }}>按分类统计</div>
+              <div style={{ ...fs.sectionTitle, color: c.text, marginBottom: 12 }}>按分类统计</div>
               <Table dataSource={summary.byCategory} rowKey="name" pagination={false} size="small"
                 style={{ background: 'transparent' }} columns={tableCols('分类', CATEGORY_MAP)} />
             </div>
             <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 18 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: c.text, marginBottom: 12 }}>按支付渠道统计</div>
+              <div style={{ ...fs.sectionTitle, color: c.text, marginBottom: 12 }}>按支付渠道统计</div>
               <Table dataSource={summary.byPayChannel} rowKey="name" pagination={false} size="small"
                 style={{ background: 'transparent' }} columns={tableCols('渠道', PAY_MAP)} />
             </div>
@@ -679,7 +679,7 @@ function TrendChart({ c, isLight, expenses }) {
     chart.setOption({
       tooltip: { trigger: 'axis', backgroundColor: c.dropdownBg, borderColor: c.border, textStyle: { color: c.text, fontSize: 12 } },
       grid: { left: 55, right: 16, top: 20, bottom: 28 },
-      xAxis: { type: 'category', data: dailyData.map(d => dayjs(d.date).format('M/D')), axisLine: { lineStyle: { color: c.border } }, axisLabel: { color: c.muted, fontSize: 11 } },
+      xAxis: { type: 'category', data: dailyData.map(d => dayjs(d.date).format('M月D日')), axisLine: { lineStyle: { color: c.border } }, axisLabel: { color: c.muted, fontSize: 11 } },
       yAxis: { type: 'value', splitLine: { lineStyle: { color: c.surfaceTint } }, axisLabel: { color: c.muted, fontSize: 11, formatter: '¥{value}' } },
       series: [{
         type: 'line', data: dailyData.map(d => d.amount), smooth: true,
@@ -696,7 +696,7 @@ function TrendChart({ c, isLight, expenses }) {
 
   return (
     <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 18 }}>
-      <div style={{ fontSize: 15, fontWeight: 600, color: c.text, marginBottom: 12 }}>每日花销趋势</div>
+      <div style={{ ...fs.sectionTitle, color: c.text, marginBottom: 12 }}>每日花销趋势</div>
       <div id={chartId} style={{ width: '100%', height: 280 }} />
     </div>
   );
@@ -705,7 +705,7 @@ function TrendChart({ c, isLight, expenses }) {
 /* ═══════════════════════════════════════
    Leaderboard Tab — 花销排行
    ═══════════════════════════════════════ */
-function LeaderboardTab({ c, data }) {
+function LeaderboardTab({ c, fs, data, inputStyle, labelStyle }) {
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
 
@@ -733,22 +733,22 @@ function LeaderboardTab({ c, data }) {
 
   const columns = [
     {
-      title: '#', width: 56, align: 'center',
+      title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>#</span>, width: 56, align: 'center',
       render: (_, __, idx) => {
         const rank = (page - 1) * pageSize + idx + 1;
         const rankColor = rank === 1 ? '#F59E0B' : rank === 2 ? '#9CA3AF' : rank === 3 ? '#D97706' : c.muted;
-        return <span style={{ fontWeight: 700, fontSize: 15, color: rankColor }}>{rank}</span>;
+        return <span style={{ fontWeight: 700, fontSize: fs.tableCell.fontSize, color: rankColor }}>{rank}</span>;
       },
     },
-    { title: '账本', dataIndex: 'bookName', width: 180, render: v => <span style={{ fontWeight: 500, color: c.text }}>{v}</span> },
+    { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>账本</span>, dataIndex: 'bookName', width: 180, render: v => <span style={{ fontWeight: 500, color: c.text, fontSize: fs.tableCell.fontSize }}>{v}</span> },
     {
-      title: '实付', dataIndex: 'totalAmount', width: 200, align: 'right',
+      title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>实付</span>, dataIndex: 'totalAmount', width: 200, align: 'right',
       render: (_, rec) => {
         const paid = rec.totalAmount - rec.totalSaved;
         return (
           <div>
-            <div style={{ fontWeight: 600, color: c.text }}>¥{paid.toFixed(2)}</div>
-            <div style={{ fontSize: 11, color: c.muted2 }}>原价 ¥{rec.totalAmount.toFixed(2)} · 节省 ¥{rec.totalSaved.toFixed(2)}</div>
+            <div style={{ fontWeight: 600, color: c.text, fontSize: fs.tableCell.fontSize }}>¥{paid.toFixed(2)}</div>
+            <div style={{ fontSize: fs.tableCellSm.fontSize, color: c.muted2 }}>原价 ¥{rec.totalAmount.toFixed(2)} · 节省 ¥{rec.totalSaved.toFixed(2)}</div>
             <div style={{ marginTop: 4, height: 4, background: c.surfaceTint, borderRadius: 2, overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${(paid / maxPaid) * 100}%`, background: '#5e6ad2', borderRadius: 2 }} />
             </div>
@@ -756,29 +756,29 @@ function LeaderboardTab({ c, data }) {
         );
       },
     },
-    { title: '记录数', dataIndex: 'totalCount', width: 80, align: 'right', render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
+    { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>记录数</span>, dataIndex: 'totalCount', width: 80, align: 'right', render: v => <span style={{ color: c.textSecondary, fontSize: fs.tableCellSm.fontSize }}>{v}</span> },
   ];
 
   return (
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
         <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '16px 20px', borderColor: '#5e6ad280' }}>
-          <div style={{ color: c.muted, fontSize: 13, marginBottom: 4 }}>全部账本实付总花销</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#5e6ad2', letterSpacing: '-0.5px' }}>¥{totalPaid.toFixed(2)}</div>
-          <div style={{ fontSize: 12, color: c.muted2, marginTop: 4 }}>原价 ¥{stats.totals.totalAmount.toFixed(2)} · 节省 ¥{stats.totals.totalSaved.toFixed(2)}</div>
+          <div style={{ color: c.muted, ...fs.cardLabel, marginBottom: 4 }}>全部账本实付总花销</div>
+          <div style={{ ...fs.cardValueLg, color: '#5e6ad2' }}>¥{totalPaid.toFixed(2)}</div>
+          <div style={{ fontSize: fs.tableCellSm.fontSize, color: c.muted2, marginTop: 4 }}>原价 ¥{stats.totals.totalAmount.toFixed(2)} · 节省 ¥{stats.totals.totalSaved.toFixed(2)}</div>
         </div>
         <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '16px 20px' }}>
-          <div style={{ color: c.muted, fontSize: 13, marginBottom: 4 }}>全部记录数</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: c.text }}>{stats.totals.totalCount}</div>
+          <div style={{ color: c.muted, ...fs.cardLabel, marginBottom: 4 }}>全部记录数</div>
+          <div style={{ ...fs.cardValue, color: c.text }}>{stats.totals.totalCount}</div>
         </div>
         <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '16px 20px' }}>
-          <div style={{ color: c.muted, fontSize: 13, marginBottom: 4 }}>账本数量</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: c.text }}>{data.books.length}</div>
+          <div style={{ color: c.muted, ...fs.cardLabel, marginBottom: 4 }}>账本数量</div>
+          <div style={{ ...fs.cardValue, color: c.text }}>{data.books.length}</div>
         </div>
       </div>
 
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: c.text, marginBottom: 12 }}>账本花销排行</div>
+        <div style={{ ...fs.sectionTitle, color: c.text, marginBottom: 12 }}>账本花销排行</div>
         <Table dataSource={paged} columns={columns} rowKey="bookId" pagination={false} size="middle"
           style={{ background: 'transparent' }}
           locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无数据</span> }}
@@ -824,9 +824,19 @@ export default function Travel() {
   };
   const labelStyle = { color: c.textSecondary, fontWeight: 500, fontSize: 14, marginBottom: 6, display: 'block' };
 
+  const fs = {
+    pageTitle: { fontSize: 22, fontWeight: 700 },
+    sectionTitle: { fontSize: 16, fontWeight: 600 },
+    cardValue: { fontSize: 22, fontWeight: 700, letterSpacing: '-0.3px' },
+    cardValueLg: { fontSize: 28, fontWeight: 700, letterSpacing: '-0.5px' },
+    cardLabel: { fontSize: 13, fontWeight: 500 },
+    tableCell: { fontSize: 14 },
+    tableCellSm: { fontSize: 13 },
+  };
+
   return (
     <div>
-      <h1 className="page-title" style={{ marginBottom: 24 }}>旅行游玩</h1>
+      <h1 className="page-title" style={{ marginBottom: 24, ...fs.pageTitle, color: c.text }}>旅行游玩</h1>
 
       <div style={{ marginBottom: 24 }}>
         <Segmented value={activeTab} onChange={setActiveTab}
@@ -840,10 +850,10 @@ export default function Travel() {
         />
       </div>
 
-      {activeTab === 'books' && <BooksTab c={c} data={data} setData={setData} inputStyle={inputStyle} labelStyle={labelStyle} />}
-      {activeTab === 'expense' && <ExpenseTab c={c} data={data} setData={setData} inputStyle={inputStyle} labelStyle={labelStyle} />}
-      {activeTab === 'stats' && <StatsTab c={c} isLight={isLight} data={data} />}
-      {activeTab === 'leaderboard' && <LeaderboardTab c={c} data={data} />}
+      {activeTab === 'books' && <BooksTab c={c} fs={fs} data={data} setData={setData} inputStyle={inputStyle} labelStyle={labelStyle} />}
+      {activeTab === 'expense' && <ExpenseTab c={c} fs={fs} data={data} setData={setData} inputStyle={inputStyle} labelStyle={labelStyle} />}
+      {activeTab === 'stats' && <StatsTab c={c} fs={fs} isLight={isLight} data={data} />}
+      {activeTab === 'leaderboard' && <LeaderboardTab c={c} fs={fs} data={data} inputStyle={inputStyle} labelStyle={labelStyle} />}
     </div>
   );
 }
