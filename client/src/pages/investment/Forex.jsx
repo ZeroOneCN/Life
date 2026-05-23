@@ -63,9 +63,9 @@ export default function Forex() {
     { key: 'capital', label: '资金管理' },
   ];
   return (
-    <div className="space-y-6">
+    <div>
       <h1 className="page-title">外汇市场</h1>
-      <div style={{ display: 'flex', gap: 4, backgroundColor: 'var(--color-surface-1)', border: '1px solid var(--color-hairline)', borderRadius: 'var(--radius-lg)', padding: 4 }}>
+      <div style={{ display: 'flex', gap: 4, backgroundColor: 'var(--color-surface-1)', border: '1px solid var(--color-hairline)', borderRadius: 'var(--radius-lg)', padding: 4, marginTop: 24 }}>
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{
@@ -77,10 +77,12 @@ export default function Forex() {
           </button>
         ))}
       </div>
-      {tab === 'overview' && <OverviewTab data={data} setData={setData} />}
-      {tab === 'trades' && <TradesTab data={data} setData={setData} />}
-      {tab === 'calculator' && <CalculatorTab />}
-      {tab === 'capital' && <CapitalTab data={data} setData={setData} />}
+      <div style={{ marginTop: 24 }}>
+        {tab === 'overview' && <OverviewTab data={data} setData={setData} />}
+        {tab === 'trades' && <TradesTab data={data} setData={setData} />}
+        {tab === 'calculator' && <CalculatorTab />}
+        {tab === 'capital' && <CapitalTab data={data} setData={setData} />}
+      </div>
     </div>
   );
 }
