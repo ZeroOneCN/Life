@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.0",
-    "antd": "^5.24.0",
     "axios": "^1.16.1",
     "cors": "^2.8.6",
     "dayjs": "^1.11.20",

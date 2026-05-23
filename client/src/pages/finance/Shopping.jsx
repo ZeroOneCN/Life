@@ -1,14 +1,18 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import {
-  Input, Button, Select, Modal, Popconfirm, message, InputNumber, DatePicker, Table,
-} from 'antd';
-import {
-  PlusOutlined, DeleteOutlined, EditOutlined,
-  ShoppingCartOutlined, DollarOutlined, ShopOutlined,
-  CalendarOutlined, SearchOutlined, SettingOutlined,
-  ClearOutlined,
-} from '@ant-design/icons';
+import { Modal, DeleteModal, Toast, Btn, DataTable } from '../../components/ui';
 import dayjs from 'dayjs';
+
+/* ── Inline SVG Icons ── */
+const IconPlus = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>;
+const IconDelete = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>;
+const IconEdit = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>;
+const IconSearch = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
+const IconClear = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const IconCart = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>;
+const IconDollar = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>;
+const IconShop = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>;
+const IconCalendar = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+const IconSettings = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>;
 
 /* ═══════════════════════════════════════
    Constants
@@ -105,29 +109,26 @@ function useIsLight() {
 function TablePagination({ c, inputStyle, page, totalPages, onPageChange, pageSize, onPageSizeChange, total }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 12 }}>
-      <Select value={pageSize} onChange={v => { onPageSizeChange(v); onPageChange(1); }}
-        style={{ width: 120 }}
-        popupStyle={{ background: c.dropdownBg }}
-        dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-        options={[
-          { value: 10, label: '10 条/页' },
-          { value: 20, label: '20 条/页' },
-          { value: 50, label: '50 条/页' },
-          { value: 100, label: '100 条/页' },
-        ]} />
+      <select value={pageSize} onChange={e => { onPageSizeChange(Number(e.target.value)); onPageChange(1); }}
+        style={{ background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, height: 36, fontSize: 13, width: 120, cursor: 'pointer', padding: '0 8px' }}>
+        <option value={10}>10 条/页</option>
+        <option value={20}>20 条/页</option>
+        <option value={50}>50 条/页</option>
+        <option value={100}>100 条/页</option>
+      </select>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Button disabled={page <= 1} onClick={() => onPageChange(1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>首页</Button>
-        <Button disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>上一页</Button>
+        <Btn disabled={page <= 1} onClick={() => onPageChange(1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>首页</Btn>
+        <Btn disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>上一页</Btn>
         <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>第 {page} / {totalPages} 页</span>
-        <Input type="number" min={1} max={totalPages}
-          onPressEnter={e => { const v = parseInt(e.target.value); if (v >= 1 && v <= totalPages) onPageChange(v); }}
+        <input type="number" min={1} max={totalPages}
+          onKeyDown={e => { if (e.key === 'Enter') { const v = parseInt(e.target.value); if (v >= 1 && v <= totalPages) onPageChange(v); } }}
           style={{ ...inputStyle, width: 56, height: 36, textAlign: 'center' }} placeholder="页" />
-        <Button disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>下一页</Button>
-        <Button disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>末页</Button>
+        <Btn disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>下一页</Btn>
+        <Btn disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>末页</Btn>
       </div>
       <span style={{ color: c.muted, fontSize: 13 }}>共 {total} 条</span>
     </div>
@@ -214,6 +215,11 @@ export default function Shopping() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [usdtRate, setUsdtRate] = useState(settings.usdtRate);
 
+  /* ── toast / delete state ── */
+  const [toast, setToast] = useState(null);
+  const [delRecId, setDelRecId] = useState(null);
+  const [delPlatName, setDelPlatName] = useState(null);
+
   /* ── currency ── */
   const [currencyMode, setCurrencyMode] = useState('CNY');
 
@@ -289,27 +295,33 @@ export default function Shopping() {
   };
 
   const handleDelete = (id) => {
-    setRecords(prev => prev.filter(r => r.id !== id));
-    message.success('已删除');
+    setDelRecId(id);
+  };
+
+  const confirmDeleteRecord = () => {
+    if (!delRecId) return;
+    setRecords(prev => prev.filter(r => r.id !== delRecId));
+    setToast({type:'success', message:'已删除'});
+    setDelRecId(null);
   };
 
   const handleSave = () => {
     if (!form.name || form.price == null) {
-      message.error('请填写名称和价格');
+      setToast({type:'error', message:'请填写名称和价格'});
       return;
     }
     if (editRec) {
       setRecords(prev => prev.map(r => r.id === editRec.id
         ? { ...form, price: parseFloat(form.price), unit_price: form.unit_price ? parseFloat(form.unit_price) : null, id: r.id }
         : r));
-      message.success('已更新');
+      setToast({type:'success', message:'已更新'});
     } else {
       const maxId = records.reduce((m, r) => Math.max(m, r.id), 0);
       setRecords(prev => [...prev, {
         ...form, price: parseFloat(form.price), unit_price: form.unit_price ? parseFloat(form.unit_price) : null,
         id: maxId + 1,
       }]);
-      message.success('已添加');
+      setToast({type:'success', message:'已添加'});
     }
     setModalOpen(false);
   };
@@ -328,15 +340,21 @@ export default function Shopping() {
   const [newPlatform, setNewPlatform] = useState('');
 
   const handleAddPlatform = () => {
-    if (!newPlatform.trim()) { message.error('请输入平台名称'); return; }
-    if (platforms.includes(newPlatform.trim())) { message.error('平台已存在'); return; }
+    if (!newPlatform.trim()) { setToast({type:'error', message:'请输入平台名称'}); return; }
+    if (platforms.includes(newPlatform.trim())) { setToast({type:'error', message:'平台已存在'}); return; }
     setPlatforms(prev => [...prev, newPlatform.trim()]);
     setNewPlatform('');
   };
 
   const handleRemovePlatform = (name) => {
-    if (DEFAULT_PLATFORMS.includes(name)) { message.warning('默认平台不能删除'); return; }
-    setPlatforms(prev => prev.filter(p => p !== name));
+    if (DEFAULT_PLATFORMS.includes(name)) { setToast({type:'error', message:'默认平台不能删除'}); return; }
+    setDelPlatName(name);
+  };
+
+  const confirmRemovePlatform = () => {
+    if (!delPlatName) return;
+    setPlatforms(prev => prev.filter(p => p !== delPlatName));
+    setDelPlatName(null);
   };
 
   /* ── settings ── */
@@ -350,7 +368,7 @@ export default function Shopping() {
     setSettings(newSettings);
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(newSettings));
     setSettingsOpen(false);
-    message.success('设置已保存');
+    setToast({type:'success', message:'设置已保存'});
   };
 
   return (
@@ -360,29 +378,29 @@ export default function Shopping() {
           <h1 className="page-title">网上购物</h1>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Button icon={<SettingOutlined />} onClick={openSettings}
+          <Btn onClick={openSettings}
             style={{ ...inputStyle, height: 36, fontSize: 13, color: c.muted, borderColor: c.border }}>
-            设置
-          </Button>
-          <Button icon={<PlusOutlined />} type="primary" onClick={openAdd}
+            <IconSettings /> 设置
+          </Btn>
+          <Btn type="primary" onClick={openAdd}
             style={{ height: 36, fontSize: 13, fontWeight: 500 }}>
-            新增记录
-          </Button>
+            <IconPlus /> 新增记录
+          </Btn>
         </div>
       </div>
 
       {/* ── Stats Cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 }}>
-        <StatCard c={c} icon={ShoppingCartOutlined} iconColor="#5e6ad2" label="总记录数" value={stats.total} />
-        <StatCard c={c} icon={DollarOutlined} iconColor="#10B981" label="总消费金额" value={fmtCurrency(stats.amount)}
+        <StatCard c={c} icon={IconCart} iconColor="#5e6ad2" label="总记录数" value={stats.total} />
+        <StatCard c={c} icon={IconDollar} iconColor="#10B981" label="总消费金额" value={fmtCurrency(stats.amount)}
           subtext={
             <span onClick={() => setCurrencyMode(p => p === 'CNY' ? 'USDT' : 'CNY')}
               style={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: c.muted2 }}>
               切换到 {currencyMode === 'CNY' ? 'USDT' : '人民币'} (1 USDT ≈ ¥{usdtRate.toFixed(2)})
             </span>
           } />
-        <StatCard c={c} icon={ShopOutlined} iconColor="#F59E0B" label="平台数量" value={stats.platformCount} />
-        <StatCard c={c} icon={CalendarOutlined} iconColor="#3B82F6" label="最近日期" value={stats.recentDate ? fmtDate(stats.recentDate) : '-'} />
+        <StatCard c={c} icon={IconShop} iconColor="#F59E0B" label="平台数量" value={stats.platformCount} />
+        <StatCard c={c} icon={IconCalendar} iconColor="#3B82F6" label="最近日期" value={stats.recentDate ? fmtDate(stats.recentDate) : '-'} />
       </div>
 
       {/* ── Filters ── */}
@@ -390,32 +408,27 @@ export default function Shopping() {
         background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '16px 20px',
         marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap',
       }}>
-        <Input prefix={<SearchOutlined style={{ color: c.muted }} />}
-          placeholder="搜索商品名称、订单号..." value={searchText}
-          onChange={e => { setSearchText(e.target.value); setPage(1); }}
-          style={{ ...inputStyle, width: 240, height: 38 }} />
-        <Select value={platformFilter} onChange={v => { setPlatformFilter(v); setPage(1); }}
-          style={{ width: 130, height: 38 }}
-          popupStyle={dropdownStyle}
-          dropdownStyle={dropdownStyle}
-          options={[
-            { value: 'all', label: '全部平台' },
-            ...platforms.map(p => ({ value: p, label: p })),
-          ]} />
-        <DatePicker picker="month" value={monthFilter ? dayjs(monthFilter) : null}
-          onChange={(d) => { setMonthFilter(d ? d.format('YYYY-MM') : ''); setPage(1); }}
-          placeholder="选择月份" allowClear
-          style={{ ...inputStyle, width: 160, height: 38, background: c.surfaceTint }}
-          />
-        <Button icon={<ShopOutlined />} onClick={() => setPlatModalOpen(true)}
+        <div style={{ display: 'flex', alignItems: 'center', ...inputStyle, width: 240, height: 38, gap: 6 }}>
+          <IconSearch />
+          <input value={searchText} onChange={e => { setSearchText(e.target.value); setPage(1); }}
+            placeholder="搜索商品名称、订单号..." style={{ background: 'transparent', border: 'none', outline: 'none', color: c.text, fontSize: 14, flex: 1 }} />
+        </div>
+        <select value={platformFilter} onChange={e => { setPlatformFilter(e.target.value); setPage(1); }}
+          style={{ width: 130, height: 38, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 13, cursor: 'pointer', padding: '0 8px' }}>
+          <option value="all">全部平台</option>
+          {platforms.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+        <input type="month" value={monthFilter} onChange={e => { setMonthFilter(e.target.value || ''); setPage(1); }}
+          style={{ ...inputStyle, width: 160, height: 38 }} />
+        <Btn onClick={() => setPlatModalOpen(true)}
           style={{ ...inputStyle, height: 38, fontSize: 13, color: c.muted }}>
-          平台管理
-        </Button>
+          <IconShop /> 平台管理
+        </Btn>
         {hasFilters && (
-          <Button icon={<ClearOutlined />} onClick={clearFilters}
+          <Btn onClick={clearFilters}
             style={{ ...inputStyle, height: 38, fontSize: 13, color: c.muted }}>
-            清除筛选
-          </Button>
+            <IconClear /> 清除筛选
+          </Btn>
         )}
       </div>
 
@@ -423,7 +436,7 @@ export default function Shopping() {
       <div style={{
         background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20,
       }}>
-        <Table dataSource={paged} columns={[
+        <DataTable data={paged} columns={[
           { title: '名称', dataIndex: 'name', width: 180, render: v => <span style={{ fontWeight: 500, color: c.text }}>{v}</span> },
           { title: '规格', dataIndex: 'spec', width: 80, render: v => <span style={{ color: c.muted2 }}>{v || '-'}</span> },
           { title: '价格', dataIndex: 'price', width: 100, align: 'right', render: v => <span style={{ fontWeight: 500, color: c.text }}>{fmtCurrency(v)}</span> },
@@ -444,20 +457,17 @@ export default function Shopping() {
             render: v => <span style={{ color: c.muted2, fontSize: 13 }} title={v || ''}>{v || '-'}</span>,
           },
           {
-            title: '操作', width: 140, fixed: 'right',
+            title: '操作', width: 140,
             render: (_, rec) => (
               <div style={{ display: 'flex', gap: 4 }}>
-                <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: 13 }}>编辑</Button>
-                <Popconfirm title="确定删除这条记录？" onConfirm={() => handleDelete(rec.id)} okText="确定" cancelText="取消">
-                  <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: 13 }}>删除</Button>
-                </Popconfirm>
+                <Btn type="ghost" onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: 13 }}><IconEdit /> 编辑</Btn>
+                <Btn type="danger" onClick={() => handleDelete(rec.id)} style={{ fontSize: 13 }}><IconDelete /> 删除</Btn>
               </div>
             ),
           },
-        ]} rowKey="id" pagination={false} size="middle"
-          style={{ background: 'transparent' }}
-          locale={{ emptyText: <span style={{ color: c.muted2 }}>{records.length === 0 ? '暂无数据，点击上方「新增记录」开始添加' : '没有匹配的记录'}</span> }}
-          scroll={{ x: 900 }} />
+        ]} rowKey="id"
+          emptyText={<span style={{ color: c.muted2 }}>{records.length === 0 ? '暂无数据，点击上方「新增记录」开始添加' : '没有匹配的记录'}</span>}
+          minWidth={900} />
         {filtered.length > 0 && (
           <TablePagination c={c} inputStyle={inputStyle} page={page} totalPages={totalPages}
             onPageChange={fn => setPage(typeof fn === 'function' ? fn(page) : fn)}
@@ -466,97 +476,74 @@ export default function Shopping() {
       </div>
 
       {/* ═══ Add/Edit Modal ═══ */}
-      <Modal
-        title={<span style={{ color: c.text, fontWeight: 600 }}>{editRec ? '编辑记录' : '新增记录'}</span>}
-        open={modalOpen} onCancel={() => setModalOpen(false)}
-        onOk={handleSave}
-        okText="保存" cancelText="取消"
-        okButtonProps={{ style: { background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 } }}
-        cancelButtonProps={{ style: { background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 } }}
-        styles={{
-          content: { background: c.surface, border: '1px solid ' + c.border, borderRadius: 16 },
-          header: { background: 'transparent', borderBottom: '1px solid ' + c.border, paddingBottom: 16 },
-          mask: { backdropFilter: 'blur(4px)' },
-        }}
-        width={560}>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)}
+        title={editRec ? '编辑记录' : '新增记录'} width={560}
+        footer={<><Btn onClick={() => setModalOpen(false)}>取消</Btn><Btn type="primary" onClick={handleSave}>保存</Btn></>}>
         <div style={{ display: 'grid', gap: 16 }}>
           <div>
             <label style={labelStyle}>商品名称 <span style={{ color: '#ef4444' }}>*</span></label>
-            <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-              placeholder="请输入商品名称" style={inputStyle} />
+            <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+              placeholder="请输入商品名称" style={{ width: '100%', ...inputStyle }} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={labelStyle}>规格</label>
-              <Input value={form.spec} onChange={e => setForm(p => ({ ...p, spec: e.target.value }))}
-                placeholder="如：XL、红色、500ml" style={inputStyle} />
+              <input value={form.spec} onChange={e => setForm(p => ({ ...p, spec: e.target.value }))}
+                placeholder="如：XL、红色、500ml" style={{ width: '100%', ...inputStyle }} />
             </div>
             <div>
               <label style={labelStyle}>订单号</label>
-              <Input value={form.order_no} onChange={e => setForm(p => ({ ...p, order_no: e.target.value }))}
-                placeholder="可选" style={inputStyle} />
+              <input value={form.order_no} onChange={e => setForm(p => ({ ...p, order_no: e.target.value }))}
+                placeholder="可选" style={{ width: '100%', ...inputStyle }} />
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={labelStyle}>价格 (元) <span style={{ color: '#ef4444' }}>*</span></label>
-              <InputNumber value={form.price} onChange={v => setForm(p => ({ ...p, price: v }))}
-                min={0} step={0.01} precision={2} placeholder="0.00"
-                style={{ width: '100%', ...inputStyle }}
-                inputStyle={{ textAlign: 'center' }} />
+              <input type="number" value={form.price ?? ''} onChange={e => setForm(p => ({ ...p, price: e.target.value === '' ? null : Number(e.target.value) }))}
+                min={0} step="0.01" placeholder="0.00"
+                style={{ width: '100%', ...inputStyle, textAlign: 'center' }} />
             </div>
             <div>
               <label style={labelStyle}>单价</label>
-              <InputNumber value={form.unit_price} onChange={v => setForm(p => ({ ...p, unit_price: v }))}
-                min={0} step={0.01} precision={2} placeholder="可选"
-                style={{ width: '100%', ...inputStyle }}
-                inputStyle={{ textAlign: 'center' }} />
+              <input type="number" value={form.unit_price ?? ''} onChange={e => setForm(p => ({ ...p, unit_price: e.target.value === '' ? null : Number(e.target.value) }))}
+                min={0} step="0.01" placeholder="可选"
+                style={{ width: '100%', ...inputStyle, textAlign: 'center' }} />
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={labelStyle}>购买平台 <span style={{ color: '#ef4444' }}>*</span></label>
-              <Select value={form.platform} onChange={v => setForm(p => ({ ...p, platform: v }))}
-                style={{ width: '100%', height: 42 }}
-                popupStyle={dropdownStyle}
-                dropdownStyle={dropdownStyle}
-                options={platforms.map(p => ({ value: p, label: p }))} />
+              <select value={form.platform} onChange={e => setForm(p => ({ ...p, platform: e.target.value }))}
+                style={{ width: '100%', height: 42, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, cursor: 'pointer', padding: '0 8px' }}>
+                {platforms.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
             </div>
             <div>
               <label style={labelStyle}>日期 <span style={{ color: '#ef4444' }}>*</span></label>
-              <Input type="date" value={form.date}
+              <input type="date" value={form.date}
                 onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
-                style={{ ...inputStyle, width: '100%' }} />
+                style={{ width: '100%', ...inputStyle }} />
             </div>
           </div>
           <div>
             <label style={labelStyle}>备注</label>
-            <Input value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))}
-              placeholder="可选" style={inputStyle} />
+            <input value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))}
+              placeholder="可选" style={{ width: '100%', ...inputStyle }} />
           </div>
         </div>
       </Modal>
 
       {/* ═══ Platform Management Modal ═══ */}
-      <Modal
-        title={<span style={{ color: c.text, fontWeight: 600 }}>平台管理</span>}
-        open={platModalOpen} onCancel={() => setPlatModalOpen(false)}
-        footer={
-          <Button onClick={() => setPlatModalOpen(false)}
-            style={{ background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, height: 36, fontSize: 13 }}>完成</Button>
-        }
-        styles={{
-          content: { background: c.surface, border: '1px solid ' + c.border, borderRadius: 16 },
-          header: { background: 'transparent', borderBottom: '1px solid ' + c.border, paddingBottom: 16 },
-          mask: { backdropFilter: 'blur(4px)' },
-        }}
-        width={420}>
+      <Modal open={platModalOpen} onClose={() => setPlatModalOpen(false)}
+        title="平台管理" width={420}
+        footer={<Btn onClick={() => setPlatModalOpen(false)}>完成</Btn>}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          <Input value={newPlatform} onChange={e => setNewPlatform(e.target.value)}
-            placeholder="输入新平台名称" style={inputStyle}
-            onPressEnter={handleAddPlatform} />
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddPlatform}
-            style={{ height: 42 }}>添加</Button>
+          <input value={newPlatform} onChange={e => setNewPlatform(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleAddPlatform(); }}
+            placeholder="输入新平台名称" style={{ width: '100%', ...inputStyle }} />
+          <Btn type="primary" onClick={handleAddPlatform}
+            style={{ height: 42, whiteSpace: 'nowrap' }}><IconPlus /> 添加</Btn>
         </div>
         <div style={{ display: 'grid', gap: 8, maxHeight: 360, overflow: 'auto' }}>
           {platforms.map(p => {
@@ -568,12 +555,8 @@ export default function Shopping() {
                 background: color + '15', border: '1px solid ' + color + '30',
               }}>
                 <span style={{ color, fontWeight: 500, fontSize: 14 }}>{p}</span>
-                <Popconfirm title={`确定删除平台"${p}"？`}
-                  onConfirm={() => handleRemovePlatform(p)}
-                  okText="确定" cancelText="取消">
-                  <Button type="text" icon={<DeleteOutlined />}
-                    style={{ color: '#ef4444', height: 32, width: 32 }} />
-                </Popconfirm>
+                <Btn type="danger" onClick={() => handleRemovePlatform(p)}
+                  style={{ height: 32, width: 32, padding: 0, justifyContent: 'center' }}><IconDelete /></Btn>
               </div>
             );
           })}
@@ -581,28 +564,27 @@ export default function Shopping() {
       </Modal>
 
       {/* ═══ Settings Modal ═══ */}
-      <Modal
-        title={<span style={{ color: c.text, fontWeight: 600 }}>设置</span>}
-        open={settingsOpen} onCancel={() => setSettingsOpen(false)}
-        onOk={saveSettings}
-        okText="保存设置" cancelText="取消"
-        okButtonProps={{ style: { background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 } }}
-        cancelButtonProps={{ style: { background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 } }}
-        styles={{
-          content: { background: c.surface, border: '1px solid ' + c.border, borderRadius: 16 },
-          header: { background: 'transparent', borderBottom: '1px solid ' + c.border, paddingBottom: 16 },
-          mask: { backdropFilter: 'blur(4px)' },
-        }}
-        width={420}>
+      <Modal open={settingsOpen} onClose={() => setSettingsOpen(false)}
+        title="设置" width={420}
+        footer={<><Btn onClick={() => setSettingsOpen(false)}>取消</Btn><Btn type="primary" onClick={saveSettings}>保存设置</Btn></>}>
         <div style={{ display: 'grid', gap: 4 }}>
           <label style={labelStyle}>USDT/CNY 汇率</label>
-          <InputNumber value={usdtRate} onChange={v => setUsdtRate(v || 7.0)}
-            min={0.01} step={0.01} precision={2}
-            style={{ width: '100%', ...inputStyle }}
-            inputStyle={{ textAlign: 'center' }} />
+          <input type="number" value={usdtRate} onChange={e => setUsdtRate(parseFloat(e.target.value) || 7.0)}
+            min={0.01} step="0.01"
+            style={{ width: '100%', ...inputStyle, textAlign: 'center' }} />
           <div style={{ color: c.muted2, fontSize: 12, marginTop: 4 }}>用于将人民币金额转换为 USDT 显示</div>
         </div>
       </Modal>
+
+      <DeleteModal open={!!delRecId} onClose={() => setDelRecId(null)} onConfirm={confirmDeleteRecord}
+        title="确认删除记录？">
+        <p>确定要删除此购物记录吗？</p>
+      </DeleteModal>
+      <DeleteModal open={!!delPlatName} onClose={() => setDelPlatName(null)} onConfirm={confirmRemovePlatform}
+        title="确认删除平台？">
+        <p>确定要删除此平台吗？</p>
+      </DeleteModal>
+      <Toast toast={toast} />
     </div>
   );
 }

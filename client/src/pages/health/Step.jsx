@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
-  Input, Button, Select, Table, Modal, message,
-  Popconfirm, Tag, Segmented,
-} from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
+  Modal, DeleteModal, Toast, Btn, Tag, PillTabs, DataTable, Pagination, Field, Switch, Checkbox,
+} from '../../components/ui';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
 
@@ -121,6 +119,17 @@ export default function Step() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmMsg, setConfirmMsg] = useState('');
   const [pendingDup, setPendingDup] = useState(null);
+
+  /* toast */
+  const [toast, setToast] = useState(null);
+  const showToast = useCallback((msg, type = 'success') => {
+    setToast({ message: msg, type });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  /* delete confirm */
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
 
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
@@ -273,7 +282,7 @@ export default function Step() {
 
   /* ── add record ── */
   const addRecord = useCallback(() => {
-    if (!userId || !steps) { message.error('请填写用户 ID 和步数'); return; }
+    if (!userId || !steps) { showToast('请填写用户 ID 和步数', 'error'); return; }
     const dup = findDuplicate(userId, hourSel, recordTime);
     if (dup) {
       setConfirmMsg(`发现重复记录\n\n${recordTime.slice(0, 10)} ${hourSel !== null ? `${String(hourSel).padStart(2, '0')}:00` : '全天'} 已有一条数据（ID: ${dup.id}）。\n点击「确定」覆盖原记录，点击「取消」保留原记录。`);
@@ -288,7 +297,7 @@ export default function Step() {
     const maxId = records.reduce((m, r) => Math.max(m, r.id), 0);
     const newRec = { ...data, id: maxId + 1 };
     setRecords(prev => [newRec, ...prev]);
-    message.success('记录添加成功！');
+    showToast('记录添加成功！');
     setSteps('');
     // advance to next hour
     if (hourSel !== null) {
@@ -303,7 +312,7 @@ export default function Step() {
     setConfirmOpen(false);
     if (!confirmed || !pendingDup) return;
     setRecords(prev => prev.map(r => r.id === pendingDup.id ? { ...r, steps: pendingDup.steps, hour: pendingDup.hour, record_time: pendingDup.record_time } : r));
-    message.success('记录已更新');
+    showToast('记录已更新');
     setSteps('');
     setPage(1);
     setPendingDup(null);
@@ -312,25 +321,13 @@ export default function Step() {
   /* ── delete ── */
   const deleteRecord = useCallback((id) => {
     setRecords(prev => prev.filter(r => r.id !== id));
-    message.success('记录已删除');
+    showToast('记录已删除');
   }, []);
 
   /* ── batch delete ── */
   function batchDelete() {
-    if (!selIds.length) { message.warning('请选择要删除的记录'); return; }
-    Modal.confirm({
-      title: '确认删除',
-      content: `确定要删除选中的 ${selIds.length} 条记录吗？`,
-      okText: '确定', cancelText: '取消',
-      okButtonProps: { danger: true },
-      onOk: () => {
-        const idset = new Set(selIds);
-        setRecords(prev => prev.filter(r => !idset.has(r.id)));
-        setSelIds([]);
-        message.success(`成功删除 ${idset.size} 条记录`);
-        setPage(1);
-      },
-    });
+    if (!selIds.length) { showToast('请选择要删除的记录', 'error'); return; }
+    setBatchDeleteOpen(true);
   }
 
   /* ── edit ── */
@@ -340,60 +337,59 @@ export default function Step() {
   }
   function saveEdit() {
     if (!editRec) return;
-    if (!editRec.user_id || !editRec.steps) { message.error('请填写用户 ID 和步数'); return; }
+    if (!editRec.user_id || !editRec.steps) { showToast('请填写用户 ID 和步数', 'error'); return; }
     setRecords(prev => prev.map(r => r.id === editRec.id ? editRec : r));
     setEditOpen(false);
     setEditRec(null);
-    message.success('记录已更新');
+    showToast('记录已更新');
   }
 
   /* ── table columns ── */
   const columns = [
     {
-      title: 'ID', dataIndex: 'id', sorter: true, width: 70,
-      sortOrder: sortField === 'id' ? (sortDir === 'asc' ? 'ascend' : 'descend') : null,
+      key: '_check',
+      title: '',
+      width: 40,
+      render: (_, rec) => (
+        <input type="checkbox" checked={selIds.includes(rec.id)}
+          onChange={e => {
+            if (e.target.checked) setSelIds(prev => [...prev, rec.id]);
+            else setSelIds(prev => prev.filter(id => id !== rec.id));
+          }}
+          style={{ accentColor: '#5e6ad2' }} />
+      ),
     },
-    { title: '用户 ID', dataIndex: 'user_id', width: 110 },
+    { key: 'id', title: 'ID', dataIndex: 'id', width: 70 },
+    { key: 'user_id', title: '用户 ID', dataIndex: 'user_id', width: 110 },
     {
-      title: '步数', dataIndex: 'steps', sorter: true, width: 100,
-      sortOrder: sortField === 'steps' ? (sortDir === 'asc' ? 'ascend' : 'descend') : null,
+      key: 'steps', title: '步数', dataIndex: 'steps', width: 100,
       render: v => <span style={{ fontWeight: 600, color: c.text }}>{v.toLocaleString()}</span>,
     },
     {
-      title: '时间段', dataIndex: 'hour', width: 90,
-      sorter: true,
-      sortOrder: sortField === 'hour' ? (sortDir === 'asc' ? 'ascend' : 'descend') : null,
-      render: h => h !== null && h !== '' ? `${String(h).padStart(2, '0')}:00` : <Tag bordered={false} style={{ color: c.muted }}>全天</Tag>,
+      key: 'hour', title: '时间段', dataIndex: 'hour', width: 90,
+      render: h => h !== null && h !== '' ? `${String(h).padStart(2, '0')}:00` : <Tag bordered={false} style={{ color: c.muted }}>{'全天'}</Tag>,
     },
     {
-      title: '记录时间', dataIndex: 'record_time', sorter: true, width: 170,
-      sortOrder: sortField === 'record_time' ? (sortDir === 'asc' ? 'ascend' : 'descend') : null,
+      key: 'record_time', title: '记录时间', dataIndex: 'record_time', width: 170,
       render: v => <span style={{ color: c.textSecondary }}>{formatDT(v)}</span>,
     },
     {
-      title: '操作', width: 140, fixed: 'right',
+      key: 'action', title: '操作', width: 140,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)}
-            style={{ color: c.muted }}>编辑</Button>
-          <Popconfirm title="确定删除？" onConfirm={() => deleteRecord(rec.id)} okText="确定" cancelText="取消">
-            <Button type="text" size="small" danger icon={<DeleteOutlined />}>删除</Button>
-          </Popconfirm>
+          <Btn type="ghost" onClick={() => openEdit(rec)}
+            style={{ color: c.muted, fontSize: 13 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            {'编辑'}
+          </Btn>
+          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)} style={{ fontSize: 13 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            {'删除'}
+          </Btn>
         </div>
       ),
     },
   ];
-
-  const handleTableChange = useCallback((pagination, _filters, sorter) => {
-    if (sorter.order) {
-      setSortField(sorter.field);
-      setSortDir(sorter.order === 'ascend' ? 'asc' : 'desc');
-    } else {
-      setSortField(null);
-      setSortDir('desc');
-    }
-    setPage(pagination.current || 1);
-  }, []);
 
   /* ── render ── */
   const inputStyle = {
@@ -407,17 +403,17 @@ export default function Step() {
 
   return (
     <div>
-      <h1 className="page-title" style={{ marginBottom: 24 }}>运动步数</h1>
+      <h1 className="page-title" style={{ marginBottom: 24 }}>{'运动步数'}</h1>
 
       {/* ═══════ Add Record ═══════ */}
       <div className="linear-card" style={{ marginBottom: 24, padding: 28 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, marginBottom: 24 }}>添加步数记录</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, marginBottom: 24 }}>{'添加步数记录'}</h2>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, flexWrap: 'wrap',
           padding: '14px 20px', borderRadius: 10, background: 'rgba(94,106,210,0.08)', border: '1px solid rgba(94,106,210,0.12)' }}>
           <div>
             <div style={{ fontWeight: 600, color: c.text, fontSize: 14 }}>
-              当前记录：{hourSel !== null ? `${String(hourSel).padStart(2, '0')}:00 时间段` : '全天累计'}
+              {'当前记录：'}{hourSel !== null ? `${String(hourSel).padStart(2, '0')}:00 时间段` : '全天累计'}
             </div>
             <div style={{ color: c.muted, fontSize: 13, marginTop: 2 }}>
               {hourSel !== null ? '添加成功后会自动跳到下一个小时，连续录入更顺手。' : '适合补录全天数据。'}
@@ -427,23 +423,23 @@ export default function Step() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
           <div>
-            <label style={labelStyle}>用户 ID</label>
-            <Input value={userId} onChange={e => setUserId(e.target.value)}
-              placeholder="输入用户 ID" style={{ ...inputStyle, height: 42 }} />
+            <label style={labelStyle}>{'用户 ID'}</label>
+            <input value={userId} onChange={e => setUserId(e.target.value)}
+              placeholder={'输入用户 ID'} style={{ ...inputStyle, height: 42 }} className="w-full" />
           </div>
           <div>
-            <label style={labelStyle}>步数</label>
-            <Input value={steps} onChange={e => setSteps(e.target.value.replace(/\D/g, ''))}
-              placeholder="输入步数" style={{ ...inputStyle, height: 42 }}
-              onKeyDown={e => e.key === 'Enter' && addRecord()} />
+            <label style={labelStyle}>{'步数'}</label>
+            <input value={steps} onChange={e => setSteps(e.target.value.replace(/\D/g, ''))}
+              placeholder={'输入步数'} style={{ ...inputStyle, height: 42 }}
+              onKeyDown={e => e.key === 'Enter' && addRecord()} className="w-full" />
           </div>
         </div>
 
         <div style={{ marginBottom: 20 }}>
-          <label style={labelStyle}>时间段</label>
+          <label style={labelStyle}>{'时间段'}</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {HOURS.map(h => (
-              <Button key={h}
+              <Btn key={h}
                 style={{
                   width: 44, height: 38,
                   background: hourSel === h ? '#5e6ad2' : c.surfaceTint,
@@ -452,9 +448,9 @@ export default function Step() {
                   fontWeight: hourSel === h ? 600 : 400,
                   borderRadius: 8,
                 }}
-                onClick={() => setHourSel(prev => prev === h ? null : h)}>{h}</Button>
+                onClick={() => setHourSel(prev => prev === h ? null : h)}>{h}</Btn>
             ))}
-            <Button
+            <Btn
               style={{
                 width: 44, height: 38,
                 background: hourSel === null ? '#5e6ad2' : c.surfaceTint,
@@ -463,47 +459,48 @@ export default function Step() {
                 fontWeight: hourSel === null ? 600 : 400,
                 borderRadius: 8,
               }}
-              onClick={() => setHourSel(null)}>全</Button>
+              onClick={() => setHourSel(null)}>{'全'}</Btn>
           </div>
         </div>
 
         <div style={{ marginBottom: 20 }}>
-          <label style={labelStyle}>记录时间</label>
+          <label style={labelStyle}>{'记录时间'}</label>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-            <Input type="datetime-local" value={recordTime} onChange={e => setRecordTime(e.target.value)}
-              style={{ ...inputStyle, width: 240, height: 42 }} />
-            <span style={{ color: c.muted, fontSize: 13 }}>快速：</span>
+            <input type="datetime-local" value={recordTime} onChange={e => setRecordTime(e.target.value)}
+              style={{ ...inputStyle, width: 240, height: 42 }} className="w-full" />
+            <span style={{ color: c.muted, fontSize: 13 }}>{'快速：'}</span>
             {[7, 8, 9, 12, 18, 23].map(h => (
-              <Button key={h} size="small" style={{ ...inputStyle, height: 32, padding: '0 14px', fontSize: 13 }}
+              <Btn key={h} style={{ ...inputStyle, height: 32, padding: '0 14px', fontSize: 13 }}
                 onClick={() => {
                   const now = dayjs();
                   setRecordTime(now.hour(h).minute(h === 23 ? 59 : 0).format('YYYY-MM-DDTHH:mm'));
                   if (h !== 23) setHourSel(h);
-                }}>{h}:00</Button>
+                }}>{h}:00</Btn>
             ))}
-            <Button size="small" style={{ ...inputStyle, height: 32, padding: '0 14px', fontSize: 13 }}
+            <Btn style={{ ...inputStyle, height: 32, padding: '0 14px', fontSize: 13 }}
               onClick={() => {
                 const yes = dayjs().subtract(1, 'day');
                 setRecordTime(yes.hour(23).minute(59).format('YYYY-MM-DDTHH:mm'));
                 setHourSel(null);
-              }}>昨天 23:59</Button>
+              }}>{'昨天 23:59'}</Btn>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Button type="primary" icon={<PlusOutlined />} onClick={addRecord}
+          <Btn type="primary" onClick={addRecord}
             style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 28px', fontWeight: 500, fontSize: 15 }}>
-            添加记录
-          </Button>
-          <span style={{ color: c.muted2, fontSize: 13 }}>新增成功后，焦点会回到步数输入框。</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            {'添加记录'}
+          </Btn>
+          <span style={{ color: c.muted2, fontSize: 13 }}>{'新增成功后，焦点会回到步数输入框。'}</span>
         </div>
       </div>
 
       {/* ═══════ Data Statistics ═══════ */}
       <div className="linear-card" style={{ marginBottom: 24, padding: 28 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, margin: 0 }}>数据统计</h2>
-          <Segmented value={tab} onChange={v => { setTab(v); window.location.hash = v; setStatsPage(1); }}
+          <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, margin: 0 }}>{'数据统计'}</h2>
+          <PillTabs value={tab} onChange={v => { setTab(v); window.location.hash = v; setStatsPage(1); }}
             options={[
               { value: 'daily', label: '每天' },
               { value: 'monthly', label: '每月' },
@@ -514,48 +511,48 @@ export default function Step() {
 
         <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
           <div>
-            <label style={labelStyle}>用户 ID</label>
-            <Input value={filterUserId} onChange={e => { setFilterUserId(e.target.value); setPage(1); setStatsPage(1); }}
-              placeholder="输入用户 ID" style={{ ...inputStyle, width: 160 }} />
+            <label style={labelStyle}>{'用户 ID'}</label>
+            <input value={filterUserId} onChange={e => { setFilterUserId(e.target.value); setPage(1); setStatsPage(1); }}
+              placeholder={'输入用户 ID'} style={{ ...inputStyle, width: 160 }} className="w-full" />
           </div>
           <div>
-            <label style={labelStyle}>步幅（米）</label>
-            <Input type="number" value={stride} onChange={e => setStride(parseFloat(e.target.value) || DEFAULT_STRIDE)}
-              step={0.01} min={0.1} max={2} style={{ ...inputStyle, width: 120 }} />
+            <label style={labelStyle}>{'步幅（米）'}</label>
+            <input type="number" value={stride} onChange={e => setStride(parseFloat(e.target.value) || DEFAULT_STRIDE)}
+              step={0.01} min={0.1} max={2} style={{ ...inputStyle, width: 120 }} className="w-full" />
           </div>
           {tab === 'daily' ? (
             <div>
-              <label style={labelStyle}>月份</label>
-              <Input type="month" value={filterMonth} onChange={e => { setFilterMonth(e.target.value); setStatsPage(1); }}
-                style={{ ...inputStyle, width: 160 }} />
+              <label style={labelStyle}>{'月份'}</label>
+              <input type="month" value={filterMonth} onChange={e => { setFilterMonth(e.target.value); setStatsPage(1); }}
+                style={{ ...inputStyle, width: 160 }} className="w-full" />
             </div>
           ) : (
             <div>
-              <label style={labelStyle}>年份</label>
-              <Input type="number" value={filterYear} onChange={e => { setFilterYear(parseInt(e.target.value) || dayjs().year()); setStatsPage(1); }}
-                style={{ ...inputStyle, width: 120 }} />
+              <label style={labelStyle}>{'年份'}</label>
+              <input type="number" value={filterYear} onChange={e => { setFilterYear(parseInt(e.target.value) || dayjs().year()); setStatsPage(1); }}
+                style={{ ...inputStyle, width: 120 }} className="w-full" />
             </div>
           )}
         </div>
 
         {/* Hour filter for chart */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-          <span style={{ color: c.muted, fontSize: 13 }}>时间段筛选：</span>
-          <Button size="small" style={{
+          <span style={{ color: c.muted, fontSize: 13 }}>{'时间段筛选：'}</span>
+          <Btn style={{
             minWidth: 32, height: 30,
             background: chartHour === null ? '#5e6ad2' : c.surfaceTint,
             borderColor: chartHour === null ? '#5e6ad2' : c.border,
             color: chartHour === null ? '#fff' : c.textSecondary,
             borderRadius: 8,
-          }} onClick={() => setChartHour(null)}>全部</Button>
+          }} onClick={() => setChartHour(null)}>{'全部'}</Btn>
           {HOURS.map(h => (
-            <Button key={h} size="small" style={{
+            <Btn key={h} style={{
               minWidth: 32, height: 30,
               background: chartHour === h ? '#5e6ad2' : c.surfaceTint,
               borderColor: chartHour === h ? '#5e6ad2' : c.border,
               color: chartHour === h ? '#fff' : c.textSecondary,
               borderRadius: 8,
-            }} onClick={() => setChartHour(prev => prev === h ? null : h)}>{h}</Button>
+            }} onClick={() => setChartHour(prev => prev === h ? null : h)}>{h}</Btn>
           ))}
         </div>
 
@@ -566,19 +563,19 @@ export default function Step() {
         {tab === 'monthly' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 20 }}>
             <div style={{ background: 'linear-gradient(135deg, #5e6ad2 0%, #828fff 100%)', padding: 20, borderRadius: 12 }}>
-              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>本月</div>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>{'本月'}</div>
               <div style={{ fontSize: 28, fontWeight: 700 }}>{monthCompare.current.steps.toLocaleString()}</div>
-              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{monthCompare.current.month} · {monthCompare.current.distance} 公里</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{monthCompare.current.month} · {monthCompare.current.distance} {'公里'}</div>
             </div>
             <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: 20, borderRadius: 12 }}>
-              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>上月</div>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>{'上月'}</div>
               <div style={{ fontSize: 28, fontWeight: 700 }}>{monthCompare.previous.steps.toLocaleString()}</div>
-              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{monthCompare.previous.month} · {monthCompare.previous.distance} 公里</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{monthCompare.previous.month} · {monthCompare.previous.distance} {'公里'}</div>
             </div>
             <div style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', padding: 20, borderRadius: 12 }}>
-              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>变化</div>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>{'变化'}</div>
               <div style={{ fontSize: 28, fontWeight: 700 }}>{monthCompare.change > 0 ? '+' : ''}{monthCompare.change}%</div>
-              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{monthCompare.label} vs 上月</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{monthCompare.label} vs {'上月'}</div>
             </div>
           </div>
         )}
@@ -596,151 +593,142 @@ export default function Step() {
                     {item.date || item.month}
                   </div>
                   <div style={{ fontSize: 12, color: c.muted2, marginTop: 4 }}>
-                    {item.record_count} 条记录
+                    {item.record_count} {'条记录'}
                   </div>
                   <div style={{ fontSize: 13, color: '#5e6ad2', fontWeight: 600, marginTop: 8 }}>
-                    {item.distance_km} 公里
+                    {item.distance_km} {'公里'}
                   </div>
                 </div>
               ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 20, paddingTop: 16, borderTop: '1px solid ' + c.border }}>
-              <Button disabled={statsPage <= 1} onClick={() => setStatsPage(1)}
-                style={{ ...inputStyle, height: 36, fontSize: 13 }}>首页</Button>
-              <Button disabled={statsPage <= 1} onClick={() => setStatsPage(p => p - 1)}
-                style={{ ...inputStyle, height: 36, fontSize: 13 }}>上一页</Button>
-              <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>第 {statsPage} / {statsTotalPages} 页</span>
-              <Input type="number" min={1} max={statsTotalPages}
-                onPressEnter={e => {
-                  const v = parseInt(e.target.value);
-                  if (v >= 1 && v <= statsTotalPages) setStatsPage(v);
+              <Btn disabled={statsPage <= 1} onClick={() => setStatsPage(1)}
+                style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'首页'}</Btn>
+              <Btn disabled={statsPage <= 1} onClick={() => setStatsPage(p => p - 1)}
+                style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'上一页'}</Btn>
+              <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>{'第 '}{statsPage} / {statsTotalPages} {' 页'}</span>
+              <input type="number" min={1} max={statsTotalPages}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    const v = parseInt(e.target.value);
+                    if (v >= 1 && v <= statsTotalPages) setStatsPage(v);
+                  }
                 }}
                 style={{ ...inputStyle, width: 56, height: 36, textAlign: 'center' }}
-                placeholder="页" />
-              <Button disabled={statsPage >= statsTotalPages} onClick={() => setStatsPage(p => p + 1)}
-                style={{ ...inputStyle, height: 36, fontSize: 13 }}>下一页</Button>
-              <Button disabled={statsPage >= statsTotalPages} onClick={() => setStatsPage(statsTotalPages)}
-                style={{ ...inputStyle, height: 36, fontSize: 13 }}>末页</Button>
+                placeholder={'页'} className="w-full" />
+              <Btn disabled={statsPage >= statsTotalPages} onClick={() => setStatsPage(p => p + 1)}
+                style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'下一页'}</Btn>
+              <Btn disabled={statsPage >= statsTotalPages} onClick={() => setStatsPage(statsTotalPages)}
+                style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'末页'}</Btn>
             </div>
           </>
         ) : (
-          <div style={{ textAlign: 'center', color: c.muted2, padding: '60px 0' }}>请输入用户 ID 查看统计</div>
+          <div style={{ textAlign: 'center', color: c.muted2, padding: '60px 0' }}>{'请输入用户 ID 查看统计'}</div>
         )}
       </div>
 
       {/* ═══════ All Records ═══════ */}
       <div className="linear-card" style={{ padding: 28 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, marginBottom: 24 }}>所有记录</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, marginBottom: 24 }}>{'所有记录'}</h2>
 
         <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div>
-            <label style={labelStyle}>用户 ID</label>
-            <Input value={filterUserId} onChange={e => { setFilterUserId(e.target.value); setPage(1); }}
-              placeholder="输入用户 ID" style={{ ...inputStyle, width: 180, height: 42 }} />
+            <label style={labelStyle}>{'用户 ID'}</label>
+            <input value={filterUserId} onChange={e => { setFilterUserId(e.target.value); setPage(1); }}
+              placeholder={'输入用户 ID'} style={{ ...inputStyle, width: 180, height: 42 }} className="w-full" />
           </div>
-          <Button danger disabled={!selIds.length} onClick={batchDelete}
-            icon={<DeleteOutlined />}
-            style={{ borderRadius: 8, height: 42 }}>批量删除</Button>
-          {selIds.length > 0 && <span style={{ color: c.muted, fontSize: 13 }}>已选 {selIds.length} 条</span>}
+          <Btn type="danger" disabled={!selIds.length} onClick={batchDelete}
+            style={{ borderRadius: 8, height: 42 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            {'批量删除'}
+          </Btn>
+          {selIds.length > 0 && <span style={{ color: c.muted, fontSize: 13 }}>{'已选 '}{selIds.length}{' 条'}</span>}
         </div>
 
-        <Table
-          dataSource={pageRecords}
+        <DataTable
+          data={pageRecords}
           columns={columns}
           rowKey="id"
-          pagination={false}
-          onChange={handleTableChange}
-          rowSelection={{
-            type: 'checkbox',
-            selectedRowKeys: selIds,
-            onChange: keys => setSelIds(keys),
-          }}
-          style={{ background: 'transparent' }}
-          locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无记录</span> }}
-          scroll={{ x: 700 }}
-          size="middle"
+          emptyText={<span style={{ color: c.muted2 }}>{'暂无记录'}</span>}
         />
         {/* Custom pagination */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, flexWrap: 'wrap', gap: 12 }}>
-          <Select value={pageSize} onChange={v => { setPageSize(v); setPage(1); }}
-            style={{ width: 120 }}
-            popupStyle={{ background: c.dropdownBg }}
-            dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-            options={[
+          <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
+            style={{ ...inputStyle, width: 120 }}>
+            {[
               { value: 10, label: '10 条/页' },
               { value: 20, label: '20 条/页' },
               { value: 50, label: '50 条/页' },
               { value: 100, label: '100 条/页' },
-            ]} />
+            ].map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Button disabled={page <= 1} onClick={() => setPage(1)}
-              style={{ ...inputStyle, height: 36, fontSize: 13 }}>首页</Button>
-            <Button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
-              style={{ ...inputStyle, height: 36, fontSize: 13 }}>上一页</Button>
-            <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>第 {page} / {totalPages} 页</span>
-            <Input type="number" min={1} max={totalPages}
-              onPressEnter={e => {
-                const v = parseInt(e.target.value);
-                if (v >= 1 && v <= totalPages) setPage(v);
+            <Btn disabled={page <= 1} onClick={() => setPage(1)}
+              style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'首页'}</Btn>
+            <Btn disabled={page <= 1} onClick={() => setPage(p => p - 1)}
+              style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'上一页'}</Btn>
+            <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>{'第 '}{page} / {totalPages} {' 页'}</span>
+            <input type="number" min={1} max={totalPages}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  const v = parseInt(e.target.value);
+                  if (v >= 1 && v <= totalPages) setPage(v);
+                }
               }}
               style={{ ...inputStyle, width: 56, height: 36, textAlign: 'center' }}
-              placeholder="页" />
-            <Button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
-              style={{ ...inputStyle, height: 36, fontSize: 13 }}>下一页</Button>
-            <Button disabled={page >= totalPages} onClick={() => setPage(totalPages)}
-              style={{ ...inputStyle, height: 36, fontSize: 13 }}>末页</Button>
+              placeholder={'页'} className="w-full" />
+            <Btn disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
+              style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'下一页'}</Btn>
+            <Btn disabled={page >= totalPages} onClick={() => setPage(totalPages)}
+              style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'末页'}</Btn>
           </div>
-          <span style={{ color: c.muted, fontSize: 13 }}>共 {filteredRecords.length} 条</span>
+          <span style={{ color: c.muted, fontSize: 13 }}>{'共 '}{filteredRecords.length}{' 条'}</span>
         </div>
       </div>
 
       {/* ═══════ Edit Modal ═══════ */}
       <Modal
-        title={<span style={{ color: c.text, fontWeight: 600 }}>编辑记录</span>}
+        title={'编辑记录'}
         open={editOpen}
-        onCancel={() => { setEditOpen(false); setEditRec(null); }}
+        onClose={() => { setEditOpen(false); setEditRec(null); }}
         footer={[
-          <Button key="cancel" onClick={() => { setEditOpen(false); setEditRec(null); }}
-            style={{ background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 }}>取消</Button>,
-          <Button key="save" type="primary" onClick={saveEdit}
-            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 }}>保存</Button>,
+          <Btn key="cancel" onClick={() => { setEditOpen(false); setEditRec(null); }}
+            style={{ background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 }}>{'取消'}</Btn>,
+          <Btn key="save" type="primary" onClick={saveEdit}
+            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 }}>{'保存'}</Btn>,
         ]}
-        styles={{
-          content: { background: c.surface, border: '1px solid ' + c.border, borderRadius: 16 },
-          header: { background: 'transparent', borderBottom: '1px solid ' + c.border, paddingBottom: 16 },
-          mask: { backdropFilter: 'blur(4px)' },
-        }}
         width={480}
       >
         {editRec && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <label style={labelStyle}>用户 ID</label>
-              <Input value={editRec.user_id} onChange={e => setEditRec(p => ({ ...p, user_id: e.target.value }))}
-                style={inputStyle} />
+              <label style={labelStyle}>{'用户 ID'}</label>
+              <input value={editRec.user_id} onChange={e => setEditRec(p => ({ ...p, user_id: e.target.value }))}
+                style={inputStyle} className="w-full" />
             </div>
             <div>
-              <label style={labelStyle}>步数</label>
-              <Input value={editRec.steps} onChange={e => setEditRec(p => ({ ...p, steps: parseInt(e.target.value) || 0 }))}
-                style={inputStyle} />
+              <label style={labelStyle}>{'步数'}</label>
+              <input value={editRec.steps} onChange={e => setEditRec(p => ({ ...p, steps: parseInt(e.target.value) || 0 }))}
+                style={inputStyle} className="w-full" />
             </div>
             <div>
-              <label style={labelStyle}>时间段</label>
-              <Select value={editRec.hour} onChange={v => setEditRec(p => ({ ...p, hour: v }))}
-                style={{ width: '100%', height: 42 }}
-                popupStyle={{ background: c.dropdownBg }}
-                dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-                options={[
-                  { value: null, label: '全天' },
-                  ...HOURS.map(h => ({ value: h, label: `${String(h).padStart(2, '0')}:00 - ${String(h + 1).padStart(2, '0')}:00` })),
-                ]}
-              />
+              <label style={labelStyle}>{'时间段'}</label>
+              <select value={editRec.hour === null ? '' : editRec.hour}
+                onChange={e => setEditRec(p => ({ ...p, hour: e.target.value === '' ? null : Number(e.target.value) }))}
+                style={{ ...inputStyle, width: '100%' }}>
+                <option value="">{'全天'}</option>
+                {HOURS.map(h => (
+                  <option key={h} value={h}>{String(h).padStart(2, '0')}:00 - {String(h + 1).padStart(2, '0')}:00</option>
+                ))}
+              </select>
             </div>
             <div>
-              <label style={labelStyle}>记录时间</label>
-              <Input type="datetime-local" value={toDTLocal(editRec.record_time)}
+              <label style={labelStyle}>{'记录时间'}</label>
+              <input type="datetime-local" value={toDTLocal(editRec.record_time)}
                 onChange={e => setEditRec(p => ({ ...p, record_time: e.target.value }))}
-                style={inputStyle} />
+                style={inputStyle} className="w-full" />
             </div>
           </div>
         )}
@@ -748,19 +736,15 @@ export default function Step() {
 
       {/* ═══════ Confirm Modal (duplicate) ═══════ */}
       <Modal
-        title={<span style={{ color: c.text, fontWeight: 600 }}>重复记录提示</span>}
+        title={'重复记录提示'}
         open={confirmOpen}
-        onCancel={() => overwriteDup(false)}
+        onClose={() => overwriteDup(false)}
         footer={[
-          <Button key="cancel" onClick={() => overwriteDup(false)}
-            style={{ background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 }}>取消</Button>,
-          <Button key="ok" type="primary" onClick={() => overwriteDup(true)}
-            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 }}>确定</Button>,
+          <Btn key="cancel" onClick={() => overwriteDup(false)}
+            style={{ background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 }}>{'取消'}</Btn>,
+          <Btn key="ok" type="primary" onClick={() => overwriteDup(true)}
+            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 }}>{'确定'}</Btn>,
         ]}
-        styles={{
-          content: { background: c.surface, border: '1px solid ' + c.border, borderRadius: 16 },
-          mask: { backdropFilter: 'blur(4px)' },
-        }}
         width={440}
       >
         <div style={{
@@ -770,6 +754,26 @@ export default function Step() {
           {confirmMsg}
         </div>
       </Modal>
+
+      {/* ═══════ Delete Confirmation Modal ═══════ */}
+      <DeleteModal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)}
+        onConfirm={() => { deleteRecord(deleteTarget); setDeleteTarget(null); }}
+        title={'确定删除？'} />
+
+      {/* ═══════ Batch Delete Confirmation ═══════ */}
+      <DeleteModal open={batchDeleteOpen} onClose={() => setBatchDeleteOpen(false)}
+        onConfirm={() => {
+          const idset = new Set(selIds);
+          setRecords(prev => prev.filter(r => !idset.has(r.id)));
+          setSelIds([]);
+          showToast(`成功删除 ${idset.size} 条记录`);
+          setPage(1);
+          setBatchDeleteOpen(false);
+        }}
+        title={`确定要删除选中的 ${selIds.length} 条记录吗？`} />
+
+      {/* ═══════ Toast ═══════ */}
+      <Toast toast={toast} />
     </div>
   );
 }

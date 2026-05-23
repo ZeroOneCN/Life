@@ -1,15 +1,19 @@
 import { useState, useEffect, useMemo } from 'react';
-import {
-  Input, Button, Select, Modal, Popconfirm, message, Table, Segmented, DatePicker, Switch, Tag, Checkbox,
-} from 'antd';
-import {
-  PlusOutlined, DeleteOutlined, EditOutlined, CheckCircleOutlined, UndoOutlined, DeleteFilled,
-  UnorderedListOutlined, SettingOutlined, FileTextOutlined,
-} from '@ant-design/icons';
+import { Modal, DeleteModal, Toast, Btn, Tag, PillTabs, Field, DataTable, Pagination, Switch, Checkbox } from '../../components/ui';
 import dayjs from 'dayjs';
 
 const STORAGE_KEY = 'lifeos_todo_data';
 const PAGE_SIZE = 10;
+
+/* SVG Icons */
+const AddIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>;
+const DeleteIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>;
+const EditIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>;
+const CheckIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
+const UndoIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>;
+const ListIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>;
+const SettingsIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>;
+const FileTextIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>;
 
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
@@ -68,17 +72,6 @@ function useIsLight() {
 function modalTitle(text, c) {
   return <span style={{ color: c.text, fontWeight: 600 }}>{text}</span>;
 }
-function modalStyles(c) {
-  return {
-    content: { background: c.surface, border: '1px solid ' + c.border, borderRadius: 16 },
-    header: { background: 'transparent', borderBottom: '1px solid ' + c.border, paddingBottom: 16 },
-    mask: { backdropFilter: 'blur(4px)' },
-  };
-}
-const okBtn = { style: { background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 } };
-function cancelBtn(c) {
-  return { style: { background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 } };
-}
 
 const PRIORITY_COLORS = { high: '#ef4444', medium: '#f59e0b', low: '#10b981' };
 const PRIORITY_LABELS = { high: '高', medium: '中', low: '低' };
@@ -86,15 +79,15 @@ const PRIORITY_LABELS = { high: '高', medium: '中', low: '低' };
 function TablePagination({ c, inputStyle, page, totalPages, onPageChange }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 16 }}>
-      <Button disabled={page <= 1} onClick={() => onPageChange(1)}
-        style={{ ...inputStyle, height: 32, fontSize: 12 }}>首页</Button>
-      <Button disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
-        style={{ ...inputStyle, height: 32, fontSize: 12 }}>上一页</Button>
+      <Btn disabled={page <= 1} onClick={() => onPageChange(1)}
+        style={{ ...inputStyle, height: 32, fontSize: 12 }}>首页</Btn>
+      <Btn disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
+        style={{ ...inputStyle, height: 32, fontSize: 12 }}>上一页</Btn>
       <span style={{ color: c.muted, fontSize: 13 }}>第 {page} / {totalPages} 页</span>
-      <Button disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
-        style={{ ...inputStyle, height: 32, fontSize: 12 }}>下一页</Button>
-      <Button disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
-        style={{ ...inputStyle, height: 32, fontSize: 12 }}>末页</Button>
+      <Btn disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
+        style={{ ...inputStyle, height: 32, fontSize: 12 }}>下一页</Btn>
+      <Btn disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
+        style={{ ...inputStyle, height: 32, fontSize: 12 }}>末页</Btn>
     </div>
   );
 }
@@ -146,16 +139,16 @@ export default function Todo() {
   const labelStyle = { display: 'block', marginBottom: 6, color: c.textSecondary, fontSize: 13, fontWeight: 500 };
 
   const tabItems = [
-    { value: '任务列表', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><UnorderedListOutlined />任务列表</span> },
-    { value: '设置通知', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><SettingOutlined />设置通知</span> },
-    { value: '通知日志', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><FileTextOutlined />通知日志</span> },
-    { value: '回收站', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><DeleteOutlined />回收站</span> },
+    { value: '任务列表', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><ListIcon />任务列表</span> },
+    { value: '设置通知', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><SettingsIcon />设置通知</span> },
+    { value: '通知日志', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><FileTextIcon />通知日志</span> },
+    { value: '回收站', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><DeleteIcon />回收站</span> },
   ];
 
   return (
     <div>
       <h1 className="page-title" style={{ marginBottom: 24 }}>待办事项</h1>
-      <Segmented value={tab} onChange={handleTabChange} options={tabItems}
+      <PillTabs value={tab} onChange={handleTabChange} options={tabItems}
         style={{ marginBottom: 20, background: c.surfaceTint, borderRadius: 10, padding: 3 }} />
 
       {tab === '任务列表' && <TasksTab c={c} fs={fs} data={data} setData={setData} inputStyle={inputStyle} labelStyle={labelStyle} />}
@@ -171,7 +164,7 @@ export default function Todo() {
    ═══════════════════════════════════════ */
 function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const [title, setTitle] = useState('');
-  const [dueDate, setDueDate] = useState(null);
+  const [dueDate, setDueDate] = useState('');
   const [isDaily, setIsDaily] = useState(false);
   const [priority, setPriority] = useState('medium');
   const [tags, setTags] = useState('');
@@ -182,9 +175,12 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const [selected, setSelected] = useState([]);
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [editForm, setEditForm] = useState({ title: '', description: '', priority: 'medium', due_date: null, tags: '' });
+  const [editForm, setEditForm] = useState({ title: '', description: '', priority: 'medium', due_date: '', tags: '' });
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = 'success') => { setToast({ message: msg, type }); setTimeout(() => setToast(null), 3000); };
 
   const activeTasks = useMemo(() => data.tasks.filter(t => !t.deleted_at), [data.tasks]);
 
@@ -220,14 +216,14 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
 
   const handleAdd = (e) => {
     e?.preventDefault();
-    if (!title.trim()) { message.error('请输入任务标题'); return; }
+    if (!title.trim()) { showToast('请输入任务标题', 'error'); return; }
     setData(prev => ({
       ...prev,
       tasks: [{
         id: prev.taskIdCounter,
         title: title.trim(),
         description: '',
-        due_date: dueDate ? dayjs(dueDate).format('YYYY-MM-DD') : '',
+        due_date: dueDate || '',
         priority,
         tags,
         status: 'active',
@@ -238,8 +234,8 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       }, ...prev.tasks],
       taskIdCounter: prev.taskIdCounter + 1,
     }));
-    setTitle(''); setDueDate(null); setTags(''); setPriority('medium'); setIsDaily(false);
-    message.success('已添加');
+    setTitle(''); setDueDate(''); setTags(''); setPriority('medium'); setIsDaily(false);
+    showToast('已添加');
   };
 
   const toggleComplete = (item) => {
@@ -258,7 +254,7 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       ...prev,
       tasks: prev.tasks.map(t => t.id === item.id ? { ...t, deleted_at: dayjs().format('YYYY-MM-DD HH:mm') } : t),
     }));
-    message.success('已移入回收站');
+    showToast('已移入回收站');
   };
 
   const openEdit = (item) => {
@@ -267,45 +263,45 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       title: item.title,
       description: item.description || '',
       priority: item.priority,
-      due_date: item.due_date ? dayjs(item.due_date) : null,
+      due_date: item.due_date || '',
       tags: item.tags || '',
     });
     setEditOpen(true);
   };
 
   const handleEditSave = () => {
-    if (!editForm.title.trim()) { message.error('请输入标题'); return; }
+    if (!editForm.title.trim()) { showToast('请输入标题', 'error'); return; }
     setData(prev => ({
       ...prev,
       tasks: prev.tasks.map(t =>
         t.id === editItem.id
-          ? { ...t, title: editForm.title.trim(), description: editForm.description, priority: editForm.priority, due_date: editForm.due_date ? dayjs(editForm.due_date).format('YYYY-MM-DD') : '', tags: editForm.tags }
+          ? { ...t, title: editForm.title.trim(), description: editForm.description, priority: editForm.priority, due_date: editForm.due_date || '', tags: editForm.tags }
           : t
       ),
     }));
     setEditOpen(false);
-    message.success('已更新');
+    showToast('已更新');
   };
 
   const handleBatchComplete = () => {
-    if (!selected.length) { message.error('请选择任务'); return; }
+    if (!selected.length) { showToast('请选择任务', 'error'); return; }
     setData(prev => ({
       ...prev,
       tasks: prev.tasks.map(t => selected.includes(t.id) ? { ...t, status: 'completed', completed_at: dayjs().format('YYYY-MM-DD HH:mm') } : t),
     }));
     setSelected([]);
-    message.success('批量完成成功');
+    showToast('批量完成成功');
   };
 
   const handleBatchDelete = () => {
-    if (!selected.length) { message.error('请选择任务'); return; }
+    if (!selected.length) { showToast('请选择任务', 'error'); return; }
     const now = dayjs().format('YYYY-MM-DD HH:mm');
     setData(prev => ({
       ...prev,
       tasks: prev.tasks.map(t => selected.includes(t.id) ? { ...t, deleted_at: now } : t),
     }));
     setSelected([]);
-    message.success('已移入回收站');
+    showToast('已移入回收站');
   };
 
   const toggleSelect = (id) => {
@@ -336,51 +332,52 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20, marginBottom: 16 }}>
         <form onSubmit={handleAdd}>
           <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-            <Input value={title} onChange={e => setTitle(e.target.value)}
-              placeholder="输入新任务... (Enter 添加)" style={{ ...inputStyle, flex: 1, height: 40 }} />
-            <DatePicker value={dueDate} onChange={v => setDueDate(v)}
+            <input value={title} onChange={e => setTitle(e.target.value)}
+              placeholder="输入新任务... (Enter 添加)" style={{ ...inputStyle, flex: 1, height: 40 }} className="w-full" />
+            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
               style={{ ...inputStyle, width: 160, height: 40 }} placeholder="截止日期" />
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-            <Checkbox checked={isDaily} onChange={e => setIsDaily(e.target.checked)}
-              style={{ color: c.textSecondary, fontSize: 13 }}>
+            <Checkbox checked={isDaily} onChange={setIsDaily}>
               <span style={{ color: c.textSecondary }}>每日都要</span>
             </Checkbox>
-            <Select value={priority} onChange={v => setPriority(v)}
-              style={{ width: 140 }} dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-              options={[
-                { value: 'high', label: '高优先级' },
-                { value: 'medium', label: '中优先级' },
-                { value: 'low', label: '低优先级' },
-              ]} />
-            <Input value={tags} onChange={e => setTags(e.target.value)}
-              placeholder="标签（逗号分隔）" style={{ ...inputStyle, width: 180, height: 40 }} />
-            <Button type="primary" htmlType="submit" icon={<PlusOutlined />}
-              style={{ height: 40, fontSize: 14, fontWeight: 500, borderRadius: 8 }}>添加任务</Button>
+            <select value={priority} onChange={e => setPriority(e.target.value)}
+              style={{ ...inputStyle, width: 140 }}>
+              <option value="high">高优先级</option>
+              <option value="medium">中优先级</option>
+              <option value="low">低优先级</option>
+            </select>
+            <input value={tags} onChange={e => setTags(e.target.value)}
+              placeholder="标签（逗号分隔）" style={{ ...inputStyle, width: 180, height: 40 }} className="w-full" />
+            <Btn type="primary" onClick={handleAdd} style={{ height: 40, fontSize: 14, fontWeight: 500 }}>
+              <AddIcon /> 添加任务
+            </Btn>
           </div>
         </form>
       </div>
 
       {/* Filters */}
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '12px 18px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Select value={filterStatus} onChange={v => setFilterStatus(v)} placeholder="全部状态" allowClear
-          style={{ width: 130 }} dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-          options={[
-            { value: 'active', label: '进行中' },
-            { value: 'completed', label: '已完成' },
-          ]} />
-        <Select value={filterPriority} onChange={v => setFilterPriority(v)} placeholder="全部优先级" allowClear
-          style={{ width: 140 }} dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-          options={[
-            { value: 'high', label: '高' },
-            { value: 'medium', label: '中' },
-            { value: 'low', label: '低' },
-          ]} />
-        <Select value={filterTag} onChange={v => setFilterTag(v)} placeholder="全部标签" allowClear
-          style={{ width: 140 }} dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-          options={tagOptions} />
-        <Button onClick={() => { setFilterStatus(); setFilterPriority(); setFilterTag(); }}
-          style={{ height: 36, fontSize: 13, color: c.text, background: c.surfaceTint, border: '1px solid ' + c.border }}>清除筛选</Button>
+        <select value={filterStatus || ''} onChange={e => setFilterStatus(e.target.value || undefined)}
+          style={{ ...inputStyle, width: 130 }}>
+          <option value="">全部状态</option>
+          <option value="active">进行中</option>
+          <option value="completed">已完成</option>
+        </select>
+        <select value={filterPriority || ''} onChange={e => setFilterPriority(e.target.value || undefined)}
+          style={{ ...inputStyle, width: 140 }}>
+          <option value="">全部优先级</option>
+          <option value="high">高</option>
+          <option value="medium">中</option>
+          <option value="low">低</option>
+        </select>
+        <select value={filterTag || ''} onChange={e => setFilterTag(e.target.value || undefined)}
+          style={{ ...inputStyle, width: 140 }}>
+          <option value="">全部标签</option>
+          {allTags.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <Btn onClick={() => { setFilterStatus(); setFilterPriority(); setFilterTag(); }}
+          style={{ height: 36, fontSize: 13, color: c.text, background: c.surfaceTint, border: '1px solid ' + c.border }}>清除筛选</Btn>
       </div>
 
       {/* Batch toolbar */}
@@ -388,12 +385,12 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
         <div style={{ background: c.surfaceTint2, border: '1px solid ' + c.border, borderRadius: 10, padding: '10px 16px', marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: c.textSecondary, fontSize: 13, fontWeight: 500 }}>已选择 {selected.length} 个任务</span>
           <div style={{ display: 'flex', gap: 8 }}>
-            <Button size="small" onClick={handleBatchComplete}
-              style={{ fontSize: 12, color: '#059669', background: c.surfaceTint, border: '1px solid ' + c.border }}>批量完成</Button>
-            <Button size="small" onClick={handleBatchDelete}
-              style={{ fontSize: 12, color: '#dc2626', background: c.surfaceTint, border: '1px solid ' + c.border }}>批量删除</Button>
-            <Button size="small" onClick={() => setSelected(new Set())}
-              style={{ fontSize: 12, color: c.textSecondary, background: c.surfaceTint, border: '1px solid ' + c.border }}>取消选择</Button>
+            <Btn onClick={handleBatchComplete}
+              style={{ fontSize: 12, color: '#059669', background: c.surfaceTint, border: '1px solid ' + c.border, padding: '4px 10px' }}>批量完成</Btn>
+            <Btn onClick={handleBatchDelete}
+              style={{ fontSize: 12, color: '#dc2626', background: c.surfaceTint, border: '1px solid ' + c.border, padding: '4px 10px' }}>批量删除</Btn>
+            <Btn onClick={() => setSelected(new Set())}
+              style={{ fontSize: 12, color: c.textSecondary, background: c.surfaceTint, border: '1px solid ' + c.border, padding: '4px 10px' }}>取消选择</Btn>
           </div>
         </div>
       )}
@@ -414,9 +411,10 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
                   background: selected.includes(item.id) ? c.surfaceTint2 : 'transparent',
                 }}>
                 <Checkbox checked={selected.includes(item.id)} onChange={() => toggleSelect(item.id)} />
-                <Button type="text" size="small" onClick={() => toggleComplete(item)}
-                  icon={<CheckCircleOutlined style={{ color: item.status === 'completed' ? '#10b981' : c.muted, fontSize: 18 }} />}
-                  style={{ padding: 0, height: 'auto', minWidth: 'auto' }} />
+                <button onClick={() => toggleComplete(item)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 0 }}>
+                  <span style={{ color: item.status === 'completed' ? '#10b981' : c.muted, fontSize: 18, lineHeight: 0 }}><CheckIcon /></span>
+                </button>
                 <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => { setDetailItem(item); setDetailOpen(true); }}>
                   <div style={{
                     color: item.status === 'completed' ? c.muted : c.text,
@@ -437,11 +435,14 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                  <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(item)}
-                    style={{ color: c.muted }} />
-                  <Popconfirm title="移入回收站？" onConfirm={() => deleteTask(item)} okText="确定" cancelText="取消">
-                    <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-                  </Popconfirm>
+                  <button onClick={() => openEdit(item)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: c.muted, padding: 4, lineHeight: 0 }}>
+                    <EditIcon />
+                  </button>
+                  <button onClick={() => setDeleteConfirm(item)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4, lineHeight: 0 }}>
+                    <DeleteIcon />
+                  </button>
                 </div>
               </div>
             ))}
@@ -454,17 +455,20 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
         )}
       </div>
 
+      {/* Delete confirmation modal */}
+      <DeleteModal open={!!deleteConfirm} onClose={() => setDeleteConfirm(null)}
+        onConfirm={() => { deleteTask(deleteConfirm); setDeleteConfirm(null); }}
+        title="移入回收站？" />
+
       {/* Detail modal */}
-      <Modal title={modalTitle(detailItem?.title || '', c)} open={detailOpen} onCancel={() => setDetailOpen(false)}
-        footer={[
-          <Button key="close" onClick={() => setDetailOpen(false)}
-            style={{ borderRadius: 8, background: c.surfaceTint, borderColor: c.border, color: c.text }}>关闭</Button>,
-          <Button key="toggle" onClick={() => { toggleComplete(detailItem); setDetailOpen(false); }}
-            type="primary" style={{ borderRadius: 8, background: detailItem?.status === 'completed' ? '#6b7280' : '#10b981', borderColor: detailItem?.status === 'completed' ? '#6b7280' : '#10b981' }}>
+      <Modal open={detailOpen} onClose={() => setDetailOpen(false)} title={modalTitle(detailItem?.title || '', c)} width={500}
+        footer={<div style={{ display: 'flex', gap: 8 }}>
+          <Btn onClick={() => setDetailOpen(false)}>关闭</Btn>
+          <Btn type="primary" onClick={() => { toggleComplete(detailItem); setDetailOpen(false); }}
+            style={{ background: detailItem?.status === 'completed' ? '#6b7280' : '#10b981', borderColor: detailItem?.status === 'completed' ? '#6b7280' : '#10b981' }}>
             {detailItem?.status === 'completed' ? '取消完成' : '标记完成'}
-          </Button>,
-        ]}
-        styles={modalStyles(c)} width={500}>
+          </Btn>
+        </div>}>
         <div style={{ marginTop: 16, display: 'grid', gap: 14 }}>
           {detailItem?.description && (
             <div style={{ background: c.surfaceTint, borderRadius: 10, padding: 14, color: c.text, fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
@@ -515,45 +519,47 @@ function TasksTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       </Modal>
 
       {/* Edit modal */}
-      <Modal title={modalTitle('编辑任务', c)} open={editOpen} onCancel={() => setEditOpen(false)}
-        onOk={handleEditSave} okText="保存" cancelText="取消"
-        okButtonProps={okBtn} cancelButtonProps={cancelBtn(c)}
-        styles={modalStyles(c)} width={520}>
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title={modalTitle('编辑任务', c)} width={520}
+        footer={<div style={{ display: 'flex', gap: 8 }}>
+          <Btn onClick={() => setEditOpen(false)}>取消</Btn>
+          <Btn type="primary" onClick={handleEditSave}>保存</Btn>
+        </div>}>
         <div style={{ display: 'grid', gap: 14, marginTop: 16 }}>
           <div>
             <label style={labelStyle}>标题 <span style={{ color: '#ef4444' }}>*</span></label>
-            <Input value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))} style={inputStyle} />
+            <input value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))} style={inputStyle} className="w-full" />
           </div>
           <div>
             <label style={labelStyle}>描述（支持 Markdown）</label>
-            <Input.TextArea value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
+            <textarea value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
               rows={4} placeholder="任务描述，支持 Markdown 格式"
-              style={{ background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text }} />
+              style={{ ...inputStyle, width: '100%', height: 'auto', lineHeight: 1.5, padding: 10, resize: 'vertical' }} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div>
               <label style={labelStyle}>优先级</label>
-              <Select value={editForm.priority} onChange={v => setEditForm(p => ({ ...p, priority: v }))}
-                style={{ width: '100%' }} dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-                options={[
-                  { value: 'high', label: '高' },
-                  { value: 'medium', label: '中' },
-                  { value: 'low', label: '低' },
-                ]} />
+              <select value={editForm.priority} onChange={e => setEditForm(p => ({ ...p, priority: e.target.value }))}
+                style={{ width: '100%', ...inputStyle }}>
+                <option value="high">高</option>
+                <option value="medium">中</option>
+                <option value="low">低</option>
+              </select>
             </div>
             <div>
               <label style={labelStyle}>截止日期</label>
-              <DatePicker value={editForm.due_date} onChange={v => setEditForm(p => ({ ...p, due_date: v }))}
-                style={{ width: '100%', ...inputStyle }} placeholder="选择日期" />
+              <input type="date" value={editForm.due_date} onChange={e => setEditForm(p => ({ ...p, due_date: e.target.value }))}
+                style={{ width: '100%', ...inputStyle }} className="w-full" />
             </div>
           </div>
           <div>
             <label style={labelStyle}>标签</label>
-            <Input value={editForm.tags} onChange={e => setEditForm(p => ({ ...p, tags: e.target.value }))}
-              placeholder="逗号分隔多个标签" style={inputStyle} />
+            <input value={editForm.tags} onChange={e => setEditForm(p => ({ ...p, tags: e.target.value }))}
+              placeholder="逗号分隔多个标签" style={inputStyle} className="w-full" />
           </div>
         </div>
       </Modal>
+
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -617,9 +623,7 @@ function LogsTab({ c, data, inputStyle }) {
         <span style={{ color: c.text, fontWeight: 600, fontSize: 16 }}>通知日志</span>
         <span style={{ color: c.muted, fontSize: 13 }}>共 {logs.length} 条记录</span>
       </div>
-      <Table dataSource={paged} columns={columns} rowKey="id" pagination={false} size="middle"
-        style={{ background: 'transparent' }}
-        locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无日志</span> }} />
+      <DataTable data={paged} columns={columns} rowKey="id" emptyText={<span style={{ color: c.muted2 }}>暂无日志</span>} />
       {logs.length > PAGE_SIZE && (
         <TablePagination c={c} inputStyle={inputStyle} page={page} totalPages={totalPages} onPageChange={setPage} />
       )}
@@ -632,13 +636,17 @@ function LogsTab({ c, data, inputStyle }) {
    ═══════════════════════════════════════ */
 function TrashTab({ c, data, setData, inputStyle }) {
   const trashItems = useMemo(() => data.tasks.filter(t => t.deleted_at), [data.tasks]);
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = 'success') => { setToast({ message: msg, type }); setTimeout(() => setToast(null), 3000); };
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [emptyConfirm, setEmptyConfirm] = useState(false);
 
   const restoreTask = (item) => {
     setData(prev => ({
       ...prev,
       tasks: prev.tasks.map(t => t.id === item.id ? { ...t, deleted_at: null } : t),
     }));
-    message.success('已恢复');
+    showToast('已恢复');
   };
 
   const deletePermanently = (item) => {
@@ -646,34 +654,22 @@ function TrashTab({ c, data, setData, inputStyle }) {
       ...prev,
       tasks: prev.tasks.filter(t => t.id !== item.id),
     }));
-    message.success('已永久删除');
+    showToast('已永久删除');
   };
 
   const emptyTrash = () => {
-    if (trashItems.length === 0) { message.info('回收站已清空'); return; }
-    Modal.confirm({
-      title: '清空回收站',
-      content: '确定要永久删除回收站中的所有任务吗？此操作不可恢复。',
-      okText: '确定清空', cancelText: '取消',
-      okButtonProps: { danger: true, style: { borderRadius: 8 } },
-      cancelButtonProps: cancelBtn(c),
-      styles: modalStyles(c),
-      onOk: () => {
-        setData(prev => ({ ...prev, tasks: prev.tasks.filter(t => !t.deleted_at) }));
-        message.success('回收站已清空');
-      },
-    });
+    if (trashItems.length === 0) { showToast('回收站已清空', 'error'); return; }
+    setEmptyConfirm(true);
   };
 
   return (
     <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <span style={{ color: c.text, fontWeight: 600, fontSize: 16 }}>回收站</span>
-        <Button onClick={emptyTrash} disabled={trashItems.length === 0}
-          icon={<DeleteFilled />}
+        <Btn onClick={emptyTrash} disabled={trashItems.length === 0}
           style={{ height: 36, fontSize: 13, color: '#ef4444', background: c.surfaceTint, border: '1px solid ' + c.border }}>
-          清空回收站
-        </Button>
+          <DeleteIcon /> 清空回收站
+        </Btn>
       </div>
       {trashItems.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '48px 20px', color: c.muted2, fontSize: 14 }}>回收站为空</div>
@@ -690,15 +686,30 @@ function TrashTab({ c, data, setData, inputStyle }) {
                   删除于 {item.deleted_at} {item.status === 'completed' ? '（已完成）' : ''}
                 </div>
               </div>
-              <Button type="text" size="small" icon={<UndoOutlined />} onClick={() => restoreTask(item)}
-                style={{ color: '#3b82f6' }}>恢复</Button>
-              <Popconfirm title="永久删除？此操作不可恢复。" onConfirm={() => deletePermanently(item)} okText="确定" cancelText="取消">
-                <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-              </Popconfirm>
+              <button onClick={() => restoreTask(item)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#3b82f6', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13 }}>
+                <UndoIcon /> 恢复
+              </button>
+              <button onClick={() => setConfirmDelete(item)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4, lineHeight: 0 }}>
+                <DeleteIcon />
+              </button>
             </div>
           ))}
         </div>
       )}
+
+      {/* Delete confirmation */}
+      <DeleteModal open={!!confirmDelete} onClose={() => setConfirmDelete(null)}
+        onConfirm={() => { deletePermanently(confirmDelete); setConfirmDelete(null); }}
+        title="永久删除？此操作不可恢复。" />
+
+      {/* Empty trash confirmation */}
+      <DeleteModal open={emptyConfirm} onClose={() => setEmptyConfirm(false)}
+        onConfirm={() => { setData(prev => ({ ...prev, tasks: prev.tasks.filter(t => !t.deleted_at) })); showToast('回收站已清空'); setEmptyConfirm(false); }}
+        title="确定要永久删除回收站中的所有任务吗？此操作不可恢复。" />
+
+      <Toast toast={toast} />
     </div>
   );
 }

@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
-  Input, Button, Select, Table, Modal, message,
-  Popconfirm, Tag, Segmented,
-} from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
+  Modal, DeleteModal, Toast, Btn, Tag, PillTabs, DataTable, Pagination, Field, Switch, Checkbox,
+} from '../../components/ui';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
 
@@ -193,6 +191,13 @@ export default function Fitness() {
   const [editRec, setEditRec] = useState(null);
   const [editType, setEditType] = useState(null);
 
+  /* toast */
+  const [toast, setToast] = useState(null);
+  const showToast = useCallback((msg, type = 'success') => {
+    setToast({ message: msg, type });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
@@ -245,14 +250,14 @@ export default function Fitness() {
     const maxId = [].concat(...Object.values(data)).reduce((m, r) => Math.max(m, r.id || 0), 0);
     const newRec = { id: maxId + 1, ...record };
     setData(prev => ({ ...prev, [type]: [newRec, ...prev[type]] }));
-    message.success('记录已添加');
+    showToast('记录已添加');
     setPages(p => ({ ...p, [type]: 1 }));
   }, [data]);
 
   const deleteRecord = useCallback((type, id) => {
     setData(prev => ({ ...prev, [type]: prev[type].filter(r => r.id !== id) }));
     setSelIds(prev => prev.filter(s => s !== id));
-    message.success('记录已删除');
+    showToast('记录已删除');
   }, []);
 
   const updateRecord = useCallback((type, id, updates) => {
@@ -262,18 +267,19 @@ export default function Fitness() {
     }));
   }, []);
 
+  const [batchDeleteType, setBatchDeleteType] = useState(null);
   function batchDelete(type) {
-    if (!selIds.length) { message.warning('请选择要删除的记录'); return; }
-    Modal.confirm({
-      title: '确认删除', content: `确定要删除选中的 ${selIds.length} 条记录吗？`,
-      okText: '确定', cancelText: '取消',
-      okButtonProps: { danger: true },
-      onOk: () => {
-        const idset = new Set(selIds);
-        setData(prev => ({ ...prev, [type]: prev[type].filter(r => !idset.has(r.id)) }));
-        setSelIds([]); message.success(`成功删除 ${idset.size} 条记录`);
-      },
-    });
+    if (!selIds.length) { showToast('请选择要删除的记录', 'error'); return; }
+    setBatchDeleteType(type);
+  }
+
+  function confirmBatchDelete() {
+    if (!batchDeleteType) return;
+    const idset = new Set(selIds);
+    setData(prev => ({ ...prev, [batchDeleteType]: prev[batchDeleteType].filter(r => !idset.has(r.id)) }));
+    setSelIds([]);
+    showToast(`成功删除 ${idset.size} 条记录`);
+    setBatchDeleteType(null);
   }
 
   function openEdit(type, rec) { setEditType(type); setEditRec({ ...rec }); setEditOpen(true); }
@@ -281,7 +287,7 @@ export default function Fitness() {
     if (!editRec || !editType) return;
     updateRecord(editType, editRec.id, editRec);
     setEditOpen(false); setEditRec(null); setEditType(null);
-    message.success('记录已更新');
+    showToast('记录已更新');
   }
 
   /* ── render styles ── */
@@ -308,7 +314,7 @@ export default function Fitness() {
      ═══════════════════════════════════════ */
   return (
     <div>
-      <h1 className="page-title" style={{ marginBottom: 24 }}>健身减肥</h1>
+      <h1 className="page-title" style={{ marginBottom: 24 }}>{'健身减肥'}</h1>
 
       {/* ═══════ 8 Dashboard Cards ═══════ */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
@@ -324,8 +330,7 @@ export default function Fitness() {
 
       {/* ═══════ Tabs ═══════ */}
       <div style={{ marginBottom: 24 }}>
-        <style>{`.fit-tabs .ant-segmented-item { margin-right: 4px; } .fit-tabs .ant-segmented-item:last-child { margin-right: 0; }`}</style>
-        <Segmented value={activeTab} onChange={v => { setActiveTab(v); window.location.hash = v; setSelIds([]); setPages(p => ({ ...p, [v]: 1 })); }}
+        <PillTabs value={activeTab} onChange={v => { setActiveTab(v); window.location.hash = v; setSelIds([]); setPages(p => ({ ...p, [v]: 1 })); }}
           options={[
             { value: 'diet', label: '饮食记录' },
             { value: 'exercise', label: '运动记录' },
@@ -333,8 +338,6 @@ export default function Fitness() {
             { value: 'weight', label: '体重记录' },
             { value: 'charts', label: '数据看板' },
           ]}
-          className="fit-tabs"
-          style={{ background: c.surfaceTint, borderRadius: 8, padding: '3px 4px', fontSize: 14 }}
         />
       </div>
 
@@ -345,7 +348,7 @@ export default function Fitness() {
         c={c} data={data} inputStyle={inputStyle} labelStyle={labelStyle}
         pages={pages} setPages={setPages} selIds={selIds} setSelIds={setSelIds}
         addRecord={addRecord} deleteRecord={deleteRecord}
-        openEdit={openEdit} batchDelete={batchDelete}
+        openEdit={openEdit} batchDelete={batchDelete} showToast={showToast}
       />}
 
       {/* ═══════════════════════════════════
@@ -355,7 +358,7 @@ export default function Fitness() {
         c={c} data={data} inputStyle={inputStyle} labelStyle={labelStyle}
         pages={pages} setPages={setPages} selIds={selIds} setSelIds={setSelIds}
         addRecord={addRecord} deleteRecord={deleteRecord}
-        openEdit={openEdit} batchDelete={batchDelete}
+        openEdit={openEdit} batchDelete={batchDelete} showToast={showToast}
       />}
 
       {/* ═══════════════════════════════════
@@ -365,7 +368,7 @@ export default function Fitness() {
         c={c} data={data} inputStyle={inputStyle} labelStyle={labelStyle}
         pages={pages} setPages={setPages} selIds={selIds} setSelIds={setSelIds}
         addRecord={addRecord} deleteRecord={deleteRecord}
-        openEdit={openEdit} batchDelete={batchDelete}
+        openEdit={openEdit} batchDelete={batchDelete} showToast={showToast}
       />}
 
       {/* ═══════════════════════════════════
@@ -375,7 +378,7 @@ export default function Fitness() {
         c={c} data={data} inputStyle={inputStyle} labelStyle={labelStyle}
         pages={pages} setPages={setPages} selIds={selIds} setSelIds={setSelIds}
         addRecord={addRecord} deleteRecord={deleteRecord}
-        openEdit={openEdit} batchDelete={batchDelete}
+        openEdit={openEdit} batchDelete={batchDelete} showToast={showToast}
       />}
 
       {/* ═══════════════════════════════════
@@ -388,144 +391,145 @@ export default function Fitness() {
 
       {/* ═══════ Edit Modal ═══════ */}
       <Modal
-        title={<span style={{ color: c.text, fontWeight: 600 }}>编辑记录</span>}
+        title={'编辑记录'}
         open={editOpen}
-        onCancel={() => { setEditOpen(false); setEditRec(null); setEditType(null); }}
+        onClose={() => { setEditOpen(false); setEditRec(null); setEditType(null); }}
         footer={[
-          <Button key="cancel" onClick={() => { setEditOpen(false); setEditRec(null); setEditType(null); }}
-            style={{ background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 }}>取消</Button>,
-          <Button key="save" type="primary" onClick={saveEdit}
-            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 }}>保存</Button>,
+          <Btn key="cancel" onClick={() => { setEditOpen(false); setEditRec(null); setEditType(null); }}
+            style={{ background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 }}>{'取消'}</Btn>,
+          <Btn key="save" type="primary" onClick={saveEdit}
+            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 }}>{'保存'}</Btn>,
         ]}
-        styles={{
-          content: { background: c.surface, border: '1px solid ' + c.border, borderRadius: 16 },
-          header: { background: 'transparent', borderBottom: '1px solid ' + c.border, paddingBottom: 16 },
-          mask: { backdropFilter: 'blur(4px)' },
-        }}
         width={500}
       >
-        {editRec && editType && (editType === 'diet' ? (
+        {editRec && editType && editType === 'diet' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label style={labelStyle}>食物名称</label>
-                <Input value={editRec.foodName} onChange={e => setEditRec(p => ({ ...p, foodName: e.target.value }))} style={inputStyle} />
+                <label style={labelStyle}>{'食物名称'}</label>
+                <input value={editRec.foodName} onChange={e => setEditRec(p => ({ ...p, foodName: e.target.value }))} style={inputStyle} className="w-full" />
               </div>
               <div>
-                <label style={labelStyle}>分量 (g)</label>
-                <Input value={editRec.grams} onChange={e => setEditRec(p => ({ ...p, grams: parseInt(e.target.value) || 0 }))} style={inputStyle} />
+                <label style={labelStyle}>{'分量 (g)'}</label>
+                <input value={editRec.grams} onChange={e => setEditRec(p => ({ ...p, grams: parseInt(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label style={labelStyle}>热量 (kcal)</label>
-                <Input value={editRec.calories} onChange={e => setEditRec(p => ({ ...p, calories: parseInt(e.target.value) || 0 }))} style={inputStyle} />
+                <label style={labelStyle}>{'热量 (kcal)'}</label>
+                <input value={editRec.calories} onChange={e => setEditRec(p => ({ ...p, calories: parseInt(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
               </div>
               <div>
-                <label style={labelStyle}>餐别</label>
-                <Select value={editRec.mealType} onChange={v => setEditRec(p => ({ ...p, mealType: v }))}
-                  style={{ width: '100%', height: 42 }}
-                  popupStyle={{ background: c.dropdownBg }}
-                  dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-                  options={MEAL_TYPES} />
+                <label style={labelStyle}>{'餐别'}</label>
+                <select value={editRec.mealType} onChange={e => setEditRec(p => ({ ...p, mealType: e.target.value }))}
+                  style={{ ...inputStyle, width: '100%' }}>
+                  {MEAL_TYPES.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
             <div>
-              <label style={labelStyle}>日期</label>
-              <Input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} style={inputStyle} />
+              <label style={labelStyle}>{'日期'}</label>
+              <input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} style={inputStyle} className="w-full" />
             </div>
           </div>
         ) : editType === 'exercise' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label style={labelStyle}>运动名称</label>
-                <Input value={editRec.name} onChange={e => setEditRec(p => ({ ...p, name: e.target.value }))} style={inputStyle} />
+                <label style={labelStyle}>{'运动名称'}</label>
+                <input value={editRec.name} onChange={e => setEditRec(p => ({ ...p, name: e.target.value }))} style={inputStyle} className="w-full" />
               </div>
               <div>
-                <label style={labelStyle}>类型</label>
-                <Select value={editRec.type} onChange={v => setEditRec(p => ({ ...p, type: v }))}
-                  style={{ width: '100%', height: 42 }}
-                  popupStyle={{ background: c.dropdownBg }}
-                  dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-                  options={[
-                    { value: 'cardio', label: '有氧' },
-                    { value: 'strength', label: '力量' },
-                    { value: 'flexibility', label: '柔韧' },
-                  ]} />
+                <label style={labelStyle}>{'类型'}</label>
+                <select value={editRec.type} onChange={e => setEditRec(p => ({ ...p, type: e.target.value }))}
+                  style={{ ...inputStyle, width: '100%' }}>
+                  <option value="cardio">{'有氧'}</option>
+                  <option value="strength">{'力量'}</option>
+                  <option value="flexibility">{'柔韧'}</option>
+                </select>
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label style={labelStyle}>时长 (分钟)</label>
-                <Input value={editRec.duration} onChange={e => setEditRec(p => ({ ...p, duration: parseInt(e.target.value) || 0 }))} style={inputStyle} />
+                <label style={labelStyle}>{'时长 (分钟)'}</label>
+                <input value={editRec.duration} onChange={e => setEditRec(p => ({ ...p, duration: parseInt(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
               </div>
               <div>
-                <label style={labelStyle}>消耗 (kcal)</label>
-                <Input value={editRec.calories} onChange={e => setEditRec(p => ({ ...p, calories: parseInt(e.target.value) || 0 }))} style={inputStyle} />
+                <label style={labelStyle}>{'消耗 (kcal)'}</label>
+                <input value={editRec.calories} onChange={e => setEditRec(p => ({ ...p, calories: parseInt(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
               </div>
             </div>
             <div>
-              <label style={labelStyle}>日期</label>
-              <Input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} style={inputStyle} />
+              <label style={labelStyle}>{'日期'}</label>
+              <input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} style={inputStyle} className="w-full" />
             </div>
           </div>
         ) : editType === 'shopping' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
               <div>
-                <label style={labelStyle}>食材名称</label>
-                <Input value={editRec.itemName} onChange={e => setEditRec(p => ({ ...p, itemName: e.target.value }))} style={inputStyle} />
+                <label style={labelStyle}>{'食材名称'}</label>
+                <input value={editRec.itemName} onChange={e => setEditRec(p => ({ ...p, itemName: e.target.value }))} style={inputStyle} className="w-full" />
               </div>
               <div>
-                <label style={labelStyle}>数量</label>
-                <Input value={editRec.quantity} onChange={e => setEditRec(p => ({ ...p, quantity: parseInt(e.target.value) || 0 }))} style={inputStyle} />
+                <label style={labelStyle}>{'数量'}</label>
+                <input value={editRec.quantity} onChange={e => setEditRec(p => ({ ...p, quantity: parseInt(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
               <div>
-                <label style={labelStyle}>规格</label>
-                <Input value={editRec.unit} onChange={e => setEditRec(p => ({ ...p, unit: e.target.value }))} style={inputStyle} />
+                <label style={labelStyle}>{'规格'}</label>
+                <input value={editRec.unit} onChange={e => setEditRec(p => ({ ...p, unit: e.target.value }))} style={inputStyle} className="w-full" />
               </div>
               <div>
-                <label style={labelStyle}>单价 (元)</label>
-                <Input value={editRec.price} onChange={e => setEditRec(p => ({ ...p, price: parseFloat(e.target.value) || 0 }))} style={inputStyle} />
+                <label style={labelStyle}>{'单价 (元)'}</label>
+                <input value={editRec.price} onChange={e => setEditRec(p => ({ ...p, price: parseFloat(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
               </div>
               <div>
-                <label style={labelStyle}>总额</label>
-                <Input value={editRec.total} onChange={e => setEditRec(p => ({ ...p, total: parseFloat(e.target.value) || 0 }))} style={inputStyle} />
+                <label style={labelStyle}>{'总额'}</label>
+                <input value={editRec.total} onChange={e => setEditRec(p => ({ ...p, total: parseFloat(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
               </div>
             </div>
             <div>
-              <label style={labelStyle}>日期</label>
-              <Input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} style={inputStyle} />
+              <label style={labelStyle}>{'日期'}</label>
+              <input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} style={inputStyle} className="w-full" />
             </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label style={labelStyle}>体重 (kg)</label>
-                <Input value={editRec.weight} onChange={e => setEditRec(p => ({ ...p, weight: parseFloat(e.target.value) || 0 }))} style={inputStyle} />
+                <label style={labelStyle}>{'体重 (kg)'}</label>
+                <input value={editRec.weight} onChange={e => setEditRec(p => ({ ...p, weight: parseFloat(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
               </div>
               <div>
-                <label style={labelStyle}>体脂率 (%)</label>
-                <Input value={editRec.bodyFat || ''} onChange={e => setEditRec(p => ({ ...p, bodyFat: parseFloat(e.target.value) || null }))} style={inputStyle} />
+                <label style={labelStyle}>{'体脂率 (%)'}</label>
+                <input value={editRec.bodyFat || ''} onChange={e => setEditRec(p => ({ ...p, bodyFat: parseFloat(e.target.value) || null }))} style={inputStyle} className="w-full" />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <label style={labelStyle}>身高 (cm)</label>
-                <Input value={editRec.height} onChange={e => setEditRec(p => ({ ...p, height: parseFloat(e.target.value) || 0 }))} style={inputStyle} />
+                <label style={labelStyle}>{'身高 (cm)'}</label>
+                <input value={editRec.height} onChange={e => setEditRec(p => ({ ...p, height: parseFloat(e.target.value) || 0 }))} style={inputStyle} className="w-full" />
               </div>
               <div>
-                <label style={labelStyle}>日期</label>
-                <Input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} style={inputStyle} />
+                <label style={labelStyle}>{'日期'}</label>
+                <input type="date" value={editRec.date} onChange={e => setEditRec(p => ({ ...p, date: e.target.value }))} style={inputStyle} className="w-full" />
               </div>
             </div>
           </div>
-        ))}
+        )}
       </Modal>
+
+      {/* ═══════ Batch Delete Confirmation ═══════ */}
+      <DeleteModal open={batchDeleteType !== null} onClose={() => setBatchDeleteType(null)}
+        onConfirm={confirmBatchDelete}
+        title={`确定要删除选中的 ${selIds.length} 条记录吗？`} />
+
+      {/* ═══════ Toast ═══════ */}
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -538,40 +542,42 @@ export default function Fitness() {
 function TablePagination({ c, inputStyle, page, totalPages, onPageChange, pageSize, onPageSizeChange, total }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 12 }}>
-      <Select value={pageSize} onChange={v => { onPageSizeChange(v); onPageChange(1); }}
-        style={{ width: 120 }}
-        popupStyle={{ background: c.dropdownBg }}
-        dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-        options={[
+      <select value={pageSize} onChange={e => { onPageSizeChange(Number(e.target.value)); onPageChange(1); }}
+        style={{ ...inputStyle, width: 120 }}>
+        {[
           { value: 10, label: '10 条/页' },
           { value: 20, label: '20 条/页' },
           { value: 50, label: '50 条/页' },
           { value: 100, label: '100 条/页' },
-        ]} />
+        ].map(opt => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Button disabled={page <= 1} onClick={() => onPageChange(1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>首页</Button>
-        <Button disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>上一页</Button>
-        <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>第 {page} / {totalPages} 页</span>
-        <Input type="number" min={1} max={totalPages}
-          onPressEnter={e => { const v = parseInt(e.target.value); if (v >= 1 && v <= totalPages) onPageChange(v); }}
-          style={{ ...inputStyle, width: 56, height: 36, textAlign: 'center' }} placeholder="页" />
-        <Button disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>下一页</Button>
-        <Button disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>末页</Button>
+        <Btn disabled={page <= 1} onClick={() => onPageChange(1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'首页'}</Btn>
+        <Btn disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'上一页'}</Btn>
+        <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>{'第 '}{page} / {totalPages} {' 页'}</span>
+        <input type="number" min={1} max={totalPages}
+          onKeyDown={e => { if (e.key === 'Enter') { const v = parseInt(e.target.value); if (v >= 1 && v <= totalPages) onPageChange(v); } }}
+          style={{ ...inputStyle, width: 56, height: 36, textAlign: 'center' }} placeholder={'页'} className="w-full" />
+        <Btn disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'下一页'}</Btn>
+        <Btn disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'末页'}</Btn>
       </div>
-      <span style={{ color: c.muted, fontSize: 13 }}>共 {total} 条</span>
+      <span style={{ color: c.muted, fontSize: 13 }}>{'共 '}{total}{' 条'}</span>
     </div>
   );
 }
 
 /* ── Diet Tab ── */
-function DietTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete }) {
+function DietTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete, showToast }) {
   const [form, setForm] = useState({ date: todayStr(), mealType: 'lunch', foodName: '', grams: 100, calories: '', protein: '', carbs: '', fat: '' });
   const [filterMeal, setFilterMeal] = useState(null);
   const [pageSize, setPageSize] = useState(10);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const page = pages.diet;
 
   const list = useMemo(() => {
@@ -584,7 +590,7 @@ function DietTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, set
   const pageData = list.slice((page - 1) * pageSize, page * pageSize);
 
   function handleAdd() {
-    if (!form.foodName) { message.error('请输入食物名称'); return; }
+    if (!form.foodName) { showToast('请输入食物名称', 'error'); return; }
     const cal = parseInt(form.calories) || 0;
     addRecord('diet', {
       date: form.date, mealType: form.mealType, foodName: form.foodName,
@@ -595,26 +601,45 @@ function DietTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, set
     setForm(f => ({ ...f, foodName: '', calories: '', protein: '', carbs: '', fat: '' }));
   }
 
+  const tagStyle = (color) => ({ background: color + '25', color, padding: '2px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500 });
+
   const columns = [
-    { title: '日期', dataIndex: 'date', width: 110, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
     {
-      title: '餐别', dataIndex: 'mealType', width: 80,
-      render: v => { const mt = MEAL_TYPES.find(m => m.value === v); return <Tag color={mt?.color} bordered={false}>{mt?.label || v}</Tag>; },
+      key: '_check',
+      title: '',
+      width: 40,
+      render: (_, rec) => (
+        <input type="checkbox" checked={selIds.includes(rec.id)}
+          onChange={e => {
+            if (e.target.checked) setSelIds(prev => [...prev, rec.id]);
+            else setSelIds(prev => prev.filter(id => id !== rec.id));
+          }}
+          style={{ accentColor: '#5e6ad2' }} />
+      ),
     },
-    { title: '食物', dataIndex: 'foodName', width: 120, render: v => <span style={{ fontWeight: 500, color: c.text }}>{v}</span> },
-    { title: '分量', dataIndex: 'grams', width: 80, render: v => <span style={{ color: c.textSecondary }}>{v}g</span> },
-    { title: '热量', dataIndex: 'calories', width: 80, render: v => <span style={{ fontWeight: 600, color: '#F0B90B' }}>{v} kcal</span> },
-    { title: '蛋白质', dataIndex: 'protein', width: 80, render: v => <span style={{ color: c.textSecondary }}>{v}g</span> },
-    { title: '碳水', dataIndex: 'carbs', width: 80, render: v => <span style={{ color: c.textSecondary }}>{v}g</span> },
-    { title: '脂肪', dataIndex: 'fat', width: 70, render: v => <span style={{ color: c.textSecondary }}>{v}g</span> },
+    { key: 'date', title: '日期', dataIndex: 'date', width: 110, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
     {
-      title: '操作', width: 160,
+      key: 'mealType', title: '餐别', dataIndex: 'mealType', width: 80,
+      render: v => { const mt = MEAL_TYPES.find(m => m.value === v); return <span style={tagStyle(mt?.color || '#848E9C')}>{mt?.label || v}</span>; },
+    },
+    { key: 'foodName', title: '食物', dataIndex: 'foodName', width: 120, render: v => <span style={{ fontWeight: 500, color: c.text }}>{v}</span> },
+    { key: 'grams', title: '分量', dataIndex: 'grams', width: 80, render: v => <span style={{ color: c.textSecondary }}>{v}g</span> },
+    { key: 'calories', title: '热量', dataIndex: 'calories', width: 80, render: v => <span style={{ fontWeight: 600, color: '#F0B90B' }}>{v} kcal</span> },
+    { key: 'protein', title: '蛋白质', dataIndex: 'protein', width: 80, render: v => <span style={{ color: c.textSecondary }}>{v}g</span> },
+    { key: 'carbs', title: '碳水', dataIndex: 'carbs', width: 80, render: v => <span style={{ color: c.textSecondary }}>{v}g</span> },
+    { key: 'fat', title: '脂肪', dataIndex: 'fat', width: 70, render: v => <span style={{ color: c.textSecondary }}>{v}g</span> },
+    {
+      key: 'action', title: '操作', width: 160,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit('diet', rec)} style={{ color: c.muted, fontSize: 13 }}>编辑</Button>
-          <Popconfirm title="确定删除？" onConfirm={() => deleteRecord('diet', rec.id)} okText="确定" cancelText="取消">
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: 13 }}>删除</Button>
-          </Popconfirm>
+          <Btn type="ghost" onClick={() => openEdit('diet', rec)} style={{ color: c.muted, fontSize: 13 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            {'编辑'}
+          </Btn>
+          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)} style={{ fontSize: 13 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            {'删除'}
+          </Btn>
         </div>
       ),
     },
@@ -625,73 +650,84 @@ function DietTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, set
       {/* Add form — single row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr) auto', gap: 12, marginBottom: 20, alignItems: 'end' }}>
         <div style={{ gridColumn: 'span 2' }}>
-          <label style={labelStyle}>食物名称</label>
-          <Input value={form.foodName} onChange={e => setForm(f => ({ ...f, foodName: e.target.value }))} placeholder="如：鸡胸肉" style={inputStyle} />
+          <label style={labelStyle}>{'食物名称'}</label>
+          <input value={form.foodName} onChange={e => setForm(f => ({ ...f, foodName: e.target.value }))} placeholder={'如：鸡胸肉'} style={inputStyle} className="w-full" />
         </div>
         <div>
-          <label style={labelStyle}>餐别</label>
-          <Select value={form.mealType} onChange={v => setForm(f => ({ ...f, mealType: v }))}
-            style={{ width: '100%', height: 42 }}
-            popupStyle={{ background: c.dropdownBg }}
-            dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-            options={MEAL_TYPES} />
+          <label style={labelStyle}>{'餐别'}</label>
+          <select value={form.mealType} onChange={e => setForm(f => ({ ...f, mealType: e.target.value }))}
+            style={{ ...inputStyle, width: '100%' }}>
+            {MEAL_TYPES.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
         </div>
         <div>
-          <label style={labelStyle}>分量 (g)</label>
-          <Input value={form.grams} onChange={e => setForm(f => ({ ...f, grams: e.target.value.replace(/\D/g, '') }))} style={inputStyle} />
+          <label style={labelStyle}>{'分量 (g)'}</label>
+          <input value={form.grams} onChange={e => setForm(f => ({ ...f, grams: e.target.value.replace(/\D/g, '') }))} style={inputStyle} className="w-full" />
         </div>
         <div>
-          <label style={labelStyle}>热量</label>
-          <Input value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value.replace(/\D/g, '') }))} placeholder="可选" style={inputStyle} />
+          <label style={labelStyle}>{'热量'}</label>
+          <input value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value.replace(/\D/g, '') }))} placeholder={'可选'} style={inputStyle} className="w-full" />
         </div>
         <div>
-          <label style={labelStyle}>蛋白质</label>
-          <Input value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="可选" style={inputStyle} />
+          <label style={labelStyle}>{'蛋白质'}</label>
+          <input value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'可选'} style={inputStyle} className="w-full" />
         </div>
         <div>
-          <label style={labelStyle}>碳水</label>
-          <Input value={form.carbs} onChange={e => setForm(f => ({ ...f, carbs: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="可选" style={inputStyle} />
+          <label style={labelStyle}>{'碳水'}</label>
+          <input value={form.carbs} onChange={e => setForm(f => ({ ...f, carbs: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'可选'} style={inputStyle} className="w-full" />
         </div>
         <div>
-          <label style={labelStyle}>脂肪</label>
-          <Input value={form.fat} onChange={e => setForm(f => ({ ...f, fat: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="可选" style={inputStyle} />
+          <label style={labelStyle}>{'脂肪'}</label>
+          <input value={form.fat} onChange={e => setForm(f => ({ ...f, fat: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'可选'} style={inputStyle} className="w-full" />
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}
-          style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 20px', marginBottom: 0 }}>添加</Button>
+        <Btn type="primary" onClick={handleAdd}
+          style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 20px', marginBottom: 0 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          {'添加'}
+        </Btn>
       </div>
 
       {/* Table controls */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div>
-          <label style={labelStyle}>餐别筛选</label>
-          <Select value={filterMeal} onChange={v => { setFilterMeal(v); setPages(p => ({ ...p, diet: 1 })); }}
-            style={{ width: 120, height: 42 }}
-            popupStyle={{ background: c.dropdownBg }}
-            dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-            options={[{ value: null, label: '全部' }, ...MEAL_TYPES]} />
+          <label style={labelStyle}>{'餐别筛选'}</label>
+          <select value={filterMeal === null ? '' : filterMeal} onChange={e => { setFilterMeal(e.target.value === '' ? null : e.target.value); setPages(p => ({ ...p, diet: 1 })); }}
+            style={{ ...inputStyle, width: 120 }}>
+            <option value="">{'全部'}</option>
+            {MEAL_TYPES.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
         </div>
-        <Button danger disabled={!selIds.length} onClick={() => batchDelete('diet')}
-          icon={<DeleteOutlined />} style={{ borderRadius: 8, height: 42 }}>批量删除</Button>
-        {selIds.length > 0 && <span style={{ color: c.muted, fontSize: 13 }}>已选 {selIds.length} 条</span>}
+        <Btn type="danger" disabled={!selIds.length} onClick={() => batchDelete('diet')}
+          style={{ borderRadius: 8, height: 42 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          {'批量删除'}
+        </Btn>
+        {selIds.length > 0 && <span style={{ color: c.muted, fontSize: 13 }}>{'已选 '}{selIds.length}{' 条'}</span>}
       </div>
 
-      <Table dataSource={pageData} columns={columns} rowKey="id" pagination={false}
-        rowSelection={{ type: 'checkbox', selectedRowKeys: selIds, onChange: keys => setSelIds(keys) }}
-        style={{ background: 'transparent' }}
-        locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无饮食记录</span> }}
-        scroll={{ x: 800 }} size="middle" />
+      <DataTable data={pageData} columns={columns} rowKey="id"
+        emptyText={<span style={{ color: c.muted2 }}>{'暂无饮食记录'}</span>} />
       <TablePagination c={c} inputStyle={inputStyle} page={page} totalPages={totalPages}
         onPageChange={fn => setPages(p => ({ ...p, diet: typeof fn === 'function' ? fn(p.diet) : fn }))}
         pageSize={pageSize} onPageSizeChange={setPageSize} total={list.length} />
+
+      <DeleteModal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)}
+        onConfirm={() => { deleteRecord('diet', deleteTarget); setDeleteTarget(null); }}
+        title={'确定删除？'} />
     </div>
   );
 }
 
 /* ── Exercise Tab ── */
-function ExerciseTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete }) {
+function ExerciseTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete, showToast }) {
   const [form, setForm] = useState({ date: todayStr(), name: '', type: 'cardio', duration: '', intensity: 'medium', calories: '' });
   const [filterType, setFilterType] = useState(null);
   const [pageSize, setPageSize] = useState(10);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const page = pages.exercise;
 
   const list = useMemo(() => {
@@ -704,7 +740,7 @@ function ExerciseTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
   const pageData = list.slice((page - 1) * pageSize, page * pageSize);
 
   function handleAdd() {
-    if (!form.name || !form.duration) { message.error('请填写运动名称和时长'); return; }
+    if (!form.name || !form.duration) { showToast('请填写运动名称和时长', 'error'); return; }
     addRecord('exercise', {
       date: form.date, name: form.name, type: form.type,
       duration: parseInt(form.duration), intensity: form.intensity,
@@ -714,29 +750,46 @@ function ExerciseTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
   }
 
   const columns = [
-    { title: '日期', dataIndex: 'date', width: 110, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
-    { title: '运动', dataIndex: 'name', width: 120, render: v => <span style={{ fontWeight: 500, color: c.text }}>{v}</span> },
     {
-      title: '类型', dataIndex: 'type', width: 80,
+      key: '_check',
+      title: '',
+      width: 40,
+      render: (_, rec) => (
+        <input type="checkbox" checked={selIds.includes(rec.id)}
+          onChange={e => {
+            if (e.target.checked) setSelIds(prev => [...prev, rec.id]);
+            else setSelIds(prev => prev.filter(id => id !== rec.id));
+          }}
+          style={{ accentColor: '#5e6ad2' }} />
+      ),
+    },
+    { key: 'date', title: '日期', dataIndex: 'date', width: 110, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
+    { key: 'name', title: '运动', dataIndex: 'name', width: 120, render: v => <span style={{ fontWeight: 500, color: c.text }}>{v}</span> },
+    {
+      key: 'type', title: '类型', dataIndex: 'type', width: 80,
       render: v => {
         const map = { cardio: '有氧', strength: '力量', flexibility: '柔韧' };
-        return <Tag bordered={false} style={{ color: '#5e6ad2' }}>{map[v] || v}</Tag>;
+        return <span style={{ background: 'rgba(94,106,210,0.15)', color: '#5e6ad2', padding: '2px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500 }}>{map[v] || v}</span>;
       },
     },
-    { title: '时长', dataIndex: 'duration', width: 80, render: v => <span style={{ color: c.textSecondary }}>{v} 分钟</span> },
+    { key: 'duration', title: '时长', dataIndex: 'duration', width: 80, render: v => <span style={{ color: c.textSecondary }}>{v} {'分钟'}</span> },
     {
-      title: '强度', dataIndex: 'intensity', width: 70,
-      render: v => { const opt = INTENSITY_LEVELS.find(o => o.value === v); return <Tag color={opt?.color} bordered={false}>{opt?.label || v}</Tag>; },
+      key: 'intensity', title: '强度', dataIndex: 'intensity', width: 70,
+      render: v => { const opt = INTENSITY_LEVELS.find(o => o.value === v); return <span style={{ background: (opt?.color || '#848E9C') + '25', color: opt?.color || '#848E9C', padding: '2px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500 }}>{opt?.label || v}</span>; },
     },
-    { title: '消耗', dataIndex: 'calories', width: 80, render: v => <span style={{ fontWeight: 600, color: '#ff6b6b' }}>{v} kcal</span> },
+    { key: 'calories', title: '消耗', dataIndex: 'calories', width: 80, render: v => <span style={{ fontWeight: 600, color: '#ff6b6b' }}>{v} kcal</span> },
     {
-      title: '操作', width: 160,
+      key: 'action', title: '操作', width: 160,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit('exercise', rec)} style={{ color: c.muted, fontSize: 13 }}>编辑</Button>
-          <Popconfirm title="确定删除？" onConfirm={() => deleteRecord('exercise', rec.id)} okText="确定" cancelText="取消">
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: 13 }}>删除</Button>
-          </Popconfirm>
+          <Btn type="ghost" onClick={() => openEdit('exercise', rec)} style={{ color: c.muted, fontSize: 13 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            {'编辑'}
+          </Btn>
+          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)} style={{ fontSize: 13 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            {'删除'}
+          </Btn>
         </div>
       ),
     },
@@ -746,76 +799,79 @@ function ExerciseTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
     <div className="linear-card" style={{ padding: 24 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr) auto', gap: 12, marginBottom: 20, alignItems: 'end' }}>
         <div style={{ gridColumn: 'span 2' }}>
-          <label style={labelStyle}>运动名称</label>
-          <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="如：跑步" style={inputStyle} />
+          <label style={labelStyle}>{'运动名称'}</label>
+          <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={'如：跑步'} style={inputStyle} className="w-full" />
         </div>
         <div>
-          <label style={labelStyle}>类型</label>
-          <Select value={form.type} onChange={v => setForm(f => ({ ...f, type: v }))}
-            style={{ width: '100%', height: 42 }}
-            popupStyle={{ background: c.dropdownBg }}
-            dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-            options={[
-              { value: 'cardio', label: '有氧' },
-              { value: 'strength', label: '力量' },
-              { value: 'flexibility', label: '柔韧' },
-            ]} />
+          <label style={labelStyle}>{'类型'}</label>
+          <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+            style={{ ...inputStyle, width: '100%' }}>
+            <option value="cardio">{'有氧'}</option>
+            <option value="strength">{'力量'}</option>
+            <option value="flexibility">{'柔韧'}</option>
+          </select>
         </div>
         <div>
-          <label style={labelStyle}>时长 (分钟)</label>
-          <Input value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value.replace(/\D/g, '') }))} placeholder="如：30" style={inputStyle} />
+          <label style={labelStyle}>{'时长 (分钟)'}</label>
+          <input value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value.replace(/\D/g, '') }))} placeholder={'如：30'} style={inputStyle} className="w-full" />
         </div>
         <div>
-          <label style={labelStyle}>强度</label>
-          <Select value={form.intensity} onChange={v => setForm(f => ({ ...f, intensity: v }))}
-            style={{ width: '100%', height: 42 }}
-            popupStyle={{ background: c.dropdownBg }}
-            dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-            options={INTENSITY_LEVELS.map(o => ({ value: o.value, label: o.label }))} />
+          <label style={labelStyle}>{'强度'}</label>
+          <select value={form.intensity} onChange={e => setForm(f => ({ ...f, intensity: e.target.value }))}
+            style={{ ...inputStyle, width: '100%' }}>
+            {INTENSITY_LEVELS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
         </div>
         <div style={{ gridColumn: 'span 2' }}>
-          <label style={labelStyle}>消耗 (kcal)</label>
-          <Input value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value.replace(/\D/g, '') }))} placeholder="自动估算" style={inputStyle} />
+          <label style={labelStyle}>{'消耗 (kcal)'}</label>
+          <input value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value.replace(/\D/g, '') }))} placeholder={'自动估算'} style={inputStyle} className="w-full" />
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}
-          style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 20px' }}>添加</Button>
+        <Btn type="primary" onClick={handleAdd}
+          style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 20px' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          {'添加'}
+        </Btn>
       </div>
 
       <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div>
-          <label style={labelStyle}>类型筛选</label>
-          <Select value={filterType} onChange={v => { setFilterType(v); setPages(p => ({ ...p, exercise: 1 })); }}
-            style={{ width: 120, height: 42 }}
-            popupStyle={{ background: c.dropdownBg }}
-            dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-            options={[
-              { value: null, label: '全部' },
-              { value: 'cardio', label: '有氧' },
-              { value: 'strength', label: '力量' },
-              { value: 'flexibility', label: '柔韧' },
-            ]} />
+          <label style={labelStyle}>{'类型筛选'}</label>
+          <select value={filterType === null ? '' : filterType} onChange={e => { setFilterType(e.target.value === '' ? null : e.target.value); setPages(p => ({ ...p, exercise: 1 })); }}
+            style={{ ...inputStyle, width: 120 }}>
+            <option value="">{'全部'}</option>
+            <option value="cardio">{'有氧'}</option>
+            <option value="strength">{'力量'}</option>
+            <option value="flexibility">{'柔韧'}</option>
+          </select>
         </div>
-        <Button danger disabled={!selIds.length} onClick={() => batchDelete('exercise')}
-          icon={<DeleteOutlined />} style={{ borderRadius: 8, height: 42 }}>批量删除</Button>
-        {selIds.length > 0 && <span style={{ color: c.muted, fontSize: 13 }}>已选 {selIds.length} 条</span>}
+        <Btn type="danger" disabled={!selIds.length} onClick={() => batchDelete('exercise')}
+          style={{ borderRadius: 8, height: 42 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          {'批量删除'}
+        </Btn>
+        {selIds.length > 0 && <span style={{ color: c.muted, fontSize: 13 }}>{'已选 '}{selIds.length}{' 条'}</span>}
       </div>
 
-      <Table dataSource={pageData} columns={columns} rowKey="id" pagination={false}
-        rowSelection={{ type: 'checkbox', selectedRowKeys: selIds, onChange: keys => setSelIds(keys) }}
-        style={{ background: 'transparent' }}
-        locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无运动记录</span> }}
-        scroll={{ x: 700 }} size="middle" />
+      <DataTable data={pageData} columns={columns} rowKey="id"
+        emptyText={<span style={{ color: c.muted2 }}>{'暂无运动记录'}</span>} />
       <TablePagination c={c} inputStyle={inputStyle} page={page} totalPages={totalPages}
         onPageChange={fn => setPages(p => ({ ...p, exercise: typeof fn === 'function' ? fn(p.exercise) : fn }))}
         pageSize={pageSize} onPageSizeChange={setPageSize} total={list.length} />
+
+      <DeleteModal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)}
+        onConfirm={() => { deleteRecord('exercise', deleteTarget); setDeleteTarget(null); }}
+        title={'确定删除？'} />
     </div>
   );
 }
 
 /* ── Shopping Tab ── */
-function ShoppingTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete }) {
+function ShoppingTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete, showToast }) {
   const [form, setForm] = useState({ date: todayStr(), itemName: '', unit: '500g', quantity: 1, price: '', location: '' });
   const [pageSize, setPageSize] = useState(10);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const page = pages.shopping;
 
   const list = useMemo(() =>
@@ -826,7 +882,7 @@ function ShoppingTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
   const pageData = list.slice((page - 1) * pageSize, page * pageSize);
 
   function handleAdd() {
-    if (!form.itemName || !form.price) { message.error('请填写食材名称和价格'); return; }
+    if (!form.itemName || !form.price) { showToast('请填写食材名称和价格', 'error'); return; }
     const qty = parseInt(form.quantity) || 1;
     const price = parseFloat(form.price) || 0;
     addRecord('shopping', {
@@ -837,21 +893,38 @@ function ShoppingTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
   }
 
   const columns = [
-    { title: '日期', dataIndex: 'date', width: 110, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
-    { title: '食材', dataIndex: 'itemName', width: 130, render: v => <span style={{ fontWeight: 500, color: c.text }}>{v}</span> },
-    { title: '规格', dataIndex: 'unit', width: 80, render: v => <span style={{ color: c.muted }}>{v}</span> },
-    { title: '数量', dataIndex: 'quantity', width: 70, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
-    { title: '单价', dataIndex: 'price', width: 80, render: v => <span style={{ color: c.textSecondary }}>¥{v}</span> },
-    { title: '总额', dataIndex: 'total', width: 90, render: v => <span style={{ fontWeight: 600, color: '#ff6b6b' }}>¥{v?.toFixed(2)}</span> },
-    { title: '地点', dataIndex: 'location', width: 100, render: v => <span style={{ color: c.muted2 }}>{v || '-'}</span> },
     {
-      title: '操作', width: 160,
+      key: '_check',
+      title: '',
+      width: 40,
+      render: (_, rec) => (
+        <input type="checkbox" checked={selIds.includes(rec.id)}
+          onChange={e => {
+            if (e.target.checked) setSelIds(prev => [...prev, rec.id]);
+            else setSelIds(prev => prev.filter(id => id !== rec.id));
+          }}
+          style={{ accentColor: '#5e6ad2' }} />
+      ),
+    },
+    { key: 'date', title: '日期', dataIndex: 'date', width: 110, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
+    { key: 'itemName', title: '食材', dataIndex: 'itemName', width: 130, render: v => <span style={{ fontWeight: 500, color: c.text }}>{v}</span> },
+    { key: 'unit', title: '规格', dataIndex: 'unit', width: 80, render: v => <span style={{ color: c.muted }}>{v}</span> },
+    { key: 'quantity', title: '数量', dataIndex: 'quantity', width: 70, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
+    { key: 'price', title: '单价', dataIndex: 'price', width: 80, render: v => <span style={{ color: c.textSecondary }}>{'¥'}{v}</span> },
+    { key: 'total', title: '总额', dataIndex: 'total', width: 90, render: v => <span style={{ fontWeight: 600, color: '#ff6b6b' }}>{'¥'}{v?.toFixed(2)}</span> },
+    { key: 'location', title: '地点', dataIndex: 'location', width: 100, render: v => <span style={{ color: c.muted2 }}>{v || '-'}</span> },
+    {
+      key: 'action', title: '操作', width: 160,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit('shopping', rec)} style={{ color: c.muted, fontSize: 13 }}>编辑</Button>
-          <Popconfirm title="确定删除？" onConfirm={() => deleteRecord('shopping', rec.id)} okText="确定" cancelText="取消">
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: 13 }}>删除</Button>
-          </Popconfirm>
+          <Btn type="ghost" onClick={() => openEdit('shopping', rec)} style={{ color: c.muted, fontSize: 13 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            {'编辑'}
+          </Btn>
+          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)} style={{ fontSize: 13 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            {'删除'}
+          </Btn>
         </div>
       ),
     },
@@ -861,61 +934,66 @@ function ShoppingTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds,
     <div className="linear-card" style={{ padding: 24 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr) auto', gap: 12, marginBottom: 20, alignItems: 'end' }}>
         <div style={{ gridColumn: 'span 2' }}>
-          <label style={labelStyle}>食材名称</label>
-          <Input value={form.itemName} onChange={e => setForm(f => ({ ...f, itemName: e.target.value }))} placeholder="如：鸡胸肉" style={inputStyle} />
+          <label style={labelStyle}>{'食材名称'}</label>
+          <input value={form.itemName} onChange={e => setForm(f => ({ ...f, itemName: e.target.value }))} placeholder={'如：鸡胸肉'} style={inputStyle} className="w-full" />
         </div>
         <div>
-          <label style={labelStyle}>规格</label>
-          <Select value={form.unit} onChange={v => setForm(f => ({ ...f, unit: v }))}
-            style={{ width: '100%', height: 42 }}
-            popupStyle={{ background: c.dropdownBg }}
-            dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-            options={[
-              { value: '500g', label: '500g' },
-              { value: '1000g', label: '1000g' },
-              { value: '个', label: '个' },
-              { value: '袋', label: '袋' },
-              { value: '瓶', label: '瓶' },
-            ]} />
+          <label style={labelStyle}>{'规格'}</label>
+          <select value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
+            style={{ ...inputStyle, width: '100%' }}>
+            <option value="500g">{'500g'}</option>
+            <option value="1000g">{'1000g'}</option>
+            <option value="个">{'个'}</option>
+            <option value="袋">{'袋'}</option>
+            <option value="瓶">{'瓶'}</option>
+          </select>
         </div>
         <div>
-          <label style={labelStyle}>数量</label>
-          <Input value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value.replace(/\D/g, '') }))} style={inputStyle} />
+          <label style={labelStyle}>{'数量'}</label>
+          <input value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value.replace(/\D/g, '') }))} style={inputStyle} className="w-full" />
         </div>
         <div>
-          <label style={labelStyle}>单价 (元)</label>
-          <Input value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="如：25" style={inputStyle} />
+          <label style={labelStyle}>{'单价 (元)'}</label>
+          <input value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'如：25'} style={inputStyle} className="w-full" />
         </div>
         <div style={{ gridColumn: 'span 2' }}>
-          <label style={labelStyle}>地点（可选）</label>
-          <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="如：盒马" style={inputStyle} />
+          <label style={labelStyle}>{'地点（可选）'}</label>
+          <input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder={'如：盒马'} style={inputStyle} className="w-full" />
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}
-          style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 20px' }}>添加</Button>
+        <Btn type="primary" onClick={handleAdd}
+          style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 20px' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          {'添加'}
+        </Btn>
       </div>
 
       <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <Button danger disabled={!selIds.length} onClick={() => batchDelete('shopping')}
-          icon={<DeleteOutlined />} style={{ borderRadius: 8, height: 42 }}>批量删除</Button>
-        {selIds.length > 0 && <span style={{ color: c.muted, fontSize: 13 }}>已选 {selIds.length} 条</span>}
+        <Btn type="danger" disabled={!selIds.length} onClick={() => batchDelete('shopping')}
+          style={{ borderRadius: 8, height: 42 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          {'批量删除'}
+        </Btn>
+        {selIds.length > 0 && <span style={{ color: c.muted, fontSize: 13 }}>{'已选 '}{selIds.length}{' 条'}</span>}
       </div>
 
-      <Table dataSource={pageData} columns={columns} rowKey="id" pagination={false}
-        rowSelection={{ type: 'checkbox', selectedRowKeys: selIds, onChange: keys => setSelIds(keys) }}
-        style={{ background: 'transparent' }}
-        locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无购买记录</span> }}
-        scroll={{ x: 800 }} size="middle" />
+      <DataTable data={pageData} columns={columns} rowKey="id"
+        emptyText={<span style={{ color: c.muted2 }}>{'暂无购买记录'}</span>} />
       <TablePagination c={c} inputStyle={inputStyle} page={page} totalPages={totalPages}
         onPageChange={fn => setPages(p => ({ ...p, shopping: typeof fn === 'function' ? fn(p.shopping) : fn }))}
         pageSize={pageSize} onPageSizeChange={setPageSize} total={list.length} />
+
+      <DeleteModal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)}
+        onConfirm={() => { deleteRecord('shopping', deleteTarget); setDeleteTarget(null); }}
+        title={'确定删除？'} />
     </div>
   );
 }
 
 /* ── Weight Tab ── */
-function WeightTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete }) {
+function WeightTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, setSelIds, addRecord, deleteRecord, openEdit, batchDelete, showToast }) {
   const [form, setForm] = useState({ date: todayStr(), weight: '', height: '170', bodyFat: '' });
   const [pageSize, setPageSize] = useState(10);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const page = pages.weight;
 
   const list = useMemo(() =>
@@ -926,7 +1004,7 @@ function WeightTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, s
   const pageData = list.slice((page - 1) * pageSize, page * pageSize);
 
   function handleAdd() {
-    if (!form.weight) { message.error('请填写体重'); return; }
+    if (!form.weight) { showToast('请填写体重', 'error'); return; }
     addRecord('weight', {
       date: form.date, weight: parseFloat(form.weight),
       height: parseFloat(form.height) || 170,
@@ -936,18 +1014,35 @@ function WeightTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, s
   }
 
   const columns = [
-    { title: '日期', dataIndex: 'date', width: 110, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
-    { title: '体重', dataIndex: 'weight', width: 100, render: v => <span style={{ fontWeight: 600, color: c.text, fontSize: 15 }}>{v?.toFixed(1)} kg</span> },
-    { title: '体脂率', dataIndex: 'bodyFat', width: 100, render: v => v ? <span style={{ color: c.textSecondary }}>{v.toFixed(1)}%</span> : <span style={{ color: c.muted2 }}>-</span> },
-    { title: '身高', dataIndex: 'height', width: 80, render: v => <span style={{ color: c.muted }}>{v} cm</span> },
     {
-      title: '操作', width: 160,
+      key: '_check',
+      title: '',
+      width: 40,
+      render: (_, rec) => (
+        <input type="checkbox" checked={selIds.includes(rec.id)}
+          onChange={e => {
+            if (e.target.checked) setSelIds(prev => [...prev, rec.id]);
+            else setSelIds(prev => prev.filter(id => id !== rec.id));
+          }}
+          style={{ accentColor: '#5e6ad2' }} />
+      ),
+    },
+    { key: 'date', title: '日期', dataIndex: 'date', width: 110, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
+    { key: 'weight', title: '体重', dataIndex: 'weight', width: 100, render: v => <span style={{ fontWeight: 600, color: c.text, fontSize: 15 }}>{v?.toFixed(1)} kg</span> },
+    { key: 'bodyFat', title: '体脂率', dataIndex: 'bodyFat', width: 100, render: v => v ? <span style={{ color: c.textSecondary }}>{v.toFixed(1)}%</span> : <span style={{ color: c.muted2 }}>-</span> },
+    { key: 'height', title: '身高', dataIndex: 'height', width: 80, render: v => <span style={{ color: c.muted }}>{v} cm</span> },
+    {
+      key: 'action', title: '操作', width: 160,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit('weight', rec)} style={{ color: c.muted, fontSize: 13 }}>编辑</Button>
-          <Popconfirm title="确定删除？" onConfirm={() => deleteRecord('weight', rec.id)} okText="确定" cancelText="取消">
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: 13 }}>删除</Button>
-          </Popconfirm>
+          <Btn type="ghost" onClick={() => openEdit('weight', rec)} style={{ color: c.muted, fontSize: 13 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            {'编辑'}
+          </Btn>
+          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)} style={{ fontSize: 13 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            {'删除'}
+          </Btn>
         </div>
       ),
     },
@@ -957,39 +1052,46 @@ function WeightTab({ c, data, inputStyle, labelStyle, pages, setPages, selIds, s
     <div className="linear-card" style={{ padding: 24 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr) auto', gap: 12, marginBottom: 20, alignItems: 'end' }}>
         <div style={{ gridColumn: 'span 2' }}>
-          <label style={labelStyle}>日期</label>
-          <Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} style={inputStyle} />
+          <label style={labelStyle}>{'日期'}</label>
+          <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} style={inputStyle} className="w-full" />
         </div>
         <div>
-          <label style={labelStyle}>体重 (kg)</label>
-          <Input value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="如：72.5" style={inputStyle} />
+          <label style={labelStyle}>{'体重 (kg)'}</label>
+          <input value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'如：72.5'} style={inputStyle} className="w-full" />
         </div>
         <div>
-          <label style={labelStyle}>身高 (cm)</label>
-          <Input value={form.height} onChange={e => setForm(f => ({ ...f, height: e.target.value.replace(/[^0-9.]/g, '') }))} style={inputStyle} />
+          <label style={labelStyle}>{'身高 (cm)'}</label>
+          <input value={form.height} onChange={e => setForm(f => ({ ...f, height: e.target.value.replace(/[^0-9.]/g, '') }))} style={inputStyle} className="w-full" />
         </div>
         <div>
-          <label style={labelStyle}>体脂率 (%)</label>
-          <Input value={form.bodyFat} onChange={e => setForm(f => ({ ...f, bodyFat: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="可选" style={inputStyle} />
+          <label style={labelStyle}>{'体脂率 (%)'}</label>
+          <input value={form.bodyFat} onChange={e => setForm(f => ({ ...f, bodyFat: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder={'可选'} style={inputStyle} className="w-full" />
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}
-          style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 20px' }}>添加</Button>
+        <Btn type="primary" onClick={handleAdd}
+          style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 20px' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          {'添加'}
+        </Btn>
       </div>
 
       <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <Button danger disabled={!selIds.length} onClick={() => batchDelete('weight')}
-          icon={<DeleteOutlined />} style={{ borderRadius: 8, height: 42 }}>批量删除</Button>
-        {selIds.length > 0 && <span style={{ color: c.muted, fontSize: 13 }}>已选 {selIds.length} 条</span>}
+        <Btn type="danger" disabled={!selIds.length} onClick={() => batchDelete('weight')}
+          style={{ borderRadius: 8, height: 42 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          {'批量删除'}
+        </Btn>
+        {selIds.length > 0 && <span style={{ color: c.muted, fontSize: 13 }}>{'已选 '}{selIds.length}{' 条'}</span>}
       </div>
 
-      <Table dataSource={pageData} columns={columns} rowKey="id" pagination={false}
-        rowSelection={{ type: 'checkbox', selectedRowKeys: selIds, onChange: keys => setSelIds(keys) }}
-        style={{ background: 'transparent' }}
-        locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无体重记录</span> }}
-        scroll={{ x: 500 }} size="middle" />
+      <DataTable data={pageData} columns={columns} rowKey="id"
+        emptyText={<span style={{ color: c.muted2 }}>{'暂无体重记录'}</span>} />
       <TablePagination c={c} inputStyle={inputStyle} page={page} totalPages={totalPages}
         onPageChange={fn => setPages(p => ({ ...p, weight: typeof fn === 'function' ? fn(p.weight) : fn }))}
         pageSize={pageSize} onPageSizeChange={setPageSize} total={list.length} />
+
+      <DeleteModal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)}
+        onConfirm={() => { deleteRecord('weight', deleteTarget); setDeleteTarget(null); }}
+        title={'确定删除？'} />
     </div>
   );
 }
@@ -1073,19 +1175,19 @@ function ChartsTab({ c, isLight, data, chartRef, chartInstance }) {
     <div>
       {/* Calorie chart */}
       <div className="linear-card" style={{ padding: 28, marginBottom: 24 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, marginBottom: 24 }}>热量对比（近 30 天）</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, marginBottom: 24 }}>{'热量对比（近 30 天）'}</h2>
         <div ref={dietChartRef} style={{ height: 260, padding: 20, background: c.surfaceTint2, borderRadius: 12 }} />
       </div>
 
       {/* Weight chart */}
       <div className="linear-card" style={{ padding: 28, marginBottom: 24 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, marginBottom: 24 }}>体重趋势</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, marginBottom: 24 }}>{'体重趋势'}</h2>
         <div ref={weightChartRef} style={{ height: 260, padding: 20, background: c.surfaceTint2, borderRadius: 12 }} />
       </div>
 
       {/* Macro pie */}
       <div className="linear-card" style={{ padding: 28 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, marginBottom: 24 }}>今日营养构成</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, marginBottom: 24 }}>{'今日营养构成'}</h2>
         {macroData.length > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
             {macroData.map(m => (
@@ -1097,7 +1199,7 @@ function ChartsTab({ c, isLight, data, chartRef, chartInstance }) {
             ))}
           </div>
         ) : (
-          <div style={{ textAlign: 'center', color: c.muted2, padding: '40px 0' }}>今天还没有饮食记录</div>
+          <div style={{ textAlign: 'center', color: c.muted2, padding: '40px 0' }}>{'今天还没有饮食记录'}</div>
         )}
       </div>
     </div>

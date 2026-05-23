@@ -1,15 +1,14 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import {
-  Input, Button, Select, Modal, Popconfirm, message, Table, Segmented, DatePicker, InputNumber, Switch,
-} from 'antd';
-import {
-  PlusOutlined, DeleteOutlined, EditOutlined,
-  FundOutlined, RiseOutlined,
-  SearchOutlined, ClearOutlined,
-  ShoppingCartOutlined, DollarOutlined, SettingOutlined,
-} from '@ant-design/icons';
+import { Modal, DeleteModal, Toast, Btn, PillTabs, DataTable, Switch } from '../../components/ui';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
+
+/* ── Inline SVG Icons ── */
+const IconPlus = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>;
+const IconDelete = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>;
+const IconEdit = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>;
+const IconSearch = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
+const IconClear = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
 
 /* ═══════════════════════════════════════
    Constants
@@ -89,56 +88,39 @@ function useIsLight() {
 function TablePagination({ c, inputStyle, page, totalPages, onPageChange, pageSize, onPageSizeChange, total }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 12 }}>
-      <Select value={pageSize} onChange={v => { onPageSizeChange(v); onPageChange(1); }}
-        style={{ width: 120 }}
-        popupStyle={{ background: c.dropdownBg }}
-        dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-        options={[
-          { value: 10, label: '10 条/页' },
-          { value: 20, label: '20 条/页' },
-          { value: 50, label: '50 条/页' },
-          { value: 100, label: '100 条/页' },
-        ]} />
+      <select value={pageSize} onChange={e => { onPageSizeChange(Number(e.target.value)); onPageChange(1); }}
+        style={{ background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, height: 36, fontSize: 13, width: 120, cursor: 'pointer', padding: '0 8px' }}>
+        <option value={10}>10 条/页</option>
+        <option value={20}>20 条/页</option>
+        <option value={50}>50 条/页</option>
+        <option value={100}>100 条/页</option>
+      </select>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Button disabled={page <= 1} onClick={() => onPageChange(1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>首页</Button>
-        <Button disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>上一页</Button>
+        <Btn disabled={page <= 1} onClick={() => onPageChange(1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>首页</Btn>
+        <Btn disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>上一页</Btn>
         <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>第 {page} / {totalPages} 页</span>
-        <Input type="number" min={1} max={totalPages}
-          onPressEnter={e => { const v = parseInt(e.target.value); if (v >= 1 && v <= totalPages) onPageChange(v); }}
+        <input type="number" min={1} max={totalPages}
+          onKeyDown={e => { if (e.key === 'Enter') { const v = parseInt(e.target.value); if (v >= 1 && v <= totalPages) onPageChange(v); } }}
           style={{ ...inputStyle, width: 56, height: 36, textAlign: 'center' }} placeholder="页" />
-        <Button disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>下一页</Button>
-        <Button disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>末页</Button>
+        <Btn disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>下一页</Btn>
+        <Btn disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>末页</Btn>
       </div>
       <span style={{ color: c.muted, fontSize: 13 }}>共 {total} 条</span>
     </div>
   );
 }
 
-/* ── Modal shared style helpers ── */
-function modalTitle(text, c) {
-  return <span style={{ color: c.text, fontWeight: 600 }}>{text}</span>;
-}
-function modalStyles(c) {
-  return {
-    content: { background: c.surface, border: '1px solid ' + c.border, borderRadius: 16 },
-    header: { background: 'transparent', borderBottom: '1px solid ' + c.border, paddingBottom: 16 },
-    mask: { backdropFilter: 'blur(4px)' },
-  };
-}
-const okBtn = { style: { background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 } };
-function cancelBtn(c) {
-  return { style: { background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 } };
-}
-
 /* ═══════════════════════════════════════
    Dashboard Tab — 数据概览
    ═══════════════════════════════════════ */
-function DashboardTab({ c, fs, isLight, data }) {
+function DashboardTab({ c, fs, isLight, data, setData }) {
   const { platforms, bills, repayments } = data;
+  const [toast, setToast] = useState(null);
+  const [markBill, setMarkBill] = useState(null);
 
   const stats = useMemo(() => {
     let totalDebt = 0, totalPaid = 0, totalUnpaid = 0, totalInterest = 0;
@@ -161,23 +143,26 @@ function DashboardTab({ c, fs, isLight, data }) {
   const chartRendered = useRef(false);
 
   const markAsPaid = (bill) => {
-    Modal.confirm({
-      title: '标记还款',
-      content: `确定标记"${bill.platform_name} · ¥${bill.amount.toFixed(2)}"为已还款吗？`,
-      okText: '确定', cancelText: '取消',
-      onOk: () => {
-        data.bills = data.bills.map(b => b.id === bill.id ? { ...b, is_paid: true } : b);
-        if (data.settings?.autoRepaymentOnMarkPaid !== false) {
-          const maxId = data.repayments.reduce((m, r) => Math.max(m, r.id), 0);
-          data.repayments.push({
-            id: maxId + 1, bill_id: bill.id, platform_name: bill.platform_name,
-            amount: bill.amount, interest: bill.interest || 0,
-            repayment_date: dayjs().format('YYYY-MM-DD'), notes: '自动记录',
-          });
-        }
-        message.success('已标记为已还款');
-      },
+    setMarkBill(bill);
+  };
+
+  const confirmMarkPaid = () => {
+    if (!markBill) return;
+    setData(prev => {
+      const newBills = prev.bills.map(b => b.id === markBill.id ? { ...b, is_paid: true } : b);
+      let newRepayments = [...prev.repayments];
+      if (prev.settings?.autoRepaymentOnMarkPaid !== false) {
+        const maxId = prev.repayments.reduce((m, r) => Math.max(m, r.id), 0);
+        newRepayments.push({
+          id: maxId + 1, bill_id: markBill.id, platform_name: markBill.platform_name,
+          amount: markBill.amount, interest: markBill.interest || 0,
+          repayment_date: dayjs().format('YYYY-MM-DD'), notes: '自动记录',
+        });
+      }
+      return { ...prev, bills: newBills, repayments: newRepayments };
     });
+    setToast({type:'success', message:'已标记为已还款'});
+    setMarkBill(null);
   };
 
   useEffect(() => {
@@ -249,8 +234,8 @@ function DashboardTab({ c, fs, isLight, data }) {
                       到期 {dayjs(b.due_date).format('M月D日')} · <strong style={{ color: '#ef4444' }}>¥{b.amount.toFixed(2)}</strong>
                     </div>
                   </div>
-                  <Button size="small" style={{ background: '#10B981', borderColor: '#10B981', color: '#fff', borderRadius: 6, fontSize: fs.tableCellSm.fontSize }}
-                    onClick={() => markAsPaid(b)}>标记还款</Button>
+                  <Btn style={{ background: '#10B981', borderColor: '#10B981', color: '#fff', borderRadius: 6, fontSize: fs.tableCellSm.fontSize }}
+                    onClick={() => markAsPaid(b)}>标记还款</Btn>
                 </div>
               ))}
             </div>
@@ -263,6 +248,12 @@ function DashboardTab({ c, fs, isLight, data }) {
           <div id={chartId} style={{ width: '100%', height: 280 }} />
         </div>
       </div>
+
+      <DeleteModal open={!!markBill} onClose={() => setMarkBill(null)} onConfirm={confirmMarkPaid}
+        title="标记还款">
+        <p>{markBill ? `确定标记"${markBill.platform_name} · ¥${markBill.amount.toFixed(2)}"为已还款吗？` : ''}</p>
+      </DeleteModal>
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -275,8 +266,8 @@ function PlatformsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editPlat, setEditPlat] = useState(null);
   const [form, setForm] = useState({ name: '', billing_day: null, repayment_day: null, credit_limit: null });
-
-  const ddStyle = { background: c.dropdownBg, border: '1px solid ' + c.border };
+  const [toast, setToast] = useState(null);
+  const [delPlat, setDelPlat] = useState(null);
 
   const filtered = useMemo(() => {
     let list = [...data.platforms];
@@ -291,16 +282,16 @@ function PlatformsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const openEdit = (p) => { setEditPlat(p); setForm({ name: p.name, billing_day: p.billing_day, repayment_day: p.repayment_day, credit_limit: p.credit_limit }); setModalOpen(true); };
 
   const handleSave = () => {
-    if (!form.name.trim()) { message.error('请输入平台名称'); return; }
-    if (!form.billing_day || form.billing_day < 1 || form.billing_day > 31) { message.error('账单出账日需在 1-31 之间'); return; }
-    if (!form.repayment_day || form.repayment_day < 1 || form.repayment_day > 31) { message.error('还款日需在 1-31 之间'); return; }
+    if (!form.name.trim()) { setToast({type:'error', message:'请输入平台名称'}); return; }
+    if (!form.billing_day || form.billing_day < 1 || form.billing_day > 31) { setToast({type:'error', message:'账单出账日需在 1-31 之间'}); return; }
+    if (!form.repayment_day || form.repayment_day < 1 || form.repayment_day > 31) { setToast({type:'error', message:'还款日需在 1-31 之间'}); return; }
     if (editPlat) {
       setData(prev => ({ ...prev, platforms: prev.platforms.map(p => p.id === editPlat.id ? { ...p, ...form } : p) }));
-      message.success('已更新');
+      setToast({type:'success', message:'已更新'});
     } else {
       const maxId = data.platforms.reduce((m, p) => Math.max(m, p.id), 0);
       setData(prev => ({ ...prev, platforms: [...prev.platforms, { id: maxId + 1, ...form }] }));
-      message.success('已创建');
+      setToast({type:'success', message:'已创建'});
     }
     setModalOpen(false);
   };
@@ -308,24 +299,24 @@ function PlatformsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const handleDelete = (plat) => {
     const billCount = data.bills.filter(b => b.platform_id === plat.id).length;
     if (billCount > 0) {
-      Modal.confirm({
-        title: '确认删除',
-        content: `平台"${plat.name}"下有 ${billCount} 条账单记录，删除将一并清空`,
-        okText: '确定', cancelText: '取消',
-        okButtonProps: { danger: true },
-        onOk: () => {
-          setData(prev => ({
-            platforms: prev.platforms.filter(p => p.id !== plat.id),
-            bills: prev.bills.filter(b => b.platform_id !== plat.id),
-          }));
-          message.success('已删除');
-        },
-      });
+      setDelPlat(plat);
     } else {
       setData(prev => ({ ...prev, platforms: prev.platforms.filter(p => p.id !== plat.id) }));
-      message.success('已删除');
+      setToast({type:'success', message:'已删除'});
     }
   };
+
+  const confirmDeletePlat = () => {
+    if (!delPlat) return;
+    setData(prev => ({
+      platforms: prev.platforms.filter(p => p.id !== delPlat.id),
+      bills: prev.bills.filter(b => b.platform_id !== delPlat.id),
+    }));
+    setToast({type:'success', message:'已删除'});
+    setDelPlat(null);
+  };
+
+  const delBillCount = delPlat ? data.bills.filter(b => b.platform_id === delPlat.id).length : 0;
 
   const columns = [
     { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>ID</span>, dataIndex: 'id', width: 60, render: v => <span style={{ color: c.muted, fontSize: fs.tableCellSm.fontSize }}>#{v}</span> },
@@ -334,13 +325,11 @@ function PlatformsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
     { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>还款日</span>, dataIndex: 'repayment_day', width: 100, render: v => <span style={{ color: c.textSecondary, fontSize: fs.tableCellSm.fontSize }}>{v} 日</span> },
     { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>额度</span>, dataIndex: 'credit_limit', width: 120, align: 'right', render: v => <span style={{ color: '#5e6ad2', fontWeight: 600, fontSize: fs.tableCellSm.fontSize }}>¥{v.toFixed(2)}</span> },
     {
-      title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>操作</span>, width: 140, fixed: 'right',
+      title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>操作</span>, width: 140,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 4 }}>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: fs.tableCell.fontSize }}>编辑</Button>
-          <Popconfirm title={`确定删除"${rec.name}"？`} onConfirm={() => handleDelete(rec)} okText="确定" cancelText="取消">
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: fs.tableCell.fontSize }}>删除</Button>
-          </Popconfirm>
+          <Btn type="ghost" onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: fs.tableCell.fontSize }}><IconEdit /> 编辑</Btn>
+          <Btn type="danger" onClick={() => handleDelete(rec)} style={{ fontSize: fs.tableCell.fontSize }}><IconDelete /> 删除</Btn>
         </div>
       ),
     },
@@ -349,52 +338,53 @@ function PlatformsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   return (
     <div>
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '12px 18px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Input prefix={<SearchOutlined style={{ color: c.muted }} />}
-          placeholder="搜索平台名称" value={keyword}
-          onChange={e => setKeyword(e.target.value)}
-          style={{ ...inputStyle, width: 240, height: 36 }} />
+        <div style={{ display: 'flex', alignItems: 'center', ...inputStyle, width: 240, height: 36, gap: 6 }}>
+          <IconSearch />
+          <input value={keyword} onChange={e => setKeyword(e.target.value)}
+            placeholder="搜索平台名称" style={{ background: 'transparent', border: 'none', outline: 'none', color: c.text, fontSize: 14, flex: 1 }} />
+        </div>
         <div style={{ flex: 1 }} />
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}
-          style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}>添加平台</Button>
+        <Btn type="primary" onClick={openCreate}
+          style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}><IconPlus /> 添加平台</Btn>
       </div>
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20 }}>
-        <Table dataSource={filtered} columns={columns} rowKey="id" pagination={false} size="middle"
-          style={{ background: 'transparent' }}
-          locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无平台</span> }}
-          scroll={{ x: 700 }} />
+        <DataTable data={filtered} columns={columns} rowKey="id"
+          emptyText={<span style={{ color: c.muted2 }}>暂无平台</span>}
+          minWidth={700} />
       </div>
 
-      <Modal title={modalTitle(editPlat ? '编辑平台' : '添加平台', c)} open={modalOpen} onCancel={() => setModalOpen(false)}
-        onOk={handleSave} okText="确定" cancelText="取消"
-        okButtonProps={okBtn} cancelButtonProps={cancelBtn(c)}
-        styles={modalStyles(c)} width={480}>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editPlat ? '编辑平台' : '添加平台'} width={480}
+        footer={<><Btn onClick={() => setModalOpen(false)}>取消</Btn><Btn type="primary" onClick={handleSave}>确定</Btn></>}>
         <div style={{ display: 'grid', gap: 14, marginTop: 16 }}>
           <div>
             <label style={labelStyle}>平台名称 <span style={{ color: '#ef4444' }}>*</span></label>
-            <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="如：花呗" style={inputStyle} />
+            <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="如：花呗" style={inputStyle} className="w-full" />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={labelStyle}>账单出账日 <span style={{ color: '#ef4444' }}>*</span></label>
-              <InputNumber value={form.billing_day} onChange={v => setForm(p => ({ ...p, billing_day: v }))}
-                min={1} max={31} placeholder="1-31"
-                style={{ width: '100%', ...inputStyle }} inputStyle={{ textAlign: 'center' }} />
+              <input type="number" value={form.billing_day ?? ''} onChange={e => setForm(p => ({ ...p, billing_day: e.target.value === '' ? null : Number(e.target.value) }))}
+                min={1} max={31} placeholder="1-31" style={{ width: '100%', ...inputStyle }} />
             </div>
             <div>
               <label style={labelStyle}>还款日 <span style={{ color: '#ef4444' }}>*</span></label>
-              <InputNumber value={form.repayment_day} onChange={v => setForm(p => ({ ...p, repayment_day: v }))}
-                min={1} max={31} placeholder="1-31"
-                style={{ width: '100%', ...inputStyle }} inputStyle={{ textAlign: 'center' }} />
+              <input type="number" value={form.repayment_day ?? ''} onChange={e => setForm(p => ({ ...p, repayment_day: e.target.value === '' ? null : Number(e.target.value) }))}
+                min={1} max={31} placeholder="1-31" style={{ width: '100%', ...inputStyle }} />
             </div>
           </div>
           <div>
             <label style={labelStyle}>额度</label>
-            <InputNumber value={form.credit_limit} onChange={v => setForm(p => ({ ...p, credit_limit: v }))}
-              min={0} step={100} precision={2} placeholder="0.00"
-              style={{ width: '100%', ...inputStyle }} inputStyle={{ textAlign: 'center' }} />
+            <input type="number" value={form.credit_limit ?? ''} onChange={e => setForm(p => ({ ...p, credit_limit: e.target.value === '' ? null : Number(e.target.value) }))}
+              min={0} step={100} placeholder="0.00" style={{ width: '100%', ...inputStyle }} />
           </div>
         </div>
       </Modal>
+
+      <DeleteModal open={!!delPlat} onClose={() => setDelPlat(null)} onConfirm={confirmDeletePlat}
+        title={`确认删除"${delPlat?.name}"？`}>
+        {delPlat && <p>平台"{delPlat.name}"下有 {delBillCount} 条账单记录，删除将一并清空</p>}
+      </DeleteModal>
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -406,9 +396,10 @@ function BillsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const ddStyle = { background: c.dropdownBg, border: '1px solid ' + c.border };
   const [platformFilter, setPlatformFilter] = useState(null);
   const [statusFilter, setStatusFilter] = useState(null);
-  const [monthFilter, setMonthFilter] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editBill, setEditBill] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [delBillId, setDelBillId] = useState(null);
   const [form, setForm] = useState({
     platform_id: null, amount: null, interest: null,
     billing_month: dayjs().format('YYYY-MM'), due_date: null, notes: '',
@@ -430,11 +421,6 @@ function BillsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   }, [data.bills, selectedMonth, platformFilter, statusFilter]);
 
   const platformOptions = data.platforms.map(p => ({ value: p.id, label: p.name }));
-  const statusOptions = [
-    { value: null, label: '全部状态' },
-    { value: false, label: '未还款' },
-    { value: true, label: '已还款' },
-  ];
 
   const openCreate = () => {
     setEditBill(null);
@@ -443,7 +429,7 @@ function BillsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   };
   const openEdit = (b) => {
     setEditBill(b);
-    setForm({ platform_id: b.platform_id, amount: b.amount, interest: b.interest || null, billing_month: b.billing_month, due_date: b.due_date ? dayjs(b.due_date) : null, notes: b.notes || '' });
+    setForm({ platform_id: b.platform_id, amount: b.amount, interest: b.interest || null, billing_month: b.billing_month, due_date: b.due_date || null, notes: b.notes || '' });
     setModalOpen(true);
   };
 
@@ -457,12 +443,12 @@ function BillsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   };
 
   const handleSave = () => {
-    if (!form.platform_id) { message.error('请选择平台'); return; }
-    if (!form.amount || form.amount <= 0) { message.error('请输入有效金额'); return; }
+    if (!form.platform_id) { setToast({type:'error', message:'请选择平台'}); return; }
+    if (!form.amount || form.amount <= 0) { setToast({type:'error', message:'请输入有效金额'}); return; }
     const plat = data.platforms.find(p => p.id === form.platform_id);
     const payload = {
       ...form,
-      due_date: form.due_date ? form.due_date.format('YYYY-MM-DD') : autoSetDueDate(form.platform_id, form.billing_month),
+      due_date: form.due_date || autoSetDueDate(form.platform_id, form.billing_month),
       platform_name: plat?.name || '',
       amount: parseFloat(form.amount),
       interest: parseFloat(form.interest || 0),
@@ -472,11 +458,11 @@ function BillsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
         ...prev,
         bills: prev.bills.map(b => b.id === editBill.id ? { ...b, ...payload, id: b.id } : b),
       }));
-      message.success('已更新');
+      setToast({type:'success', message:'已更新'});
     } else {
       const maxId = data.bills.reduce((m, b) => Math.max(m, b.id), 0);
       setData(prev => ({ ...prev, bills: [...prev.bills, { ...payload, id: maxId + 1, is_paid: false }] }));
-      message.success('已添加');
+      setToast({type:'success', message:'已添加'});
     }
     setModalOpen(false);
   };
@@ -497,12 +483,18 @@ function BillsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
         }],
       }));
     }
-    message.success('已标记为已还款');
+    setToast({type:'success', message:'已标记为已还款'});
   };
 
   const handleDelete = (id) => {
-    setData(prev => ({ ...prev, bills: prev.bills.filter(b => b.id !== id) }));
-    message.success('已删除');
+    setDelBillId(id);
+  };
+
+  const confirmDeleteBill = () => {
+    if (!delBillId) return;
+    setData(prev => ({ ...prev, bills: prev.bills.filter(b => b.id !== delBillId) }));
+    setToast({type:'success', message:'已删除'});
+    setDelBillId(null);
   };
 
   const prevMonth = () => { const idx = uniqueMonths.indexOf(selectedMonth); if (idx < uniqueMonths.length - 1) setSelectedMonth(uniqueMonths[idx + 1]); };
@@ -525,17 +517,15 @@ function BillsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       ),
     },
     {
-      title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>操作</span>, width: 180, fixed: 'right',
+      title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>操作</span>, width: 180,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 4 }}>
           {!rec.is_paid && (
-            <Button type="text" size="small" onClick={() => markAsPaid(rec)}
-              style={{ color: '#10B981', fontSize: fs.tableCell.fontSize }}>标记还款</Button>
+            <Btn type="ghost" onClick={() => markAsPaid(rec)}
+              style={{ color: '#10B981', fontSize: fs.tableCell.fontSize }}>标记还款</Btn>
           )}
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: fs.tableCell.fontSize }}>编辑</Button>
-          <Popconfirm title="确定删除？" onConfirm={() => handleDelete(rec.id)} okText="确定" cancelText="取消">
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: fs.tableCell.fontSize }}>删除</Button>
-          </Popconfirm>
+          <Btn type="ghost" onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: fs.tableCell.fontSize }}><IconEdit /> 编辑</Btn>
+          <Btn type="danger" onClick={() => handleDelete(rec.id)} style={{ fontSize: fs.tableCell.fontSize }}><IconDelete /> 删除</Btn>
         </div>
       ),
     },
@@ -544,75 +534,86 @@ function BillsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   return (
     <div>
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '12px 18px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Select value={platformFilter} onChange={v => setPlatformFilter(v)} placeholder="全部平台" allowClear
-          style={{ width: 140, height: 36 }} popupStyle={ddStyle} dropdownStyle={ddStyle}
-          options={[{ value: null, label: '全部平台' }, ...platformOptions]} />
-        <Select value={statusFilter} onChange={v => setStatusFilter(v)} placeholder="全部状态" allowClear
-          style={{ width: 120, height: 36 }} popupStyle={ddStyle} dropdownStyle={ddStyle}
-          options={statusOptions} />
+        <select value={platformFilter ?? ''} onChange={e => setPlatformFilter(e.target.value ? Number(e.target.value) : null)}
+          style={{ width: 140, height: 36, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, cursor: 'pointer', padding: '0 8px' }}>
+          <option value="">全部平台</option>
+          {platformOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        <select value={statusFilter === null ? '' : statusFilter ? 'paid' : 'unpaid'} onChange={e => {
+          const v = e.target.value;
+          if (v === 'paid') setStatusFilter(true);
+          else if (v === 'unpaid') setStatusFilter(false);
+          else setStatusFilter(null);
+        }}
+          style={{ width: 120, height: 36, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, cursor: 'pointer', padding: '0 8px' }}>
+          <option value="">全部状态</option>
+          <option value="unpaid">未还款</option>
+          <option value="paid">已还款</option>
+        </select>
         <div style={{ flex: 1 }} />
-        <Button disabled={uniqueMonths.indexOf(selectedMonth) >= uniqueMonths.length - 1} onClick={prevMonth}
-          style={{ ...inputStyle, height: 36, fontSize: fs.tableCell.fontSize }}>上个月</Button>
+        <Btn disabled={uniqueMonths.indexOf(selectedMonth) >= uniqueMonths.length - 1} onClick={prevMonth}
+          style={{ ...inputStyle, height: 36, fontSize: fs.tableCell.fontSize }}>上个月</Btn>
         <span style={{ color: c.text, fontWeight: 600, fontSize: fs.tableCell.fontSize }}>{selectedMonth}</span>
-        <Button disabled={uniqueMonths.indexOf(selectedMonth) <= 0} onClick={nextMonth}
-          style={{ ...inputStyle, height: 36, fontSize: fs.tableCell.fontSize }}>下个月</Button>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}
-          style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}>添加账单</Button>
+        <Btn disabled={uniqueMonths.indexOf(selectedMonth) <= 0} onClick={nextMonth}
+          style={{ ...inputStyle, height: 36, fontSize: fs.tableCell.fontSize }}>下个月</Btn>
+        <Btn type="primary" onClick={openCreate}
+          style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}><IconPlus /> 添加账单</Btn>
       </div>
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20 }}>
-        <Table dataSource={filtered} columns={columns} rowKey="id" pagination={false} size="middle"
-          style={{ background: 'transparent' }}
-          locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无账单</span> }}
-          scroll={{ x: 750 }} />
+        <DataTable data={filtered} columns={columns} rowKey="id"
+          emptyText={<span style={{ color: c.muted2 }}>暂无账单</span>}
+          minWidth={750} />
       </div>
 
-      <Modal title={modalTitle(editBill ? '编辑账单' : '添加账单', c)} open={modalOpen} onCancel={() => setModalOpen(false)}
-        onOk={handleSave} okText="确定" cancelText="取消"
-        okButtonProps={okBtn} cancelButtonProps={cancelBtn(c)}
-        styles={modalStyles(c)} width={520}>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)}
+        title={editBill ? '编辑账单' : '添加账单'} width={520}
+        footer={<><Btn onClick={() => setModalOpen(false)}>取消</Btn><Btn type="primary" onClick={handleSave}>确定</Btn></>}>
         <div style={{ display: 'grid', gap: 14, marginTop: 16 }}>
           <div>
             <label style={labelStyle}>选择平台 <span style={{ color: '#ef4444' }}>*</span></label>
-            <Select value={form.platform_id} onChange={v => setForm(p => ({ ...p, platform_id: v }))}
-              style={{ width: '100%', height: 42 }} popupStyle={ddStyle} dropdownStyle={ddStyle}
-              placeholder="请选择借款平台" options={platformOptions} />
+            <select value={form.platform_id ?? ''} onChange={e => setForm(p => ({ ...p, platform_id: e.target.value ? Number(e.target.value) : null }))}
+              style={{ width: '100%', height: 42, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, cursor: 'pointer', padding: '0 8px' }}>
+              <option value="">请选择借款平台</option>
+              {platformOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={labelStyle}>账单金额 <span style={{ color: '#ef4444' }}>*</span></label>
-              <InputNumber value={form.amount} onChange={v => setForm(p => ({ ...p, amount: v }))}
-                min={0} precision={2} placeholder="0.00"
-                style={{ width: '100%', ...inputStyle }} inputStyle={{ textAlign: 'center' }} />
+              <input type="number" value={form.amount ?? ''} onChange={e => setForm(p => ({ ...p, amount: e.target.value === '' ? null : Number(e.target.value) }))}
+                min={0} step="any" placeholder="0.00" style={{ width: '100%', ...inputStyle }} />
             </div>
             <div>
               <label style={labelStyle}>利息</label>
-              <InputNumber value={form.interest} onChange={v => setForm(p => ({ ...p, interest: v }))}
-                min={0} precision={2} placeholder="0.00"
-                style={{ width: '100%', ...inputStyle }} inputStyle={{ textAlign: 'center' }} />
+              <input type="number" value={form.interest ?? ''} onChange={e => setForm(p => ({ ...p, interest: e.target.value === '' ? null : Number(e.target.value) }))}
+                min={0} step="any" placeholder="0.00" style={{ width: '100%', ...inputStyle }} />
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={labelStyle}>账单月份 <span style={{ color: '#ef4444' }}>*</span></label>
-              <DatePicker picker="month" value={form.billing_month ? dayjs(form.billing_month) : null}
-                onChange={d => setForm(p => ({ ...p, billing_month: d ? d.format('YYYY-MM') : '' }))}
-                style={{ width: '100%', height: 42, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8 }}
-                popupStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }} />
+              <input type="month" value={form.billing_month} onChange={e => setForm(p => ({ ...p, billing_month: e.target.value }))}
+                style={{ width: '100%', ...inputStyle }} />
             </div>
             <div>
               <label style={labelStyle}>还款截止日</label>
-              <DatePicker value={form.due_date} onChange={d => setForm(p => ({ ...p, due_date: d }))}
-                style={{ width: '100%', height: 42, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8 }}
-                popupStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }} />
+              <input type="date" value={form.due_date ?? ''} onChange={e => setForm(p => ({ ...p, due_date: e.target.value || null }))}
+                style={{ width: '100%', ...inputStyle }} />
             </div>
           </div>
           <div>
             <label style={labelStyle}>备注</label>
-            <Input.TextArea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
-              rows={3} placeholder="可选" style={inputStyle} />
+            <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
+              rows={3} placeholder="可选" style={{ width: '100%', ...inputStyle, lineHeight: 1.5, padding: '10px 12px' }} />
           </div>
         </div>
       </Modal>
+
+      <DeleteModal open={!!delBillId} onClose={() => setDelBillId(null)} onConfirm={confirmDeleteBill}
+        title="确认删除账单？">
+        <p>确定要删除此账单吗？</p>
+      </DeleteModal>
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -625,10 +626,12 @@ function RepaymentsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
   const [platformFilter, setPlatformFilter] = useState(null);
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({ bill_id: null, amount: null, interest: null, repayment_date: dayjs(), notes: '' });
+  const [toast, setToast] = useState(null);
+  const [delRepayId, setDelRepayId] = useState(null);
+  const [form, setForm] = useState({ bill_id: null, amount: null, interest: null, repayment_date: dayjs().format('YYYY-MM-DD'), notes: '' });
 
   const filtered = useMemo(() => {
     let list = [...data.repayments];
@@ -637,9 +640,7 @@ function RepaymentsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       return bill?.platform_id === platformFilter;
     });
     if (startDate && endDate) {
-      const s = startDate.format('YYYY-MM-DD');
-      const e = endDate.format('YYYY-MM-DD');
-      list = list.filter(r => r.repayment_date >= s && r.repayment_date <= e);
+      list = list.filter(r => r.repayment_date >= startDate && r.repayment_date <= endDate);
     }
     return list.sort((a, b) => b.id - a.id);
   }, [data.repayments, data.bills, platformFilter, startDate, endDate]);
@@ -655,7 +656,7 @@ function RepaymentsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   }));
 
   const openCreate = () => {
-    setForm({ bill_id: null, amount: null, interest: null, repayment_date: dayjs(), notes: '' });
+    setForm({ bill_id: null, amount: null, interest: null, repayment_date: dayjs().format('YYYY-MM-DD'), notes: '' });
     setModalOpen(true);
   };
 
@@ -665,8 +666,8 @@ function RepaymentsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   };
 
   const handleSave = () => {
-    if (!form.bill_id) { message.error('请选择账单'); return; }
-    if (!form.amount || form.amount <= 0) { message.error('请输入有效还款金额'); return; }
+    if (!form.bill_id) { setToast({type:'error', message:'请选择账单'}); return; }
+    if (!form.amount || form.amount <= 0) { setToast({type:'error', message:'请输入有效还款金额'}); return; }
     const bill = data.bills.find(b => b.id === form.bill_id);
     const maxId = data.repayments.reduce((m, r) => Math.max(m, r.id), 0);
     setData(prev => ({
@@ -676,20 +677,26 @@ function RepaymentsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
         platform_name: bill?.platform_name || '',
         amount: parseFloat(form.amount),
         interest: parseFloat(form.interest || 0),
-        repayment_date: form.repayment_date.format('YYYY-MM-DD'),
+        repayment_date: form.repayment_date,
         notes: form.notes,
       }],
     }));
-    message.success('已添加');
+    setToast({type:'success', message:'已添加'});
     setModalOpen(false);
   };
 
   const handleDelete = (id) => {
-    setData(prev => ({ ...prev, repayments: prev.repayments.filter(r => r.id !== id) }));
-    message.success('已删除');
+    setDelRepayId(id);
   };
 
-  const clearFilters = () => { setPlatformFilter(null); setStartDate(null); setEndDate(null); setPage(1); };
+  const confirmDeleteRepayment = () => {
+    if (!delRepayId) return;
+    setData(prev => ({ ...prev, repayments: prev.repayments.filter(r => r.id !== delRepayId) }));
+    setToast({type:'success', message:'已删除'});
+    setDelRepayId(null);
+  };
+
+  const clearFilters = () => { setPlatformFilter(null); setStartDate(''); setEndDate(''); setPage(1); };
   const hasFilters = platformFilter || startDate || endDate;
 
   const columns = [
@@ -700,11 +707,9 @@ function RepaymentsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
     { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>还款日期</span>, dataIndex: 'repayment_date', width: 105, render: v => <span style={{ color: c.textSecondary, fontSize: fs.tableCellSm.fontSize }}>{dayjs(v).format('YYYY年M月D日')}</span> },
     { title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>备注</span>, dataIndex: 'notes', width: 120, render: v => <span style={{ color: c.muted2, fontSize: fs.tableCellSm.fontSize }}>{v || '-'}</span> },
     {
-      title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>操作</span>, width: 80, fixed: 'right',
+      title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>操作</span>, width: 80,
       render: (_, rec) => (
-        <Popconfirm title="确定删除？" onConfirm={() => handleDelete(rec.id)} okText="确定" cancelText="取消">
-          <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: fs.tableCell.fontSize }}>删除</Button>
-        </Popconfirm>
+        <Btn type="danger" onClick={() => handleDelete(rec.id)} style={{ fontSize: fs.tableCell.fontSize }}><IconDelete /> 删除</Btn>
       ),
     },
   ];
@@ -712,26 +717,27 @@ function RepaymentsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   return (
     <div>
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '12px 18px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Select value={platformFilter} onChange={v => setPlatformFilter(v)} placeholder="全部平台" allowClear
-          style={{ width: 140, height: 36 }} popupStyle={ddStyle} dropdownStyle={ddStyle}
-          options={[{ value: null, label: '全部平台' }, ...platformOptions]} />
-        <DatePicker value={startDate} onChange={d => { setStartDate(d); setPage(1); }} placeholder="开始日期"
-          style={{ height: 36, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8 }} />
-        <DatePicker value={endDate} onChange={d => { setEndDate(d); setPage(1); }} placeholder="结束日期"
-          style={{ height: 36, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8 }} />
+        <select value={platformFilter ?? ''} onChange={e => setPlatformFilter(e.target.value ? Number(e.target.value) : null)}
+          style={{ width: 140, height: 36, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, cursor: 'pointer', padding: '0 8px' }}>
+          <option value="">全部平台</option>
+          {platformOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        <input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); setPage(1); }}
+          placeholder="开始日期" style={{ height: 36, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, padding: '0 8px' }} />
+        <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setPage(1); }}
+          placeholder="结束日期" style={{ height: 36, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, padding: '0 8px' }} />
         {hasFilters && (
-          <Button icon={<ClearOutlined />} onClick={clearFilters}
-            style={{ ...inputStyle, height: 36, fontSize: fs.tableCell.fontSize, color: c.muted }}>清除</Button>
+          <Btn onClick={clearFilters}
+            style={{ ...inputStyle, height: 36, fontSize: fs.tableCell.fontSize, color: c.muted }}><IconClear /> 清除</Btn>
         )}
         <div style={{ flex: 1 }} />
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}
-          style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}>添加还款记录</Button>
+        <Btn type="primary" onClick={openCreate}
+          style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}><IconPlus /> 添加还款记录</Btn>
       </div>
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20 }}>
-        <Table dataSource={paged} columns={columns} rowKey="id" pagination={false} size="middle"
-          style={{ background: 'transparent' }}
-          locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无还款记录</span> }}
-          scroll={{ x: 700 }} />
+        <DataTable data={paged} columns={columns} rowKey="id"
+          emptyText={<span style={{ color: c.muted2 }}>暂无还款记录</span>}
+          minWidth={700} />
         {filtered.length > 0 && (
           <TablePagination c={c} inputStyle={inputStyle} page={page} totalPages={totalPages}
             onPageChange={fn => setPage(typeof fn === 'function' ? fn(page) : fn)}
@@ -739,44 +745,48 @@ function RepaymentsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
         )}
       </div>
 
-      <Modal title={modalTitle('添加还款记录', c)} open={modalOpen} onCancel={() => setModalOpen(false)}
-        onOk={handleSave} okText="确定" cancelText="取消"
-        okButtonProps={okBtn} cancelButtonProps={cancelBtn(c)}
-        styles={modalStyles(c)} width={480}>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)}
+        title="添加还款记录" width={480}
+        footer={<><Btn onClick={() => setModalOpen(false)}>取消</Btn><Btn type="primary" onClick={handleSave}>确定</Btn></>}>
         <div style={{ display: 'grid', gap: 14, marginTop: 16 }}>
           <div>
             <label style={labelStyle}>选择账单 <span style={{ color: '#ef4444' }}>*</span></label>
-            <Select value={form.bill_id} onChange={handleBillChange}
-              style={{ width: '100%', height: 42 }} popupStyle={ddStyle} dropdownStyle={ddStyle}
-              placeholder="请选择未还款账单" options={billOptions} />
+            <select value={form.bill_id ?? ''} onChange={e => { const v = e.target.value ? Number(e.target.value) : null; handleBillChange(v); }}
+              style={{ width: '100%', height: 42, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, cursor: 'pointer', padding: '0 8px' }}>
+              <option value="">请选择未还款账单</option>
+              {billOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={labelStyle}>还款金额 <span style={{ color: '#ef4444' }}>*</span></label>
-              <InputNumber value={form.amount} onChange={v => setForm(p => ({ ...p, amount: v }))}
-                min={0} precision={2} placeholder="0.00"
-                style={{ width: '100%', ...inputStyle }} inputStyle={{ textAlign: 'center' }} />
+              <input type="number" value={form.amount ?? ''} onChange={e => setForm(p => ({ ...p, amount: e.target.value === '' ? null : Number(e.target.value) }))}
+                min={0} step="any" placeholder="0.00" style={{ width: '100%', ...inputStyle }} />
             </div>
             <div>
               <label style={labelStyle}>还款利息</label>
-              <InputNumber value={form.interest} onChange={v => setForm(p => ({ ...p, interest: v }))}
-                min={0} precision={2} placeholder="0.00"
-                style={{ width: '100%', ...inputStyle }} inputStyle={{ textAlign: 'center' }} />
+              <input type="number" value={form.interest ?? ''} onChange={e => setForm(p => ({ ...p, interest: e.target.value === '' ? null : Number(e.target.value) }))}
+                min={0} step="any" placeholder="0.00" style={{ width: '100%', ...inputStyle }} />
             </div>
           </div>
           <div>
             <label style={labelStyle}>还款日期 <span style={{ color: '#ef4444' }}>*</span></label>
-            <DatePicker value={form.repayment_date} onChange={d => setForm(p => ({ ...p, repayment_date: d }))}
-              style={{ width: '100%', height: 42, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8 }}
-              popupStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }} />
+            <input type="date" value={form.repayment_date} onChange={e => setForm(p => ({ ...p, repayment_date: e.target.value }))}
+              style={{ width: '100%', height: 42, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, padding: '0 8px' }} />
           </div>
           <div>
             <label style={labelStyle}>备注</label>
-            <Input.TextArea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
-              rows={3} placeholder="可选" style={inputStyle} />
+            <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
+              rows={3} placeholder="可选" style={{ width: '100%', ...inputStyle, lineHeight: 1.5, padding: '10px 12px' }} />
           </div>
         </div>
       </Modal>
+
+      <DeleteModal open={!!delRepayId} onClose={() => setDelRepayId(null)} onConfirm={confirmDeleteRepayment}
+        title="确认删除还款记录？">
+        <p>确定要删除此还款记录吗？</p>
+      </DeleteModal>
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -870,12 +880,13 @@ function StatisticsTab({ c, fs, isLight, data }) {
   return (
     <div>
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '12px 18px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <DatePicker picker="month" value={dayjs(monthFilter)} onChange={d => setMonthFilter(d ? d.format('YYYY-MM') : dayjs().format('YYYY-MM'))}
-          style={{ height: 36, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8 }}
-          popupStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }} />
-        <Select value={platformFilter} onChange={setPlatformFilter} placeholder="全部平台" allowClear
-          style={{ width: 140, height: 36 }} popupStyle={ddStyle} dropdownStyle={ddStyle}
-          options={[{ value: null, label: '全部平台' }, ...platformOptions]} />
+        <input type="month" value={monthFilter} onChange={e => setMonthFilter(e.target.value || dayjs().format('YYYY-MM'))}
+          style={{ height: 36, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, padding: '0 8px' }} />
+        <select value={platformFilter ?? ''} onChange={e => setPlatformFilter(e.target.value ? Number(e.target.value) : null)}
+          style={{ width: 140, height: 36, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, cursor: 'pointer', padding: '0 8px' }}>
+          <option value="">全部平台</option>
+          {platformOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 20 }}>
@@ -898,26 +909,26 @@ function StatisticsTab({ c, fs, isLight, data }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ ...fs.sectionTitle, color: c.text }}>还款趋势</div>
             <div style={{ display: 'flex', gap: 6 }}>
-              <Button size="small" type={rangeMode === 'last30' ? 'primary' : 'default'}
+              <Btn type={rangeMode === 'last30' ? 'primary' : 'secondary'}
                 onClick={() => setRangeMode('last30')}
-                style={{ fontSize: fs.tableCellSm.fontSize, borderRadius: 6, height: 30 }}>最近30天</Button>
-              <Button size="small" type={rangeMode === 'custom' ? 'primary' : 'default'}
+                style={{ fontSize: fs.tableCellSm.fontSize, borderRadius: 6, height: 30 }}>最近30天</Btn>
+              <Btn type={rangeMode === 'custom' ? 'primary' : 'secondary'}
                 onClick={() => setRangeMode('custom')}
-                style={{ fontSize: fs.tableCellSm.fontSize, borderRadius: 6, height: 30 }}>自定义</Button>
-              <Button size="small" type={chartType === 'line' ? 'primary' : 'default'}
+                style={{ fontSize: fs.tableCellSm.fontSize, borderRadius: 6, height: 30 }}>自定义</Btn>
+              <Btn type={chartType === 'line' ? 'primary' : 'secondary'}
                 onClick={() => setChartType('line')}
-                style={{ fontSize: fs.tableCellSm.fontSize, borderRadius: 6, height: 30 }}>折线</Button>
-              <Button size="small" type={chartType === 'bar' ? 'primary' : 'default'}
+                style={{ fontSize: fs.tableCellSm.fontSize, borderRadius: 6, height: 30 }}>折线</Btn>
+              <Btn type={chartType === 'bar' ? 'primary' : 'secondary'}
                 onClick={() => setChartType('bar')}
-                style={{ fontSize: fs.tableCellSm.fontSize, borderRadius: 6, height: 30 }}>柱状</Button>
+                style={{ fontSize: fs.tableCellSm.fontSize, borderRadius: 6, height: 30 }}>柱状</Btn>
             </div>
           </div>
           {rangeMode === 'custom' && (
             <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-              <DatePicker value={customStart} onChange={setCustomStart}
-                style={{ height: 36, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8 }} />
-              <DatePicker value={customEnd} onChange={setCustomEnd}
-                style={{ height: 36, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8 }} />
+              <input type="date" value={customStart.format('YYYY-MM-DD')} onChange={e => setCustomStart(dayjs(e.target.value))}
+                style={{ height: 36, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, padding: '0 8px' }} />
+              <input type="date" value={customEnd.format('YYYY-MM-DD')} onChange={e => setCustomEnd(dayjs(e.target.value))}
+                style={{ height: 36, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, padding: '0 8px' }} />
             </div>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 12 }}>
@@ -951,6 +962,7 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const ddStyle = { background: c.dropdownBg, border: '1px solid ' + c.border };
   const [prefs, setPrefs] = useState(data.settings || {});
   const [saved, setSaved] = useState(false);
+  const [toast, setToast] = useState(null);
 
   const updatePref = (key, value) => {
     setPrefs(p => ({ ...p, [key]: value }));
@@ -959,7 +971,7 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
 
   const save = () => {
     setData(prev => ({ ...prev, settings: prefs }));
-    message.success('设置已保存');
+    setToast({type:'success', message:'设置已保存'});
     setSaved(true);
   };
 
@@ -983,8 +995,8 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
           <div style={{ color: c.muted, fontSize: fs.tableCellSm.fontSize, marginTop: 4 }}>保存后会立即刷新本地偏好</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button onClick={reset} style={{ ...inputStyle, height: 36, fontSize: fs.tableCell.fontSize, color: c.muted }}>恢复默认</Button>
-          <Button type="primary" onClick={save} style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}>保存设置</Button>
+          <Btn onClick={reset} style={{ ...inputStyle, height: 36, fontSize: fs.tableCell.fontSize, color: c.muted }}>恢复默认</Btn>
+          <Btn type="primary" onClick={save} style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}>保存设置</Btn>
         </div>
       </div>
 
@@ -1003,16 +1015,18 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={labelStyle}>提醒频次</label>
-              <Select value={prefs.notificationFrequency} onChange={v => updatePref('notificationFrequency', v)}
+              <select value={prefs.notificationFrequency} onChange={e => updatePref('notificationFrequency', e.target.value)}
                 disabled={!prefs.notificationsEnabled}
-                style={{ width: '100%', height: 42 }} popupStyle={ddStyle} dropdownStyle={ddStyle}
-                options={[{ value: 'daily', label: '每日首次' }, { value: 'always', label: '每次进入' }]} />
+                style={{ width: '100%', height: 42, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, cursor: 'pointer', padding: '0 8px', opacity: prefs.notificationsEnabled ? 1 : 0.5 }}>
+                <option value="daily">每日首次</option>
+                <option value="always">每次进入</option>
+              </select>
             </div>
             <div>
               <label style={labelStyle}>提前提醒天数</label>
-              <InputNumber value={prefs.upcomingDays} onChange={v => updatePref('upcomingDays', v)}
+              <input type="number" value={prefs.upcomingDays} onChange={e => updatePref('upcomingDays', Number(e.target.value))}
                 min={0} max={30} disabled={!prefs.notificationsEnabled}
-                style={{ width: '100%', ...inputStyle }} inputStyle={{ textAlign: 'center' }} />
+                style={{ width: '100%', ...inputStyle, opacity: prefs.notificationsEnabled ? 1 : 0.5 }} />
             </div>
           </div>
           <div style={{ ...SL, marginTop: 12 }}>
@@ -1038,6 +1052,7 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
 
         {saved && <div style={{ textAlign: 'center', color: '#10B981', fontSize: fs.tableCellSm.fontSize }}>设置已保存</div>}
       </div>
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -1092,7 +1107,7 @@ export default function Loan() {
       <h1 className="page-title" style={{ marginBottom: 24 }}>借款还款</h1>
 
       <div style={{ marginBottom: 24 }}>
-        <Segmented value={activeTab} onChange={(v) => { setActiveTab(v); window.location.hash = v; }}
+        <PillTabs value={activeTab} onChange={(v) => { setActiveTab(v); window.location.hash = v; }}
           options={[
             { value: 'dashboard', label: '数据概览' },
             { value: 'platforms', label: '借款平台' },
@@ -1105,7 +1120,7 @@ export default function Loan() {
         />
       </div>
 
-      {activeTab === 'dashboard' && <DashboardTab c={c} fs={fs} isLight={isLight} data={data} />}
+      {activeTab === 'dashboard' && <DashboardTab c={c} fs={fs} isLight={isLight} data={data} setData={setData} />}
       {activeTab === 'platforms' && <PlatformsTab c={c} fs={fs} data={data} setData={setData} inputStyle={inputStyle} labelStyle={labelStyle} />}
       {activeTab === 'bills' && <BillsTab c={c} fs={fs} data={data} setData={setData} inputStyle={inputStyle} labelStyle={labelStyle} />}
       {activeTab === 'repayments' && <RepaymentsTab c={c} fs={fs} data={data} setData={setData} inputStyle={inputStyle} labelStyle={labelStyle} />}

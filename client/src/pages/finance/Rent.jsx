@@ -1,14 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
-import {
-  Input, Button, Select, Modal, Popconfirm, message, Table, Segmented, DatePicker, InputNumber,
-} from 'antd';
-import {
-  PlusOutlined, DeleteOutlined, EditOutlined,
-  SearchOutlined, ReloadOutlined,
-  HomeOutlined, SettingOutlined, BarChartOutlined,
-} from '@ant-design/icons';
+import { Modal, DeleteModal, Toast, Btn, PillTabs, DataTable } from '../../components/ui';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
+
+/* ── Inline SVG Icons ── */
+const IconPlus = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>;
+const IconDelete = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>;
+const IconEdit = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>;
+const IconSearch = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
+const IconRefresh = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>;
+const IconHome = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
+const IconSettings = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>;
+const IconChart = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
 
 /* ═══════════════════════════════════════
    Constants
@@ -86,49 +89,30 @@ function useIsLight() {
 function TablePagination({ c, inputStyle, page, totalPages, onPageChange, pageSize, onPageSizeChange, total }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 12 }}>
-      <Select value={pageSize} onChange={v => { onPageSizeChange(v); onPageChange(1); }}
-        style={{ width: 120 }}
-        popupStyle={{ background: c.dropdownBg }}
-        dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-        options={[
-          { value: 10, label: '10 条/页' },
-          { value: 20, label: '20 条/页' },
-          { value: 50, label: '50 条/页' },
-          { value: 100, label: '100 条/页' },
-        ]} />
+      <select value={pageSize} onChange={e => { onPageSizeChange(Number(e.target.value)); onPageChange(1); }}
+        style={{ background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, height: 36, fontSize: 13, width: 120, cursor: 'pointer', padding: '0 8px' }}>
+        <option value={10}>10 条/页</option>
+        <option value={20}>20 条/页</option>
+        <option value={50}>50 条/页</option>
+        <option value={100}>100 条/页</option>
+      </select>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Button disabled={page <= 1} onClick={() => onPageChange(1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>首页</Button>
-        <Button disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>上一页</Button>
+        <Btn disabled={page <= 1} onClick={() => onPageChange(1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>首页</Btn>
+        <Btn disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>上一页</Btn>
         <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>第 {page} / {totalPages} 页</span>
-        <Input type="number" min={1} max={totalPages}
-          onPressEnter={e => { const v = parseInt(e.target.value); if (v >= 1 && v <= totalPages) onPageChange(v); }}
+        <input type="number" min={1} max={totalPages}
+          onKeyDown={e => { if (e.key === 'Enter') { const v = parseInt(e.target.value); if (v >= 1 && v <= totalPages) onPageChange(v); } }}
           style={{ ...inputStyle, width: 56, height: 36, textAlign: 'center' }} placeholder="页" />
-        <Button disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>下一页</Button>
-        <Button disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>末页</Button>
+        <Btn disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>下一页</Btn>
+        <Btn disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>末页</Btn>
       </div>
       <span style={{ color: c.muted, fontSize: 13 }}>共 {total} 条</span>
     </div>
   );
-}
-
-/* ── Modal shared style helpers ── */
-function modalTitle(text, c) {
-  return <span style={{ color: c.text, fontWeight: 600 }}>{text}</span>;
-}
-function modalStyles(c) {
-  return {
-    content: { background: c.surface, border: '1px solid ' + c.border, borderRadius: 16 },
-    header: { background: 'transparent', borderBottom: '1px solid ' + c.border, paddingBottom: 16 },
-    mask: { backdropFilter: 'blur(4px)' },
-  };
-}
-const okBtn = { style: { background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 } };
-function cancelBtn(c) {
-  return { style: { background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 } };
 }
 
 /* ═══════════════════════════════════════
@@ -140,6 +124,8 @@ function HomeTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [detailRecord, setDetailRecord] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [delRecordId, setDelRecordId] = useState(null);
 
   const filtered = useMemo(() => {
     let list = [...data.records];
@@ -154,8 +140,14 @@ function HomeTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   useEffect(() => { setPage(1); }, [keyword, channelFilter]);
 
   const handleDelete = (id) => {
-    setData(prev => ({ ...prev, records: prev.records.filter(r => r.id !== id) }));
-    message.success('已删除');
+    setDelRecordId(id);
+  };
+
+  const confirmDeleteRecord = () => {
+    if (!delRecordId) return;
+    setData(prev => ({ ...prev, records: prev.records.filter(r => r.id !== delRecordId) }));
+    setToast({type:'success', message:'已删除'});
+    setDelRecordId(null);
   };
 
   const channelOptions = data.channels.map(c => ({ value: c.id, label: c.name }));
@@ -188,15 +180,12 @@ function HomeTab({ c, fs, data, setData, inputStyle, labelStyle }) {
     },
     {
       title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>操作</span>,
-      width: 120, fixed: 'right',
+      width: 120,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 4 }}>
-          <Button type="text" size="small" onClick={() => setDetailRecord(rec)}
-            style={{ color: c.muted, fontSize: fs.tableCell.fontSize }}>详情</Button>
-          <Popconfirm title="确定删除此记录？" onConfirm={() => handleDelete(rec.id)} okText="确定" cancelText="取消">
-            <Button type="text" size="small" danger icon={<DeleteOutlined />}
-              style={{ fontSize: fs.tableCell.fontSize }}>删除</Button>
-          </Popconfirm>
+          <Btn type="ghost" onClick={() => setDetailRecord(rec)}
+            style={{ color: c.muted, fontSize: fs.tableCell.fontSize }}>详情</Btn>
+          <Btn type="danger" onClick={() => handleDelete(rec.id)} style={{ fontSize: fs.tableCell.fontSize }}><IconDelete /> 删除</Btn>
         </div>
       ),
     },
@@ -209,25 +198,25 @@ function HomeTab({ c, fs, data, setData, inputStyle, labelStyle }) {
     <div>
       {/* Search bar */}
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '12px 18px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Input prefix={<SearchOutlined style={{ color: c.muted }} />}
-          placeholder="搜索地址..." value={keyword}
-          onChange={e => setKeyword(e.target.value)}
-          style={{ ...inputStyle, width: 240, height: 36 }} />
-        <Select value={channelFilter} onChange={v => setChannelFilter(v)}
-          placeholder="全部渠道" allowClear
-          style={{ width: 150 }}
-          dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-          options={channelOptions} />
-        <Button icon={<ReloadOutlined />} onClick={() => { setKeyword(''); setChannelFilter(null); }}
-          style={{ height: 36, fontSize: fs.tableCell.fontSize, color: c.muted }}>重置</Button>
+        <div style={{ display: 'flex', alignItems: 'center', ...inputStyle, width: 240, height: 36, gap: 6 }}>
+          <IconSearch />
+          <input value={keyword} onChange={e => setKeyword(e.target.value)}
+            placeholder="搜索地址..." style={{ background: 'transparent', border: 'none', outline: 'none', color: c.text, fontSize: 14, flex: 1 }} />
+        </div>
+        <select value={channelFilter ?? ''} onChange={e => setChannelFilter(e.target.value ? Number(e.target.value) : null)}
+          style={{ width: 150, height: 36, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, cursor: 'pointer', padding: '0 8px' }}>
+          <option value="">全部渠道</option>
+          {channelOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        <Btn onClick={() => { setKeyword(''); setChannelFilter(null); }}
+          style={{ height: 36, fontSize: fs.tableCell.fontSize, color: c.muted }}><IconRefresh /> 重置</Btn>
       </div>
 
       {/* Table */}
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20 }}>
-        <Table dataSource={paged} columns={columns} rowKey="id" pagination={false} size="middle"
-          style={{ background: 'transparent' }}
-          locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无住房记录</span> }}
-          scroll={{ x: 860 }} />
+        <DataTable data={paged} columns={columns} rowKey="id"
+          emptyText={<span style={{ color: c.muted2 }}>暂无住房记录</span>}
+          minWidth={860} />
         {filtered.length > 0 && (
           <TablePagination c={c} inputStyle={inputStyle}
             page={page} totalPages={totalPages} onPageChange={setPage}
@@ -236,12 +225,9 @@ function HomeTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       </div>
 
       {/* Detail Modal */}
-      <Modal title={modalTitle('记录详情', c)} open={!!detailRecord} onCancel={() => setDetailRecord(null)}
-        footer={[
-          <Button key="close" onClick={() => setDetailRecord(null)}
-            style={{ ...inputStyle, height: 36, borderRadius: 8 }}>关闭</Button>,
-        ]}
-        styles={modalStyles(c)} width={720}>
+      <Modal open={!!detailRecord} onClose={() => setDetailRecord(null)}
+        title="记录详情" width={720}
+        footer={<Btn onClick={() => setDetailRecord(null)}>关闭</Btn>}>
         {detailRecord && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginTop: 16 }}>
             {/* Basic info */}
@@ -315,6 +301,12 @@ function HomeTab({ c, fs, data, setData, inputStyle, labelStyle }) {
           </div>
         )}
       </Modal>
+
+      <DeleteModal open={!!delRecordId} onClose={() => setDelRecordId(null)} onConfirm={confirmDeleteRecord}
+        title="确认删除记录？">
+        <p>确定要删除此住房记录吗？</p>
+      </DeleteModal>
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -331,6 +323,7 @@ function AddTab({ c, fs, data, setData, inputStyle, labelStyle }) {
     notes: '',
   });
   const [errors, setErrors] = useState({});
+  const [toast, setToast] = useState(null);
 
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
 
@@ -356,7 +349,7 @@ function AddTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   };
 
   const handleSubmit = () => {
-    if (!validate()) { message.error('请检查表单填写'); return; }
+    if (!validate()) { setToast({type:'error', message:'请检查表单填写'}); return; }
     const moveIn = dayjs(form.move_in_date);
     const moveOut = form.move_out_date ? dayjs(form.move_out_date) : null;
     const stayDays = moveOut ? moveOut.diff(moveIn, 'day') : dayjs().diff(moveIn, 'day');
@@ -375,8 +368,8 @@ function AddTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       address: form.address.trim(),
       housing_channel: channel ? channel.name : '未知',
       housing_channel_id: form.housing_channel_id,
-      move_in_date: form.move_in_date.format('YYYY-MM-DD'),
-      move_out_date: form.move_out_date ? form.move_out_date.format('YYYY-MM-DD') : null,
+      move_in_date: form.move_in_date,
+      move_out_date: form.move_out_date || null,
       rent: form.rent || 0, deposit: form.deposit || 0,
       electricity_fee: form.electricity_fee || 0, water_fee: form.water_fee || 0, gas_fee: form.gas_fee || 0,
       agency_fee: form.agency_fee || 0, cleaning_fee: form.cleaning_fee || 0,
@@ -387,7 +380,7 @@ function AddTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       notes: form.notes || '',
     };
     setData(prev => ({ ...prev, records: [newRecord, ...prev.records] }));
-    message.success('记录已添加');
+    setToast({type:'success', message:'记录已添加'});
 
     // Reset form
     setForm({
@@ -435,22 +428,22 @@ function AddTab({ c, fs, data, setData, inputStyle, labelStyle }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={labelStyle}>详细地址 <span style={{ color: '#ef4444' }}>*</span></label>
-                <Input value={form.address} onChange={e => { set('address', e.target.value); setErrors(p => ({ ...p, address: '' })); }}
+                <input value={form.address} onChange={e => { set('address', e.target.value); setErrors(p => ({ ...p, address: '' })); }}
                   placeholder="请输入详细的住房地址"
-                  style={{ ...inputStyle, borderColor: errors.address ? '#ef4444' : undefined }} />
+                  style={{ width: '100%', ...inputStyle, borderColor: errors.address ? '#ef4444' : undefined }} />
                 {errors.address && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>{errors.address}</div>}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
                   <label style={labelStyle}>入住日期 <span style={{ color: '#ef4444' }}>*</span></label>
-                  <DatePicker value={form.move_in_date} onChange={v => { set('move_in_date', v); setErrors(p => ({ ...p, move_in_date: '' })); }}
-                    style={{ width: '100%', ...inputStyle }} placeholder="选择入住日期" />
+                  <input type="date" value={form.move_in_date ?? ''} onChange={e => { set('move_in_date', e.target.value || null); setErrors(p => ({ ...p, move_in_date: '' })); }}
+                    style={{ width: '100%', ...inputStyle }} />
                   {errors.move_in_date && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>{errors.move_in_date}</div>}
                 </div>
                 <div>
                   <label style={labelStyle}>退租日期</label>
-                  <DatePicker value={form.move_out_date} onChange={v => set('move_out_date', v)}
-                    style={{ width: '100%', ...inputStyle }} placeholder="选择退租日期（可选）" />
+                  <input type="date" value={form.move_out_date ?? ''} onChange={e => set('move_out_date', e.target.value || null)}
+                    style={{ width: '100%', ...inputStyle }} />
                 </div>
               </div>
             </div>
@@ -462,17 +455,17 @@ function AddTab({ c, fs, data, setData, inputStyle, labelStyle }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={labelStyle}>住房渠道</label>
-                <Select value={form.housing_channel_id} onChange={v => set('housing_channel_id', v)}
-                  placeholder="请选择住房渠道" allowClear
-                  style={{ width: '100%' }}
-                  dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-                  options={data.channels.map(c => ({ value: c.id, label: c.name }))} />
+                <select value={form.housing_channel_id ?? ''} onChange={e => set('housing_channel_id', e.target.value ? Number(e.target.value) : null)}
+                  style={{ width: '100%', height: 42, background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, cursor: 'pointer', padding: '0 8px' }}>
+                  <option value="">请选择住房渠道</option>
+                  {data.channels.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
               </div>
               <div>
                 <label style={labelStyle}>备注信息</label>
-                <Input.TextArea value={form.notes} onChange={e => set('notes', e.target.value)}
+                <textarea value={form.notes} onChange={e => set('notes', e.target.value)}
                   placeholder="请输入备注信息（如居住体验、注意事项等）" rows={4}
-                  style={{ background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text }} />
+                  style={{ width: '100%', background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontSize: 14, padding: '10px 12px', lineHeight: 1.5 }} />
               </div>
             </div>
           </div>
@@ -485,10 +478,9 @@ function AddTab({ c, fs, data, setData, inputStyle, labelStyle }) {
             {feeFields.map(f => (
               <div key={f.key}>
                 <label style={labelStyle}>{f.label}（元）</label>
-                <InputNumber value={form[f.key]} onChange={v => set(f.key, v || 0)}
-                  min={0} step={0.01} precision={2}
-                  style={{ width: '100%', ...inputStyle }}
-                  inputStyle={{ textAlign: 'right' }} />
+                <input type="number" value={form[f.key]} onChange={e => set(f.key, parseFloat(e.target.value) || 0)}
+                  min={0} step="0.01"
+                  style={{ width: '100%', ...inputStyle, textAlign: 'right' }} />
               </div>
             ))}
           </div>
@@ -516,11 +508,12 @@ function AddTab({ c, fs, data, setData, inputStyle, labelStyle }) {
 
       {/* Actions */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 16, padding: 20, background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12 }}>
-        <Button onClick={handleReset}
-          style={{ height: 42, fontSize: 15, borderRadius: 8, border: '1px solid ' + c.border, color: c.text, background: c.surfaceTint, minWidth: 120 }}>重置</Button>
-        <Button type="primary" onClick={handleSubmit} icon={<PlusOutlined />}
-          style={{ height: 42, fontSize: 15, borderRadius: 8, fontWeight: 500, minWidth: 140 }}>提交记录</Button>
+        <Btn onClick={handleReset}
+          style={{ height: 42, fontSize: 15, borderRadius: 8, border: '1px solid ' + c.border, color: c.text, background: c.surfaceTint, minWidth: 120 }}>重置</Btn>
+        <Btn type="primary" onClick={handleSubmit}
+          style={{ height: 42, fontSize: 15, borderRadius: 8, fontWeight: 500, minWidth: 140 }}><IconPlus /> 提交记录</Btn>
       </div>
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -533,52 +526,54 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [editName, setEditName] = useState('');
+  const [toast, setToast] = useState(null);
+  const [delChannel, setDelChannel] = useState(null);
 
   const handleAdd = () => {
-    if (!newName.trim()) { message.error('渠道名称不能为空'); return; }
-    if (data.channels.some(c => c.name === newName.trim())) { message.error('渠道名称已存在'); return; }
+    if (!newName.trim()) { setToast({type:'error', message:'渠道名称不能为空'}); return; }
+    if (data.channels.some(c => c.name === newName.trim())) { setToast({type:'error', message:'渠道名称已存在'}); return; }
     const maxId = data.channels.reduce((m, c) => Math.max(m, c.id), 0);
     setData(prev => ({ ...prev, channels: [...prev.channels, { id: maxId + 1, name: newName.trim() }] }));
     setNewName('');
-    message.success('已添加');
+    setToast({type:'success', message:'已添加'});
   };
 
   const openEdit = (ch) => { setEditing(ch); setEditName(ch.name); setEditModalOpen(true); };
 
   const handleEditSave = () => {
-    if (!editName.trim()) { message.error('渠道名称不能为空'); return; }
-    if (data.channels.some(c => c.name === editName.trim() && c.id !== editing.id)) { message.error('渠道名称已存在'); return; }
+    if (!editName.trim()) { setToast({type:'error', message:'渠道名称不能为空'}); return; }
+    if (data.channels.some(c => c.name === editName.trim() && c.id !== editing.id)) { setToast({type:'error', message:'渠道名称已存在'}); return; }
     setData(prev => ({
       ...prev,
       channels: prev.channels.map(c => c.id === editing.id ? { ...c, name: editName.trim() } : c),
       records: prev.records.map(r => r.housing_channel_id === editing.id ? { ...r, housing_channel: editName.trim() } : r),
     }));
     setEditModalOpen(false);
-    message.success('已更新');
+    setToast({type:'success', message:'已更新'});
   };
 
   const handleDelete = (ch) => {
     const count = data.records.filter(r => r.housing_channel_id === ch.id).length;
     if (count > 0) {
-      Modal.confirm({
-        title: '确认删除',
-        content: `渠道"${ch.name}"下有 ${count} 条住房记录，删除将一并清空关联渠道信息`,
-        okText: '确定', cancelText: '取消',
-        okButtonProps: { danger: true },
-        onOk: () => {
-          setData(prev => ({
-            ...prev,
-            channels: prev.channels.filter(c => c.id !== ch.id),
-            records: prev.records.map(r => r.housing_channel_id === ch.id ? { ...r, housing_channel: '未知', housing_channel_id: null } : r),
-          }));
-          message.success('已删除');
-        },
-      });
+      setDelChannel(ch);
     } else {
       setData(prev => ({ ...prev, channels: prev.channels.filter(c => c.id !== ch.id) }));
-      message.success('已删除');
+      setToast({type:'success', message:'已删除'});
     }
   };
+
+  const confirmDeleteChannel = () => {
+    if (!delChannel) return;
+    setData(prev => ({
+      ...prev,
+      channels: prev.channels.filter(c => c.id !== delChannel.id),
+      records: prev.records.map(r => r.housing_channel_id === delChannel.id ? { ...r, housing_channel: '未知', housing_channel_id: null } : r),
+    }));
+    setToast({type:'success', message:'已删除'});
+    setDelChannel(null);
+  };
+
+  const delChanCount = delChannel ? data.records.filter(r => r.housing_channel_id === delChannel.id).length : 0;
 
   const columns = [
     {
@@ -591,12 +586,8 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       width: 200,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)}
-            style={{ color: c.muted, fontSize: fs.tableCell.fontSize }}>编辑</Button>
-          <Popconfirm title={`确定删除"${rec.name}"？`} onConfirm={() => handleDelete(rec)} okText="确定" cancelText="取消">
-            <Button type="text" size="small" danger icon={<DeleteOutlined />}
-              style={{ fontSize: fs.tableCell.fontSize }}>删除</Button>
-          </Popconfirm>
+          <Btn type="ghost" onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: fs.tableCell.fontSize }}><IconEdit /> 编辑</Btn>
+          <Btn type="danger" onClick={() => handleDelete(rec)} style={{ fontSize: fs.tableCell.fontSize }}><IconDelete /> 删除</Btn>
         </div>
       ),
     },
@@ -606,34 +597,37 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
     <div>
       {/* Add channel */}
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '16px 20px', marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
-        <Input value={newName} onChange={e => setNewName(e.target.value)}
-          onPressEnter={handleAdd}
+        <input value={newName} onChange={e => setNewName(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
           placeholder="输入渠道名称" style={{ ...inputStyle, width: 300, height: 36 }} />
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}
-          style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}>添加渠道</Button>
+        <Btn type="primary" onClick={handleAdd}
+          style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}><IconPlus /> 添加渠道</Btn>
       </div>
 
       {/* Channel list */}
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20 }}>
-        <Table dataSource={data.channels} columns={columns} rowKey="id" pagination={false} size="middle"
-          style={{ background: 'transparent' }}
-          locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无渠道</span> }}
-          scroll={{ x: 500 }} />
+        <DataTable data={data.channels} columns={columns} rowKey="id"
+          emptyText={<span style={{ color: c.muted2 }}>暂无渠道</span>}
+          minWidth={500} />
       </div>
 
       {/* Edit modal */}
-      <Modal title={modalTitle('编辑渠道名称', c)} open={editModalOpen}
-        onCancel={() => setEditModalOpen(false)}
-        onOk={handleEditSave} okText="确定" cancelText="取消"
-        okButtonProps={okBtn} cancelButtonProps={cancelBtn(c)}
-        styles={modalStyles(c)} width={420}>
+      <Modal open={editModalOpen} onClose={() => setEditModalOpen(false)}
+        title="编辑渠道名称" width={420}
+        footer={<><Btn onClick={() => setEditModalOpen(false)}>取消</Btn><Btn type="primary" onClick={handleEditSave}>确定</Btn></>}>
         <div style={{ marginTop: 16 }}>
           <label style={labelStyle}>渠道名称</label>
-          <Input value={editName} onChange={e => setEditName(e.target.value)}
-            onPressEnter={handleEditSave}
-            placeholder="请输入新的渠道名称" style={inputStyle} />
+          <input value={editName} onChange={e => setEditName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleEditSave(); }}
+            placeholder="请输入新的渠道名称" style={{ width: '100%', ...inputStyle }} />
         </div>
       </Modal>
+
+      <DeleteModal open={!!delChannel} onClose={() => setDelChannel(null)} onConfirm={confirmDeleteChannel}
+        title={`确认删除"${delChannel?.name}"？`}>
+        {delChannel && <p>渠道"{delChannel.name}"下有 {delChanCount} 条住房记录，删除将一并清空关联渠道信息</p>}
+      </DeleteModal>
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -858,10 +852,10 @@ export default function Rent() {
   }, []);
 
   const tabItems = [
-    { value: 'records', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><HomeOutlined />住房记录</span> },
-    { value: 'add', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><PlusOutlined />新增记录</span> },
-    { value: 'settings', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><SettingOutlined />渠道管理</span> },
-    { value: 'stats', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><BarChartOutlined />数据统计</span> },
+    { value: 'records', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><IconHome />住房记录</span> },
+    { value: 'add', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><IconPlus />新增记录</span> },
+    { value: 'settings', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><IconSettings />渠道管理</span> },
+    { value: 'stats', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><IconChart />数据统计</span> },
   ];
 
   const renderTab = () => {
@@ -877,7 +871,7 @@ export default function Rent() {
   return (
     <div>
       <h1 className="page-title" style={{ marginBottom: 24 }}>房租水电</h1>
-      <Segmented value={tab} onChange={handleTabChange} options={tabItems}
+      <PillTabs value={tab} onChange={handleTabChange} options={tabItems}
         style={{ marginBottom: 20, background: c.surfaceTint, borderRadius: 10, padding: 3 }} />
       {renderTab()}
     </div>

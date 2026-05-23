@@ -1,14 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
-import {
-  Input, Button, Select, Modal, Popconfirm, message, Table, Segmented, DatePicker, InputNumber, Switch, Radio,
-} from 'antd';
-import {
-  PlusOutlined, DeleteOutlined, EditOutlined, SearchOutlined, ReloadOutlined,
-  WalletOutlined, DownloadOutlined, UploadOutlined, SettingOutlined, BarChartOutlined,
-  PhoneOutlined, TeamOutlined,
-} from '@ant-design/icons';
+import { Modal, DeleteModal, Toast, Btn, Tag, PillTabs, Field, DataTable, Pagination, Switch, Checkbox } from '../../components/ui';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
+
+/* SVG Icons */
+const AddIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>;
+const DeleteIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>;
+const EditIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>;
+const SearchIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>;
+const ReloadIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>;
+const WalletIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 18v1c0 1.1-.9 2-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14c1.1 0 2 .9 2 2v1h-9a3 3 0 00-3 3v8a3 3 0 003 3h9zm-9-2h10V8H12a2 2 0 100 4 2 2 0 010 4zm4-2.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg>;
+const DownloadIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>;
+const UploadIcon = () => <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>;
+const PhoneIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>;
+const BarChartIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"/></svg>;
+const SettingsIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>;
 
 /* ═══════════════════════════════════════
    Constants
@@ -105,30 +111,30 @@ function useIsLight() {
 
 /* ── Shared Pagination ── */
 function TablePagination({ c, inputStyle, page, totalPages, onPageChange, pageSize, onPageSizeChange, total }) {
+  const [jumpInput, setJumpInput] = useState('');
+  const doJump = () => { const v = parseInt(jumpInput); if (v >= 1 && v <= totalPages) { onPageChange(v); setJumpInput(''); } };
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 12 }}>
-      <Select value={pageSize} onChange={v => { onPageSizeChange(v); onPageChange(1); }}
-        style={{ width: 120 }}
-        dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-        options={[
-          { value: 10, label: '10 条/页' },
-          { value: 20, label: '20 条/页' },
-          { value: 50, label: '50 条/页' },
-          { value: 100, label: '100 条/页' },
-        ]} />
+      <select value={pageSize} onChange={e => { onPageSizeChange(Number(e.target.value)); onPageChange(1); }}
+        style={{ ...inputStyle, width: 120 }}>
+        <option value={10}>10 条/页</option>
+        <option value={20}>20 条/页</option>
+        <option value={50}>50 条/页</option>
+        <option value={100}>100 条/页</option>
+      </select>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Button disabled={page <= 1} onClick={() => onPageChange(1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>首页</Button>
-        <Button disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>上一页</Button>
+        <Btn disabled={page <= 1} onClick={() => onPageChange(1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>首页</Btn>
+        <Btn disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>上一页</Btn>
         <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>第 {page} / {totalPages} 页</span>
-        <Input type="number" min={1} max={totalPages}
-          onPressEnter={e => { const v = parseInt(e.target.value); if (v >= 1 && v <= totalPages) onPageChange(v); }}
+        <input type="number" min={1} max={totalPages}
+          onKeyDown={e => { if (e.key === 'Enter') { const v = parseInt(e.target.value); if (v >= 1 && v <= totalPages) onPageChange(v); } }}
           style={{ ...inputStyle, width: 56, height: 36, textAlign: 'center' }} placeholder="页" />
-        <Button disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>下一页</Button>
-        <Button disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>末页</Button>
+        <Btn disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>下一页</Btn>
+        <Btn disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>末页</Btn>
       </div>
       <span style={{ color: c.muted, fontSize: 13 }}>共 {total} 条</span>
     </div>
@@ -138,17 +144,6 @@ function TablePagination({ c, inputStyle, page, totalPages, onPageChange, pageSi
 /* ── Modal shared style helpers ── */
 function modalTitle(text, c) {
   return <span style={{ color: c.text, fontWeight: 600 }}>{text}</span>;
-}
-function modalStyles(c) {
-  return {
-    content: { background: c.surface, border: '1px solid ' + c.border, borderRadius: 16 },
-    header: { background: 'transparent', borderBottom: '1px solid ' + c.border, paddingBottom: 16 },
-    mask: { backdropFilter: 'blur(4px)' },
-  };
-}
-const okBtn = { style: { background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 } };
-function cancelBtn(c) {
-  return { style: { background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 } };
 }
 
 /* ── Helpers ── */
@@ -179,11 +174,14 @@ function SimCardListTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const [editCard, setEditCard] = useState(null);
   const [form, setForm] = useState({
     phone_number: '', carrier: '', balance: 0, monthly_fee: 0, billing_day: 1,
-    location: '', data_plan: '', call_minutes: '', sms_count: '', activation_date: null,
+    location: '', data_plan: '', call_minutes: '', sms_count: '', activation_date: '',
   });
   const [rechargeOpen, setRechargeOpen] = useState(false);
   const [rechargeCard, setRechargeCard] = useState(null);
   const [rechargeAmount, setRechargeAmount] = useState(0);
+  const [deleteCardConfirm, setDeleteCardConfirm] = useState(null);
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = 'success') => { setToast({ message: msg, type }); setTimeout(() => setToast(null), 3000); };
 
   const filtered = useMemo(() => {
     let list = [...data.simCards];
@@ -202,7 +200,7 @@ function SimCardListTab({ c, fs, data, setData, inputStyle, labelStyle }) {
 
   const openCreate = () => {
     setEditCard(null);
-    setForm({ phone_number: '', carrier: '', balance: 0, monthly_fee: 0, billing_day: 1, location: '', data_plan: '', call_minutes: '', sms_count: '', activation_date: null });
+    setForm({ phone_number: '', carrier: '', balance: 0, monthly_fee: 0, billing_day: 1, location: '', data_plan: '', call_minutes: '', sms_count: '', activation_date: '' });
     setModalOpen(true);
   };
   const openEdit = (c) => {
@@ -211,37 +209,37 @@ function SimCardListTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       phone_number: c.phone_number, carrier: c.carrier, balance: c.balance, monthly_fee: c.monthly_fee,
       billing_day: c.billing_day, location: c.location || '', data_plan: c.data_plan || '',
       call_minutes: c.call_minutes || '', sms_count: c.sms_count || '',
-      activation_date: c.activation_date ? dayjs(c.activation_date) : null,
+      activation_date: c.activation_date || '',
     });
     setModalOpen(true);
   };
 
   const handleSave = () => {
-    if (!form.phone_number.trim()) { message.error('请输入电话号码'); return; }
-    if (!form.carrier) { message.error('请选择运营商'); return; }
+    if (!form.phone_number.trim()) { showToast('请输入电话号码', 'error'); return; }
+    if (!form.carrier) { showToast('请选择运营商', 'error'); return; }
     if (editCard) {
-      setData(prev => ({ ...prev, simCards: prev.simCards.map(c => c.id === editCard.id ? { ...c, ...form, activation_date: form.activation_date ? form.activation_date.format('YYYY-MM-DD') : '' } : c) }));
-      message.success('已更新');
+      setData(prev => ({ ...prev, simCards: prev.simCards.map(c => c.id === editCard.id ? { ...c, ...form, activation_date: form.activation_date || '' } : c) }));
+      showToast('已更新');
     } else {
       const maxId = data.simCards.reduce((m, c) => Math.max(m, c.id), 0);
-      setData(prev => ({ ...prev, simCards: [...prev.simCards, { id: maxId + 1, ...form, activation_date: form.activation_date ? form.activation_date.format('YYYY-MM-DD') : '' }] }));
-      message.success('已添加');
+      setData(prev => ({ ...prev, simCards: [...prev.simCards, { id: maxId + 1, ...form, activation_date: form.activation_date || '' }] }));
+      showToast('已添加');
     }
     setModalOpen(false);
   };
 
   const handleDelete = (id) => {
     setData(prev => ({ ...prev, simCards: prev.simCards.filter(c => c.id !== id), bills: prev.bills.filter(b => b.sim_id !== id) }));
-    message.success('已删除');
+    showToast('已删除');
   };
 
   const doRecharge = () => {
-    if (!rechargeAmount || rechargeAmount <= 0) { message.error('请输入有效金额'); return; }
+    if (!rechargeAmount || rechargeAmount <= 0) { showToast('请输入有效金额', 'error'); return; }
     setData(prev => ({
       ...prev,
       simCards: prev.simCards.map(c => c.id === rechargeCard.id ? { ...c, balance: parseFloat((c.balance + rechargeAmount).toFixed(2)) } : c),
     }));
-    message.success('充值成功，余额已更新');
+    showToast('充值成功，余额已更新');
     setRechargeOpen(false);
     setRechargeAmount(0);
   };
@@ -265,11 +263,15 @@ function SimCardListTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>操作</span>, width: 140, fixed: 'right',
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 4 }}>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: fs.tableCell.fontSize }}>编辑</Button>
-          <Button type="text" size="small" icon={<WalletOutlined />} onClick={() => { setRechargeCard(rec); setRechargeAmount(0); setRechargeOpen(true); }} style={{ color: '#10B981', fontSize: fs.tableCell.fontSize }}>充值</Button>
-          <Popconfirm title={`确定删除 ${rec.phone_number}？`} onConfirm={() => handleDelete(rec.id)} okText="确定" cancelText="取消">
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: fs.tableCell.fontSize }}>删除</Button>
-          </Popconfirm>
+          <button onClick={() => openEdit(rec)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: c.muted, display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: fs.tableCell.fontSize, padding: '4px 6px' }}>
+            <EditIcon /> 编辑
+          </button>
+          <button onClick={() => { setRechargeCard(rec); setRechargeAmount(0); setRechargeOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: fs.tableCell.fontSize, padding: '4px 6px' }}>
+            <WalletIcon /> 充值
+          </button>
+          <button onClick={() => setDeleteCardConfirm(rec)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: fs.tableCell.fontSize, padding: '4px 6px' }}>
+            <DeleteIcon /> 删除
+          </button>
         </div>
       ),
     },
@@ -279,17 +281,25 @@ function SimCardListTab({ c, fs, data, setData, inputStyle, labelStyle }) {
     <div>
       {/* Toolbar */}
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '12px 18px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Input prefix={<SearchOutlined style={{ color: c.muted }} />}
-          placeholder="搜索号码..." value={keyword}
-          onChange={e => { setKeyword(e.target.value); }}
-          style={{ ...inputStyle, width: 200, height: 36 }} />
-        <Button onClick={() => setAdvOpen(!advOpen)}
-          style={{ height: 36, fontSize: fs.tableCell.fontSize, color: c.text, background: c.surfaceTint, border: '1px solid ' + c.border }}>{advOpen ? '收起筛选' : '高级筛选'}</Button>
-        <Button icon={<ReloadOutlined />} onClick={() => { setKeyword(''); setFilters({ carrier: '', location: '', balanceMin: '', balanceMax: '' }); }}
-          style={{ height: 36, fontSize: fs.tableCell.fontSize, color: c.muted, background: c.surfaceTint, border: '1px solid ' + c.border }} />
+        <span style={{ position: 'relative' }}>
+          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: c.muted, lineHeight: 0, pointerEvents: 'none' }}>
+            <SearchIcon />
+          </span>
+          <input placeholder="搜索号码..." value={keyword}
+            onChange={e => { setKeyword(e.target.value); }}
+            style={{ ...inputStyle, width: 200, height: 36, paddingLeft: 32 }} />
+        </span>
+        <Btn onClick={() => setAdvOpen(!advOpen)}
+          style={{ height: 36, fontSize: fs.tableCell.fontSize, color: c.text, background: c.surfaceTint, border: '1px solid ' + c.border }}>{advOpen ? '收起筛选' : '高级筛选'}</Btn>
+        <Btn onClick={() => { setKeyword(''); setFilters({ carrier: '', location: '', balanceMin: '', balanceMax: '' }); }}
+          style={{ height: 36, fontSize: fs.tableCell.fontSize, color: c.muted, background: c.surfaceTint, border: '1px solid ' + c.border }}>
+          <ReloadIcon />
+        </Btn>
         <div style={{ flex: 1 }} />
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}
-          style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}>添加号卡</Button>
+        <Btn type="primary" onClick={openCreate}
+          style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}>
+          <AddIcon /> 添加号卡
+        </Btn>
       </div>
 
       {/* Advanced filters */}
@@ -298,25 +308,26 @@ function SimCardListTab({ c, fs, data, setData, inputStyle, labelStyle }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
             <div>
               <div style={{ color: c.muted, fontSize: 12, marginBottom: 4 }}>运营商</div>
-              <Select value={filters.carrier} onChange={v => setFilters(p => ({ ...p, carrier: v }))}
-                placeholder="全部" allowClear style={{ width: '100%' }}
-                dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-                options={carrierOptions} />
+              <select value={filters.carrier} onChange={e => setFilters(p => ({ ...p, carrier: e.target.value }))}
+                style={{ ...inputStyle, width: '100%', height: 36 }}>
+                <option value="">全部</option>
+                {data.carriers.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+              </select>
             </div>
             <div>
               <div style={{ color: c.muted, fontSize: 12, marginBottom: 4 }}>归属地</div>
-              <Input value={filters.location} onChange={e => setFilters(p => ({ ...p, location: e.target.value }))}
-                placeholder="归属地" style={{ ...inputStyle, height: 36 }} />
+              <input value={filters.location} onChange={e => setFilters(p => ({ ...p, location: e.target.value }))}
+                placeholder="归属地" style={{ ...inputStyle, height: 36 }} className="w-full" />
             </div>
             <div>
               <div style={{ color: c.muted, fontSize: 12, marginBottom: 4 }}>最小余额</div>
-              <Input type="number" value={filters.balanceMin} onChange={e => setFilters(p => ({ ...p, balanceMin: e.target.value }))}
-                placeholder="最小值" style={{ ...inputStyle, height: 36 }} />
+              <input type="number" value={filters.balanceMin} onChange={e => setFilters(p => ({ ...p, balanceMin: e.target.value }))}
+                placeholder="最小值" style={{ ...inputStyle, height: 36 }} className="w-full" />
             </div>
             <div>
               <div style={{ color: c.muted, fontSize: 12, marginBottom: 4 }}>最大余额</div>
-              <Input type="number" value={filters.balanceMax} onChange={e => setFilters(p => ({ ...p, balanceMax: e.target.value }))}
-                placeholder="最大值" style={{ ...inputStyle, height: 36 }} />
+              <input type="number" value={filters.balanceMax} onChange={e => setFilters(p => ({ ...p, balanceMax: e.target.value }))}
+                placeholder="最大值" style={{ ...inputStyle, height: 36 }} className="w-full" />
             </div>
           </div>
         </div>
@@ -324,9 +335,7 @@ function SimCardListTab({ c, fs, data, setData, inputStyle, labelStyle }) {
 
       {/* Table */}
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20 }}>
-        <Table dataSource={paged} columns={columns} rowKey="id" pagination={false} size="middle"
-          style={{ background: 'transparent' }}
-          locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无号卡</span> }} />
+        <DataTable data={paged} columns={columns} rowKey="id" emptyText={<span style={{ color: c.muted2 }}>暂无号卡</span>} />
         {filtered.length > 0 && (
           <TablePagination c={c} inputStyle={inputStyle}
             page={page} totalPages={totalPages} onPageChange={setPage}
@@ -335,68 +344,69 @@ function SimCardListTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       </div>
 
       {/* Add/Edit Modal */}
-      <Modal title={modalTitle(editCard ? '编辑号卡' : '添加号卡', c)} open={modalOpen} onCancel={() => setModalOpen(false)}
-        onOk={handleSave} okText="确定" cancelText="取消"
-        okButtonProps={okBtn} cancelButtonProps={cancelBtn(c)}
-        styles={modalStyles(c)} width={640}>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={modalTitle(editCard ? '编辑号卡' : '添加号卡', c)} width={640}
+        footer={<div style={{ display: 'flex', gap: 8 }}>
+          <Btn onClick={() => setModalOpen(false)}>取消</Btn>
+          <Btn type="primary" onClick={handleSave}>确定</Btn>
+        </div>}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 16 }}>
           <div>
             <label style={labelStyle}>电话号码 <span style={{ color: '#ef4444' }}>*</span></label>
-            <Input value={form.phone_number} onChange={e => setForm(p => ({ ...p, phone_number: e.target.value }))} placeholder="请输入号码" style={inputStyle} />
+            <input value={form.phone_number} onChange={e => setForm(p => ({ ...p, phone_number: e.target.value }))} placeholder="请输入号码" style={inputStyle} className="w-full" />
           </div>
           <div>
             <label style={labelStyle}>运营商 <span style={{ color: '#ef4444' }}>*</span></label>
-            <Select value={form.carrier} onChange={v => setForm(p => ({ ...p, carrier: v }))}
-              placeholder="选择运营商" style={{ width: '100%', ...inputStyle }}
-              dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-              options={carrierOptions} />
+            <select value={form.carrier} onChange={e => setForm(p => ({ ...p, carrier: e.target.value }))}
+              style={{ width: '100%', ...inputStyle }}>
+              <option value="">选择运营商</option>
+              {data.carriers.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+            </select>
           </div>
           <div>
             <label style={labelStyle}>余额（元）</label>
-            <InputNumber value={form.balance} onChange={v => setForm(p => ({ ...p, balance: v || 0 }))}
-              min={0} step={0.01} precision={2} style={{ width: '100%', ...inputStyle }} />
+            <input type="number" value={form.balance} onChange={e => setForm(p => ({ ...p, balance: parseFloat(e.target.value) || 0 }))}
+              min={0} step="0.01" style={{ width: '100%', ...inputStyle }} className="w-full" />
           </div>
           <div>
             <label style={labelStyle}>月租（元）</label>
-            <InputNumber value={form.monthly_fee} onChange={v => setForm(p => ({ ...p, monthly_fee: v || 0 }))}
-              min={0} step={0.01} precision={2} style={{ width: '100%', ...inputStyle }} />
+            <input type="number" value={form.monthly_fee} onChange={e => setForm(p => ({ ...p, monthly_fee: parseFloat(e.target.value) || 0 }))}
+              min={0} step="0.01" style={{ width: '100%', ...inputStyle }} className="w-full" />
           </div>
           <div>
             <label style={labelStyle}>月结日</label>
-            <InputNumber value={form.billing_day} onChange={v => setForm(p => ({ ...p, billing_day: v || 1 }))}
-              min={1} max={31} style={{ width: '100%', ...inputStyle }} />
+            <input type="number" value={form.billing_day} onChange={e => setForm(p => ({ ...p, billing_day: parseInt(e.target.value) || 1 }))}
+              min={1} max={31} style={{ width: '100%', ...inputStyle }} className="w-full" />
           </div>
           <div>
             <label style={labelStyle}>归属地</label>
-            <Input value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} placeholder="如：上海" style={inputStyle} />
+            <input value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} placeholder="如：上海" style={inputStyle} className="w-full" />
           </div>
           <div>
             <label style={labelStyle}>流量套餐</label>
-            <Input value={form.data_plan} onChange={e => setForm(p => ({ ...p, data_plan: e.target.value }))} placeholder="如：5GB/月" style={inputStyle} />
+            <input value={form.data_plan} onChange={e => setForm(p => ({ ...p, data_plan: e.target.value }))} placeholder="如：5GB/月" style={inputStyle} className="w-full" />
           </div>
           <div>
             <label style={labelStyle}>通话分钟</label>
-            <Input value={form.call_minutes} onChange={e => setForm(p => ({ ...p, call_minutes: e.target.value }))} placeholder="如：100分钟/月" style={inputStyle} />
+            <input value={form.call_minutes} onChange={e => setForm(p => ({ ...p, call_minutes: e.target.value }))} placeholder="如：100分钟/月" style={inputStyle} className="w-full" />
           </div>
           <div>
             <label style={labelStyle}>短信条数</label>
-            <Input value={form.sms_count} onChange={e => setForm(p => ({ ...p, sms_count: e.target.value }))} placeholder="如：50条/月" style={inputStyle} />
+            <input value={form.sms_count} onChange={e => setForm(p => ({ ...p, sms_count: e.target.value }))} placeholder="如：50条/月" style={inputStyle} className="w-full" />
           </div>
           <div>
             <label style={labelStyle}>开卡时间</label>
-            <DatePicker value={form.activation_date} onChange={v => setForm(p => ({ ...p, activation_date: v }))}
-              style={{ width: '100%', ...inputStyle }} placeholder="选择日期" />
+            <input type="date" value={form.activation_date} onChange={e => setForm(p => ({ ...p, activation_date: e.target.value }))}
+              style={{ width: '100%', ...inputStyle }} className="w-full" />
           </div>
         </div>
       </Modal>
 
       {/* Recharge Modal */}
-      <Modal title={modalTitle('充值 - ' + (rechargeCard?.phone_number || ''), c)} open={rechargeOpen}
-        onCancel={() => setRechargeOpen(false)}
-        onOk={doRecharge} okText="确认充值" cancelText="取消"
-        okButtonProps={{ style: { background: '#10B981', borderColor: '#10B981', borderRadius: 8 } }}
-        cancelButtonProps={cancelBtn(c)}
-        styles={modalStyles(c)} width={420}>
+      <Modal open={rechargeOpen} onClose={() => setRechargeOpen(false)} title={modalTitle('充值 - ' + (rechargeCard?.phone_number || ''), c)} width={420}
+        footer={<div style={{ display: 'flex', gap: 8 }}>
+          <Btn onClick={() => setRechargeOpen(false)}>取消</Btn>
+          <Btn type="primary" onClick={doRecharge} style={{ background: '#10B981', borderColor: '#10B981' }}>确认充值</Btn>
+        </div>}>
         <div style={{ marginTop: 16 }}>
           <div style={{ background: c.surfaceTint2, borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -409,11 +419,18 @@ function SimCardListTab({ c, fs, data, setData, inputStyle, labelStyle }) {
             </div>
           </div>
           <label style={labelStyle}>充值金额 <span style={{ color: '#ef4444' }}>*</span></label>
-          <InputNumber value={rechargeAmount} onChange={v => setRechargeAmount(v || 0)}
-            min={0} step={10} precision={2} placeholder="输入充值金额"
-            style={{ width: '100%', ...inputStyle }} />
+          <input type="number" value={rechargeAmount} onChange={e => setRechargeAmount(parseFloat(e.target.value) || 0)}
+            min={0} step="10" placeholder="输入充值金额"
+            style={{ width: '100%', ...inputStyle }} className="w-full" />
         </div>
       </Modal>
+
+      {/* Delete card confirmation */}
+      <DeleteModal open={!!deleteCardConfirm} onClose={() => setDeleteCardConfirm(null)}
+        onConfirm={() => { handleDelete(deleteCardConfirm.id); setDeleteCardConfirm(null); }}
+        title={`确定删除 ${deleteCardConfirm?.phone_number}？`} />
+
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -424,6 +441,9 @@ function SimCardListTab({ c, fs, data, setData, inputStyle, labelStyle }) {
 function BillManagementTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [deleteBillConfirm, setDeleteBillConfirm] = useState(null);
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = 'success') => { setToast({ message: msg, type }); setTimeout(() => setToast(null), 3000); };
 
   const bills = useMemo(() => [...data.bills].sort((a, b) => b.id - a.id), [data.bills]);
   const totalPages = Math.max(1, Math.ceil(bills.length / pageSize));
@@ -431,12 +451,12 @@ function BillManagementTab({ c, fs, data, setData, inputStyle, labelStyle }) {
 
   const handleDelete = (id) => {
     setData(prev => ({ ...prev, bills: prev.bills.filter(b => b.id !== id) }));
-    message.success('已删除');
+    showToast('已删除');
   };
 
   // Export CSV
   const handleExport = () => {
-    if (!bills.length) { message.error('暂无账单数据可导出'); return; }
+    if (!bills.length) { showToast('暂无账单数据可导出', 'error'); return; }
     const headers = ['月份', '电话号码', '月租', '实际扣费', '额外费用', '总费用', '备注'];
     const rows = bills.map(b => [b.billing_month, b.phone_number, b.monthly_fee, b.actual_fee, b.extra_charges, b.total_fee, b.note || '']);
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -445,7 +465,7 @@ function BillManagementTab({ c, fs, data, setData, inputStyle, labelStyle }) {
     a.href = URL.createObjectURL(blob);
     a.download = '账单导出_' + dayjs().format('YYYY-MM-DD') + '.csv';
     a.click();
-    message.success('导出成功');
+    showToast('导出成功');
   };
 
   // Download template
@@ -477,9 +497,9 @@ function BillManagementTab({ c, fs, data, setData, inputStyle, labelStyle }) {
     {
       title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>操作</span>, width: 70,
       render: (_, rec) => (
-        <Popconfirm title="确定删除此账单？" onConfirm={() => handleDelete(rec.id)} okText="确定" cancelText="取消">
-          <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-        </Popconfirm>
+        <button onClick={() => setDeleteBillConfirm(rec)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4, lineHeight: 0 }}>
+          <DeleteIcon />
+        </button>
       ),
     },
   ];
@@ -490,12 +510,12 @@ function BillManagementTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ ...fs.sectionTitle, color: c.text }}>账单记录</div>
-          <Button icon={<DownloadOutlined />} onClick={handleExport}
-            style={{ height: 32, fontSize: 13, border: '1px solid ' + c.border, color: c.text, background: c.surfaceTint }}>导出</Button>
+          <Btn onClick={handleExport}
+            style={{ height: 32, fontSize: 13, border: '1px solid ' + c.border, color: c.text, background: c.surfaceTint }}>
+            <DownloadIcon /> 导出
+          </Btn>
         </div>
-        <Table dataSource={paged} columns={columns} rowKey="id" pagination={false} size="middle"
-          style={{ background: 'transparent' }}
-          locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无账单</span> }} />
+        <DataTable data={paged} columns={columns} rowKey="id" emptyText={<span style={{ color: c.muted2 }}>暂无账单</span>} />
         {bills.length > 0 && (
           <TablePagination c={c} inputStyle={inputStyle}
             page={page} totalPages={totalPages} onPageChange={setPage}
@@ -513,12 +533,12 @@ function BillManagementTab({ c, fs, data, setData, inputStyle, labelStyle }) {
             border: '2px dashed ' + c.border, borderRadius: 12, padding: 32, textAlign: 'center',
             background: c.surfaceTint,
           }}>
-            <UploadOutlined style={{ fontSize: 36, color: c.muted }} />
-            <div style={{ color: c.muted, fontSize: 14, marginTop: 12 }}>拖拽文件到此处，或点击选择文件</div>
+            <div style={{ lineHeight: 0, marginBottom: 12 }}><UploadIcon /></div>
+            <div style={{ color: c.muted, fontSize: 14 }}>拖拽文件到此处，或点击选择文件</div>
             <div style={{ color: c.muted2, fontSize: 12, marginTop: 4 }}>仅支持 CSV 格式文件</div>
-            <Button onClick={handleTemplate} style={{ marginTop: 16, border: '1px solid ' + c.border, color: c.text, background: c.surfaceTint, height: 36, fontSize: 13 }}>
-              <DownloadOutlined /> 下载模板
-            </Button>
+            <Btn onClick={handleTemplate} style={{ marginTop: 16, border: '1px solid ' + c.border, color: c.text, background: c.surfaceTint, height: 36, fontSize: 13 }}>
+              <DownloadIcon /> 下载模板
+            </Btn>
           </div>
         </div>
 
@@ -535,6 +555,13 @@ function BillManagementTab({ c, fs, data, setData, inputStyle, labelStyle }) {
           </div>
         </div>
       </div>
+
+      {/* Delete bill confirmation */}
+      <DeleteModal open={!!deleteBillConfirm} onClose={() => setDeleteBillConfirm(null)}
+        onConfirm={() => { handleDelete(deleteBillConfirm.id); setDeleteBillConfirm(null); }}
+        title="确定删除此账单？" />
+
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -714,10 +741,10 @@ function StatisticsTab({ c, fs, isLight, data }) {
       {/* Filter */}
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '12px 18px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <span style={{ color: c.muted, fontSize: 14 }}>运营商：</span>
-        <Select value={carrierFilter} onChange={setCarrierFilter}
-          style={{ width: 150 }}
-          dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-          options={carrierOptions} />
+        <select value={carrierFilter} onChange={e => setCarrierFilter(e.target.value)}
+          style={{ background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, height: 40, width: 150 }}>
+          {carrierOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
       </div>
 
       {/* Overview cards */}
@@ -804,56 +831,47 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const [carrierName, setCarrierName] = useState('');
 
   const [carrierTab, setCarrierTab] = useState('notification');
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = 'success') => { setToast({ message: msg, type }); setTimeout(() => setToast(null), 3000); };
+  const [carrierDeleteFirst, setCarrierDeleteFirst] = useState(null);
+  const [carrierDeleteSecond, setCarrierDeleteSecond] = useState(null);
 
   useEffect(() => { setSettings(data.settings); }, [data.settings]);
 
   const handleSaveSettings = () => {
     setData(prev => ({ ...prev, settings }));
-    message.success('设置已保存');
+    showToast('设置已保存');
   };
 
   // Carrier CRUD
   const handleAddCarrier = () => {
-    if (!carrierName.trim()) { message.error('请输入运营商名称'); return; }
-    if (data.carriers.some(c => c.name === carrierName.trim())) { message.error('运营商已存在'); return; }
+    if (!carrierName.trim()) { showToast('请输入运营商名称', 'error'); return; }
+    if (data.carriers.some(c => c.name === carrierName.trim())) { showToast('运营商已存在', 'error'); return; }
     const maxId = data.carriers.reduce((m, c) => Math.max(m, c.id), 0);
     setData(prev => ({ ...prev, carriers: [...prev.carriers, { id: maxId + 1, name: carrierName.trim() }] }));
     setCarrierName('');
-    message.success('已添加');
+    showToast('已添加');
   };
 
   const handleEditCarrier = (c) => { setEditingCarrier(c); setCarrierName(c.name); setEditModalOpen(true); };
 
   const handleSaveCarrier = () => {
-    if (!carrierName.trim()) { message.error('运营商名称不能为空'); return; }
+    if (!carrierName.trim()) { showToast('运营商名称不能为空', 'error'); return; }
     setData(prev => ({
       ...prev,
       carriers: prev.carriers.map(c => c.id === editingCarrier.id ? { ...c, name: carrierName.trim() } : c),
     }));
     setEditModalOpen(false);
-    message.success('已更新');
+    showToast('已更新');
   };
 
   const handleDeleteCarrier = (c) => {
     const count = data.simCards.filter(s => s.carrier === c.name).length;
     if (count > 0) {
-      Modal.confirm({
-        title: '确认删除',
-        content: `运营商"${c.name}"下有 ${count} 张号卡，删除将清空关联运营商信息`,
-        okText: '确定', cancelText: '取消',
-        okButtonProps: { danger: true },
-        onOk: () => {
-          setData(prev => ({
-            ...prev,
-            carriers: prev.carriers.filter(x => x.id !== c.id),
-            simCards: prev.simCards.map(s => s.carrier === c.name ? { ...s, carrier: '未知' } : s),
-          }));
-          message.success('已删除');
-        },
-      });
+      setCarrierDeleteSecond({ carrier: c, count });
     } else {
       setData(prev => ({ ...prev, carriers: prev.carriers.filter(x => x.id !== c.id) }));
-      message.success('已删除');
+      showToast('已删除');
     }
   };
 
@@ -863,10 +881,12 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       title: <span style={{ fontSize: fs.tableCellSm.fontSize, fontWeight: 600 }}>操作</span>, width: 160,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEditCarrier(rec)} style={{ color: c.muted, fontSize: fs.tableCell.fontSize }}>编辑</Button>
-          <Popconfirm title={`确定删除"${rec.name}"？`} onConfirm={() => handleDeleteCarrier(rec)} okText="确定" cancelText="取消">
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: fs.tableCell.fontSize }}>删除</Button>
-          </Popconfirm>
+          <button onClick={() => handleEditCarrier(rec)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: c.muted, display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: fs.tableCell.fontSize, padding: '4px 6px' }}>
+            <EditIcon /> 编辑
+          </button>
+          <button onClick={() => setCarrierDeleteFirst(rec)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: fs.tableCell.fontSize, padding: '4px 6px' }}>
+            <DeleteIcon /> 删除
+          </button>
         </div>
       ),
     },
@@ -875,12 +895,12 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   return (
     <div>
       <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-        <Button type={carrierTab === 'notification' ? 'primary' : 'default'}
+        <Btn type={carrierTab === 'notification' ? 'primary' : 'secondary'}
           onClick={() => setCarrierTab('notification')}
-          style={{ height: 36, fontSize: 14, borderRadius: 8 }}>通知设置</Button>
-        <Button type={carrierTab === 'carrier' ? 'primary' : 'default'}
+          style={{ height: 36, fontSize: 14 }}>通知设置</Btn>
+        <Btn type={carrierTab === 'carrier' ? 'primary' : 'secondary'}
           onClick={() => setCarrierTab('carrier')}
-          style={{ height: 36, fontSize: 14, borderRadius: 8 }}>运营商管理</Button>
+          style={{ height: 36, fontSize: 14 }}>运营商管理</Btn>
       </div>
 
       {carrierTab === 'notification' ? (
@@ -892,12 +912,21 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
               {/* Notification type */}
               <div>
                 <label style={labelStyle}>通知方式</label>
-                <Radio.Group value={settings.notification_type} onChange={e => setSettings(p => ({ ...p, notification_type: e.target.value }))}
-                  style={{ marginTop: 8 }}>
-                  <Radio value="email" style={{ color: c.text }}>邮件通知</Radio>
-                  <Radio value="wechat" style={{ color: c.text }}>企业微信</Radio>
-                  <Radio value="both" style={{ color: c.text }}>两者都启用</Radio>
-                </Radio.Group>
+                <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
+                  {[
+                    { value: 'email', label: '邮件通知' },
+                    { value: 'wechat', label: '企业微信' },
+                    { value: 'both', label: '两者都启用' },
+                  ].map(opt => (
+                    <label key={opt.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: c.text, fontSize: 14 }}>
+                      <input type="radio" name="notification_type" value={opt.value}
+                        checked={settings.notification_type === opt.value}
+                        onChange={e => setSettings(p => ({ ...p, notification_type: e.target.value }))}
+                        style={{ accentColor: '#5e6ad2' }} />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
               </div>
 
               {/* Email settings */}
@@ -922,18 +951,18 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                   <div>
                     <label style={labelStyle}>余额阈值（元）</label>
-                    <InputNumber value={settings.balance_threshold} onChange={v => setSettings(p => ({ ...p, balance_threshold: v || 0 }))}
-                      min={0} style={{ width: '100%', ...inputStyle }} />
+                    <input type="number" value={settings.balance_threshold} onChange={e => setSettings(p => ({ ...p, balance_threshold: parseFloat(e.target.value) || 0 }))}
+                      min={0} style={{ width: '100%', ...inputStyle }} className="w-full" />
                   </div>
                   <div>
                     <label style={labelStyle}>提前通知天数</label>
-                    <InputNumber value={settings.notification_days_before} onChange={v => setSettings(p => ({ ...p, notification_days_before: v || 0 }))}
-                      min={0} style={{ width: '100%', ...inputStyle }} />
+                    <input type="number" value={settings.notification_days_before} onChange={e => setSettings(p => ({ ...p, notification_days_before: parseInt(e.target.value) || 0 }))}
+                      min={0} style={{ width: '100%', ...inputStyle }} className="w-full" />
                   </div>
                 </div>
               </div>
 
-              <Button type="primary" onClick={handleSaveSettings} style={{ height: 40, fontSize: 14, borderRadius: 8, alignSelf: 'flex-start' }}>保存设置</Button>
+              <Btn type="primary" onClick={handleSaveSettings} style={{ height: 40, fontSize: 14, alignSelf: 'flex-start' }}>保存设置</Btn>
             </div>
           </div>
         </div>
@@ -941,31 +970,53 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
         /* Carrier management */
         <div>
           <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: '16px 20px', marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
-            <Input value={carrierName} onChange={e => setCarrierName(e.target.value)}
-              onPressEnter={handleAddCarrier} placeholder="输入运营商名称"
-              style={{ ...inputStyle, width: 300, height: 36 }} />
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddCarrier}
-              style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}>添加运营商</Button>
+            <input value={carrierName} onChange={e => setCarrierName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleAddCarrier(); }} placeholder="输入运营商名称"
+              style={{ ...inputStyle, width: 300, height: 36 }} className="w-full" />
+            <Btn type="primary" onClick={handleAddCarrier}
+              style={{ height: 36, fontSize: fs.tableCell.fontSize, fontWeight: 500 }}>
+              <AddIcon /> 添加运营商
+            </Btn>
           </div>
           <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20 }}>
-            <Table dataSource={data.carriers} columns={carrierColumns} rowKey="id" pagination={false} size="middle"
-              style={{ background: 'transparent' }}
-              locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无运营商</span> }} />
+            <DataTable data={data.carriers} columns={carrierColumns} rowKey="id" emptyText={<span style={{ color: c.muted2 }}>暂无运营商</span>} />
           </div>
 
-          <Modal title={modalTitle('编辑运营商', c)} open={editModalOpen}
-            onCancel={() => setEditModalOpen(false)}
-            onOk={handleSaveCarrier} okText="确定" cancelText="取消"
-            okButtonProps={okBtn} cancelButtonProps={cancelBtn(c)}
-            styles={modalStyles(c)} width={420}>
+          <Modal open={editModalOpen} onClose={() => setEditModalOpen(false)} title={modalTitle('编辑运营商', c)} width={420}
+            footer={<div style={{ display: 'flex', gap: 8 }}>
+              <Btn onClick={() => setEditModalOpen(false)}>取消</Btn>
+              <Btn type="primary" onClick={handleSaveCarrier}>确定</Btn>
+            </div>}>
             <div style={{ marginTop: 16 }}>
               <label style={labelStyle}>运营商名称</label>
-              <Input value={carrierName} onChange={e => setCarrierName(e.target.value)}
-                onPressEnter={handleSaveCarrier} placeholder="请输入运营商名称" style={inputStyle} />
+              <input value={carrierName} onChange={e => setCarrierName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleSaveCarrier(); }} placeholder="请输入运营商名称"
+                style={inputStyle} className="w-full" />
             </div>
           </Modal>
+
+          {/* First carrier delete confirm */}
+          <DeleteModal open={!!carrierDeleteFirst} onClose={() => setCarrierDeleteFirst(null)}
+            onConfirm={() => { const c = carrierDeleteFirst; setCarrierDeleteFirst(null); handleDeleteCarrier(c); }}
+            title={`确定删除"${carrierDeleteFirst?.name}"？`} />
+
+          {/* Second carrier delete confirm when carrier has associated cards */}
+          <DeleteModal open={!!carrierDeleteSecond} onClose={() => setCarrierDeleteSecond(null)}
+            onConfirm={() => {
+              const { carrier: c } = carrierDeleteSecond;
+              setData(prev => ({
+                ...prev,
+                carriers: prev.carriers.filter(x => x.id !== c.id),
+                simCards: prev.simCards.map(s => s.carrier === c.name ? { ...s, carrier: '未知' } : s),
+              }));
+              showToast('已删除');
+              setCarrierDeleteSecond(null);
+            }}
+            title={`运营商"${carrierDeleteSecond?.carrier?.name}"下有 ${carrierDeleteSecond?.count} 张号卡，删除将清空关联运营商信息`} />
         </div>
       )}
+
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -1025,10 +1076,10 @@ export default function CardMgmt() {
   }, []);
 
   const tabItems = [
-    { value: 'cards', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><PhoneOutlined />号卡管理</span> },
-    { value: 'bills', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><WalletOutlined />账单管理</span> },
-    { value: 'stats', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><BarChartOutlined />数据统计</span> },
-    { value: 'settings', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><SettingOutlined />系统设置</span> },
+    { value: 'cards', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><PhoneIcon />号卡管理</span> },
+    { value: 'bills', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><WalletIcon />账单管理</span> },
+    { value: 'stats', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><BarChartIcon />数据统计</span> },
+    { value: 'settings', label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><SettingsIcon />系统设置</span> },
   ];
 
   const renderTab = () => {
@@ -1044,7 +1095,7 @@ export default function CardMgmt() {
   return (
     <div>
       <h1 className="page-title" style={{ marginBottom: 24 }}>号卡管理</h1>
-      <Segmented value={tab} onChange={handleTabChange} options={tabItems}
+      <PillTabs value={tab} onChange={handleTabChange} options={tabItems}
         style={{ marginBottom: 20, background: c.surfaceTint, borderRadius: 10, padding: 3 }} />
       {renderTab()}
     </div>

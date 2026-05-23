@@ -1,16 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import {
-  Input, Button, Select, Table, Modal, message,
-  Popconfirm, Tag, Segmented, Calendar, InputNumber, ConfigProvider,
-} from 'antd';
-import locale from 'antd/locale/zh_CN';
-import {
-  PlusOutlined, DeleteOutlined, EditOutlined,
-  FileTextOutlined, MedicineBoxOutlined, CalendarOutlined,
-  LineChartOutlined, PieChartOutlined, BarChartOutlined,
-  TrophyOutlined, DatabaseOutlined,
-  ExportOutlined, ImportOutlined,
-} from '@ant-design/icons';
+  Modal, DeleteModal, Toast, Btn, Tag, PillTabs, DataTable, Pagination, Field, Switch, Checkbox,
+} from '../../components/ui';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
 
@@ -131,6 +122,13 @@ export default function Medication() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }, [data]);
 
+  /* toast */
+  const [toast, setToast] = useState(null);
+  const showToast = useMemo(() => (msg, type = 'success') => {
+    setToast({ message: msg, type });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
   const inputStyle = {
     background: c.surfaceTint, border: '1px solid ' + c.border,
     borderRadius: 8, color: c.text, height: 42, lineHeight: '42px',
@@ -139,26 +137,27 @@ export default function Medication() {
 
   return (
     <div>
-      <h1 className="page-title" style={{ marginBottom: 24 }}>日常用药</h1>
+      <h1 className="page-title" style={{ marginBottom: 24 }}>{'日常用药'}</h1>
 
-      <style>{`.med-tabs .ant-segmented-item { margin-right: 4px; } .med-tabs .ant-segmented-item:last-child { margin-right: 0; }`}</style>
       <div style={{ marginBottom: 24 }}>
-        <Segmented value={activeTab} onChange={v => { setActiveTab(v); window.location.hash = v; }}
+        <PillTabs value={activeTab} onChange={v => { setActiveTab(v); window.location.hash = v; }}
           options={[
             { value: 'home', label: '用药记录' },
             { value: 'analysis', label: '数据分析' },
             { value: 'purchase', label: '购买记录' },
             { value: 'settings', label: '设置' },
           ]}
-          className="med-tabs"
           style={{ background: c.surfaceTint, borderRadius: 8, padding: '3px 4px', fontSize: 14 }}
         />
       </div>
 
-      {activeTab === 'home' && <HomeTab c={c} data={data} setData={setData} inputStyle={inputStyle} labelStyle={labelStyle} />}
-      {activeTab === 'analysis' && <AnalysisTab c={c} isLight={isLight} data={data} />}
-      {activeTab === 'purchase' && <PurchaseTab c={c} data={data} setData={setData} inputStyle={inputStyle} labelStyle={labelStyle} />}
-      {activeTab === 'settings' && <SettingsTab c={c} data={data} setData={setData} />}
+      {activeTab === 'home' && <HomeTab c={c} data={data} setData={setData} inputStyle={inputStyle} labelStyle={labelStyle} showToast={showToast} />}
+      {activeTab === 'analysis' && <AnalysisTab c={c} isLight={isLight} data={data} inputStyle={inputStyle} labelStyle={labelStyle} />}
+      {activeTab === 'purchase' && <PurchaseTab c={c} data={data} setData={setData} inputStyle={inputStyle} labelStyle={labelStyle} showToast={showToast} />}
+      {activeTab === 'settings' && <SettingsTab c={c} data={data} setData={setData} showToast={showToast} />}
+
+      {/* ═══════ Toast ═══════ */}
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -169,31 +168,32 @@ export default function Medication() {
 function TablePagination({ c, inputStyle, page, totalPages, onPageChange, pageSize, onPageSizeChange, total }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 12 }}>
-      <Select value={pageSize} onChange={v => { onPageSizeChange(v); onPageChange(1); }}
-        style={{ width: 120 }}
-        popupStyle={{ background: c.dropdownBg }}
-        dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-        options={[
+      <select value={pageSize} onChange={e => { onPageSizeChange(Number(e.target.value)); onPageChange(1); }}
+        style={{ ...inputStyle, width: 120 }}>
+        {[
           { value: 10, label: '10 条/页' },
           { value: 20, label: '20 条/页' },
           { value: 50, label: '50 条/页' },
           { value: 100, label: '100 条/页' },
-        ]} />
+        ].map(opt => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Button disabled={page <= 1} onClick={() => onPageChange(1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>首页</Button>
-        <Button disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>上一页</Button>
-        <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>第 {page} / {totalPages} 页</span>
-        <Input type="number" min={1} max={totalPages}
-          onPressEnter={e => { const v = parseInt(e.target.value); if (v >= 1 && v <= totalPages) onPageChange(v); }}
-          style={{ ...inputStyle, width: 56, height: 36, textAlign: 'center' }} placeholder="页" />
-        <Button disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>下一页</Button>
-        <Button disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
-          style={{ ...inputStyle, height: 36, fontSize: 13 }}>末页</Button>
+        <Btn disabled={page <= 1} onClick={() => onPageChange(1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'首页'}</Btn>
+        <Btn disabled={page <= 1} onClick={() => onPageChange(p => p - 1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'上一页'}</Btn>
+        <span style={{ color: c.muted, fontSize: 14, whiteSpace: 'nowrap' }}>{'第 '}{page} / {totalPages} {' 页'}</span>
+        <input type="number" min={1} max={totalPages}
+          onKeyDown={e => { if (e.key === 'Enter') { const v = parseInt(e.target.value); if (v >= 1 && v <= totalPages) onPageChange(v); } }}
+          style={{ ...inputStyle, width: 56, height: 36, textAlign: 'center' }} placeholder={'页'} className="w-full" />
+        <Btn disabled={page >= totalPages} onClick={() => onPageChange(p => p + 1)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'下一页'}</Btn>
+        <Btn disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}
+          style={{ ...inputStyle, height: 36, fontSize: 13 }}>{'末页'}</Btn>
       </div>
-      <span style={{ color: c.muted, fontSize: 13 }}>共 {total} 条</span>
+      <span style={{ color: c.muted, fontSize: 13 }}>{'共 '}{total}{' 条'}</span>
     </div>
   );
 }
@@ -201,7 +201,7 @@ function TablePagination({ c, inputStyle, page, totalPages, onPageChange, pageSi
 /* ═══════════════════════════════════════
    HomeTab — 用药记录
    ═══════════════════════════════════════ */
-function HomeTab({ c, data, setData, inputStyle, labelStyle }) {
+function HomeTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
   const [selIds, setSelIds] = useState([]);
@@ -222,6 +222,10 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle }) {
   const [selSummaryDate, setSelSummaryDate] = useState(dayjs());
   const [summaryText, setSummaryText] = useState('');
 
+  /* delete */
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+
   const list = useMemo(() => {
     let l = [...data.records];
     if (filterName) l = l.filter(r => r.medicineName.includes(filterName));
@@ -232,8 +236,6 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle }) {
 
   const totalPages = Math.ceil(list.length / pageSize);
   const pageData = list.slice((page - 1) * pageSize, page * pageSize);
-  const selectAll = selIds.length === list.length && list.length > 0;
-  const indeterminate = selIds.length > 0 && selIds.length < list.length;
 
   /* stats */
   const stats = useMemo(() => {
@@ -272,7 +274,7 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle }) {
   function addRecord(rec) {
     const maxId = data.records.reduce((m, r) => Math.max(m, r.id || 0), 0);
     setData(prev => ({ ...prev, records: [{ id: maxId + 1, ...rec }, ...prev.records] }));
-    message.success('记录已添加');
+    showToast('记录已添加');
     setPage(1);
   }
 
@@ -281,27 +283,18 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle }) {
       ...prev,
       records: prev.records.map(r => r.id === id ? { ...r, ...updates } : r),
     }));
-    message.success('记录已更新');
+    showToast('记录已更新');
   }
 
   function deleteRecord(id) {
     setData(prev => ({ ...prev, records: prev.records.filter(r => r.id !== id) }));
     setSelIds(p => p.filter(s => s !== id));
-    message.success('记录已删除');
+    showToast('记录已删除');
   }
 
   function batchDelete() {
-    if (!selIds.length) { message.warning('请选择要删除的记录'); return; }
-    Modal.confirm({
-      title: '确认删除', content: `确定要删除选中的 ${selIds.length} 条记录吗？`,
-      okText: '确定', cancelText: '取消',
-      okButtonProps: { danger: true },
-      onOk: () => {
-        const idset = new Set(selIds);
-        setData(prev => ({ ...prev, records: prev.records.filter(r => !idset.has(r.id)) }));
-        setSelIds([]); message.success(`成功删除 ${idset.size} 条记录`);
-      },
-    });
+    if (!selIds.length) { showToast('请选择要删除的记录', 'error'); return; }
+    setBatchDeleteOpen(true);
   }
 
   function saveSummary() {
@@ -315,7 +308,7 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle }) {
       }
       return { ...prev, summaries: next };
     });
-    message.success('总结已保存');
+    showToast('总结已保存');
   }
 
   /* saved summary list for current month */
@@ -341,7 +334,7 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle }) {
   }
 
   function handleOk() {
-    if (!form.date || !form.medicineName) { message.error('请填写日期和药品名称'); return; }
+    if (!form.date || !form.medicineName) { showToast('请填写日期和药品名称', 'error'); return; }
     const payload = {
       date: form.date,
       medicineName: form.medicineName,
@@ -363,19 +356,36 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle }) {
   }
 
   const columns = [
-    { title: '日期', dataIndex: 'date', width: 110, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
-    { title: '药品名称', dataIndex: 'medicineName', width: 130, render: v => <span style={{ fontWeight: 500, color: c.text }}>{v}</span> },
-    { title: '早餐', dataIndex: 'breakfast', width: 70, render: v => v > 0 ? <Tag color="#3B82F6" bordered={false}>{v} 颗</Tag> : <span style={{ color: c.muted2 }}>-</span> },
-    { title: '午餐', dataIndex: 'lunch', width: 70, render: v => v > 0 ? <Tag color="#10B981" bordered={false}>{v} 颗</Tag> : <span style={{ color: c.muted2 }}>-</span> },
-    { title: '晚餐', dataIndex: 'dinner', width: 70, render: v => v > 0 ? <Tag color="#F59E0B" bordered={false}>{v} 颗</Tag> : <span style={{ color: c.muted2 }}>-</span> },
     {
-      title: '操作', width: 160,
+      key: '_check',
+      title: '',
+      width: 40,
+      render: (_, rec) => (
+        <input type="checkbox" checked={selIds.includes(rec.id)}
+          onChange={e => {
+            if (e.target.checked) setSelIds(prev => [...prev, rec.id]);
+            else setSelIds(prev => prev.filter(id => id !== rec.id));
+          }}
+          style={{ accentColor: '#5e6ad2' }} />
+      ),
+    },
+    { key: 'date', title: '日期', dataIndex: 'date', width: 110, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
+    { key: 'medicineName', title: '药品名称', dataIndex: 'medicineName', width: 130, render: v => <span style={{ fontWeight: 500, color: c.text }}>{v}</span> },
+    { key: 'breakfast', title: '早餐', dataIndex: 'breakfast', width: 70, render: v => v > 0 ? <Tag color="blue" bordered={false}>{v} 颗</Tag> : <span style={{ color: c.muted2 }}>-</span> },
+    { key: 'lunch', title: '午餐', dataIndex: 'lunch', width: 70, render: v => v > 0 ? <Tag color="green" bordered={false}>{v} 颗</Tag> : <span style={{ color: c.muted2 }}>-</span> },
+    { key: 'dinner', title: '晚餐', dataIndex: 'dinner', width: 70, render: v => v > 0 ? <Tag color="orange" bordered={false}>{v} 颗</Tag> : <span style={{ color: c.muted2 }}>-</span> },
+    {
+      key: 'action', title: '操作', width: 160,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: 13 }}>编辑</Button>
-          <Popconfirm title="确定删除？" onConfirm={() => deleteRecord(rec.id)} okText="确定" cancelText="取消">
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: 13 }}>删除</Button>
-          </Popconfirm>
+          <Btn type="ghost" onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: 13 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            {'编辑'}
+          </Btn>
+          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)} style={{ fontSize: 13 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            {'删除'}
+          </Btn>
         </div>
       ),
     },
@@ -386,10 +396,18 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle }) {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
         {[
-          { label: '总记录数', value: stats.totalRecords, icon: <FileTextOutlined />, bg: 'rgba(59,130,246,0.12)', color: '#3B82F6' },
-          { label: '累计用药', value: `${stats.totalDosage} 颗`, icon: <MedicineBoxOutlined />, bg: 'rgba(16,185,129,0.12)', color: '#10B981' },
-          { label: '记录天数', value: stats.uniqueDates, icon: <CalendarOutlined />, bg: 'rgba(245,158,11,0.12)', color: '#F59E0B' },
-          { label: '日均用量', value: `${stats.avgDosage} 颗`, icon: <LineChartOutlined />, bg: 'rgba(99,102,241,0.12)', color: '#6366F1' },
+          { label: '总记录数', value: stats.totalRecords, icon: (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          ), bg: 'rgba(59,130,246,0.12)', color: '#3B82F6' },
+          { label: '累计用药', value: `${stats.totalDosage} 颗`, icon: (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          ), bg: 'rgba(16,185,129,0.12)', color: '#10B981' },
+          { label: '记录天数', value: stats.uniqueDates, icon: (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          ), bg: 'rgba(245,158,11,0.12)', color: '#F59E0B' },
+          { label: '日均用量', value: `${stats.avgDosage} 颗`, icon: (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          ), bg: 'rgba(99,102,241,0.12)', color: '#6366F1' },
         ].map(s => (
           <div key={s.label} className="linear-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{ width: 48, height: 48, borderRadius: 10, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: s.color, flexShrink: 0 }}>{s.icon}</div>
@@ -405,21 +423,24 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle }) {
       <div className="linear-card" style={{ padding: 20, marginBottom: 20 }}>
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div>
-            <label style={labelStyle}>药品名称</label>
-            <Input value={filterName} onChange={e => setFilterName(e.target.value)} placeholder="搜索药品" style={{ ...inputStyle, width: 160 }} />
+            <label style={labelStyle}>{'药品名称'}</label>
+            <input value={filterName} onChange={e => setFilterName(e.target.value)} placeholder={'搜索药品'} style={{ ...inputStyle, width: 160 }} className="w-full" />
           </div>
           <div>
-            <label style={labelStyle}>最小用量</label>
-            <InputNumber value={filterMin} onChange={v => setFilterMin(v)} min={0} style={{ width: 100, height: 42 }} inputStyle={{ textAlign: 'center' }} />
+            <label style={labelStyle}>{'最小用量'}</label>
+            <input type="number" value={filterMin === null ? '' : filterMin} onChange={e => setFilterMin(e.target.value === '' ? null : Number(e.target.value))} min={0} style={{ ...inputStyle, width: 100, textAlign: 'center' }} className="w-full" />
           </div>
           <div>
-            <label style={labelStyle}>最大用量</label>
-            <InputNumber value={filterMax} onChange={v => setFilterMax(v)} min={0} style={{ width: 100, height: 42 }} inputStyle={{ textAlign: 'center' }} />
+            <label style={labelStyle}>{'最大用量'}</label>
+            <input type="number" value={filterMax === null ? '' : filterMax} onChange={e => setFilterMax(e.target.value === '' ? null : Number(e.target.value))} min={0} style={{ ...inputStyle, width: 100, textAlign: 'center' }} className="w-full" />
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <Button onClick={resetFilters} style={{ ...inputStyle, height: 42, background: c.surfaceTint, borderColor: c.border, color: c.text }}>重置</Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}
-              style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42 }}>添加记录</Button>
+            <Btn onClick={resetFilters} style={{ ...inputStyle, height: 42, background: c.surfaceTint, borderColor: c.border, color: c.text }}>{'重置'}</Btn>
+            <Btn type="primary" onClick={openAdd}
+              style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+              {'添加记录'}
+            </Btn>
           </div>
         </div>
       </div>
@@ -427,17 +448,15 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle }) {
       {/* Table */}
       <div className="linear-card" style={{ padding: 24 }}>
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <Button danger disabled={!selIds.length} onClick={batchDelete}
-            icon={<DeleteOutlined />} style={{ borderRadius: 8, height: 42 }}>批量删除</Button>
-          {selIds.length > 0 && <span style={{ color: c.muted, fontSize: 13 }}>已选 {selIds.length} 项</span>}
+          <Btn type="danger" disabled={!selIds.length} onClick={batchDelete}
+            style={{ borderRadius: 8, height: 42 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            {'批量删除'}
+          </Btn>
+          {selIds.length > 0 && <span style={{ color: c.muted, fontSize: 13 }}>{'已选 '}{selIds.length}{' 项'}</span>}
         </div>
-        <Table dataSource={pageData} columns={columns} rowKey="id" pagination={false}
-          rowSelection={{
-            type: 'checkbox', selectedRowKeys: selIds, onChange: keys => setSelIds(keys),
-          }}
-          style={{ background: 'transparent' }}
-          locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无用药记录</span> }}
-          scroll={{ x: 650 }} size="middle" />
+        <DataTable data={pageData} columns={columns} rowKey="id"
+          emptyText={<span style={{ color: c.muted2 }}>{'暂无用药记录'}</span>} />
         <TablePagination c={c} inputStyle={inputStyle} page={page} totalPages={totalPages}
           onPageChange={fn => setPage(typeof fn === 'function' ? fn(page) : fn)}
           pageSize={pageSize} onPageSizeChange={setPageSize} total={list.length} />
@@ -447,21 +466,20 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle }) {
       <div className="linear-card" style={{ padding: 24, marginTop: 20 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: c.text, marginBottom: 16 }}>用药日历</div>
-            <ConfigProvider locale={locale}>
-            <div style={{ border: '1px solid ' + c.border, borderRadius: 12, overflow: 'hidden', background: c.surfaceTint2 }}>
-            <Calendar fullscreen={false} value={selSummaryDate} onChange={d => setSelSummaryDate(d)}
-              cellRender={(date) => {
-                const key = date.format('YYYY-MM-DD');
-                const total = totalsByDate.get(key);
-                return total ? <div style={{ position: 'absolute', bottom: 1, left: '50%', transform: 'translateX(-50%)', width: 6, height: 6, borderRadius: '50%', background: '#5e6ad2' }} /> : null;
-              }}
-            />
+            <div style={{ fontSize: 16, fontWeight: 600, color: c.text, marginBottom: 16 }}>{'用药日历'}</div>
+            <div style={{ border: '1px solid ' + c.border, borderRadius: 12, padding: 16, background: c.surfaceTint2 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <Btn type="ghost" onClick={() => setSelSummaryDate(d => d.subtract(1, 'month'))} style={{ fontSize: 13 }}>{'‹ 上月'}</Btn>
+                <span style={{ flex: 1, textAlign: 'center', fontWeight: 600, color: c.text }}>{selSummaryDate.format('YYYY年MM月')}</span>
+                <Btn type="ghost" onClick={() => setSelSummaryDate(d => d.add(1, 'month'))} style={{ fontSize: 13 }}>{'下月 ›'}</Btn>
+              </div>
+              <input type="date" value={selSummaryDate.format('YYYY-MM-DD')}
+                onChange={e => setSelSummaryDate(dayjs(e.target.value))}
+                style={{ ...inputStyle, width: '100%' }} className="w-full" />
             </div>
-            </ConfigProvider>
             {savedSummaryList.length > 0 && (
               <div style={{ marginTop: 16, borderTop: '1px solid ' + c.border, paddingTop: 16 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: c.text, marginBottom: 8 }}>本月已写（{savedSummaryList.length}）</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: c.text, marginBottom: 8 }}>{'本月已写（'}{savedSummaryList.length}{'）'}</div>
                 {savedSummaryList.map(item => (
                   <div key={item.date} onClick={() => { setSelSummaryDate(dayjs(item.date)); }}
                     style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer', color: c.text, fontSize: 13, transition: 'background 0.15s' }}
@@ -478,16 +496,16 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle }) {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <span style={{ fontSize: 16, fontWeight: 600, color: c.text }}>{selDateKey}</span>
-              <span style={{ fontSize: 13, color: c.muted }}>当日总用量：{selDateTotal} 颗</span>
+              <span style={{ fontSize: 13, color: c.muted }}>{'当日总用量：'}{selDateTotal}{' 颗'}</span>
             </div>
             <textarea value={summaryText} onChange={e => setSummaryText(e.target.value)}
-              placeholder="可记录当天用药情况、症状变化、注意事项等"
+              placeholder={'可记录当天用药情况、症状变化、注意事项等'}
               rows={6}
               style={{ width: '100%', background: c.surfaceTint2, border: '1px solid ' + c.border, borderRadius: 8, padding: 12, color: c.text, fontSize: 14, resize: 'vertical', outline: 'none' }}
             />
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-              <Button type="primary" onClick={saveSummary}
-                style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 24px' }}>保存总结</Button>
+              <Btn type="primary" onClick={saveSummary}
+                style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42, padding: '0 24px' }}>{'保存总结'}</Btn>
             </div>
           </div>
         </div>
@@ -495,55 +513,68 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle }) {
 
       {/* Add/Edit Modal */}
       <Modal
-        title={<span style={{ color: c.text, fontWeight: 600 }}>{isEdit ? '编辑记录' : '添加记录'}</span>}
+        title={isEdit ? '编辑记录' : '添加记录'}
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        onOk={handleOk}
-        okText="确定" cancelText="取消"
-        okButtonProps={{ style: { background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 } }}
-        cancelButtonProps={{ style: { background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 } }}
-        styles={{
-          content: { background: c.surface, border: '1px solid ' + c.border, borderRadius: 16 },
-          header: { background: 'transparent', borderBottom: '1px solid ' + c.border, paddingBottom: 16 },
-          mask: { backdropFilter: 'blur(4px)' },
-        }}
+        onClose={() => setModalOpen(false)}
+        footer={[
+          <Btn key="cancel" onClick={() => setModalOpen(false)}
+            style={{ background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 }}>{'取消'}</Btn>,
+          <Btn key="ok" type="primary" onClick={handleOk}
+            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 }}>{'确定'}</Btn>,
+        ]}
         width={500}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <label style={labelStyle}>日期</label>
-              <Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} style={inputStyle} />
+              <label style={labelStyle}>{'日期'}</label>
+              <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} style={inputStyle} className="w-full" />
             </div>
             <div>
-              <label style={labelStyle}>药品名称</label>
-              <Input value={form.medicineName} onChange={e => setForm(f => ({ ...f, medicineName: e.target.value }))} placeholder="输入药品名称" style={inputStyle} />
+              <label style={labelStyle}>{'药品名称'}</label>
+              <input value={form.medicineName} onChange={e => setForm(f => ({ ...f, medicineName: e.target.value }))} placeholder={'输入药品名称'} style={inputStyle} className="w-full" />
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
             <div>
-              <label style={labelStyle}>早餐用量</label>
-              <InputNumber value={form.breakfast} onChange={v => setForm(f => ({ ...f, breakfast: v || 0 }))} min={0} style={{ width: '100%', height: 42 }} />
+              <label style={labelStyle}>{'早餐用量'}</label>
+              <input type="number" value={form.breakfast} onChange={e => setForm(f => ({ ...f, breakfast: parseInt(e.target.value) || 0 }))} min={0} style={{ ...inputStyle, width: '100%' }} className="w-full" />
             </div>
             <div>
-              <label style={labelStyle}>午餐用量</label>
-              <InputNumber value={form.lunch} onChange={v => setForm(f => ({ ...f, lunch: v || 0 }))} min={0} style={{ width: '100%', height: 42 }} />
+              <label style={labelStyle}>{'午餐用量'}</label>
+              <input type="number" value={form.lunch} onChange={e => setForm(f => ({ ...f, lunch: parseInt(e.target.value) || 0 }))} min={0} style={{ ...inputStyle, width: '100%' }} className="w-full" />
             </div>
             <div>
-              <label style={labelStyle}>晚餐用量</label>
-              <InputNumber value={form.dinner} onChange={v => setForm(f => ({ ...f, dinner: v || 0 }))} min={0} style={{ width: '100%', height: 42 }} />
+              <label style={labelStyle}>{'晚餐用量'}</label>
+              <input type="number" value={form.dinner} onChange={e => setForm(f => ({ ...f, dinner: parseInt(e.target.value) || 0 }))} min={0} style={{ ...inputStyle, width: '100%' }} className="w-full" />
             </div>
           </div>
           {!isEdit && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: c.textSecondary }}>
                 <input type="checkbox" checked={keepAdding} onChange={e => setKeepAdding(e.target.checked)} />
-                确定后继续添加
+                {'确定后继续添加'}
               </label>
             </div>
           )}
         </div>
       </Modal>
+
+      {/* Delete confirm */}
+      <DeleteModal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)}
+        onConfirm={() => { deleteRecord(deleteTarget); setDeleteTarget(null); }}
+        title={'确定删除？'} />
+
+      {/* Batch delete confirm */}
+      <DeleteModal open={batchDeleteOpen} onClose={() => setBatchDeleteOpen(false)}
+        onConfirm={() => {
+          const idset = new Set(selIds);
+          setData(prev => ({ ...prev, records: prev.records.filter(r => !idset.has(r.id)) }));
+          setSelIds([]);
+          showToast(`成功删除 ${idset.size} 条记录`);
+          setBatchDeleteOpen(false);
+        }}
+        title={`确定要删除选中的 ${selIds.length} 条记录吗？`} />
     </div>
   );
 }
@@ -551,7 +582,7 @@ function HomeTab({ c, data, setData, inputStyle, labelStyle }) {
 /* ═══════════════════════════════════════
    AnalysisTab — 数据分析
    ═══════════════════════════════════════ */
-function AnalysisTab({ c, isLight, data }) {
+function AnalysisTab({ c, isLight, data, inputStyle, labelStyle }) {
   const [trendRange, setTrendRange] = useState('30');
   const [calendarYear, setCalendarYear] = useState(dayjs().year());
 
@@ -707,10 +738,18 @@ function AnalysisTab({ c, isLight, data }) {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
         {[
-          { label: '总记录数', value: stats.totalRecords, icon: <FileTextOutlined />, bg: 'rgba(59,130,246,0.12)', color: '#3B82F6' },
-          { label: '累计用药', value: `${stats.totalDosage} 颗`, icon: <MedicineBoxOutlined />, bg: 'rgba(16,185,129,0.12)', color: '#10B981' },
-          { label: '记录天数', value: stats.uniqueDates, icon: <CalendarOutlined />, bg: 'rgba(245,158,11,0.12)', color: '#F59E0B' },
-          { label: '日均用量', value: `${stats.avgDosage} 颗`, icon: <LineChartOutlined />, bg: 'rgba(99,102,241,0.12)', color: '#6366F1' },
+          { label: '总记录数', value: stats.totalRecords, icon: (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          ), bg: 'rgba(59,130,246,0.12)', color: '#3B82F6' },
+          { label: '累计用药', value: `${stats.totalDosage} 颗`, icon: (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          ), bg: 'rgba(16,185,129,0.12)', color: '#10B981' },
+          { label: '记录天数', value: stats.uniqueDates, icon: (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          ), bg: 'rgba(245,158,11,0.12)', color: '#F59E0B' },
+          { label: '日均用量', value: `${stats.avgDosage} 颗`, icon: (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          ), bg: 'rgba(99,102,241,0.12)', color: '#6366F1' },
         ].map(s => (
           <div key={s.label} className="linear-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{ width: 48, height: 48, borderRadius: 10, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: s.color, flexShrink: 0 }}>{s.icon}</div>
@@ -725,10 +764,10 @@ function AnalysisTab({ c, isLight, data }) {
       {/* Trend chart */}
       <div className="linear-card" style={{ padding: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: 0 }}>用药趋势</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: 0 }}>{'用药趋势'}</h2>
           <div style={{ display: 'flex', gap: 4 }}>
             {['7', '30', '90'].map(v => (
-              <Button key={v} size="small"
+              <Btn key={v}
                 onClick={() => setTrendRange(v)}
                 style={{
                   background: trendRange === v ? '#5e6ad2' : c.surfaceTint,
@@ -736,7 +775,7 @@ function AnalysisTab({ c, isLight, data }) {
                   color: trendRange === v ? '#fff' : c.text,
                   borderRadius: 6, fontSize: 12,
                 }}
-              >近{v}天</Button>
+              >{'近'}{v}{'天'}</Btn>
             ))}
           </div>
         </div>
@@ -746,11 +785,11 @@ function AnalysisTab({ c, isLight, data }) {
       {/* Pie + Bar */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         <div className="linear-card" style={{ padding: 24 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: c.text, marginBottom: 20, margin: 0 }}>药品用量占比</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 600, color: c.text, marginBottom: 20, margin: 0 }}>{'药品用量占比'}</h2>
           <div ref={pieChartRef} style={{ height: 260, marginTop: 12 }} />
         </div>
         <div className="linear-card" style={{ padding: 24 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: c.text, marginBottom: 20, margin: 0 }}>时段用量对比</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 600, color: c.text, marginBottom: 20, margin: 0 }}>{'时段用量对比'}</h2>
           <div ref={barChartRef} style={{ height: 260, marginTop: 12 }} />
         </div>
       </div>
@@ -758,26 +797,27 @@ function AnalysisTab({ c, isLight, data }) {
       {/* Heatmap */}
       <div className="linear-card" style={{ padding: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: 0 }}>用药日历热力图</h2>
-          <Select value={calendarYear} onChange={v => setCalendarYear(v)}
-            style={{ width: 100, height: 36 }}
-            popupStyle={{ background: c.dropdownBg }}
-            dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-            options={yearOptions.map(y => ({ value: y, label: `${y}年` }))} />
+          <h2 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: 0 }}>{'用药日历热力图'}</h2>
+          <select value={calendarYear} onChange={e => setCalendarYear(Number(e.target.value))}
+            style={{ ...inputStyle, width: 100, height: 36 }}>
+            {yearOptions.map(y => (
+              <option key={y} value={y}>{y}{'年'}</option>
+            ))}
+          </select>
         </div>
         <div ref={heatmapChartRef} style={{ height: 180, background: c.surfaceTint2, borderRadius: 12 }} />
       </div>
 
       {/* Ranking */}
       <div className="linear-card" style={{ padding: 24 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, color: c.text, marginBottom: 20, margin: 0 }}>药品用量排行</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 600, color: c.text, marginBottom: 20, margin: 0 }}>{'药品用量排行'}</h2>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 13, color: c.textSecondary, borderBottom: '1px solid ' + c.border, width: 80 }}>排名</th>
-              <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 13, color: c.textSecondary, borderBottom: '1px solid ' + c.border }}>药品名称</th>
-              <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 13, color: c.textSecondary, borderBottom: '1px solid ' + c.border, width: 100 }}>总用量</th>
-              <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 13, color: c.textSecondary, borderBottom: '1px solid ' + c.border }}>占比</th>
+              <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 13, color: c.textSecondary, borderBottom: '1px solid ' + c.border, width: 80 }}>{'排名'}</th>
+              <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 13, color: c.textSecondary, borderBottom: '1px solid ' + c.border }}>{'药品名称'}</th>
+              <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 13, color: c.textSecondary, borderBottom: '1px solid ' + c.border, width: 100 }}>{'总用量'}</th>
+              <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 13, color: c.textSecondary, borderBottom: '1px solid ' + c.border }}>{'占比'}</th>
             </tr>
           </thead>
           <tbody>
@@ -791,7 +831,7 @@ function AnalysisTab({ c, isLight, data }) {
                   )}
                 </td>
                 <td style={{ padding: '10px 16px', borderBottom: '1px solid ' + c.border, fontWeight: 500, color: c.text, fontSize: 14 }}>{item.name}</td>
-                <td style={{ padding: '10px 16px', borderBottom: '1px solid ' + c.border, color: c.text }}>{item.total} 颗</td>
+                <td style={{ padding: '10px 16px', borderBottom: '1px solid ' + c.border, color: c.text }}>{item.total} {'颗'}</td>
                 <td style={{ padding: '10px 16px', borderBottom: '1px solid ' + c.border }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ flex: 1, height: 6, background: c.surfaceTint, borderRadius: 999, overflow: 'hidden' }}>
@@ -812,7 +852,7 @@ function AnalysisTab({ c, isLight, data }) {
 /* ═══════════════════════════════════════
    PurchaseTab — 购买记录
    ═══════════════════════════════════════ */
-function PurchaseTab({ c, data, setData, inputStyle, labelStyle }) {
+function PurchaseTab({ c, data, setData, inputStyle, labelStyle, showToast }) {
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
   const [selIds, setSelIds] = useState([]);
@@ -823,6 +863,9 @@ function PurchaseTab({ c, data, setData, inputStyle, labelStyle }) {
   const [isEdit, setIsEdit] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ purchaseDate: todayStr(), medicineName: '', quantity: 1, unit: '盒', unitPrice: 0, totalPrice: 0, channel: '药店', notes: '' });
+
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
 
   const list = useMemo(() => {
     let l = [...data.purchases];
@@ -842,33 +885,24 @@ function PurchaseTab({ c, data, setData, inputStyle, labelStyle }) {
   function addRecord(rec) {
     const maxId = [].concat(...Object.values(data)).reduce((m, r) => Math.max(m, r.id || 0), 0);
     setData(prev => ({ ...prev, purchases: [{ id: maxId + 1, ...rec }, ...prev.purchases] }));
-    message.success('购买记录已添加');
+    showToast('购买记录已添加');
     setPage(1);
   }
 
   function updateRecord(id, updates) {
     setData(prev => ({ ...prev, purchases: prev.purchases.map(r => r.id === id ? { ...r, ...updates } : r) }));
-    message.success('记录已更新');
+    showToast('记录已更新');
   }
 
   function deleteRecord(id) {
     setData(prev => ({ ...prev, purchases: prev.purchases.filter(r => r.id !== id) }));
     setSelIds(p => p.filter(s => s !== id));
-    message.success('记录已删除');
+    showToast('记录已删除');
   }
 
   function batchDelete() {
-    if (!selIds.length) { message.warning('请选择要删除的记录'); return; }
-    Modal.confirm({
-      title: '确认删除', content: `确定要删除选中的 ${selIds.length} 条记录吗？`,
-      okText: '确定', cancelText: '取消',
-      okButtonProps: { danger: true },
-      onOk: () => {
-        const idset = new Set(selIds);
-        setData(prev => ({ ...prev, purchases: prev.purchases.filter(r => !idset.has(r.id)) }));
-        setSelIds([]); message.success(`成功删除 ${idset.size} 条记录`);
-      },
-    });
+    if (!selIds.length) { showToast('请选择要删除的记录', 'error'); return; }
+    setBatchDeleteOpen(true);
   }
 
   function calcTotal() {
@@ -888,7 +922,7 @@ function PurchaseTab({ c, data, setData, inputStyle, labelStyle }) {
   }
 
   function handleOk() {
-    if (!form.purchaseDate || !form.medicineName) { message.error('请填写日期和药品名称'); return; }
+    if (!form.purchaseDate || !form.medicineName) { showToast('请填写日期和药品名称', 'error'); return; }
     const payload = {
       purchaseDate: form.purchaseDate,
       medicineName: form.medicineName,
@@ -904,21 +938,38 @@ function PurchaseTab({ c, data, setData, inputStyle, labelStyle }) {
   }
 
   const columns = [
-    { title: '购买日期', dataIndex: 'purchaseDate', width: 110, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
-    { title: '药品名称', dataIndex: 'medicineName', width: 120, render: v => <span style={{ fontWeight: 500, color: c.text }}>{v}</span> },
-    { title: '数量', dataIndex: 'quantity', width: 70, render: v => <span style={{ color: c.text }}>{v}</span> },
-    { title: '单位', dataIndex: 'unit', width: 60, render: v => <Tag bordered={false} style={{ color: c.muted }}>{v}</Tag> },
-    { title: '单价', dataIndex: 'unitPrice', width: 90, render: v => <span style={{ color: c.textSecondary }}>¥{v?.toFixed(2)}</span> },
-    { title: '总价', dataIndex: 'totalPrice', width: 90, render: v => <span style={{ fontWeight: 600, color: '#ff6b6b' }}>¥{v?.toFixed(2)}</span> },
-    { title: '渠道', dataIndex: 'channel', width: 80, render: v => <span style={{ color: c.muted }}>{v || '-'}</span> },
     {
-      title: '操作', width: 160,
+      key: '_check',
+      title: '',
+      width: 40,
+      render: (_, rec) => (
+        <input type="checkbox" checked={selIds.includes(rec.id)}
+          onChange={e => {
+            if (e.target.checked) setSelIds(prev => [...prev, rec.id]);
+            else setSelIds(prev => prev.filter(id => id !== rec.id));
+          }}
+          style={{ accentColor: '#5e6ad2' }} />
+      ),
+    },
+    { key: 'purchaseDate', title: '购买日期', dataIndex: 'purchaseDate', width: 110, render: v => <span style={{ color: c.textSecondary }}>{v}</span> },
+    { key: 'medicineName', title: '药品名称', dataIndex: 'medicineName', width: 120, render: v => <span style={{ fontWeight: 500, color: c.text }}>{v}</span> },
+    { key: 'quantity', title: '数量', dataIndex: 'quantity', width: 70, render: v => <span style={{ color: c.text }}>{v}</span> },
+    { key: 'unit', title: '单位', dataIndex: 'unit', width: 60, render: v => <Tag bordered={false} style={{ color: c.muted }}>{v}</Tag> },
+    { key: 'unitPrice', title: '单价', dataIndex: 'unitPrice', width: 90, render: v => <span style={{ color: c.textSecondary }}>{'¥'}{v?.toFixed(2)}</span> },
+    { key: 'totalPrice', title: '总价', dataIndex: 'totalPrice', width: 90, render: v => <span style={{ fontWeight: 600, color: '#ff6b6b' }}>{'¥'}{v?.toFixed(2)}</span> },
+    { key: 'channel', title: '渠道', dataIndex: 'channel', width: 80, render: v => <span style={{ color: c.muted }}>{v || '-'}</span> },
+    {
+      key: 'action', title: '操作', width: 160,
       render: (_, rec) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: 13 }}>编辑</Button>
-          <Popconfirm title="确定删除？" onConfirm={() => deleteRecord(rec.id)} okText="确定" cancelText="取消">
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ fontSize: 13 }}>删除</Button>
-          </Popconfirm>
+          <Btn type="ghost" onClick={() => openEdit(rec)} style={{ color: c.muted, fontSize: 13 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            {'编辑'}
+          </Btn>
+          <Btn type="danger" onClick={() => setDeleteTarget(rec.id)} style={{ fontSize: 13 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            {'删除'}
+          </Btn>
         </div>
       ),
     },
@@ -929,9 +980,15 @@ function PurchaseTab({ c, data, setData, inputStyle, labelStyle }) {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
         {[
-          { label: '购买次数', value: stats.totalRecords, icon: <FileTextOutlined />, bg: 'rgba(59,130,246,0.12)', color: '#3B82F6' },
-          { label: '总数量', value: stats.totalQuantity, icon: <MedicineBoxOutlined />, bg: 'rgba(16,185,129,0.12)', color: '#10B981' },
-          { label: '总花费', value: `¥${stats.totalAmount.toFixed(2)}`, icon: <TrophyOutlined />, bg: 'rgba(99,102,241,0.12)', color: '#6366F1' },
+          { label: '购买次数', value: stats.totalRecords, icon: (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          ), bg: 'rgba(59,130,246,0.12)', color: '#3B82F6' },
+          { label: '总数量', value: stats.totalQuantity, icon: (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          ), bg: 'rgba(16,185,129,0.12)', color: '#10B981' },
+          { label: '总花费', value: `¥${stats.totalAmount.toFixed(2)}`, icon: (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+          ), bg: 'rgba(99,102,241,0.12)', color: '#6366F1' },
         ].map(s => (
           <div key={s.label} className="linear-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{ width: 48, height: 48, borderRadius: 10, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: s.color, flexShrink: 0 }}>{s.icon}</div>
@@ -947,26 +1004,29 @@ function PurchaseTab({ c, data, setData, inputStyle, labelStyle }) {
       <div className="linear-card" style={{ padding: 20, marginBottom: 20 }}>
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div>
-            <label style={labelStyle}>药品名称</label>
-            <Input value={filterName} onChange={e => { setFilterName(e.target.value); setPage(1); }} placeholder="搜索药品" style={{ ...inputStyle, width: 200 }} />
+            <label style={labelStyle}>{'药品名称'}</label>
+            <input value={filterName} onChange={e => { setFilterName(e.target.value); setPage(1); }} placeholder={'搜索药品'} style={{ ...inputStyle, width: 200 }} className="w-full" />
           </div>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}
-            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42 }}>添加记录</Button>
+          <Btn type="primary" onClick={openAdd}
+            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, height: 42 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            {'添加记录'}
+          </Btn>
         </div>
       </div>
 
       {/* Table */}
       <div className="linear-card" style={{ padding: 24 }}>
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <Button danger disabled={!selIds.length} onClick={batchDelete}
-            icon={<DeleteOutlined />} style={{ borderRadius: 8, height: 42 }}>批量删除</Button>
-          {selIds.length > 0 && <span style={{ color: c.muted, fontSize: 13 }}>已选 {selIds.length} 项</span>}
+          <Btn type="danger" disabled={!selIds.length} onClick={batchDelete}
+            style={{ borderRadius: 8, height: 42 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            {'批量删除'}
+          </Btn>
+          {selIds.length > 0 && <span style={{ color: c.muted, fontSize: 13 }}>{'已选 '}{selIds.length}{' 项'}</span>}
         </div>
-        <Table dataSource={pageData} columns={columns} rowKey="id" pagination={false}
-          rowSelection={{ type: 'checkbox', selectedRowKeys: selIds, onChange: keys => setSelIds(keys) }}
-          style={{ background: 'transparent' }}
-          locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无购买记录</span> }}
-          scroll={{ x: 800 }} size="middle" />
+        <DataTable data={pageData} columns={columns} rowKey="id"
+          emptyText={<span style={{ color: c.muted2 }}>{'暂无购买记录'}</span>} />
         <TablePagination c={c} inputStyle={inputStyle} page={page} totalPages={totalPages}
           onPageChange={fn => setPage(typeof fn === 'function' ? fn(page) : fn)}
           pageSize={pageSize} onPageSizeChange={setPageSize} total={list.length} />
@@ -974,69 +1034,84 @@ function PurchaseTab({ c, data, setData, inputStyle, labelStyle }) {
 
       {/* Add/Edit Modal */}
       <Modal
-        title={<span style={{ color: c.text, fontWeight: 600 }}>{isEdit ? '编辑记录' : '添加记录'}</span>}
+        title={isEdit ? '编辑记录' : '添加记录'}
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        onOk={handleOk}
-        okText="确定" cancelText="取消"
-        okButtonProps={{ style: { background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 } }}
-        cancelButtonProps={{ style: { background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 } }}
-        styles={{
-          content: { background: c.surface, border: '1px solid ' + c.border, borderRadius: 16 },
-          header: { background: 'transparent', borderBottom: '1px solid ' + c.border, paddingBottom: 16 },
-          mask: { backdropFilter: 'blur(4px)' },
-        }}
+        onClose={() => setModalOpen(false)}
+        footer={[
+          <Btn key="cancel" onClick={() => setModalOpen(false)}
+            style={{ background: c.surfaceTint, borderColor: c.border, color: c.text, borderRadius: 8 }}>{'取消'}</Btn>,
+          <Btn key="ok" type="primary" onClick={handleOk}
+            style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8 }}>{'确定'}</Btn>,
+        ]}
         width={600}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <label style={labelStyle}>购买日期</label>
-              <Input type="date" value={form.purchaseDate} onChange={e => setForm(f => ({ ...f, purchaseDate: e.target.value }))} style={inputStyle} />
+              <label style={labelStyle}>{'购买日期'}</label>
+              <input type="date" value={form.purchaseDate} onChange={e => setForm(f => ({ ...f, purchaseDate: e.target.value }))} style={inputStyle} className="w-full" />
             </div>
             <div>
-              <label style={labelStyle}>药品名称</label>
-              <Input value={form.medicineName} onChange={e => setForm(f => ({ ...f, medicineName: e.target.value }))} placeholder="输入药品名称" style={inputStyle} />
+              <label style={labelStyle}>{'药品名称'}</label>
+              <input value={form.medicineName} onChange={e => setForm(f => ({ ...f, medicineName: e.target.value }))} placeholder={'输入药品名称'} style={inputStyle} className="w-full" />
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
             <div>
-              <label style={labelStyle}>数量</label>
-              <InputNumber value={form.quantity} onChange={v => { setForm(f => ({ ...f, quantity: v || 0 })); setTimeout(calcTotal, 0); }} min={0} style={{ width: '100%', height: 42 }} />
+              <label style={labelStyle}>{'数量'}</label>
+              <input type="number" value={form.quantity} onChange={e => { setForm(f => ({ ...f, quantity: parseInt(e.target.value) || 0 })); setTimeout(calcTotal, 0); }} min={0} style={{ ...inputStyle, width: '100%' }} className="w-full" />
             </div>
             <div>
-              <label style={labelStyle}>单位</label>
-              <Select value={form.unit} onChange={v => setForm(f => ({ ...f, unit: v }))}
-                style={{ width: '100%', height: 42 }}
-                popupStyle={{ background: c.dropdownBg }}
-                dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-                options={UNIT_OPTIONS} />
+              <label style={labelStyle}>{'单位'}</label>
+              <select value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
+                style={{ ...inputStyle, width: '100%' }}>
+                {UNIT_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
             </div>
             <div>
-              <label style={labelStyle}>购买渠道</label>
-              <Select value={form.channel} onChange={v => setForm(f => ({ ...f, channel: v }))}
-                style={{ width: '100%', height: 42 }}
-                popupStyle={{ background: c.dropdownBg }}
-                dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
-                options={CHANNEL_OPTIONS} />
+              <label style={labelStyle}>{'购买渠道'}</label>
+              <select value={form.channel} onChange={e => setForm(f => ({ ...f, channel: e.target.value }))}
+                style={{ ...inputStyle, width: '100%' }}>
+                {CHANNEL_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <label style={labelStyle}>单价 (元)</label>
-              <InputNumber value={form.unitPrice} onChange={v => { setForm(f => ({ ...f, unitPrice: v || 0 })); setTimeout(calcTotal, 0); }} min={0} step={0.1} style={{ width: '100%', height: 42 }} />
+              <label style={labelStyle}>{'单价 (元)'}</label>
+              <input type="number" value={form.unitPrice} onChange={e => { setForm(f => ({ ...f, unitPrice: parseFloat(e.target.value) || 0 })); setTimeout(calcTotal, 0); }} min={0} step={0.1} style={{ ...inputStyle, width: '100%' }} className="w-full" />
             </div>
             <div>
-              <label style={labelStyle}>总价 (元)</label>
-              <InputNumber value={form.totalPrice} onChange={v => setForm(f => ({ ...f, totalPrice: v || 0 }))} min={0} step={0.1} style={{ width: '100%', height: 42 }} />
+              <label style={labelStyle}>{'总价 (元)'}</label>
+              <input type="number" value={form.totalPrice} onChange={e => setForm(f => ({ ...f, totalPrice: parseFloat(e.target.value) || 0 }))} min={0} step={0.1} style={{ ...inputStyle, width: '100%' }} className="w-full" />
             </div>
           </div>
           <div>
-            <label style={labelStyle}>备注</label>
-            <Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="可选" style={inputStyle} />
+            <label style={labelStyle}>{'备注'}</label>
+            <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder={'可选'} style={inputStyle} className="w-full" />
           </div>
         </div>
       </Modal>
+
+      {/* Delete confirm */}
+      <DeleteModal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)}
+        onConfirm={() => { deleteRecord(deleteTarget); setDeleteTarget(null); }}
+        title={'确定删除？'} />
+
+      {/* Batch delete confirm */}
+      <DeleteModal open={batchDeleteOpen} onClose={() => setBatchDeleteOpen(false)}
+        onConfirm={() => {
+          const idset = new Set(selIds);
+          setData(prev => ({ ...prev, purchases: prev.purchases.filter(r => !idset.has(r.id)) }));
+          setSelIds([]);
+          showToast(`成功删除 ${idset.size} 条记录`);
+          setBatchDeleteOpen(false);
+        }}
+        title={`确定要删除选中的 ${selIds.length} 条记录吗？`} />
     </div>
   );
 }
@@ -1044,7 +1119,7 @@ function PurchaseTab({ c, data, setData, inputStyle, labelStyle }) {
 /* ═══════════════════════════════════════
    SettingsTab — 设置
    ═══════════════════════════════════════ */
-function SettingsTab({ c, data, setData }) {
+function SettingsTab({ c, data, setData, showToast }) {
   function exportData() {
     const rows = data.records.map(r => ({
       '日期': r.date,
@@ -1063,7 +1138,7 @@ function SettingsTab({ c, data, setData }) {
     a.download = `用药记录_${todayStr()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    message.success('导出成功');
+    showToast('导出成功');
   }
 
   function importData(e) {
@@ -1074,7 +1149,7 @@ function SettingsTab({ c, data, setData }) {
       try {
         const text = evt.target.result;
         const lines = text.split('\n').filter(l => l.trim());
-        if (lines.length < 2) { message.error('文件格式错误'); return; }
+        if (lines.length < 2) { showToast('文件格式错误', 'error'); return; }
         const headerMap = { '日期': 'date', '药品名称': 'medicineName', '早餐用量': 'breakfast', '午餐用量': 'lunch', '晚餐用量': 'dinner' };
         const headers = lines[0].split(',').map(h => headerMap[h.trim()] || h.trim());
         const imported = [];
@@ -1090,10 +1165,10 @@ function SettingsTab({ c, data, setData }) {
             imported.push(rec);
           }
         }
-        if (!imported.length) { message.error('未找到有效数据'); return; }
+        if (!imported.length) { showToast('未找到有效数据', 'error'); return; }
         setData(prev => ({ ...prev, records: [...prev.records, ...imported] }));
-        message.success(`成功导入 ${imported.length} 条记录`);
-      } catch { message.error('导入失败，请检查文件格式'); }
+        showToast(`成功导入 ${imported.length} 条记录`);
+      } catch { showToast('导入失败，请检查文件格式', 'error'); }
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -1103,26 +1178,31 @@ function SettingsTab({ c, data, setData }) {
     <div>
       <div className="linear-card" style={{ padding: 24 }}>
         <h2 style={{ fontSize: 16, fontWeight: 600, color: c.text, marginBottom: 24, margin: 0 }}>
-          <DatabaseOutlined style={{ marginRight: 8 }} />数据操作
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 8, verticalAlign: 'middle' }}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          {'数据操作'}
         </h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 16, background: c.surfaceTint, borderRadius: 8 }}>
-            <div style={{ width: 48, height: 48, borderRadius: 8, background: 'rgba(59,130,246,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: '#3B82F6', flexShrink: 0 }}><ExportOutlined /></div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, color: c.text, fontSize: 14 }}>导出数据</div>
-              <div style={{ fontSize: 13, color: c.muted, marginTop: 2 }}>将所有用药记录导出为 CSV 文件</div>
+            <div style={{ width: 48, height: 48, borderRadius: 8, background: 'rgba(59,130,246,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: '#3B82F6', flexShrink: 0 }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             </div>
-            <Button onClick={exportData} style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, color: '#fff', height: 40 }}>导出</Button>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, color: c.text, fontSize: 14 }}>{'导出数据'}</div>
+              <div style={{ fontSize: 13, color: c.muted, marginTop: 2 }}>{'将所有用药记录导出为 CSV 文件'}</div>
+            </div>
+            <Btn onClick={exportData} style={{ background: '#5e6ad2', borderColor: '#5e6ad2', borderRadius: 8, color: '#fff', height: 40 }}>{'导出'}</Btn>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 16, background: c.surfaceTint, borderRadius: 8 }}>
-            <div style={{ width: 48, height: 48, borderRadius: 8, background: 'rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: '#10B981', flexShrink: 0 }}><ImportOutlined /></div>
+            <div style={{ width: 48, height: 48, borderRadius: 8, background: 'rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: '#10B981', flexShrink: 0 }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, color: c.text, fontSize: 14 }}>导入数据</div>
-              <div style={{ fontSize: 13, color: c.muted, marginTop: 2 }}>从 CSV 文件导入用药记录</div>
+              <div style={{ fontWeight: 600, color: c.text, fontSize: 14 }}>{'导入数据'}</div>
+              <div style={{ fontSize: 13, color: c.muted, marginTop: 2 }}>{'从 CSV 文件导入用药记录'}</div>
             </div>
             <label>
               <input type="file" accept=".csv" onChange={importData} hidden />
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', height: 40, borderRadius: 8, border: '1px solid ' + c.border, background: c.surfaceTint, color: c.text, fontSize: 14, cursor: 'pointer' }}>导入</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', height: 40, borderRadius: 8, border: '1px solid ' + c.border, background: c.surfaceTint, color: c.text, fontSize: 14, cursor: 'pointer' }}>{'导入'}</span>
             </label>
           </div>
         </div>
