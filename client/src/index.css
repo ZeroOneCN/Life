@@ -1,7 +1,6 @@
 @import "tailwindcss";
 
 @theme {
-  /* Linear Design System Colors */
   --color-primary: #5e6ad2;
   --color-primary-hover: #828fff;
   --color-primary-focus: #5e69d1;
@@ -19,15 +18,8 @@
   --color-hairline-tertiary: #3e3e44;
   --color-success: #27a644;
   --color-danger: #e5484d;
-
-  /* Typography */
   --font-sans: 'Inter', 'SF Pro Display', -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', ui-monospace, monospace;
-
-  /* Spacing */
-  --spacing-section: 96px;
-
-  /* Border Radius */
   --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -37,130 +29,136 @@
   --radius-pill: 9999px;
 }
 
-/* Base Styles */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
   margin: 0;
   background-color: var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 400;
   line-height: 1.5;
   letter-spacing: -0.05px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-hairline-strong);
-  border-radius: var(--radius-pill);
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-hairline-tertiary);
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-hairline-strong); border-radius: var(--radius-pill); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-hairline-tertiary); }
 
-/* ── Input / Textarea ── */
+/* ── typography ── */
+.page-title    { font-size: 28px; font-weight: 600; line-height: 1.20; letter-spacing: -0.6px; color: var(--color-ink); }
+.page-subtitle { font-size: 16px; font-weight: 400; color: var(--color-ink-muted); }
+.font-mono     { font-family: var(--font-mono); }
+
+/* ── button-primary (DESIGN.md) ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-sans); font-size: 14px; font-weight: 500; line-height: 1.2;
+  border: none; border-radius: var(--radius-md); padding: 8px 14px;
+  cursor: pointer; transition: opacity .15s, box-shadow .15s;
+}
+.btn-primary   { background: var(--color-primary); color: #fff; }
+.btn-primary:hover   { background: var(--color-primary-hover); }
+.btn-primary:active  { background: var(--color-primary-focus); }
+.btn-secondary { background: var(--color-surface-1); color: var(--color-ink); border: 1px solid var(--color-hairline); }
+.btn-secondary:hover { filter: brightness(1.15); }
+.btn-ghost     { background: transparent; color: var(--color-primary); }
+.btn-ghost:hover     { background: color-mix(in srgb, var(--color-primary) 10%, transparent); }
+.btn-danger    { background: transparent; color: var(--color-danger); }
+.btn-danger:hover    { background: color-mix(in srgb, var(--color-danger) 10%, transparent); }
+.btn-danger-fill     { background: var(--color-danger); color: #fff; }
+.btn-danger-fill:hover { filter: brightness(1.15); }
+
+/* ── text-input (DESIGN.md) ── */
 input[type="text"],
 input[type="number"],
 input[type="search"],
 input[type="date"],
 input[type="time"],
+input[type="month"],
 textarea {
-  background-color: var(--color-surface-1);
-  color: var(--color-ink);
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  font-family: var(--font-sans);
-  font-size: 15px;
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  background: var(--color-surface-1); color: var(--color-ink);
+  border: 1px solid var(--color-hairline); border-radius: var(--radius-md);
+  padding: 8px 12px; font-family: var(--font-sans); font-size: 16px; outline: none;
+  transition: border-color .15s, box-shadow .15s;
 }
 input:focus, textarea:focus {
   border-color: var(--color-primary-focus);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-focus) 50%, transparent);
 }
-input::placeholder, textarea::placeholder {
-  color: var(--color-ink-tertiary);
-}
+input::placeholder, textarea::placeholder { color: var(--color-ink-tertiary); }
+input[readonly] { border-style: dashed; cursor: default; user-select: none; background: var(--color-surface-1); }
 
-/* ── Select / Dropdown — DESIGN.md Linear style ── */
+/* ── select (DESIGN.md Linear chevron) ── */
 select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-color: var(--color-surface-1);
-  color: var(--color-ink);
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-md);
-  padding: 10px 36px 10px 14px;
-  font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 1.4;
-  outline: none;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-
-  /* Custom lavender-blue chevron */
+  appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  background: var(--color-surface-1); color: var(--color-ink);
+  border: 1px solid var(--color-hairline); border-radius: var(--radius-md);
+  padding: 8px 32px 8px 12px; font-family: var(--font-sans); font-size: 16px;
+  outline: none; cursor: pointer; transition: border-color .15s, box-shadow .15s;
   background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235e6ad2' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 10px 6px;
+  background-repeat: no-repeat; background-position: right 12px center; background-size: 10px 6px;
 }
-select:hover {
-  border-color: var(--color-hairline-strong);
-  background-color: var(--color-surface-2);
-}
-select:focus {
-  border-color: var(--color-primary-focus);
-  background-color: var(--color-surface-1);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-focus) 50%, transparent);
-  outline: none;
-}
-select:active {
-  background-color: var(--color-surface-1);
-}
-select option {
-  background-color: var(--color-surface-2);
-  color: var(--color-ink);
-  padding: 10px 14px;
-  font-size: 15px;
-}
+select:hover { border-color: var(--color-hairline-strong); background: var(--color-surface-2); }
+select:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 50%, transparent); }
+select option { background: var(--color-surface-2); color: var(--color-ink); padding: 8px 12px; }
 
-/* 防止 IE/Edge 点击 select 时闪烁 */
-select::-ms-expand {
-  display: none;
-}
-select:-moz-focusring {
-  color: transparent;
-  text-shadow: 0 0 0 var(--color-ink);
-}
+/* ── card (DESIGN.md feature-card / pricing-card) ── */
+.card       { background: var(--color-surface-1); border: 1px solid var(--color-hairline); border-radius: var(--radius-lg); padding: 24px; }
+.card-stat  { background: var(--color-surface-1); border: 1px solid var(--color-hairline); border-radius: var(--radius-lg); padding: 20px 24px; }
 
-/* ── Button base ── */
-button {
-  cursor: pointer;
-  font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1.2;
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 10px 16px;
-  -webkit-tap-highlight-color: transparent;
-  transition: opacity 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
-}
+/* ── table ── */
+table       { border-collapse: collapse; color: var(--color-ink-muted); font-size: 14px; }
+thead tr    { border-bottom: 1px solid var(--color-hairline); }
+th          { font-weight: 500; color: var(--color-ink-subtle); font-size: 13px; }
+tbody tr    { border-bottom: 1px solid var(--color-hairline); }
+tbody tr:hover { filter: brightness(1.1); }
 
-/* ── 日间模式 — 直接切换，无过渡 ── */
+/* ── tab (capsule pill, primary fill) ── */
+.tab-bar    { display: inline-flex; gap: 8px; }
+.tab        { padding: 6px 16px; font-size: 14px; font-weight: 400; color: var(--color-ink-subtle); background: transparent; border: none; border-radius: var(--radius-pill); cursor: pointer; transition: all .25s; }
+.tab.active { background: var(--color-primary); color: #fff; font-weight: 500; }
+.tab:hover:not(.active) { background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
+
+/* ── tag / badge (DESIGN.md status-badge) ── */
+.tag         { display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 400; background: var(--color-surface-2); color: var(--color-ink-muted); }
+.tag-red     { background: color-mix(in srgb, var(--color-danger) 18%, transparent); color: var(--color-danger); }
+.tag-green   { background: color-mix(in srgb, var(--color-success) 18%, transparent); color: var(--color-success); }
+.tag-blue    { background: color-mix(in srgb, var(--color-primary) 15%, transparent); color: var(--color-primary); }
+.tag-orange  { background: rgba(245,158,11,.15); color: #f59e0b; }
+.tag-purple  { background: rgba(139,92,246,.15); color: #8b5cf6; }
+
+/* ── modal overlay ── */
+.modal-overlay { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.6); }
+.modal-panel   { background: var(--color-surface-2); border: 1px solid var(--color-hairline-strong); border-radius: var(--radius-lg); padding: 32px; max-height: 85vh; overflow: auto; }
+
+/* ── pagination ── */
+.pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 16px; }
+.pagination .btn { padding: 6px 12px; font-size: 13px; }
+.pagination input { width: 52px; text-align: center; }
+
+/* ── switch toggle ── */
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch-track { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--color-hairline-strong); border-radius: var(--radius-pill); transition: .2s; }
+.switch input:checked + .switch-track { background: var(--color-primary); }
+.switch-knob { position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+.switch input:checked ~ .switch-knob { transform: translateX(20px); }
+
+/* ── checkbox ── */
+.checkbox { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; color: var(--color-ink-muted); }
+.checkbox input { accent-color: var(--color-primary); width: 16px; height: 16px; cursor: pointer; }
+
+/* ── spinner ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { animation: spin .8s linear infinite; }
+
+/* ── day / night ── */
 [data-theme="light"] {
   --color-canvas: #ffffff;
   --color-surface-1: #f5f6f6;
@@ -176,58 +174,4 @@ button {
   --color-ink-tertiary: #8f939a;
   transition: none !important;
 }
-
-[data-theme="light"] *,
-[data-theme="light"] *::before,
-[data-theme="light"] *::after {
-  transition: none !important;
-  animation: none !important;
-}
-
-/* ── Page title ── */
-.page-title {
-  font-size: 28px;
-  font-weight: 600;
-  line-height: 1.20;
-  letter-spacing: -0.6px;
-  color: var(--color-ink);
-  margin: 0 0 4px;
-}
-
-/* ── Table base ── */
-table {
-  border-collapse: collapse;
-  color: var(--color-ink-muted);
-}
-thead tr {
-  border-bottom: 1px solid var(--color-hairline);
-}
-th {
-  font-weight: 500;
-  color: var(--color-ink-subtle);
-}
-tbody tr {
-  border-bottom: 1px solid var(--color-hairline);
-}
-tbody tr:hover {
-  filter: brightness(1.1);
-}
-
-/* ── Card ── */
-.linear-card {
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-lg);
-  padding: 24px;
-}
-
-/* ── Modal backdrop ── */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(0, 0, 0, 0.6);
-}
+[data-theme="light"] *, [data-theme="light"] *::before, [data-theme="light"] *::after { transition: none !important; animation: none !important; }
