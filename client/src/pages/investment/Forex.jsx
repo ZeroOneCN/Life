@@ -490,7 +490,7 @@ function TradesTab({ data, setData }) {
             <h2 className="text-[22px] font-semibold mb-6 tracking-[-0.4px]" style={{ color: 'var(--color-ink)' }}>{editingId ? '编辑交易记录' : '新增交易记录'}</h2>
             <div className="grid grid-cols-2 gap-5">
               <FormField label="日期" value={form.trade_date} onChange={v => setForm(f => ({ ...f, trade_date: v }))} placeholder="yyyy/mm/dd" />
-              <FormSelect label="品种" value={form.instrument} onChange={v => updateForm('instrument', v)} options={INSTRUMENTS.map(i => ({ value: i.value, label: i.value }))} />
+              <FormSelect label="品种" value={form.instrument} onChange={v => updateForm('instrument', v)} options={[{ value: 'XAUUSD', label: 'XAUUSD' }, { value: 'XAGUSD', label: 'XAGUSD' }, { value: 'EURUSD', label: 'EURUSD' }, { value: 'GBPUSD', label: 'GBPUSD' }, { value: 'USDJPY', label: 'USDJPY' }]} />
               <FormSelect label="类型" value={form.order_type} onChange={v => updateForm('order_type', v)} options={[{ value: 'buy', label: 'buy' }, { value: 'sell', label: 'sell' }]} />
               <FormField label="开仓价格" value={form.open_price} onChange={v => updateForm('open_price', v)} type="number" />
               <FormField label="手数" value={form.lot_size} onChange={v => updateForm('lot_size', v)} type="number" />
