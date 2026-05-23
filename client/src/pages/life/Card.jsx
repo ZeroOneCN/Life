@@ -82,8 +82,6 @@ function seedMock() {
     email_subject: '号卡余额提醒',
     email_template: '您的号码{{phone}}当前余额为{{balance}}元，请及时充值。',
     wechat_enabled: false,
-    wechat_webhook_url: '',
-    wechat_template: '',
     balance_threshold: 10,
     notification_days_before: 3,
   };
@@ -328,8 +326,7 @@ function SimCardListTab({ c, fs, data, setData, inputStyle, labelStyle }) {
       <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20 }}>
         <Table dataSource={paged} columns={columns} rowKey="id" pagination={false} size="middle"
           style={{ background: 'transparent' }}
-          locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无号卡</span> }}
-          scroll={{ x: 1100 }} />
+          locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无号卡</span> }} />
         {filtered.length > 0 && (
           <TablePagination c={c} inputStyle={inputStyle}
             page={page} totalPages={totalPages} onPageChange={setPage}
@@ -350,7 +347,7 @@ function SimCardListTab({ c, fs, data, setData, inputStyle, labelStyle }) {
           <div>
             <label style={labelStyle}>运营商 <span style={{ color: '#ef4444' }}>*</span></label>
             <Select value={form.carrier} onChange={v => setForm(p => ({ ...p, carrier: v }))}
-              placeholder="选择运营商" style={{ width: '100%' }}
+              placeholder="选择运营商" style={{ width: '100%', ...inputStyle }}
               dropdownStyle={{ background: c.dropdownBg, border: '1px solid ' + c.border }}
               options={carrierOptions} />
           </div>
@@ -498,8 +495,7 @@ function BillManagementTab({ c, fs, data, setData, inputStyle, labelStyle }) {
         </div>
         <Table dataSource={paged} columns={columns} rowKey="id" pagination={false} size="middle"
           style={{ background: 'transparent' }}
-          locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无账单</span> }}
-          scroll={{ x: 800 }} />
+          locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无账单</span> }} />
         {bills.length > 0 && (
           <TablePagination c={c} inputStyle={inputStyle}
             page={page} totalPages={totalPages} onPageChange={setPage}
@@ -799,7 +795,7 @@ function StatisticsTab({ c, fs, isLight, data }) {
 function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
   const [settings, setSettings] = useState(data.settings || {
     notification_type: 'email', email_enabled: true, email_subject: '', email_template: '',
-    wechat_enabled: false, wechat_webhook_url: '', wechat_template: '',
+    wechat_enabled: false,
     balance_threshold: 10, notification_days_before: 3,
   });
 
@@ -906,40 +902,17 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
 
               {/* Email settings */}
               <div style={{ borderTop: '1px solid ' + c.border, paddingTop: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: c.text, fontWeight: 600, fontSize: 14 }}>邮件通知设置</span>
                   <Switch checked={settings.email_enabled} onChange={v => setSettings(p => ({ ...p, email_enabled: v }))} />
-                </div>
-                <div style={{ display: 'grid', gap: 14 }}>
-                  <div>
-                    <label style={labelStyle}>邮件主题</label>
-                    <Input value={settings.email_subject} onChange={e => setSettings(p => ({ ...p, email_subject: e.target.value }))} style={inputStyle} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>邮件模板（HTML格式）</label>
-                    <Input.TextArea value={settings.email_template} onChange={e => setSettings(p => ({ ...p, email_template: e.target.value }))}
-                      rows={4} style={{ background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontFamily: 'monospace', fontSize: 12 }} />
-                  </div>
                 </div>
               </div>
 
               {/* WeChat settings */}
               <div style={{ borderTop: '1px solid ' + c.border, paddingTop: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: c.text, fontWeight: 600, fontSize: 14 }}>企业微信通知设置</span>
                   <Switch checked={settings.wechat_enabled} onChange={v => setSettings(p => ({ ...p, wechat_enabled: v }))} />
-                </div>
-                <div style={{ display: 'grid', gap: 14 }}>
-                  <div>
-                    <label style={labelStyle}>Webhook 地址</label>
-                    <Input value={settings.wechat_webhook_url} onChange={e => setSettings(p => ({ ...p, wechat_webhook_url: e.target.value }))}
-                      placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx" style={inputStyle} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>消息模板</label>
-                    <Input.TextArea value={settings.wechat_template} onChange={e => setSettings(p => ({ ...p, wechat_template: e.target.value }))}
-                      rows={3} style={{ background: c.surfaceTint, border: '1px solid ' + c.border, borderRadius: 8, color: c.text, fontFamily: 'monospace', fontSize: 12 }} />
-                  </div>
                 </div>
               </div>
 
@@ -977,8 +950,7 @@ function SettingsTab({ c, fs, data, setData, inputStyle, labelStyle }) {
           <div style={{ background: c.cardBg, border: '1px solid ' + c.border, borderRadius: 12, padding: 20 }}>
             <Table dataSource={data.carriers} columns={carrierColumns} rowKey="id" pagination={false} size="middle"
               style={{ background: 'transparent' }}
-              locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无运营商</span> }}
-              scroll={{ x: 400 }} />
+              locale={{ emptyText: <span style={{ color: c.muted2 }}>暂无运营商</span> }} />
           </div>
 
           <Modal title={modalTitle('编辑运营商', c)} open={editModalOpen}
