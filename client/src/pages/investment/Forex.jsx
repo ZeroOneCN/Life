@@ -86,10 +86,10 @@ export default function Forex() {
         {TABS.map(t => (
           <button key={t.key} onClick={() => { setTab(t.key); window.location.hash = t.key; }}
             style={{
-              padding: '6px 18px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500,
-              backgroundColor: tab === t.key ? 'var(--color-surface-2)' : 'var(--color-canvas)',
-              color: tab === t.key ? 'var(--color-ink)' : 'var(--color-ink-subtle)',
-              transition: 'all 0.15s',
+              padding: '8px 18px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: tab === t.key ? 500 : 400,
+              backgroundColor: tab === t.key ? 'var(--color-primary)' : 'transparent',
+              color: tab === t.key ? '#ffffff' : 'var(--color-ink-subtle)',
+              transition: 'all 0.25s',
             }}>
             {t.label}
           </button>
