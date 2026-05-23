@@ -18,6 +18,49 @@ body {
   background: #010102;
 }
 
+/* ═══ Design Tokens (dark default) — per DESIGN.md ═══ */
+:root {
+  --color-ink: #f7f8f8;
+  --color-ink-muted: #d0d6e0;
+  --color-ink-subtle: #8a8f98;
+  --color-ink-tertiary: #62666d;
+  --color-surface-1: #0f1011;
+  --color-surface-2: #141516;
+  --color-surface-3: #18191a;
+  --color-canvas: #010102;
+  --color-hairline: #23252a;
+  --color-hairline-strong: #34343a;
+  --color-hairline-tertiary: #3e3e44;
+  --color-primary: #5e6ad2;
+  --color-danger: #e5484d;
+  --color-success: #27a644;
+  --color-warning: #f5a623;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+/* ═══ Light mode tokens ═══ */
+.light {
+  --color-ink: #1d1d1f;
+  --color-ink-muted: #62666d;
+  --color-ink-subtle: #8a8f98;
+  --color-ink-tertiary: #b0b6c0;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #f0f1f2;
+  --color-surface-3: #e5e7eb;
+  --color-canvas: #f5f6f7;
+  --color-hairline: #e5e7eb;
+  --color-hairline-strong: #d0d6e0;
+  --color-primary: #5e6ad2;
+  --color-danger: #e5484d;
+  --color-success: #30a46c;
+  --color-warning: #f5a623;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
 /* ── Page title: headline (28px) ── */
 .page-title {
   font-size: 28px;
@@ -49,6 +92,26 @@ body {
 .linear-card p {
   color: #8a8f98;
   margin: 0;
+}
+
+/* ═══ Base form elements — match design tokens ═══ */
+input, select, textarea {
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--color-ink);
+  background-color: var(--color-surface-1);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--color-primary);
+}
+select {
+  cursor: pointer;
+  appearance: auto;
 }
 
 /* ═══ Dark mode (default) — Ant Design overrides ═══ */
