@@ -2,6 +2,7 @@
 node_modules/
 .pnp
 .pnp.js
+package-lock.json
 
 # Build output
 dist/
@@ -11,6 +12,10 @@ build/
 .env
 .env.local
 .env.*.local
+
+# Database
+*.db
+*.sql
 
 # IDE
 .vscode/
@@ -28,3 +33,4 @@ npm-debug.log*
 
 # Misc
 *.local
+linear.app/
