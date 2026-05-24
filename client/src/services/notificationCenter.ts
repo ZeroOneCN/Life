@@ -100,43 +100,69 @@ const defaultScenes: Record<NotificationSceneId, NotificationSceneConfig> = {
     summary: '当保存或更新异常指标时写入统一提醒日志。',
     description: '用于快速感知异常结果，并将异常档案统一纳入通知中心追踪。',
   },
+  'medication.dose_reminder': {
+    id: 'medication.dose_reminder',
+    label: '服药提醒',
+    enabled: true,
+    channels: ['email', 'wechatWork'],
+    summary: '按早餐、午餐、晚餐时段发送服药提醒，所有记录统一写入通知中心日志。',
+    description: '用于提醒用户在指定时段完成当日服药，页面只维护时间和触发条件，渠道由通知中心统一管理。',
+  },
+  'medication.stock_low': {
+    id: 'medication.stock_low',
+    label: '低库存提醒',
+    enabled: true,
+    channels: ['email'],
+    summary: '当药品剩余库存低于阈值时，统一写入通知中心并按渠道发送提醒。',
+    description: '基于购药记录与累计服药量估算库存，只对单位一致的药品进行低库存检测。',
+  },
 };
 
-const defaultTemplates = {
+const defaultTemplates: Record<NotificationSceneId, { sceneId: NotificationSceneId; title: string; body: string }> = {
   'todo.reminder': {
-    sceneId: 'todo.reminder' as const,
+    sceneId: 'todo.reminder',
     title: '今日待办提醒',
     body: '你今天有新的待办任务需要处理，请进入 LifeOS 查看详情。',
   },
   'card.balance_low': {
-    sceneId: 'card.balance_low' as const,
+    sceneId: 'card.balance_low',
     title: '号卡低余额提醒',
     body: '你的号卡余额已经低于预设阈值，请及时充值。',
   },
   'card.billing_upcoming': {
-    sceneId: 'card.billing_upcoming' as const,
+    sceneId: 'card.billing_upcoming',
     title: '号卡账单日前提醒',
     body: '你的号卡即将进入账单日，请确认套餐与余额状态。',
   },
   'loan.repayment_upcoming': {
-    sceneId: 'loan.repayment_upcoming' as const,
+    sceneId: 'loan.repayment_upcoming',
     title: '贷款还款提醒',
     body: '你有即将到期的贷款账单，请提前安排还款。',
   },
   'loan.repayment_overdue': {
-    sceneId: 'loan.repayment_overdue' as const,
+    sceneId: 'loan.repayment_overdue',
     title: '贷款逾期提醒',
     body: '你有已逾期的贷款账单，请尽快处理并关注风险影响。',
   },
   'checkup.followup_reminder': {
-    sceneId: 'checkup.followup_reminder' as const,
+    sceneId: 'checkup.followup_reminder',
     title: '体检复查提醒',
     body: '你有进入复查窗口的体检项目，请尽快安排复查。',
   },
   'checkup.abnormal_alert': {
-    sceneId: 'checkup.abnormal_alert' as const,
+    sceneId: 'checkup.abnormal_alert',
     title: '体检异常指标提醒',
     body: '你的体检档案中新增了异常或需关注指标，请及时查看。',
+  },
+  'medication.dose_reminder': {
+    sceneId: 'medication.dose_reminder',
+    title: '服药提醒',
+    body: '你有一条新的服药提醒，请按计划完成早餐、午餐或晚餐时段的用药安排。',
+  },
+  'medication.stock_low': {
+    sceneId: 'medication.stock_low',
+    title: '低库存提醒',
+    body: '你的药品库存已低于提醒阈值，请及时补货并更新购药记录。',
   },
 };
 
@@ -147,6 +173,14 @@ function getDefaultState(): NotificationCenterState {
     templates: defaultTemplates,
     logs: [],
   };
+}
+
+function isChannelReady(channel: NotificationChannelConfig) {
+  if (channel.type === 'email') {
+    return Boolean(channel.recipient);
+  }
+
+  return Boolean(channel.webhookUrl);
 }
 
 function normalizeChannelConfig(
@@ -188,6 +222,7 @@ function normalizeSceneConfig(
 
 function normalizeTemplate(sceneId: NotificationSceneId) {
   const base = defaultTemplates[sceneId];
+
   return {
     ...base,
     sceneId,
@@ -223,6 +258,8 @@ function normalizeNotificationCenterState(
       'loan.repayment_overdue': normalizeSceneConfig('loan.repayment_overdue', storedScenes['loan.repayment_overdue']),
       'checkup.followup_reminder': normalizeSceneConfig('checkup.followup_reminder', storedScenes['checkup.followup_reminder']),
       'checkup.abnormal_alert': normalizeSceneConfig('checkup.abnormal_alert', storedScenes['checkup.abnormal_alert']),
+      'medication.dose_reminder': normalizeSceneConfig('medication.dose_reminder', storedScenes['medication.dose_reminder']),
+      'medication.stock_low': normalizeSceneConfig('medication.stock_low', storedScenes['medication.stock_low']),
     },
     templates: {
       'todo.reminder': { ...normalizeTemplate('todo.reminder'), ...storedTemplates['todo.reminder'] },
@@ -232,6 +269,8 @@ function normalizeNotificationCenterState(
       'loan.repayment_overdue': { ...normalizeTemplate('loan.repayment_overdue'), ...storedTemplates['loan.repayment_overdue'] },
       'checkup.followup_reminder': { ...normalizeTemplate('checkup.followup_reminder'), ...storedTemplates['checkup.followup_reminder'] },
       'checkup.abnormal_alert': { ...normalizeTemplate('checkup.abnormal_alert'), ...storedTemplates['checkup.abnormal_alert'] },
+      'medication.dose_reminder': { ...normalizeTemplate('medication.dose_reminder'), ...storedTemplates['medication.dose_reminder'] },
+      'medication.stock_low': { ...normalizeTemplate('medication.stock_low'), ...storedTemplates['medication.stock_low'] },
     },
     logs: Array.isArray(state?.logs) ? state.logs.map(normalizeLogEntry) : [],
   };
@@ -299,14 +338,6 @@ export function updateSceneConfig(
       },
     },
   });
-}
-
-function isChannelReady(channel: NotificationChannelConfig) {
-  if (channel.type === 'email') {
-    return Boolean(channel.recipient);
-  }
-
-  return Boolean(channel.webhookUrl);
 }
 
 function buildLogEntry(entry: Omit<NotificationLogEntry, 'id' | 'createdAt'>): NotificationLogEntry {
