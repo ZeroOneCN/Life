@@ -203,7 +203,7 @@ export function FitnessShoppingSection({
           当前新增用户：<strong>{normalizeFitnessUserId(activeUserId) || '未设置'}</strong>。这里的采购记录只服务于健康页食材成本分析，不与财务模块共用。
         </div>
 
-        <div className="form-grid">
+        <div className="form-grid fitness-entry-grid fitness-entry-grid-shopping">
           <DatePickerField
             label="采购日期"
             value={form.date}

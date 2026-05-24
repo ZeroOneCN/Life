@@ -207,7 +207,7 @@ export function FitnessWeightSection({
           当前新增用户：<strong>{normalizeFitnessUserId(activeUserId) || '未设置'}</strong>。默认身高会跟随最近一次保存值更新。
         </div>
 
-        <div className="form-grid">
+        <div className="form-grid fitness-entry-grid fitness-entry-grid-weight">
           <DatePickerField
             label="记录日期"
             value={form.date}

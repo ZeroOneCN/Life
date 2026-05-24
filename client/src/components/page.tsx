@@ -47,11 +47,13 @@ export function SectionCard({
 
 export function StatGrid({
   items,
+  className = '',
 }: {
   items: Array<{ label: string; value: string; accent?: string; helper?: string }>;
+  className?: string;
 }) {
   return (
-    <div className="stat-grid">
+    <div className={`stat-grid ${className}`.trim()}>
       {items.map((item) => (
         <div className="stat-card" key={item.label}>
           <span className="stat-label">{item.label}</span>

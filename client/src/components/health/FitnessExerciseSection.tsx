@@ -215,7 +215,7 @@ export function FitnessExerciseSection({
           当前新增用户：<strong>{normalizeFitnessUserId(activeUserId) || '未设置'}</strong>。这一页不依赖运动数据库，请直接录入你的训练项目。
         </div>
 
-        <div className="form-grid">
+        <div className="form-grid fitness-entry-grid fitness-entry-grid-exercise">
           <DatePickerField
             label="记录日期"
             value={form.date}

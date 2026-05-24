@@ -229,7 +229,7 @@ export function FitnessDietSection({
           当前新增用户：<strong>{normalizeFitnessUserId(activeUserId) || '未设置'}</strong>。如需切换记账对象，请先在页面顶部修改当前用户 ID。
         </div>
 
-        <div className="form-grid">
+        <div className="form-grid fitness-entry-grid fitness-entry-grid-diet">
           <DatePickerField
             label="记录日期"
             value={form.date}

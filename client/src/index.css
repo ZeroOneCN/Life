@@ -379,6 +379,10 @@ textarea {
   gap: 14px;
 }
 
+.fitness-overview-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .stat-card {
   background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-3) 90%, transparent), var(--color-surface-2));
   border: 1px solid var(--color-hairline);
@@ -1098,6 +1102,39 @@ textarea {
   justify-content: flex-end;
 }
 
+.fitness-entry-grid {
+  gap: 12px;
+}
+
+.fitness-entry-grid .field-label {
+  font-size: 12px;
+}
+
+.fitness-entry-grid .field {
+  gap: 6px;
+}
+
+.fitness-entry-grid input,
+.fitness-entry-grid select,
+.fitness-entry-grid .date-trigger {
+  min-height: 38px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.fitness-entry-grid-diet {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) minmax(0, 1.5fr) repeat(5, minmax(0, 0.85fr));
+}
+
+.fitness-entry-grid-exercise,
+.fitness-entry-grid-shopping {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(0, 1.4fr) repeat(3, minmax(0, 0.9fr));
+}
+
+.fitness-entry-grid-weight {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .fitness-dashboard-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1755,5 +1792,31 @@ textarea {
 
   .time-option-list {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1280px) {
+  .fitness-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fitness-entry-grid-diet,
+  .fitness-entry-grid-exercise,
+  .fitness-entry-grid-shopping {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .fitness-entry-grid-weight {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .fitness-overview-grid,
+  .fitness-entry-grid-diet,
+  .fitness-entry-grid-exercise,
+  .fitness-entry-grid-shopping,
+  .fitness-entry-grid-weight {
+    grid-template-columns: 1fr;
   }
 }

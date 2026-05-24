@@ -130,6 +130,7 @@ export default function FitnessPage() {
       </SectionCard>
 
       <StatGrid
+        className="fitness-overview-grid"
         items={[
           {
             label: '当前用户',
