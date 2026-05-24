@@ -3240,6 +3240,211 @@ textarea {
   }
 }
 
+.forex-filter-grid,
+.forex-compact-grid,
+.forex-capital-form-row,
+.forex-modal-grid,
+.forex-calculator-shared-grid,
+.forex-position-grid,
+.forex-dashboard-grid,
+.forex-insight-grid,
+.forex-calculator-result-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.forex-filter-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.forex-compact-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.forex-capital-form-row {
+  grid-template-columns: 180px 160px 160px minmax(0, 1fr) 180px;
+}
+
+.forex-calculator-shared-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.forex-position-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.forex-dashboard-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.forex-dashboard-grid > :first-child {
+  grid-column: 1 / -1;
+}
+
+.forex-chart-card,
+.forex-import-result,
+.forex-position-row,
+.forex-result-card,
+.forex-insight-card,
+.forex-instrument-summary-card {
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-2);
+}
+
+.forex-chart-card,
+.forex-position-row,
+.forex-result-card,
+.forex-insight-card {
+  padding: 18px;
+}
+
+.forex-chart-header,
+.forex-position-row-head,
+.forex-result-card-head,
+.forex-insight-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.forex-chart-header {
+  margin-bottom: 14px;
+}
+
+.forex-chart-header strong,
+.forex-position-row-head strong,
+.forex-result-card-head strong,
+.forex-insight-header strong {
+  color: var(--color-ink);
+  font-size: 15px;
+}
+
+.forex-chart-header span,
+.forex-instrument-summary-card span,
+.forex-result-card-metrics span,
+.forex-insight-card p,
+.forex-import-result span,
+.forex-table-stack span {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.forex-chart-shell {
+  min-height: 300px;
+}
+
+.forex-action-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.forex-submit-cell {
+  display: flex;
+  align-items: flex-end;
+}
+
+.forex-submit-cell .btn {
+  width: 100%;
+}
+
+.forex-mini-stat-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.forex-import-result {
+  padding: 14px 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.forex-import-result strong {
+  color: var(--color-ink);
+  font-size: 14px;
+}
+
+.forex-table-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.forex-table-stack strong {
+  font-size: 14px;
+}
+
+.forex-modal-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.forex-modal-grid-capital {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.forex-modal-grid > .field:last-child {
+  grid-column: 1 / -1;
+}
+
+.forex-position-list {
+  display: grid;
+  gap: 16px;
+}
+
+.forex-position-row {
+  display: grid;
+  gap: 14px;
+}
+
+.forex-calculator-result-grid,
+.forex-insight-grid,
+.forex-instrument-summary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.forex-result-card,
+.forex-instrument-summary-card,
+.forex-insight-card {
+  display: grid;
+  gap: 10px;
+}
+
+.forex-result-card-metrics {
+  display: grid;
+  gap: 8px;
+}
+
+.forex-insight-card.is-warning {
+  border-color: color-mix(in srgb, var(--color-warning) 45%, var(--color-hairline));
+}
+
+.forex-insight-card.is-positive {
+  border-color: color-mix(in srgb, var(--color-success) 45%, var(--color-hairline));
+}
+
+.forex-insight-card.is-neutral {
+  border-color: var(--color-hairline);
+}
+
+.forex-instrument-summary-card {
+  padding: 14px 16px;
+}
+
 @media (max-width: 1280px) {
   .fitness-overview-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3348,6 +3553,19 @@ textarea {
   .medication-reminder-times {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .forex-compact-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .forex-capital-form-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .forex-filter-grid,
+  .forex-position-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 960px) {
@@ -3393,6 +3611,17 @@ textarea {
   .travel-report-overview,
   .travel-report-grid,
   .rent-channel-form-grid-modal,
+  .forex-filter-grid,
+  .forex-compact-grid,
+  .forex-capital-form-row,
+  .forex-modal-grid,
+  .forex-calculator-shared-grid,
+  .forex-position-grid,
+  .forex-dashboard-grid,
+  .forex-insight-grid,
+  .forex-calculator-result-grid,
+  .forex-instrument-summary,
+  .forex-mini-stat-grid,
   .medication-entry-grid,
   .medication-purchase-grid,
   .medication-filter-grid,
@@ -3435,5 +3664,9 @@ textarea {
 
   .rent-form-actions .btn {
     width: 100%;
+  }
+
+  .forex-dashboard-grid > :first-child {
+    grid-column: auto;
   }
 }
