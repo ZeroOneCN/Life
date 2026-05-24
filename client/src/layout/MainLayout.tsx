@@ -149,18 +149,18 @@ export default function MainLayout() {
 
   useEffect(() => {
     const parent = findParentKey(location.pathname);
-    if (parent && !collapsed) {
+    if (parent) {
       setOpenGroups([parent]);
     }
-  }, [collapsed, location.pathname]);
+  }, [location.pathname]);
 
   return (
-    <div className="layout-shell">
+    <div className={`layout-shell ${collapsed ? 'is-collapsed' : ''}`}>
       <aside className="sidebar" style={{ width: sidebarWidth }}>
         <div className="sidebar-brand">
-          <div>
+          <div className="sidebar-brand-copy">
             <strong>{collapsed ? 'LO' : 'LifeOS'}</strong>
-            {!collapsed ? <span className="subtle-text">TypeScript Admin</span> : null}
+            {!collapsed ? <span className="subtle-text brand-subtitle">TypeScript Admin</span> : null}
           </div>
         </div>
         <nav className="menu">

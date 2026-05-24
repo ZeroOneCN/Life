@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { LazyExoticComponent, ComponentType } from 'react';
 
 export type IconKey =
   | 'dashboard'
@@ -26,5 +26,5 @@ export interface RouteConfig {
   label: string;
   breadcrumb: string[];
   menuKey: string;
-  element: ReactNode;
+  component: LazyExoticComponent<ComponentType>;
 }
