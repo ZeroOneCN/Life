@@ -1468,6 +1468,129 @@ textarea {
   gap: 16px;
 }
 
+.checkup-entry-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.checkup-entry-grid .field-label,
+.checkup-batch-row .field-label {
+  font-size: 12px;
+}
+
+.checkup-entry-grid .field,
+.checkup-batch-row .field {
+  gap: 6px;
+}
+
+.checkup-entry-grid input,
+.checkup-entry-grid select,
+.checkup-entry-grid .date-trigger,
+.checkup-batch-row input {
+  min-height: 38px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.checkup-entry-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.checkup-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.checkup-setting-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.checkup-batch-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.checkup-batch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.checkup-batch-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1.4fr) repeat(3, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+  padding: 14px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-3) 92%, transparent), color-mix(in srgb, var(--color-surface-2) 98%, transparent));
+}
+
+.checkup-batch-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-bottom: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.checkup-template-grid,
+.checkup-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.checkup-template-card,
+.checkup-insight-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--color-hairline);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-3) 92%, transparent), color-mix(in srgb, var(--color-surface-2) 98%, transparent));
+}
+
+.checkup-insight-card p {
+  margin: 0;
+  color: var(--color-ink-subtle);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.checkup-insight-card.is-success {
+  border-color: color-mix(in srgb, var(--color-success) 35%, var(--color-hairline));
+}
+
+.checkup-insight-card.is-info {
+  border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-hairline));
+}
+
+.checkup-insight-card.is-warning {
+  border-color: color-mix(in srgb, var(--color-warning) 35%, var(--color-hairline));
+}
+
+.checkup-insight-card.is-critical {
+  border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-hairline));
+}
+
 .notification-status-top,
 .list-row {
   display: flex;
@@ -1740,7 +1863,12 @@ textarea {
   .step-aggregate-grid,
   .fitness-dashboard-grid,
   .date-time-layout,
-  .date-time-columns {
+  .date-time-columns,
+  .checkup-entry-grid,
+  .checkup-filter-grid,
+  .checkup-setting-grid,
+  .checkup-template-grid,
+  .checkup-insight-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1753,7 +1881,8 @@ textarea {
   .step-records-toolbar,
   .fitness-form-actions,
   .fitness-chart-header,
-  .fitness-insight-head {
+  .fitness-insight-head,
+  .checkup-batch-header {
     flex-direction: column;
     align-items: stretch;
   }
@@ -1793,6 +1922,14 @@ textarea {
   .time-option-list {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .checkup-batch-row {
+    grid-template-columns: 1fr;
+  }
+
+  .checkup-batch-index {
+    margin-bottom: 0;
+  }
 }
 
 @media (max-width: 1280px) {
@@ -1808,6 +1945,14 @@ textarea {
 
   .fitness-entry-grid-weight {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .checkup-entry-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .checkup-filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

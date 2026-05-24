@@ -5,7 +5,9 @@ export type NotificationSceneId =
   | 'card.balance_low'
   | 'card.billing_upcoming'
   | 'loan.repayment_upcoming'
-  | 'loan.repayment_overdue';
+  | 'loan.repayment_overdue'
+  | 'checkup.followup_reminder'
+  | 'checkup.abnormal_alert';
 
 export interface NotificationChannelConfig {
   type: NotificationChannelType;

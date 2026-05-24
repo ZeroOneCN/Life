@@ -22,7 +22,7 @@ const defaultChannels: Record<NotificationChannelType, NotificationChannelConfig
     status: 'ready',
     recipient: 'owner@lifeos.local',
     senderName: 'LifeOS',
-    notes: '适合日报、账单和审批提醒。',
+    notes: '适合日报、账单、复查摘要和低频提醒。',
   },
   wechatWork: {
     type: 'wechatWork',
@@ -30,7 +30,7 @@ const defaultChannels: Record<NotificationChannelType, NotificationChannelConfig
     enabled: false,
     status: 'incomplete',
     webhookUrl: '',
-    notes: '适合及时提醒和运维告警。',
+    notes: '适合即时提醒、异常预警和高优先级通知。',
   },
   webhook: {
     type: 'webhook',
@@ -84,6 +84,22 @@ const defaultScenes: Record<NotificationSceneId, NotificationSceneConfig> = {
     summary: '账单逾期后立即发出高优先级提醒。',
     description: '覆盖逾期账单、风险提示和升级通知场景。',
   },
+  'checkup.followup_reminder': {
+    id: 'checkup.followup_reminder',
+    label: '体检复查提醒',
+    enabled: true,
+    channels: ['email', 'wechatWork'],
+    summary: '在复查日期临近或逾期时发出提醒。',
+    description: '用于追踪异常或关注指标的复查窗口，避免遗漏后续检查。',
+  },
+  'checkup.abnormal_alert': {
+    id: 'checkup.abnormal_alert',
+    label: '体检异常指标提醒',
+    enabled: true,
+    channels: ['email'],
+    summary: '当保存或更新异常指标时写入统一提醒日志。',
+    description: '用于快速感知异常结果，并将异常档案统一纳入通知中心追踪。',
+  },
 };
 
 const defaultTemplates = {
@@ -111,6 +127,16 @@ const defaultTemplates = {
     sceneId: 'loan.repayment_overdue' as const,
     title: '贷款逾期提醒',
     body: '你有已逾期的贷款账单，请尽快处理并关注风险影响。',
+  },
+  'checkup.followup_reminder': {
+    sceneId: 'checkup.followup_reminder' as const,
+    title: '体检复查提醒',
+    body: '你有进入复查窗口的体检项目，请尽快安排复查。',
+  },
+  'checkup.abnormal_alert': {
+    sceneId: 'checkup.abnormal_alert' as const,
+    title: '体检异常指标提醒',
+    body: '你的体检档案中新增了异常或需关注指标，请及时查看。',
   },
 };
 
@@ -264,7 +290,6 @@ export function enqueueSceneNotification(
     });
 
     appendLog(logEntry);
-
     return logEntry;
   });
 

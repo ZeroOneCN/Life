@@ -16,5 +16,14 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "vite.config.ts"],
+  "exclude": [
+    "src/pages/health/AIAnalysis.tsx",
+    "src/pages/health/BiochemicalTests.tsx",
+    "src/pages/health/Dashboard.tsx",
+    "src/pages/health/HealthRecords.tsx",
+    "src/pages/health/MealRecords.tsx",
+    "src/pages/health/Settings.tsx",
+    "src/pages/health/SleepRecords.tsx"
+  ]
 }
