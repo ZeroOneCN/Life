@@ -1971,12 +1971,6 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.shopping-ledger-form-footer {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 220px;
-  gap: 16px;
-}
-
 .shopping-ledger-grid {
   grid-template-columns: 1fr;
 }
@@ -2032,66 +2026,24 @@ textarea {
   font-size: 13px;
 }
 
+.shopping-ledger-form-grid-compact {
+  grid-template-columns:
+    minmax(180px, 1.05fr)
+    minmax(150px, 0.82fr)
+    minmax(150px, 0.82fr)
+    minmax(140px, 0.78fr)
+    minmax(220px, 1.25fr)
+    176px;
+  align-items: end;
+}
+
 .shopping-platform-form-grid {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) 180px;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  align-items: end;
 }
 
-.shopping-platform-chip {
-  justify-content: flex-start;
-}
-
-.shopping-color-picker {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.shopping-color-swatch {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 42px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--color-hairline);
-  background: color-mix(in srgb, var(--color-surface-2) 88%, transparent);
-  color: var(--color-ink);
-  text-align: left;
-  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
-}
-
-.shopping-color-swatch:hover {
-  border-color: color-mix(in srgb, var(--swatch-color) 48%, var(--color-hairline));
-  background: color-mix(in srgb, var(--swatch-color) 12%, var(--color-surface-2));
-}
-
-.shopping-color-swatch.is-active {
-  border-color: var(--swatch-color);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--swatch-color) 32%, transparent);
-  background: color-mix(in srgb, var(--swatch-color) 14%, var(--color-surface-2));
-}
-
-.shopping-color-swatch-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 999px;
-  background: var(--swatch-color);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--swatch-color) 16%, transparent);
-  flex: 0 0 auto;
-}
-
-.shopping-color-swatch-label {
-  font-size: 13px;
-  color: var(--color-ink-muted);
-}
-
-.shopping-platform-color {
-  display: inline-flex;
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 10%, transparent);
+.shopping-platform-form-grid-compact {
+  max-width: 620px;
 }
 
 .shopping-platform-card-amount {
@@ -2532,7 +2484,7 @@ textarea {
   }
 
   .shopping-platform-form-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 180px;
+    grid-template-columns: minmax(0, 1fr) 180px;
   }
 
   .checkup-entry-grid {
@@ -2578,15 +2530,7 @@ textarea {
     grid-template-columns: 1fr;
   }
 
-  .shopping-ledger-form-footer {
-    grid-template-columns: 1fr;
-  }
-
   .shopping-platform-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .shopping-color-picker {
     grid-template-columns: 1fr;
   }
 }

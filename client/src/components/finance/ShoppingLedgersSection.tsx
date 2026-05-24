@@ -85,15 +85,23 @@ export function ShoppingLedgersSection({
   const [editingForm, setEditingForm] = useState<LedgerFormState>(createDefaultLedgerForm);
   const [pendingDeleteLedger, setPendingDeleteLedger] = useState<ShoppingLedger | null>(null);
 
-  const ledgerStats = useMemo(() => (
-    Object.fromEntries(ledgers.map((ledger) => {
-      const ledgerRecords = records.filter((record) => record.ledgerId === ledger.id);
-      return [ledger.id, {
-        count: ledgerRecords.length,
-        amount: ledgerRecords.reduce((sum, record) => sum + record.price, 0),
-      }];
-    }))
-  ), [ledgers, records]);
+  const ledgerStats = useMemo(
+    () =>
+      Object.fromEntries(
+        ledgers.map((ledger) => {
+          const ledgerRecords = records.filter((record) => record.ledgerId === ledger.id);
+
+          return [
+            ledger.id,
+            {
+              count: ledgerRecords.length,
+              amount: ledgerRecords.reduce((sum, record) => sum + record.price, 0),
+            },
+          ];
+        }),
+      ),
+    [ledgers, records],
+  );
 
   const handleCreate = () => {
     const draft = parseLedgerDraft(form);
@@ -132,12 +140,12 @@ export function ShoppingLedgersSection({
   return (
     <SectionCard
       title="账本管理"
-      description="把不同阶段、主题或项目的购物支出拆进独立账本，便于阶段复盘，也能快速切换默认录入上下文。"
+      description="把不同阶段、主题或项目的购物支出拆进独立账本，方便阶段复盘，也能快速切换默认录入上下文。"
       action={<Tag tone="blue">共 {ledgers.length} 个账本</Tag>}
     >
       <div className="page-stack">
         <div className="shopping-ledger-form">
-          <div className="shopping-ledger-form-grid">
+          <div className="shopping-ledger-form-grid shopping-ledger-form-grid-compact">
             <Field
               label="账本名称"
               value={form.name}
@@ -164,17 +172,17 @@ export function ShoppingLedgersSection({
               <option value="inactive">仅存档</option>
               <option value="active">设为当前活跃</option>
             </SelectField>
-          </div>
-          <div className="shopping-ledger-form-footer">
             <Field
               label="账本说明"
               value={form.description}
               onChange={(event) => setForm((previous) => ({ ...previous, description: event.target.value }))}
-              placeholder="例如：把搬家阶段的家具、电器和收纳支出集中到一个账本"
+              placeholder="例如：搬家阶段的家具、电器和收纳支出"
             />
             <div className="shopping-inline-action shopping-inline-action-ledger">
               <span className="field-label">保存账本</span>
-              <Btn tone="primary" onClick={handleCreate}>新建账本</Btn>
+              <Btn tone="primary" onClick={handleCreate}>
+                新建账本
+              </Btn>
             </div>
           </div>
         </div>
@@ -184,7 +192,10 @@ export function ShoppingLedgersSection({
             const summary = ledgerStats[ledger.id] ?? { count: 0, amount: 0 };
 
             return (
-              <article key={ledger.id} className={`shopping-ledger-card ${ledger.id === activeLedgerId ? 'is-current' : ''}`}>
+              <article
+                key={ledger.id}
+                className={`shopping-ledger-card ${ledger.id === activeLedgerId ? 'is-current' : ''}`}
+              >
                 <div className="shopping-ledger-card-head">
                   <div>
                     <strong>{ledger.name}</strong>
@@ -194,7 +205,10 @@ export function ShoppingLedgersSection({
                     </div>
                   </div>
                   <div className="fitness-row-actions">
-                    <Btn tone={ledger.id === activeLedgerId ? 'primary' : 'secondary'} onClick={() => onActiveLedgerChange(ledger.id)}>
+                    <Btn
+                      tone={ledger.id === activeLedgerId ? 'primary' : 'secondary'}
+                      onClick={() => onActiveLedgerChange(ledger.id)}
+                    >
                       {ledger.id === activeLedgerId ? '当前账本' : '切换为当前'}
                     </Btn>
                     <Btn
@@ -206,12 +220,14 @@ export function ShoppingLedgersSection({
                     >
                       编辑
                     </Btn>
-                    <Btn tone="danger" onClick={() => setPendingDeleteLedger(ledger)}>删除</Btn>
+                    <Btn tone="danger" onClick={() => setPendingDeleteLedger(ledger)}>
+                      删除
+                    </Btn>
                   </div>
                 </div>
                 <p className="shopping-ledger-card-description">{ledger.description || '暂无账本说明。'}</p>
                 <div className="shopping-ledger-card-metrics">
-                  <span>{summary.count} 笔记录</span>
+                  <span>{summary.count} 条记录</span>
                   <span>{formatShoppingAmount(summary.amount, currencyMode, usdtRate)}</span>
                 </div>
               </article>
@@ -227,8 +243,8 @@ export function ShoppingLedgersSection({
           setEditingForm(createDefaultLedgerForm());
         }}
         title={editingLedger ? `编辑账本：${editingLedger.name}` : '编辑账本'}
-        width={760}
-        footer={(
+        width={820}
+        footer={
           <>
             <Btn
               tone="secondary"
@@ -239,9 +255,11 @@ export function ShoppingLedgersSection({
             >
               取消
             </Btn>
-            <Btn tone="primary" onClick={handleSaveEdit}>保存账本</Btn>
+            <Btn tone="primary" onClick={handleSaveEdit}>
+              保存账本
+            </Btn>
           </>
-        )}
+        }
       >
         <div className="shopping-modal-layout">
           <div className="shopping-ledger-form-grid">
@@ -274,7 +292,7 @@ export function ShoppingLedgersSection({
             onChange={(checked) => setEditingForm((previous) => ({ ...previous, isActive: checked }))}
             label="设为当前活跃账本"
             description="保存后，这个账本会成为页面顶部默认录入上下文。"
-            statusText={editingForm.isActive ? '切换后立即生效' : '仅保留为历史账本'}
+            statusText={editingForm.isActive ? '保存后立即切换' : '仅保留为历史账本'}
           />
         </div>
       </Modal>
@@ -289,7 +307,7 @@ export function ShoppingLedgersSection({
 
           const usedCount = countRecordsByLedger(records, pendingDeleteLedger.id);
           if (usedCount > 0) {
-            showToast(`账本下还有 ${usedCount} 条记录，请先删除或迁移记录后再操作。`, 'error');
+            showToast(`该账本下还有 ${usedCount} 条记录，请先清理或迁移后再删除。`, 'error');
             return;
           }
 
