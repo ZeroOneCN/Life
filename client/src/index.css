@@ -3656,9 +3656,12 @@ textarea {
 }
 
 .subscription-top-summary,
-.subscription-records-summary,
 .subscription-dashboard-summary {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.subscription-records-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .subscription-entry-grid,
