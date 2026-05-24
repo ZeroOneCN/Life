@@ -264,6 +264,7 @@ export function StepRecordsSection({
       <Modal
         open={Boolean(editingRecord)}
         onClose={closeEditModal}
+        width={760}
         title="编辑步数记录"
         footer={(
           <>

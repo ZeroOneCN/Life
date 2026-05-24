@@ -235,6 +235,7 @@ function DatePopover({
   title,
   description,
   children,
+  variant = 'default',
   clearable = true,
   confirmDisabled = false,
   onConfirm,
@@ -245,6 +246,7 @@ function DatePopover({
   title: string;
   description: string;
   children: ReactNode;
+  variant?: 'default' | 'datetime';
   clearable?: boolean;
   confirmDisabled?: boolean;
   onConfirm: () => void;
@@ -253,7 +255,7 @@ function DatePopover({
 }) {
   return (
     <div
-      className="date-popover"
+      className={`date-popover ${variant === 'datetime' ? 'is-datetime' : ''}`.trim()}
       role="dialog"
       aria-modal="false"
       aria-labelledby={labelledBy}
@@ -656,6 +658,7 @@ export function DateTimePickerField({
       {open ? (
         <DatePopover
           labelledBy={titleId}
+          variant="datetime"
           title="选择日期和时间"
           description={
             selectedDateTime

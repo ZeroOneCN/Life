@@ -576,6 +576,13 @@ textarea {
   overflow: hidden;
 }
 
+.date-popover.is-datetime {
+  left: 50%;
+  width: min(720px, calc(100vw - 48px));
+  max-width: calc(100vw - 48px);
+  transform: translateX(-50%);
+}
+
 .date-popover-header,
 .date-popover-footer {
   display: flex;
@@ -787,6 +794,12 @@ textarea {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
   gap: 18px;
+  align-items: start;
+}
+
+.date-time-calendar,
+.date-time-controls {
+  min-width: 0;
 }
 
 .date-time-controls {
@@ -840,6 +853,20 @@ textarea {
 .time-option-button {
   min-height: 36px;
   padding: 0;
+}
+
+@media (max-width: 760px) {
+  .date-popover.is-datetime {
+    left: 0;
+    width: 100%;
+    max-width: 100%;
+    transform: none;
+  }
+
+  .date-popover.is-datetime .date-time-layout,
+  .date-popover.is-datetime .date-time-columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 .step-entry-panel,
