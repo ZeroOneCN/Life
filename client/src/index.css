@@ -2486,6 +2486,10 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.rent-chart-card-wide {
+  grid-column: 1 / -1;
+}
+
 .rent-entry-cell {
   min-width: 0;
 }
@@ -2560,8 +2564,63 @@ textarea {
   min-width: 152px;
 }
 
-.rent-chart-card-compact {
-  max-width: 460px;
+.rent-cost-overview-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+}
+
+.rent-cost-overview-chart {
+  min-width: 0;
+}
+
+.rent-cost-overview-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rent-cost-overview-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.rent-cost-overview-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.rent-cost-legend-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-surface-2) 92%, transparent);
+}
+
+.rent-cost-legend-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.rent-cost-legend-main strong {
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.rent-cost-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
 }
 
 .loan-context-grid,
@@ -3208,6 +3267,11 @@ textarea {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  .rent-cost-overview-layout,
+  .rent-cost-overview-legend {
+    grid-template-columns: 1fr;
+  }
+
   .rent-summary-grid,
   .rent-statistics-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3299,6 +3363,9 @@ textarea {
   .rent-statistics-grid,
   .rent-channel-form-grid,
   .rent-detail-grid,
+  .rent-cost-overview-layout,
+  .rent-cost-overview-metrics,
+  .rent-cost-overview-legend,
   .shopping-entry-grid-records,
   .shopping-filter-grid,
   .shopping-filter-grid-dashboard,

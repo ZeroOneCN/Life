@@ -67,12 +67,13 @@ export function RentStatisticsSection({
   const overview = useMemo(() => buildRentOverview(records, channels, userId), [records, channels, userId]);
   const costBreakdown = useMemo(() => buildRentCostBreakdown(records, userId), [records, userId]);
   const channelBreakdown = useMemo(() => buildRentChannelBreakdown(records, channels, userId), [records, channels, userId]);
+  const topCostItems = costBreakdown.slice(0, 6);
 
   return (
     <SectionCard
       title="统计分析"
-      description="从住房档案中自动提取居住天数、总成本、费用结构和渠道分布，帮助你回看每段租住周期的真实成本。"
-      action={<Tag tone="blue">押金单独展示，不计入成本图表</Tag>}
+      description="围绕当前用户的住房档案，查看总成本、费用结构和租房渠道分布。押金会单独展示，但不会混入成本图表。"
+      action={<Tag tone="blue">成本统计默认排除押金</Tag>}
     >
       <div className="page-stack">
         <div className="rent-context-grid">
@@ -81,7 +82,7 @@ export function RentStatisticsSection({
             value={userId}
             onChange={(event) => onUserIdChange(event.target.value)}
             placeholder="留空查看全部用户"
-            hint="总览卡、费用结构和渠道分布都会跟随这里刷新。"
+            hint="总览卡、费用结构和渠道分布都会跟随这里联动刷新。"
           />
         </div>
 
@@ -104,40 +105,69 @@ export function RentStatisticsSection({
         <div className="rent-statistics-grid">
           <ChartCard
             title="费用结构占比"
-            description="不含押金，只统计真实居住成本。"
-            className="rent-chart-card-compact"
+            description="这张卡改成横向短布局，重点快速看清成本构成，而不是占掉太多垂直空间。"
+            className="rent-chart-card-wide"
           >
             {costBreakdown.length ? (
-              <div className="fitness-chart-shell">
-                <ResponsiveContainer width="100%" height={260}>
-                  <PieChart>
-                    <Pie
-                      data={costBreakdown}
-                      dataKey="value"
-                      nameKey="label"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={74}
-                      label={({ name, percent }) => `${name} ${(Number(percent ?? 0) * 100).toFixed(0)}%`}
-                      labelLine={false}
-                    >
-                      {costBreakdown.map((item) => (
-                        <Cell key={item.key} fill={item.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={tooltipStyle}
-                      formatter={(value) => [formatRentAmount(Number(value ?? 0)), '金额']}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+              <div className="rent-cost-overview-layout">
+                <div className="rent-cost-overview-chart">
+                  <ResponsiveContainer width="100%" height={210}>
+                    <PieChart>
+                      <Pie
+                        data={costBreakdown}
+                        dataKey="value"
+                        nameKey="label"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={66}
+                        innerRadius={34}
+                        paddingAngle={2}
+                        labelLine={false}
+                      >
+                        {costBreakdown.map((item) => (
+                          <Cell key={item.key} fill={item.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        formatter={(value) => [formatRentAmount(Number(value ?? 0)), '金额']}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="rent-cost-overview-copy">
+                  <div className="rent-cost-overview-metrics">
+                    <div className="callout callout-neutral">
+                      <strong>成本总额</strong>
+                      <span>{formatRentAmount(overview.totalCost)}</span>
+                    </div>
+                    <div className="callout callout-neutral">
+                      <strong>主成本项</strong>
+                      <span>{costBreakdown[0]?.label ?? '暂无'}</span>
+                    </div>
+                  </div>
+
+                  <div className="rent-cost-overview-legend">
+                    {topCostItems.map((item) => (
+                      <article key={item.key} className="rent-cost-legend-item">
+                        <div className="rent-cost-legend-main">
+                          <span className="rent-cost-legend-dot" style={{ background: item.color }} />
+                          <strong>{item.label}</strong>
+                        </div>
+                        <span>{formatRentAmount(item.value)}</span>
+                        <span>{item.percentage.toFixed(2)}%</span>
+                      </article>
+                    ))}
+                  </div>
+                </div>
               </div>
             ) : (
-              <EmptyState title="暂无费用结构数据" description="先补充住房费用记录，图表才会形成占比。" />
+              <EmptyState title="暂无费用结构数据" description="先补充住房费用记录，图表和占比摘要才会出现。" />
             )}
           </ChartCard>
 
-          <ChartCard title="费用结构明细" description="查看每一类费用的金额和占比。">
+          <ChartCard title="费用结构明细" description="逐项查看每一类费用的金额和占比。">
             {costBreakdown.length ? (
               <div className="rent-breakdown-list">
                 {costBreakdown.map((item) => (
@@ -151,7 +181,7 @@ export function RentStatisticsSection({
                     </div>
                     <div className="rent-breakdown-foot">
                       <span>{formatRentAmount(item.value)}</span>
-                      <span>颜色已同步主题图表</span>
+                      <span>按累计住房成本聚合</span>
                     </div>
                   </article>
                 ))}
@@ -187,7 +217,7 @@ export function RentStatisticsSection({
                 </ResponsiveContainer>
               </div>
             ) : (
-              <EmptyState title="暂无渠道分布数据" description="如果某个用户还没有住房记录，渠道分布会在这里保持空状态。" />
+              <EmptyState title="暂无渠道分布数据" description="如果当前用户还没有住房记录，渠道分布会在这里保持空状态。" />
             )}
           </ChartCard>
         </div>
