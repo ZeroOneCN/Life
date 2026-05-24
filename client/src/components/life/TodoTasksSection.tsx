@@ -165,6 +165,14 @@ export function TodoTasksSection({
 
   const allPageSelected = pageTasks.length > 0 && pageTasks.every((task) => selectedTaskIds.includes(task.id));
   const hasSelection = selectedTaskIds.length > 0;
+  const hasActiveFilters = Boolean(
+    keyword
+    || statusFilter !== 'all'
+    || priorityFilter !== 'all'
+    || tagFilter !== 'all'
+    || dueStartDate
+    || dueEndDate,
+  );
 
   const handleCreate = () => {
     const draft = parseDraft(form);
@@ -226,95 +234,136 @@ export function TodoTasksSection({
     showToast('任务已移入回收站。');
   };
 
+  const resetFilters = () => {
+    setKeyword('');
+    setStatusFilter('all');
+    setPriorityFilter('all');
+    setTagFilter('all');
+    setDueStartDate('');
+    setDueEndDate('');
+  };
+
   return (
     <SectionCard
       title="任务列表"
-      description="在当前页完成新增、筛选、编辑、批量完成和软删除，所有提醒都会基于这里的有效任务自动计算。"
+      description="把快速录入、筛选视图和任务表统一收在一个工作台里，方便连续录入和集中清理待办。"
     >
       <div className="page-stack">
-        <div className="todo-entry-grid">
-          <Field
-            label="任务标题"
-            value={form.title}
-            onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-            placeholder="例如：确认周会材料"
-          />
-          <DatePickerField
-            label="截止日期"
-            value={form.dueDate}
-            onChange={(value) => setForm((current) => ({ ...current, dueDate: value }))}
-            clearable
-            popoverStrategy="floating"
-          />
-          <label className="todo-checkbox-field">
-            <span className="field-label">重复规则</span>
-            <Checkbox
-              checked={form.isDaily}
-              onChange={(checked) => setForm((current) => ({ ...current, isDaily: checked }))}
-            >
-              每日任务
-            </Checkbox>
-          </label>
-          <SelectField
-            label="优先级"
-            value={form.priority}
-            onChange={(event) => setForm((current) => ({ ...current, priority: event.target.value as TodoPriority }))}
-          >
-            <option value="high">高优先级</option>
-            <option value="medium">中优先级</option>
-            <option value="low">低优先级</option>
-          </SelectField>
-          <Field
-            label="标签"
-            value={form.tagsText}
-            onChange={(event) => setForm((current) => ({ ...current, tagsText: event.target.value }))}
-            placeholder="用逗号分隔多个标签"
-          />
-          <div className="todo-entry-action">
-            <Btn tone="primary" onClick={handleCreate}>保存任务</Btn>
-          </div>
-        </div>
+        <div className="todo-top-grid">
+          <div className="todo-panel">
+            <div className="todo-panel-head">
+              <div>
+                <strong>快速录入</strong>
+                <span>常用字段保持一屏完成，描述放到编辑弹窗里再细化。</span>
+              </div>
+              <Tag tone="blue">单行优先</Tag>
+            </div>
 
-        <div className="todo-filter-grid">
-          <Field
-            label="关键词"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="搜索标题、描述或标签"
-          />
-          <SelectField label="状态" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}>
-            <option value="all">全部状态</option>
-            <option value="active">进行中</option>
-            <option value="completed">已完成</option>
-            <option value="overdue">已逾期</option>
-            <option value="daily">每日任务</option>
-          </SelectField>
-          <SelectField label="优先级" value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value as typeof priorityFilter)}>
-            <option value="all">全部优先级</option>
-            <option value="high">高优先级</option>
-            <option value="medium">中优先级</option>
-            <option value="low">低优先级</option>
-          </SelectField>
-          <SelectField label="标签筛选" value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
-            <option value="all">全部标签</option>
-            {availableTags.map((tag) => (
-              <option key={tag} value={tag}>{tag}</option>
-            ))}
-          </SelectField>
-          <DatePickerField
-            label="到期开始"
-            value={dueStartDate}
-            onChange={setDueStartDate}
-            clearable
-            popoverStrategy="floating"
-          />
-          <DatePickerField
-            label="到期结束"
-            value={dueEndDate}
-            onChange={setDueEndDate}
-            clearable
-            popoverStrategy="floating"
-          />
+            <div className="todo-entry-grid">
+              <Field
+                label="任务标题"
+                value={form.title}
+                onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+                placeholder="例如：确认周会材料"
+              />
+              <DatePickerField
+                label="截止日期"
+                value={form.dueDate}
+                onChange={(value) => setForm((current) => ({ ...current, dueDate: value }))}
+                clearable
+                popoverStrategy="floating"
+              />
+              <label className="todo-checkbox-field">
+                <span className="field-label">重复规则</span>
+                <Checkbox
+                  checked={form.isDaily}
+                  onChange={(checked) => setForm((current) => ({ ...current, isDaily: checked }))}
+                >
+                  每日任务
+                </Checkbox>
+              </label>
+              <SelectField
+                label="优先级"
+                value={form.priority}
+                onChange={(event) => setForm((current) => ({ ...current, priority: event.target.value as TodoPriority }))}
+              >
+                <option value="high">高优先级</option>
+                <option value="medium">中优先级</option>
+                <option value="low">低优先级</option>
+              </SelectField>
+              <Field
+                label="标签"
+                value={form.tagsText}
+                onChange={(event) => setForm((current) => ({ ...current, tagsText: event.target.value }))}
+                placeholder="用逗号分隔多个标签"
+              />
+              <div className="todo-entry-action">
+                <Btn tone="primary" onClick={handleCreate}>保存任务</Btn>
+              </div>
+            </div>
+          </div>
+
+          <div className="todo-panel">
+            <div className="todo-panel-head">
+              <div>
+                <strong>筛选视图</strong>
+                <span>按状态、优先级、标签和到期窗口快速收敛当前任务集。</span>
+              </div>
+              <div className="todo-filter-meta">
+                <Tag>当前 {filteredTasks.length} 项</Tag>
+                {selectedTaskIds.length ? <Tag tone="blue">已选 {selectedTaskIds.length} 项</Tag> : null}
+              </div>
+            </div>
+
+            <div className="todo-filter-grid">
+              <Field
+                label="关键词"
+                value={keyword}
+                onChange={(event) => setKeyword(event.target.value)}
+                placeholder="搜索标题、描述或标签"
+              />
+              <SelectField label="状态" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}>
+                <option value="all">全部状态</option>
+                <option value="active">进行中</option>
+                <option value="completed">已完成</option>
+                <option value="overdue">已逾期</option>
+                <option value="daily">每日任务</option>
+              </SelectField>
+              <SelectField label="优先级" value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value as typeof priorityFilter)}>
+                <option value="all">全部优先级</option>
+                <option value="high">高优先级</option>
+                <option value="medium">中优先级</option>
+                <option value="low">低优先级</option>
+              </SelectField>
+              <SelectField label="标签筛选" value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
+                <option value="all">全部标签</option>
+                {availableTags.map((tag) => (
+                  <option key={tag} value={tag}>{tag}</option>
+                ))}
+              </SelectField>
+              <DatePickerField
+                label="到期开始"
+                value={dueStartDate}
+                onChange={setDueStartDate}
+                clearable
+                popoverStrategy="floating"
+              />
+              <DatePickerField
+                label="到期结束"
+                value={dueEndDate}
+                onChange={setDueEndDate}
+                clearable
+                popoverStrategy="floating"
+              />
+            </div>
+
+            <div className="todo-filter-actions">
+              <span className="subtle-text">
+                {hasActiveFilters ? '当前正在查看筛选后的任务集。' : '当前显示全部未删除任务。'}
+              </span>
+              <Btn tone="ghost" disabled={!hasActiveFilters} onClick={resetFilters}>重置筛选</Btn>
+            </div>
+          </div>
         </div>
 
         {hasSelection ? (
@@ -346,6 +395,17 @@ export function TodoTasksSection({
           </div>
         ) : null}
 
+        <div className="todo-list-meta">
+          <div>
+            <strong>任务结果</strong>
+            <span>当前页 {pageTasks.length} 项，共 {filteredTasks.length} 项匹配结果。</span>
+          </div>
+          <div className="todo-filter-meta">
+            <Tag tone="green">已完成 {tasks.filter((task) => task.completed && !task.trashedAt).length}</Tag>
+            <Tag tone="orange">进行中 {tasks.filter((task) => !task.completed && !task.trashedAt).length}</Tag>
+          </div>
+        </div>
+
         {filteredTasks.length ? (
           <>
             <DataTable
@@ -359,7 +419,7 @@ export function TodoTasksSection({
                       全选
                     </Checkbox>
                   ),
-                  width: 120,
+                  width: 96,
                   render: (_, row) => (
                     <Checkbox
                       checked={selectedTaskIds.includes(row.id)}
@@ -380,6 +440,7 @@ export function TodoTasksSection({
                 {
                   key: 'priority',
                   title: '优先级',
+                  width: 120,
                   render: (_, row) => <Tag tone={TODO_PRIORITY_TAG_TONES[row.priority]}>{getTodoPriorityLabel(row.priority)}</Tag>,
                 },
                 {
@@ -394,22 +455,25 @@ export function TodoTasksSection({
                 {
                   key: 'dueDate',
                   title: '截止日期',
+                  width: 120,
                   render: (_, row) => row.dueDate || '-',
                 },
                 {
                   key: 'status',
                   title: '状态',
+                  width: 120,
                   render: (_, row) => <Tag tone={getStatusTone(row)}>{getTodoStatusLabel(row)}</Tag>,
                 },
                 {
                   key: 'daily',
                   title: '每日任务',
+                  width: 96,
                   render: (_, row) => (row.isDaily ? '是' : '否'),
                 },
                 {
                   key: 'actions',
                   title: '操作',
-                  width: 260,
+                  width: 220,
                   render: (_, row) => (
                     <div className="todo-table-actions">
                       <Btn

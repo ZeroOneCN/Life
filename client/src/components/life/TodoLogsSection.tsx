@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { NotificationLogTable } from '../NotificationLogTable';
 import { SectionCard } from '../page';
-import { Btn, Pagination } from '../ui';
+import { Btn, Pagination, Tag } from '../ui';
 import { TODO_LOG_PAGE_SIZE } from '../../services/todo';
 import { useNotificationCenterState } from '../../services/notificationCenter';
 
@@ -34,10 +34,21 @@ export function TodoLogsSection({ showToast }: TodoLogsSectionProps) {
   return (
     <SectionCard
       title="通知日志"
-      description="这里聚合展示待办场景产生的提醒记录，完整日志和渠道测试仍可前往通知中心查看。"
+      description="这里聚合展示待办提醒场景写入通知中心的记录，说明列收敛为更紧凑的摘要，方便快速扫读。"
       action={<Btn tone="secondary" onClick={() => showToast('通知日志已刷新。')}>刷新</Btn>}
     >
       <div className="page-stack">
+        <div className="todo-list-meta">
+          <div>
+            <strong>日志摘要</strong>
+            <span>当前共有 {logs.length} 条待办提醒日志，本页显示 {pageLogs.length} 条。</span>
+          </div>
+          <div className="todo-filter-meta">
+            <Tag tone="blue">场景 todo.reminder</Tag>
+            <Tag>第 {page} / {totalPages} 页</Tag>
+          </div>
+        </div>
+
         <NotificationLogTable logs={pageLogs} />
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>

@@ -3808,18 +3808,66 @@ textarea {
   gap: 14px;
 }
 
+.todo-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.todo-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface-3) 82%, transparent), color-mix(in srgb, var(--color-surface-2) 98%, transparent));
+}
+
+.todo-panel-head,
+.todo-list-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.todo-panel-head strong,
+.todo-list-meta strong {
+  display: block;
+  color: var(--color-ink);
+  font-size: 15px;
+}
+
+.todo-panel-head span,
+.todo-list-meta span {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.todo-filter-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .todo-entry-grid {
-  grid-template-columns: minmax(260px, 1.6fr) minmax(170px, 1fr) minmax(150px, 0.9fr) minmax(170px, 1fr) minmax(220px, 1.2fr) 168px;
+  grid-template-columns: minmax(260px, 1.8fr) minmax(170px, 1fr) minmax(150px, 0.95fr) minmax(160px, 1fr) minmax(210px, 1.15fr) 152px;
   align-items: end;
 }
 
 .todo-filter-grid {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: end;
 }
 
 .todo-filter-grid > .field:first-child {
-  grid-column: span 2;
+  grid-column: span 3;
 }
 
 .todo-trash-filter-grid {
@@ -3852,6 +3900,14 @@ textarea {
   background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface-2));
 }
 
+.todo-filter-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .todo-task-title-cell {
   display: grid;
   gap: 4px;
@@ -3872,6 +3928,14 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.notification-log-message {
+  max-width: 320px;
+  white-space: normal;
+  line-height: 1.65;
+  color: var(--color-ink-muted);
+  word-break: break-word;
 }
 
 .todo-modal-grid {
@@ -4038,6 +4102,7 @@ textarea {
   .subscription-modal-grid,
   .subscription-modal-grid-small,
   .todo-overview-grid,
+  .todo-top-grid,
   .todo-entry-grid,
   .todo-filter-grid,
   .todo-trash-filter-grid,
@@ -4096,6 +4161,21 @@ textarea {
   }
 
   .todo-batch-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .todo-panel-head,
+  .todo-list-meta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .todo-filter-meta {
+    justify-content: flex-start;
+  }
+
+  .todo-filter-actions {
     flex-direction: column;
     align-items: stretch;
   }
