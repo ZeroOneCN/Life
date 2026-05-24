@@ -237,11 +237,19 @@ function normalizeSceneConfig(
   const validChannels = Array.isArray(stored?.channels)
     ? stored.channels.filter((channel): channel is NotificationChannelType => channel in defaultChannels)
     : base.channels;
+  const normalizedLabel = sceneId === 'todo.reminder' ? '待办提醒' : base.label;
+  const normalizedSummary = sceneId === 'todo.reminder' ? '每天汇总今日待办和临近截止任务。' : base.summary;
+  const normalizedDescription = sceneId === 'todo.reminder'
+    ? '用于提醒待办事项、拖延风险和当日优先级。'
+    : base.description;
 
   return {
-    ...base,
     ...stored,
     id: sceneId,
+    label: normalizedLabel,
+    summary: normalizedSummary,
+    description: normalizedDescription,
+    enabled: stored?.enabled ?? base.enabled,
     channels: validChannels.length ? validChannels : base.channels,
   };
 }

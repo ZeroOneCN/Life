@@ -6,7 +6,7 @@ export function NotificationLogTable({ logs }: { logs: NotificationLogEntry[] })
     <DataTable
       data={logs}
       rowKey="id"
-      emptyText="通知中心尚无发送记录"
+      emptyText="通知中心暂无发送记录"
       columns={[
         {
           key: 'createdAt',

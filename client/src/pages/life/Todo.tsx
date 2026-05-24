@@ -1,177 +1,144 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 
-import { NotificationStatusCard } from '../../components/NotificationStatusCard';
+import { TodoLogsSection } from '../../components/life/TodoLogsSection';
+import { TodoSettingsSection } from '../../components/life/TodoSettingsSection';
+import { TodoTasksSection } from '../../components/life/TodoTasksSection';
+import { TodoTrashSection } from '../../components/life/TodoTrashSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
-import { SettingSwitchCard } from '../../components/SettingSwitchCard';
-import { Btn, Checkbox, Field, PillTabs, SelectField, Toast, useToastState } from '../../components/ui';
+import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { useLocalStorageState } from '../../hooks/useLocalStorageState';
 import { usePageTab } from '../../hooks/usePageTab';
+import {
+  buildDueTodoReminder,
+  buildInitialTodoState,
+  buildTodoOverview,
+  normalizeTodoPageState,
+} from '../../services/todo';
 import { enqueueSceneNotification, updateSceneConfig } from '../../services/notificationCenter';
-import type { TodoPageState } from '../../types/pages';
+import type { TodoPageState, TodoTab } from '../../types/todo';
 
-const STORAGE_KEY = 'lifeos_todo_page';
+const STORAGE_KEY = 'lifeos_life_todo_page';
 
-const initialState: TodoPageState = {
-  tasks: [
-    { id: 'todo-1', title: '准备本周项目复盘', category: '工作', dueDate: '今天', completed: false },
-    { id: 'todo-2', title: '整理出差报销单据', category: '财务', dueDate: '明天', completed: false },
-    { id: 'todo-3', title: '预约年度体检', category: '健康', dueDate: '本周', completed: true },
-  ],
-  settings: {
-    reminderEnabled: true,
-  },
-};
-
-const tabOptions = [
+const TAB_OPTIONS: Array<{ value: TodoTab; label: string }> = [
   { value: 'tasks', label: '任务列表' },
   { value: 'settings', label: '提醒设置' },
-] as const;
+  { value: 'logs', label: '通知日志' },
+  { value: 'trash', label: '回收站' },
+];
 
 export default function TodoPage() {
-  const [data, setData] = useLocalStorageState<TodoPageState>(STORAGE_KEY, initialState);
-  const [tab, setTab] = usePageTab('tasks', tabOptions.map((item) => item.value));
-  const [taskTitle, setTaskTitle] = useState('');
-  const [taskCategory, setTaskCategory] = useState('生活');
+  const [data, setData] = useLocalStorageState<TodoPageState>(STORAGE_KEY, buildInitialTodoState);
+  const [tab, setTab] = usePageTab<TodoTab>('tasks', TAB_OPTIONS.map((item) => item.value), 'todoTab');
   const { toast, showToast } = useToastState();
+  const normalizedData = useMemo(() => normalizeTodoPageState(data), [data]);
 
-  const pendingCount = useMemo(
-    () => data.tasks.filter((task) => !task.completed).length,
-    [data.tasks],
-  );
+  useEffect(() => {
+    const shouldSync = JSON.stringify(normalizedData) !== JSON.stringify(data);
 
-  const completedCount = data.tasks.length - pendingCount;
+    if (shouldSync) {
+      setData(normalizedData);
+    }
+  }, [data, normalizedData, setData]);
 
-  const addTask = () => {
-    if (!taskTitle.trim()) {
-      showToast('请输入待办标题。', 'error');
+  useEffect(() => {
+    updateSceneConfig('todo.reminder', { enabled: normalizedData.settings.reminderEnabled });
+  }, [normalizedData.settings.reminderEnabled]);
+
+  useEffect(() => {
+    const payload = buildDueTodoReminder(normalizedData.tasks, normalizedData.settings);
+
+    if (!payload) {
       return;
     }
 
+    enqueueSceneNotification('todo.reminder', { message: payload.message });
+
     setData((previous) => ({
       ...previous,
-      tasks: [
-        {
-          id: Math.random().toString(36).slice(2, 10),
-          title: taskTitle.trim(),
-          category: taskCategory,
-          dueDate: '待安排',
-          completed: false,
-        },
-        ...previous.tasks,
-      ],
+      settings: {
+        ...previous.settings,
+        lastAutoReminderDate: payload.date,
+      },
     }));
-    setTaskTitle('');
-    showToast('待办事项已创建。');
+  }, [normalizedData.settings, normalizedData.tasks, setData]);
+
+  const overview = useMemo(() => buildTodoOverview(normalizedData.tasks), [normalizedData.tasks]);
+
+  const updateSettings = (patch: Partial<TodoPageState['settings']>) => {
+    setData((previous) => ({
+      ...previous,
+      settings: {
+        ...previous.settings,
+        ...patch,
+      },
+    }));
   };
 
   return (
     <div className="page-stack">
       <PageHeader
-        title="待办事项"
-        subtitle="通知设置和发送记录已统一迁移到通知中心，这里只保留业务开关和任务触发。"
-        actions={(
-          <Btn
-            tone="primary"
-            onClick={() => {
-              const result = enqueueSceneNotification('todo.reminder', {
-                message: `今天有 ${pendingCount} 条待办仍未完成，请优先处理。`,
-              });
-              showToast(result.some((item) => item.status === 'success') ? '待办提醒已写入通知中心。' : '待办提醒未发送，通知中心可能未启用对应渠道。', result.some((item) => item.status === 'success') ? 'success' : 'error');
-            }}
-          >
-            发送今日提醒
-          </Btn>
-        )}
+        title="待办事项中心"
+        subtitle="把任务录入、提醒规则、通知日志和回收站统一收进当前 LifeOS 的正式前端体系，提醒场景继续复用通知中心。"
       />
 
-      <PillTabs
-        options={tabOptions.map((item) => ({ value: item.value, label: item.label }))}
-        value={tab}
-        onChange={(value) => setTab(value as (typeof tabOptions)[number]['value'])}
+      <StatGrid
+        className="todo-overview-grid"
+        items={[
+          { label: '总任务', value: `${overview.totalCount}` },
+          { label: '进行中', value: `${overview.activeCount}` },
+          { label: '已完成', value: `${overview.completedCount}` },
+          { label: '每日任务', value: `${overview.dailyCount}` },
+          { label: '高优先级', value: `${overview.highPriorityCount}` },
+          { label: '中优先级', value: `${overview.mediumPriorityCount}` },
+          { label: '低优先级', value: `${overview.lowPriorityCount}` },
+          { label: '今日到期', value: `${overview.dueTodayCount}` },
+        ]}
       />
+
+      <SectionCard
+        title="业务视图"
+        description="任务列表、提醒设置、通知日志和回收站共用同一套本地状态模型与通知中心联动规则。"
+      >
+        <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as TodoTab)} />
+      </SectionCard>
 
       {tab === 'tasks' ? (
-        <>
-          <StatGrid
-            items={[
-              { label: '待办总数', value: `${data.tasks.length}` },
-              { label: '待完成', value: `${pendingCount}`, helper: '将进入提醒摘要' },
-              { label: '已完成', value: `${completedCount}` },
-            ]}
-          />
-          <SectionCard title="新增任务" description="轻量记录今天要处理的事项。">
-            <div className="form-grid">
-              <Field
-                label="任务标题"
-                value={taskTitle}
-                onChange={(event) => setTaskTitle(event.target.value)}
-                placeholder="例如：确认周会材料"
-              />
-              <SelectField label="分类" value={taskCategory} onChange={(event) => setTaskCategory(event.target.value)}>
-                  <option value="生活">生活</option>
-                  <option value="工作">工作</option>
-                  <option value="健康">健康</option>
-                  <option value="财务">财务</option>
-              </SelectField>
-            </div>
-            <Btn tone="primary" onClick={addTask}>添加待办</Btn>
-          </SectionCard>
-          <SectionCard title="任务列表" description="可以在这里快速勾选完成，提醒汇总会自动读取未完成任务。">
-            <div className="stack-list">
-              {data.tasks.map((task) => (
-                <div className="list-row" key={task.id}>
-                  <Checkbox
-                    checked={task.completed}
-                    onChange={(checked) => {
-                      setData((previous) => ({
-                        ...previous,
-                        tasks: previous.tasks.map((item) => (
-                          item.id === task.id
-                            ? { ...item, completed: checked }
-                            : item
-                        )),
-                      }));
-                    }}
-                  >
-                    <span className={task.completed ? 'completed-text' : ''}>{task.title}</span>
-                  </Checkbox>
-                  <div className="list-row-meta">
-                    <span>{task.category}</span>
-                    <span>{task.dueDate}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-        </>
+        <TodoTasksSection
+          tasks={normalizedData.tasks}
+          onChangeTasks={(updater) => {
+            setData((previous) => ({
+              ...previous,
+              tasks: updater(previous.tasks),
+            }));
+          }}
+          showToast={showToast}
+        />
       ) : null}
 
       {tab === 'settings' ? (
-        <div className="page-stack">
-          <SettingSwitchCard
-            title="待办提醒开关"
-            description="控制待办事项是否向通知中心发起提醒请求。"
-            checked={data.settings.reminderEnabled}
-            onChange={(checked) => {
-              setData((previous) => ({
-                ...previous,
-                settings: {
-                  ...previous.settings,
-                  reminderEnabled: checked,
-                },
-              }));
-              updateSceneConfig('todo.reminder', { enabled: checked });
-              showToast(`待办提醒已${checked ? '启用' : '停用'}。`);
-            }}
-            statusText={data.settings.reminderEnabled ? '已启用' : '已停用'}
-            impact="开启后，页面中的“发送今日提醒”动作会通过通知中心统一发送。"
-          />
-          <NotificationStatusCard
-            sceneId="todo.reminder"
-            title="通知中心场景状态"
-            summary="查看当前绑定渠道、启用状态和统一发送入口。"
-          />
-        </div>
+        <TodoSettingsSection
+          tasks={normalizedData.tasks}
+          settings={normalizedData.settings}
+          onSettingsChange={updateSettings}
+          showToast={showToast}
+        />
+      ) : null}
+
+      {tab === 'logs' ? (
+        <TodoLogsSection showToast={showToast} />
+      ) : null}
+
+      {tab === 'trash' ? (
+        <TodoTrashSection
+          tasks={normalizedData.tasks}
+          onChangeTasks={(updater) => {
+            setData((previous) => ({
+              ...previous,
+              tasks: updater(previous.tasks),
+            }));
+          }}
+          showToast={showToast}
+        />
       ) : null}
 
       <Toast toast={toast} />

@@ -3793,6 +3793,176 @@ textarea {
   align-items: center;
 }
 
+.todo-overview-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.todo-entry-grid,
+.todo-filter-grid,
+.todo-trash-filter-grid,
+.todo-settings-grid,
+.todo-settings-inline-grid,
+.todo-modal-grid,
+.todo-markdown-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.todo-entry-grid {
+  grid-template-columns: minmax(260px, 1.6fr) minmax(170px, 1fr) minmax(150px, 0.9fr) minmax(170px, 1fr) minmax(220px, 1.2fr) 168px;
+  align-items: end;
+}
+
+.todo-filter-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: end;
+}
+
+.todo-filter-grid > .field:first-child {
+  grid-column: span 2;
+}
+
+.todo-trash-filter-grid {
+  grid-template-columns: minmax(260px, 1.4fr) minmax(180px, 0.8fr);
+  align-items: end;
+}
+
+.todo-entry-action {
+  display: flex;
+  align-items: flex-end;
+}
+
+.todo-entry-action .btn {
+  width: 100%;
+}
+
+.todo-checkbox-field {
+  display: grid;
+  gap: 8px;
+}
+
+.todo-batch-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--color-hairline));
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface-2));
+}
+
+.todo-task-title-cell {
+  display: grid;
+  gap: 4px;
+}
+
+.todo-task-title-cell span {
+  color: var(--color-ink-subtle);
+  font-size: 12px;
+}
+
+.todo-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.todo-table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.todo-modal-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.todo-modal-grid > .field:first-child {
+  grid-column: span 2;
+}
+
+.todo-modal-grid > .todo-checkbox-field {
+  grid-column: span 1;
+}
+
+.todo-markdown-grid {
+  grid-template-columns: 1.1fr 0.9fr;
+  align-items: start;
+}
+
+.todo-markdown-preview {
+  padding: 16px;
+  min-height: 100%;
+}
+
+.todo-markdown-preview-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.todo-markdown-preview-body {
+  display: grid;
+  gap: 12px;
+  color: var(--color-ink-muted);
+}
+
+.todo-markdown-preview-body h1,
+.todo-markdown-preview-body h2,
+.todo-markdown-preview-body h3 {
+  margin: 0;
+  color: var(--color-ink);
+}
+
+.todo-markdown-preview-body p,
+.todo-markdown-preview-body ul,
+.todo-markdown-preview-body blockquote,
+.todo-markdown-preview-body pre {
+  margin: 0;
+}
+
+.todo-markdown-preview-body ul {
+  padding-left: 20px;
+}
+
+.todo-markdown-preview-body blockquote {
+  border-left: 3px solid var(--color-primary);
+  padding-left: 12px;
+  color: var(--color-ink-subtle);
+}
+
+.todo-markdown-preview-body code {
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-surface-3) 92%, transparent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.todo-markdown-preview-body pre {
+  overflow-x: auto;
+  padding: 14px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-surface-3) 92%, transparent);
+}
+
+.todo-settings-grid {
+  grid-template-columns: 1.25fr 0.75fr;
+}
+
+.todo-settings-inline-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.todo-reminder-preview strong,
+.todo-reminder-preview span {
+  display: block;
+}
+
 @media (max-width: 960px) {
   .fitness-overview-grid,
   .fitness-entry-grid-diet,
@@ -3866,7 +4036,15 @@ textarea {
   .subscription-notification-grid,
   .subscription-settings-inline,
   .subscription-modal-grid,
-  .subscription-modal-grid-small {
+  .subscription-modal-grid-small,
+  .todo-overview-grid,
+  .todo-entry-grid,
+  .todo-filter-grid,
+  .todo-trash-filter-grid,
+  .todo-settings-grid,
+  .todo-settings-inline-grid,
+  .todo-modal-grid,
+  .todo-markdown-grid {
     grid-template-columns: 1fr;
   }
 
@@ -3915,5 +4093,19 @@ textarea {
 
   .subscription-upcoming-item {
     grid-template-columns: 1fr;
+  }
+
+  .todo-batch-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .todo-table-actions {
+    flex-direction: column;
+  }
+
+  .todo-markdown-preview-head {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
