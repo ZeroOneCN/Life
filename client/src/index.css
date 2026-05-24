@@ -3250,7 +3250,7 @@ textarea {
 .forex-insight-grid,
 .forex-calculator-result-grid {
   display: grid;
-  gap: 18px;
+  gap: 20px;
 }
 
 .visually-hidden {
@@ -3290,7 +3290,7 @@ textarea {
   align-items: start;
 }
 
-.forex-dashboard-grid > :first-child {
+.forex-chart-card-wide {
   grid-column: 1 / -1;
 }
 
@@ -3374,13 +3374,13 @@ textarea {
 }
 
 .forex-dashboard-stat-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .forex-calculator-stat-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .forex-import-result {
@@ -3432,11 +3432,6 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.forex-instrument-panel {
-  display: grid;
-  gap: 18px;
-}
-
 .forex-result-card,
 .forex-instrument-summary-card,
 .forex-insight-card {
@@ -3470,8 +3465,53 @@ textarea {
   font-size: 15px;
 }
 
-.forex-chart-card-compact {
-  max-width: 440px;
+.forex-chart-card-distribution,
+.forex-chart-card-instrument {
+  min-height: 100%;
+}
+
+.forex-distribution-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+}
+
+.forex-distribution-legend {
+  display: grid;
+  gap: 12px;
+}
+
+.forex-distribution-item {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-3) 78%, transparent), var(--color-surface-2));
+}
+
+.forex-distribution-item strong {
+  color: var(--color-ink);
+  font-size: 14px;
+}
+
+.forex-distribution-item span {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.forex-distribution-item-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.forex-distribution-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
 }
 
 @media (max-width: 1280px) {
@@ -3596,8 +3636,16 @@ textarea {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .forex-chart-card-compact {
-    max-width: none;
+  .forex-dashboard-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .forex-calculator-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .forex-distribution-layout {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -3699,7 +3747,12 @@ textarea {
     width: 100%;
   }
 
-  .forex-dashboard-grid > :first-child {
-    grid-column: auto;
+  .forex-chart-card-wide {
+    grid-column: 1 / -1;
+  }
+
+  .forex-dashboard-stat-grid,
+  .forex-calculator-stat-grid {
+    grid-template-columns: 1fr;
   }
 }

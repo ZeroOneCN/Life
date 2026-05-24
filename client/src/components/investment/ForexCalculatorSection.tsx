@@ -13,6 +13,7 @@ import {
   getForexOrderTypeLabel,
 } from '../../services/forex';
 import type { ForexCalculationResult, ForexCalculatorPositionDraft, ForexInstrument, ForexOrderType } from '../../types/forex';
+import { readStorage, writeStorage } from '../../utils/storage';
 
 interface ForexCalculatorSectionProps {
   leverage: number;
@@ -37,6 +38,13 @@ interface PositionFormState {
   closePrice: string;
 }
 
+interface ForexCalculatorDraftState {
+  shared: SharedFormState;
+  positions: PositionFormState[];
+}
+
+const STORAGE_KEY = 'lifeos_investment_forex_calculator_draft';
+
 function buildPositionId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -56,6 +64,52 @@ function createPosition(): PositionFormState {
   };
 }
 
+function createSharedState(leverage: number, forcedLiquidationRatio: number, defaultBalance: number): SharedFormState {
+  return {
+    leverage: String(leverage),
+    balance: defaultBalance > 0 ? defaultBalance.toFixed(2) : '',
+    forcedLiquidationRatio: String(forcedLiquidationRatio || 0.5),
+  };
+}
+
+function readDraftState(
+  leverage: number,
+  forcedLiquidationRatio: number,
+  defaultBalance: number,
+): ForexCalculatorDraftState {
+  const fallback: ForexCalculatorDraftState = {
+    shared: createSharedState(leverage, forcedLiquidationRatio, defaultBalance),
+    positions: [createPosition()],
+  };
+
+  const stored = readStorage<Partial<ForexCalculatorDraftState> | null>(STORAGE_KEY, null);
+
+  if (!stored) {
+    return fallback;
+  }
+
+  const shared = stored.shared ?? fallback.shared;
+  const positions = Array.isArray(stored.positions) && stored.positions.length
+    ? stored.positions.map((position) => ({
+      id: position.id || buildPositionId(),
+      instrument: (position.instrument === 'XAGUSD' ? 'XAGUSD' : 'XAUUSD') as ForexInstrument,
+      orderType: (position.orderType === 'sell' ? 'sell' : 'buy') as ForexOrderType,
+      openPrice: String(position.openPrice ?? ''),
+      lotSize: String(position.lotSize ?? '0.01'),
+      closePrice: String(position.closePrice ?? ''),
+    }))
+    : fallback.positions;
+
+  return {
+    shared: {
+      leverage: shared.leverage || fallback.shared.leverage,
+      balance: shared.balance || fallback.shared.balance,
+      forcedLiquidationRatio: shared.forcedLiquidationRatio || String(forcedLiquidationRatio || 0.5),
+    },
+    positions,
+  };
+}
+
 function toDraftPositions(positions: PositionFormState[]): ForexCalculatorPositionDraft[] {
   return positions
     .map((position) => ({
@@ -66,7 +120,12 @@ function toDraftPositions(positions: PositionFormState[]): ForexCalculatorPositi
       lotSize: Number(position.lotSize),
       closePrice: position.closePrice ? Number(position.closePrice) : null,
     }))
-    .filter((position) => Number.isFinite(position.openPrice) && position.openPrice > 0 && Number.isFinite(position.lotSize) && position.lotSize > 0);
+    .filter((position) => (
+      Number.isFinite(position.openPrice)
+      && position.openPrice > 0
+      && Number.isFinite(position.lotSize)
+      && position.lotSize > 0
+    ));
 }
 
 function SummaryBlock({
@@ -96,21 +155,28 @@ export function ForexCalculatorSection({
   onLeverageChange,
   onForcedLiquidationRatioChange,
 }: ForexCalculatorSectionProps) {
-  const [shared, setShared] = useState<SharedFormState>({
-    leverage: String(leverage),
-    balance: defaultBalance > 0 ? defaultBalance.toFixed(2) : '',
-    forcedLiquidationRatio: String(forcedLiquidationRatio),
-  });
-  const [positions, setPositions] = useState<PositionFormState[]>([createPosition()]);
+  const initialDraft = useMemo(
+    () => readDraftState(leverage, forcedLiquidationRatio || 0.5, defaultBalance),
+    [defaultBalance, forcedLiquidationRatio, leverage],
+  );
+  const [shared, setShared] = useState<SharedFormState>(initialDraft.shared);
+  const [positions, setPositions] = useState<PositionFormState[]>(initialDraft.positions);
 
   useEffect(() => {
-    setShared((current) => ({
-      ...current,
-      leverage: String(leverage),
-      forcedLiquidationRatio: String(forcedLiquidationRatio),
-      balance: current.balance || (defaultBalance > 0 ? defaultBalance.toFixed(2) : ''),
-    }));
-  }, [defaultBalance, forcedLiquidationRatio, leverage]);
+    if (!shared.balance && defaultBalance > 0) {
+      setShared((current) => ({
+        ...current,
+        balance: defaultBalance.toFixed(2),
+      }));
+    }
+  }, [defaultBalance, shared.balance]);
+
+  useEffect(() => {
+    writeStorage(STORAGE_KEY, {
+      shared,
+      positions,
+    } satisfies ForexCalculatorDraftState);
+  }, [positions, shared]);
 
   const result = useMemo(() => {
     const draftPositions = toDraftPositions(positions);
@@ -118,14 +184,14 @@ export function ForexCalculatorSection({
     return computeForexMultiPosition(draftPositions, {
       leverage: Number(shared.leverage) || leverage,
       balance: Number(shared.balance) || 0,
-      forcedLiquidationRatio: Number(shared.forcedLiquidationRatio) || forcedLiquidationRatio,
+      forcedLiquidationRatio: Number(shared.forcedLiquidationRatio) || 0.5,
     });
-  }, [forcedLiquidationRatio, leverage, positions, shared.balance, shared.forcedLiquidationRatio, shared.leverage]);
+  }, [leverage, positions, shared.balance, shared.forcedLiquidationRatio, shared.leverage]);
 
   return (
     <SectionCard
       title="交易计算"
-      description="支持多仓位同时计算保证金、点值、盈亏和风险阈值，适合做贵金属仓位组合的本地演练。"
+      description="支持多仓位同时计算保证金、点值、盈亏和风险阈值，并把计算草稿保存在本地，切页回来也不会丢。"
       action={<Tag tone="blue">自动计算</Tag>}
     >
       <div className="page-stack">
@@ -152,10 +218,10 @@ export function ForexCalculatorSection({
             onChange={(event) => {
               const value = event.target.value;
               setShared((current) => ({ ...current, forcedLiquidationRatio: value }));
-              onForcedLiquidationRatioChange(Number(value) || forcedLiquidationRatio);
+              onForcedLiquidationRatioChange(Number(value) || 0.5);
             }}
             placeholder="0.5"
-            hint="例如 0.5 代表账户权益接近保证金的 50% 时视作风险边界。"
+            hint="默认按 50% 处理，也就是 0.5。"
           />
         </div>
 
