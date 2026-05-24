@@ -359,7 +359,7 @@ export function TravelBooksSection({
         )}
       >
         <div className="travel-modal-layout">
-          <div className="travel-book-form-grid">
+          <div className="travel-book-form-grid travel-book-form-grid-modal">
             <Field
               label="用户 ID"
               value={editingForm.userId}
@@ -370,18 +370,22 @@ export function TravelBooksSection({
               value={editingForm.name}
               onChange={(event) => setEditingForm((previous) => ({ ...previous, name: event.target.value }))}
             />
-            <DatePickerField
+            <div className="travel-book-modal-date-slot">
+              <DatePickerField
               label="开始日期"
               value={editingForm.startDate}
               onChange={(value) => setEditingForm((previous) => ({ ...previous, startDate: value }))}
               clearable={false}
             />
-            <DatePickerField
+            </div>
+            <div className="travel-book-modal-date-slot travel-book-modal-date-slot-end">
+              <DatePickerField
               label="结束日期"
               value={editingForm.endDate}
               onChange={(value) => setEditingForm((previous) => ({ ...previous, endDate: value }))}
               placeholder="可选"
             />
+            </div>
           </div>
           <Field
             label="账本描述"

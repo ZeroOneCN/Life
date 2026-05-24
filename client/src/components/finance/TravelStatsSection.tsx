@@ -48,13 +48,15 @@ function ChartCard({
   title,
   description,
   children,
+  className,
 }: {
   title: string;
   description: string;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="fitness-chart-card">
+    <div className={`fitness-chart-card ${className ?? ''}`.trim()}>
       <div className="fitness-chart-header">
         <strong>{title}</strong>
         <span>{description}</span>
@@ -285,9 +287,9 @@ export function TravelStatsSection({
           <div className="travel-pay-channel-list">
             {payChannels.map((channel) => (
               <div key={channel.id} className="travel-pay-channel-row">
-                <div>
-                  <strong>{channel.value}</strong>
-                  <span>{getTravelPayChannelLabel(channel.value, payChannels)}</span>
+                <div className="travel-pay-channel-copy">
+                  <strong className="travel-pay-channel-label">{getTravelPayChannelLabel(channel.value, payChannels)}</strong>
+                  <span className="travel-pay-channel-code">{channel.value}</span>
                 </div>
                 {editingChannelId === channel.id ? (
                   <div className="travel-pay-channel-actions">

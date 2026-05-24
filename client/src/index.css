@@ -2123,6 +2123,26 @@ textarea {
   align-items: end;
 }
 
+.travel-book-form-grid.travel-book-form-grid-modal {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.travel-book-modal-date-slot {
+  position: relative;
+  min-width: 0;
+}
+
+.travel-book-modal-date-slot .date-popover {
+  width: min(360px, calc(100vw - 72px));
+  min-width: 320px;
+}
+
+.travel-book-modal-date-slot-end .date-popover {
+  left: auto;
+  right: 0;
+}
+
 .travel-record-entry-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -2138,6 +2158,11 @@ textarea {
 
 .travel-dashboard-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.travel-chart-card-full,
+.travel-dashboard-grid > .fitness-chart-card:last-child {
+  grid-column: 1 / -1;
 }
 
 .travel-inline-action {
@@ -2172,6 +2197,13 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.travel-pay-channel-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 }
 
 .travel-import-errors span,
@@ -2231,6 +2263,18 @@ textarea {
   font-size: 16px;
   letter-spacing: -0.02em;
   margin: 0;
+}
+
+.travel-pay-channel-row .travel-pay-channel-label {
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.travel-pay-channel-row .travel-pay-channel-code {
+  color: var(--color-ink-muted);
+  font-size: 15px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
 }
 
 .travel-summary-actions,
@@ -2842,6 +2886,14 @@ textarea {
   .medication-filter-grid-summary,
   .medication-reminder-times {
     grid-template-columns: 1fr;
+  }
+
+  .travel-book-modal-date-slot .date-popover,
+  .travel-book-modal-date-slot-end .date-popover {
+    left: 0;
+    right: auto;
+    width: 100%;
+    min-width: 0;
   }
 
   .shopping-platform-grid {
