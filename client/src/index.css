@@ -3808,14 +3808,7 @@ textarea {
   gap: 14px;
 }
 
-.todo-top-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-}
-
-.todo-panel {
+.todo-surface {
   display: grid;
   gap: 14px;
   padding: 18px;
@@ -3825,23 +3818,23 @@ textarea {
     linear-gradient(180deg, color-mix(in srgb, var(--color-surface-3) 82%, transparent), color-mix(in srgb, var(--color-surface-2) 98%, transparent));
 }
 
-.todo-panel-head,
-.todo-list-meta {
+.todo-surface-head,
+.todo-list-summary {
   display: flex;
   justify-content: space-between;
   gap: 16px;
   align-items: flex-start;
 }
 
-.todo-panel-head strong,
-.todo-list-meta strong {
+.todo-surface-head strong,
+.todo-list-summary strong {
   display: block;
   color: var(--color-ink);
   font-size: 15px;
 }
 
-.todo-panel-head span,
-.todo-list-meta span {
+.todo-surface-head span,
+.todo-list-summary span {
   display: block;
   margin-top: 4px;
   color: var(--color-ink-subtle);
@@ -3849,7 +3842,7 @@ textarea {
   line-height: 1.6;
 }
 
-.todo-filter-meta {
+.todo-surface-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -3898,14 +3891,6 @@ textarea {
   border-radius: 16px;
   border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--color-hairline));
   background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface-2));
-}
-
-.todo-filter-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
 }
 
 .todo-task-title-cell {
@@ -4102,7 +4087,6 @@ textarea {
   .subscription-modal-grid,
   .subscription-modal-grid-small,
   .todo-overview-grid,
-  .todo-top-grid,
   .todo-entry-grid,
   .todo-filter-grid,
   .todo-trash-filter-grid,
@@ -4165,19 +4149,14 @@ textarea {
     align-items: stretch;
   }
 
-  .todo-panel-head,
-  .todo-list-meta {
+  .todo-surface-head,
+  .todo-list-summary {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .todo-filter-meta {
+  .todo-surface-actions {
     justify-content: flex-start;
-  }
-
-  .todo-filter-actions {
-    flex-direction: column;
-    align-items: stretch;
   }
 
   .todo-table-actions {
