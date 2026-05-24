@@ -207,15 +207,15 @@ export function ForexTradesSection({
   }, [filteredTrades]);
 
   const columns = useMemo(() => [
-    { key: 'tradeDate', title: '交易日期', dataIndex: 'tradeDate' as const },
+    { key: 'tradeDate', title: '日期时间', dataIndex: 'tradeDate' as const },
     {
       key: 'instrument',
-      title: '品种',
+      title: '交易品种',
       render: (_value: unknown, row: ForexTradeRecord) => getForexInstrumentLabel(row.instrument),
     },
     {
       key: 'orderType',
-      title: '方向',
+      title: '订单类型',
       render: (_value: unknown, row: ForexTradeRecord) => (
         <Tag tone={row.orderType === 'buy' ? 'green' : 'orange'}>
           {getForexOrderTypeLabel(row.orderType)}
@@ -223,33 +223,37 @@ export function ForexTradesSection({
       ),
     },
     {
-      key: 'price',
-      title: '开/平仓',
-      render: (_value: unknown, row: ForexTradeRecord) => `${formatForexMoney(row.openPrice)} / ${formatForexMoney(row.closePrice)}`,
+      key: 'openPrice',
+      title: '开仓价格',
+      render: (_value: unknown, row: ForexTradeRecord) => formatForexMoney(row.openPrice),
     },
     {
       key: 'lotSize',
-      title: '手数 / 手续费',
-      render: (_value: unknown, row: ForexTradeRecord) => `${row.lotSize.toFixed(2)} / ${formatForexMoney(row.commission)}`,
+      title: '手数',
+      render: (_value: unknown, row: ForexTradeRecord) => row.lotSize.toFixed(2),
+    },
+    {
+      key: 'commission',
+      title: '手续费',
+      render: (_value: unknown, row: ForexTradeRecord) => formatForexMoney(row.commission),
+    },
+    {
+      key: 'closePrice',
+      title: '平仓价格',
+      render: (_value: unknown, row: ForexTradeRecord) => formatForexMoney(row.closePrice),
     },
     {
       key: 'pnl',
-      title: '毛盈亏 / 净收益',
+      title: '盈亏金额',
       render: (_value: unknown, row: ForexTradeRecord) => (
-        <div className="forex-table-stack">
-          <strong style={{ color: row.pnl + row.commission >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
-            {formatForexAmount(row.pnl + row.commission)}
-          </strong>
-          <span>{`毛盈亏 ${formatForexAmount(row.pnl)}`}</span>
-        </div>
+        <strong style={{ color: row.pnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+          {formatForexAmount(row.pnl)}
+        </strong>
       ),
     },
-    {
-      key: 'time',
-      title: '开/平仓时间',
-      render: (_value: unknown, row: ForexTradeRecord) => `${row.openTime} - ${row.closeTime}`,
-    },
-    { key: 'holdTime', title: '持仓时长', dataIndex: 'holdTime' as const },
+    { key: 'openTime', title: '开仓时间', dataIndex: 'openTime' as const },
+    { key: 'closeTime', title: '平仓时间', dataIndex: 'closeTime' as const },
+    { key: 'holdTime', title: '持仓时间', dataIndex: 'holdTime' as const },
     {
       key: 'remark',
       title: '备注',
@@ -279,7 +283,7 @@ export function ForexTradesSection({
     const draft = parseDraft(form);
 
     if (!draft) {
-      showToast('请补全交易日期、价格、手数和时间字段。', 'error');
+      showToast('请补全日期时间、开平仓价格、手数和时间字段。', 'error');
       return;
     }
 
@@ -347,7 +351,7 @@ export function ForexTradesSection({
   return (
     <SectionCard
       title="交易记录"
-      description="录入、编辑、导入和筛选 XAUUSD / XAGUSD 的历史交易，手续费、盈亏和持仓时长都会本地自动回算。"
+      description="字段顺序已统一为：日期时间、交易品种、订单类型、开仓价格、手数、手续费、平仓价格、盈亏金额、开仓时间、平仓时间、持仓时间、备注。"
       action={(
         <div className="forex-action-row">
           <input
@@ -367,13 +371,13 @@ export function ForexTradesSection({
       <div className="page-stack">
         <div className="forex-compact-grid">
           <DatePickerField
-            label="交易日期"
+            label="日期时间"
             value={form.tradeDate}
             onChange={(value) => setForm((current) => hydrateDerivedFields({ ...current, tradeDate: value }))}
-            placeholder="选择交易日期"
+            placeholder="选择日期"
           />
           <SelectField
-            label="品种"
+            label="交易品种"
             value={form.instrument}
             onChange={(event) => setForm((current) => hydrateDerivedFields({ ...current, instrument: event.target.value as ForexInstrument }))}
           >
@@ -382,7 +386,7 @@ export function ForexTradesSection({
             ))}
           </SelectField>
           <SelectField
-            label="方向"
+            label="订单类型"
             value={form.orderType}
             onChange={(event) => setForm((current) => hydrateDerivedFields({ ...current, orderType: event.target.value as ForexOrderType }))}
           >
@@ -391,7 +395,7 @@ export function ForexTradesSection({
             ))}
           </SelectField>
           <Field
-            label="开仓价"
+            label="开仓价格"
             value={form.openPrice}
             onChange={(event) => setForm((current) => hydrateDerivedFields({ ...current, openPrice: event.target.value }))}
             placeholder="2340.50"
@@ -403,10 +407,20 @@ export function ForexTradesSection({
             placeholder="0.01"
           />
           <Field
-            label="平仓价"
+            label="手续费"
+            value={form.commission}
+            readOnly
+          />
+          <Field
+            label="平仓价格"
             value={form.closePrice}
             onChange={(event) => setForm((current) => hydrateDerivedFields({ ...current, closePrice: event.target.value }))}
             placeholder="2346.20"
+          />
+          <Field
+            label="盈亏金额"
+            value={form.pnl}
+            readOnly
           />
           <Field
             label="开仓时间"
@@ -422,9 +436,7 @@ export function ForexTradesSection({
             onBlur={(event) => setForm((current) => hydrateDerivedFields({ ...current, closeTime: event.target.value }))}
             placeholder="11:10"
           />
-          <Field label="手续费" value={form.commission} readOnly />
-          <Field label="毛盈亏" value={form.pnl} readOnly />
-          <Field label="持仓时长" value={form.holdTime} readOnly />
+          <Field label="持仓时间" value={form.holdTime} readOnly />
           <Field
             label="备注"
             value={form.remark}
@@ -439,7 +451,7 @@ export function ForexTradesSection({
         <StatGrid
           items={[
             { label: '筛选结果', value: `${summary.count} 笔`, helper: '当前列表统计' },
-            { label: '毛盈亏', value: formatForexAmount(summary.grossPnl), accent: summary.grossPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
+            { label: '盈亏金额', value: formatForexAmount(summary.grossPnl), accent: summary.grossPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
             { label: '手续费', value: formatForexMoney(summary.totalCommission), accent: 'var(--color-warning)' },
             { label: '净收益', value: formatForexAmount(summary.netPnl), accent: summary.netPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
           ]}
@@ -462,33 +474,33 @@ export function ForexTradesSection({
             label="关键词"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            placeholder="搜索备注、日期或方向"
+            placeholder="搜索备注、日期时间或订单类型"
           />
           <SelectField
-            label="品种筛选"
+            label="交易品种筛选"
             value={instrumentFilter}
             onChange={(event) => setInstrumentFilter(event.target.value)}
           >
-            <option value="">全部品种</option>
+            <option value="">全部交易品种</option>
             {FOREX_INSTRUMENT_OPTIONS.map((instrument) => (
               <option key={instrument} value={instrument}>{getForexInstrumentLabel(instrument)}</option>
             ))}
           </SelectField>
           <SelectField
-            label="方向筛选"
+            label="订单类型筛选"
             value={orderTypeFilter}
             onChange={(event) => setOrderTypeFilter(event.target.value)}
           >
-            <option value="">全部方向</option>
+            <option value="">全部订单类型</option>
             {FOREX_ORDER_TYPE_OPTIONS.map((orderType) => (
               <option key={orderType} value={orderType}>{getForexOrderTypeLabel(orderType)}</option>
             ))}
           </SelectField>
           <DatePickerField
-            label="按日期筛选"
+            label="按日期时间筛选"
             value={tradeDateFilter}
             onChange={setTradeDateFilter}
-            placeholder="选择交易日期"
+            placeholder="选择日期"
             clearable
           />
         </div>
@@ -506,7 +518,7 @@ export function ForexTradesSection({
           open={Boolean(editingRecord)}
           onClose={() => setEditingRecord(null)}
           title="编辑交易记录"
-          width={900}
+          width={980}
           footer={(
             <>
               <Btn tone="secondary" onClick={() => setEditingRecord(null)}>取消</Btn>
@@ -516,13 +528,13 @@ export function ForexTradesSection({
         >
           <div className="forex-modal-grid">
             <DatePickerField
-              label="交易日期"
+              label="日期时间"
               value={editingForm.tradeDate}
               onChange={(value) => setEditingForm((current) => hydrateDerivedFields({ ...current, tradeDate: value }))}
-              placeholder="选择交易日期"
+              placeholder="选择日期"
             />
             <SelectField
-              label="品种"
+              label="交易品种"
               value={editingForm.instrument}
               onChange={(event) => setEditingForm((current) => hydrateDerivedFields({ ...current, instrument: event.target.value as ForexInstrument }))}
             >
@@ -531,7 +543,7 @@ export function ForexTradesSection({
               ))}
             </SelectField>
             <SelectField
-              label="方向"
+              label="订单类型"
               value={editingForm.orderType}
               onChange={(event) => setEditingForm((current) => hydrateDerivedFields({ ...current, orderType: event.target.value as ForexOrderType }))}
             >
@@ -540,7 +552,7 @@ export function ForexTradesSection({
               ))}
             </SelectField>
             <Field
-              label="开仓价"
+              label="开仓价格"
               value={editingForm.openPrice}
               onChange={(event) => setEditingForm((current) => hydrateDerivedFields({ ...current, openPrice: event.target.value }))}
             />
@@ -549,11 +561,13 @@ export function ForexTradesSection({
               value={editingForm.lotSize}
               onChange={(event) => setEditingForm((current) => hydrateDerivedFields({ ...current, lotSize: event.target.value }))}
             />
+            <Field label="手续费" value={editingForm.commission} readOnly />
             <Field
-              label="平仓价"
+              label="平仓价格"
               value={editingForm.closePrice}
               onChange={(event) => setEditingForm((current) => hydrateDerivedFields({ ...current, closePrice: event.target.value }))}
             />
+            <Field label="盈亏金额" value={editingForm.pnl} readOnly />
             <Field
               label="开仓时间"
               value={editingForm.openTime}
@@ -566,15 +580,13 @@ export function ForexTradesSection({
               onChange={(event) => setEditingForm((current) => ({ ...current, closeTime: event.target.value }))}
               onBlur={(event) => setEditingForm((current) => hydrateDerivedFields({ ...current, closeTime: event.target.value }))}
             />
-            <Field label="手续费" value={editingForm.commission} readOnly />
-            <Field label="毛盈亏" value={editingForm.pnl} readOnly />
-            <Field label="持仓时长" value={editingForm.holdTime} readOnly />
+            <Field label="持仓时间" value={editingForm.holdTime} readOnly />
             <TextArea
               label="备注"
               value={editingForm.remark}
               onChange={(event) => setEditingForm((current) => ({ ...current, remark: event.target.value }))}
               rows={4}
-              placeholder="补充本次交易的入场理由、执行偏差或复盘要点"
+              placeholder="补充这笔交易的入场理由、执行偏差或复盘要点"
             />
           </div>
         </Modal>

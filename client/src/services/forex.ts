@@ -970,19 +970,19 @@ function buildImportedTrade(
   row: Record<string, unknown>,
   rowNumber: number,
 ): { record: ForexTradeRecord | null; invalid: ForexImportInvalidRow | null } {
-  const tradeDate = normalizeTrimmedValue(readAliasValue(row, ['交易日期', 'tradeDate', 'date', '日期']));
-  const instrument = ensureInstrument(readAliasValue(row, ['品种', 'instrument']));
-  const orderType = ensureOrderType(readAliasValue(row, ['方向', 'orderType', 'type']));
-  const openPrice = toNumber(readAliasValue(row, ['开仓价', 'openPrice']), 0);
+  const tradeDate = normalizeTrimmedValue(readAliasValue(row, ['日期时间', '交易日期', 'tradeDate', 'date', '日期']));
+  const instrument = ensureInstrument(readAliasValue(row, ['交易品种', '品种', 'instrument']));
+  const orderType = ensureOrderType(readAliasValue(row, ['订单类型', '方向', 'orderType', 'type']));
+  const openPrice = toNumber(readAliasValue(row, ['开仓价格', '开仓价', 'openPrice']), 0);
   const lotSize = toNumber(readAliasValue(row, ['手数', 'lotSize']), 0);
-  const closePrice = toNumber(readAliasValue(row, ['平仓价', 'closePrice']), 0);
+  const closePrice = toNumber(readAliasValue(row, ['平仓价格', '平仓价', 'closePrice']), 0);
   const openTime = normalizeForexTimeInput(String(readAliasValue(row, ['开仓时间', 'openTime']) ?? ''), DEFAULT_START_TIME);
   const closeTime = normalizeForexTimeInput(String(readAliasValue(row, ['平仓时间', 'closeTime']) ?? ''), DEFAULT_END_TIME);
 
   if (!tradeDate || openPrice <= 0 || closePrice <= 0 || lotSize <= 0) {
     return {
       record: null,
-      invalid: { rowNumber, reason: '缺少必填字段，至少需要交易日期、开仓价、平仓价和手数。' },
+      invalid: { rowNumber, reason: '缺少必填字段，至少需要日期时间、开仓价格、平仓价格和手数。' },
     };
   }
 
@@ -996,12 +996,12 @@ function buildImportedTrade(
       commission: toNumber(readAliasValue(row, ['手续费', 'commission']), calculateForexCommission(lotSize)),
       closePrice,
       pnl: toNumber(
-        readAliasValue(row, ['盈亏', 'pnl']),
+        readAliasValue(row, ['盈亏金额', '盈亏', 'pnl']),
         calculateForexTradePnl(instrument, orderType, openPrice, closePrice, lotSize),
       ),
       openTime,
       closeTime,
-      holdTime: normalizeTrimmedValue(readAliasValue(row, ['持仓时长', 'holdTime']), calculateForexHoldTime(openTime, closeTime)),
+      holdTime: normalizeTrimmedValue(readAliasValue(row, ['持仓时间', '持仓时长', 'holdTime']), calculateForexHoldTime(openTime, closeTime)),
       remark: normalizeTrimmedValue(readAliasValue(row, ['备注', 'remark'])),
     }),
     invalid: null,
@@ -1037,8 +1037,9 @@ export async function importForexWorkbook(
 
   for (const [index, rawRow] of rows.entries()) {
     const row = { ...rawRow };
-    const normalizedDate = await normalizeImportDateCellAsync(readAliasValue(row, ['交易日期', 'tradeDate', 'date', '日期']));
+    const normalizedDate = await normalizeImportDateCellAsync(readAliasValue(row, ['日期时间', '交易日期', 'tradeDate', 'date', '日期']));
     if (normalizedDate) {
+      row.日期时间 = normalizedDate;
       row.交易日期 = normalizedDate;
       row.tradeDate = normalizedDate;
       row.date = normalizedDate;
@@ -1075,17 +1076,17 @@ export async function buildForexImportTemplateWorkbook() {
   const XLSX = await import('xlsx');
   const rows = [
     {
-      交易日期: dayjs().format(DATE_FORMAT),
-      品种: 'XAUUSD',
-      方向: 'buy',
-      开仓价: 2340.5,
+      日期时间: dayjs().format(DATE_FORMAT),
+      交易品种: 'XAUUSD',
+      订单类型: 'buy',
+      开仓价格: 2340.5,
       手数: 0.1,
       手续费: -0.6,
-      平仓价: 2346.2,
-      盈亏: 57,
+      平仓价格: 2346.2,
+      盈亏金额: 57,
       开仓时间: '09:35',
       平仓时间: '11:10',
-      持仓时长: '1小时 35分钟',
+      持仓时间: '1小时 35分钟',
       备注: '示例数据',
     },
   ];
