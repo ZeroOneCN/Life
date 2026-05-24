@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 
 import { SectionCard } from '../page';
-import { Btn, DeleteModal, Field, Modal, SelectField, Tag } from '../ui';
+import { Btn, DeleteModal, Field, Modal, Tag } from '../ui';
 import {
   SHOPPING_PLATFORM_COLOR_PRESETS,
   createShoppingPlatform,
@@ -25,6 +25,17 @@ interface PlatformFormState {
   colorToken: string;
 }
 
+const COLOR_LABELS: Record<string, string> = {
+  '#5e6ad2': '主题蓝',
+  '#1eaedb': '海湾青',
+  '#27a644': '清新绿',
+  '#f59e0b': '琥珀橙',
+  '#e5484d': '强调红',
+  '#10b981': '薄荷绿',
+  '#c084fc': '雾紫',
+  '#f97316': '暖橘',
+};
+
 function createDefaultPlatformForm(): PlatformFormState {
   return {
     name: '',
@@ -37,6 +48,37 @@ function buildPlatformForm(platform: ShoppingPlatform): PlatformFormState {
     name: platform.name,
     colorToken: platform.colorToken || SHOPPING_PLATFORM_COLOR_PRESETS[0],
   };
+}
+
+function ColorPalettePicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="shopping-color-picker" role="radiogroup" aria-label="平台色板">
+      {SHOPPING_PLATFORM_COLOR_PRESETS.map((color) => {
+        const selected = value === color;
+
+        return (
+          <button
+            key={color}
+            type="button"
+            className={`shopping-color-swatch ${selected ? 'is-active' : ''}`}
+            style={{ '--swatch-color': color } as CSSProperties}
+            onClick={() => onChange(color)}
+            aria-label={COLOR_LABELS[color] ?? '平台颜色'}
+            aria-pressed={selected}
+          >
+            <span className="shopping-color-swatch-dot" />
+            <span className="shopping-color-swatch-label">{COLOR_LABELS[color] ?? color}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 export function ShoppingPlatformsSection({
@@ -124,15 +166,13 @@ export function ShoppingPlatformsSection({
               onChange={(event) => setForm((previous) => ({ ...previous, name: event.target.value }))}
               placeholder="例如：小红书"
             />
-            <SelectField
-              label="平台色板"
-              value={form.colorToken}
-              onChange={(event) => setForm((previous) => ({ ...previous, colorToken: event.target.value }))}
-            >
-              {SHOPPING_PLATFORM_COLOR_PRESETS.map((color) => (
-                <option key={color} value={color}>{color}</option>
-              ))}
-            </SelectField>
+            <div className="field">
+              <span className="field-label">平台色板</span>
+              <ColorPalettePicker
+                value={form.colorToken}
+                onChange={(colorToken) => setForm((previous) => ({ ...previous, colorToken }))}
+              />
+            </div>
             <div className="shopping-inline-action shopping-inline-action-platform">
               <span className="field-label">保存平台</span>
               <Btn tone="primary" onClick={handleCreate}>新增平台</Btn>
@@ -184,7 +224,7 @@ export function ShoppingPlatformsSection({
           setEditingForm(createDefaultPlatformForm());
         }}
         title={editingPlatform ? `编辑平台：${editingPlatform.name}` : '编辑平台'}
-        width={560}
+        width={640}
         footer={(
           <>
             <Btn
@@ -206,15 +246,13 @@ export function ShoppingPlatformsSection({
             value={editingForm.name}
             onChange={(event) => setEditingForm((previous) => ({ ...previous, name: event.target.value }))}
           />
-          <SelectField
-            label="平台色板"
-            value={editingForm.colorToken}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, colorToken: event.target.value }))}
-          >
-            {SHOPPING_PLATFORM_COLOR_PRESETS.map((color) => (
-              <option key={color} value={color}>{color}</option>
-            ))}
-          </SelectField>
+          <div className="field">
+            <span className="field-label">平台色板</span>
+            <ColorPalettePicker
+              value={editingForm.colorToken}
+              onChange={(colorToken) => setEditingForm((previous) => ({ ...previous, colorToken }))}
+            />
+          </div>
         </div>
       </Modal>
 

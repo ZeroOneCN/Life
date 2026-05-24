@@ -239,7 +239,7 @@ export function ShoppingRecordsSection({
     const draft = parseDraft(form);
 
     if (!draft) {
-      showToast('请补全用户、账本、日期、平台、商品名和价格。', 'error');
+      showToast('请补全用户、账本、日期、平台、商品名称和价格。', 'error');
       return;
     }
 
@@ -438,7 +438,6 @@ export function ShoppingRecordsSection({
               value={editingForm.date}
               onChange={(value) => setEditingForm((previous) => ({ ...previous, date: value }))}
               clearable={false}
-              popoverStrategy="inline"
             />
             <SelectField
               label="购买平台"

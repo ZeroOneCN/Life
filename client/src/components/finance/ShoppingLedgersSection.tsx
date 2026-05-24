@@ -104,12 +104,6 @@ export function ShoppingLedgersSection({
     }
 
     onChangeLedgers((previous) => createShoppingLedger(previous, draft));
-    if (draft.isActive || !activeLedgerId) {
-      const nextActive = draft.isActive ? ledgers.find((ledger) => ledger.isActive)?.id ?? activeLedgerId : activeLedgerId;
-      if (!activeLedgerId || draft.isActive) {
-        onActiveLedgerChange(nextActive);
-      }
-    }
     setForm(createDefaultLedgerForm());
     showToast('账本已创建。');
   };
@@ -138,7 +132,7 @@ export function ShoppingLedgersSection({
   return (
     <SectionCard
       title="账本管理"
-      description="把不同阶段、主题或项目的购物支出拆进独立账本，方便切换默认录入上下文和做阶段性复盘。"
+      description="把不同阶段、主题或项目的购物支出拆进独立账本，便于阶段复盘，也能快速切换默认录入上下文。"
       action={<Tag tone="blue">共 {ledgers.length} 个账本</Tag>}
     >
       <div className="page-stack">
@@ -261,14 +255,12 @@ export function ShoppingLedgersSection({
               value={editingForm.startDate}
               onChange={(value) => setEditingForm((previous) => ({ ...previous, startDate: value }))}
               clearable={false}
-              popoverStrategy="inline"
             />
             <DatePickerField
               label="结束日期"
               value={editingForm.endDate}
               onChange={(value) => setEditingForm((previous) => ({ ...previous, endDate: value }))}
               placeholder="可选"
-              popoverStrategy="inline"
             />
           </div>
           <Field

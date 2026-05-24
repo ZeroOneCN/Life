@@ -101,7 +101,7 @@ export function ShoppingDashboardSection({
   return (
     <SectionCard
       title="统计看板"
-      description="按用户与账本汇总最近 12 个月消费趋势、平台结构和账本沉淀，金额展示可跟随货币视图切换。"
+      description="按用户和账本汇总最近 12 个月消费趋势、平台结构和账本沉淀，金额展示会跟随当前货币视图切换。"
       action={<Tag tone="green">{currencyMode === 'USDT' ? `汇率 1 USDT = ¥${usdtRate.toFixed(2)}` : '本币统计'}</Tag>}
     >
       <div className="page-stack">
@@ -111,7 +111,7 @@ export function ShoppingDashboardSection({
             value={userId}
             onChange={(event) => onUserIdChange(event.target.value)}
             placeholder="留空查看全部用户"
-            hint="趋势、分布和账本摘要都会按这里的用户维度刷新。"
+            hint="趋势、平台结构和账本摘要都会按这里的用户维度刷新。"
           />
           <SelectField
             label="看板账本"
@@ -231,7 +231,7 @@ export function ShoppingDashboardSection({
             )}
           </ChartCard>
 
-          <ChartCard title="账本消费摘要" description="按当前用户聚合全部账本，帮助你判断哪个阶段的购物支出更集中。">
+          <ChartCard title="账本消费摘要" description="按当前用户聚合全部账本，帮助判断哪个阶段的购物支出更集中。">
             {hasLedgerData ? (
               <div className="shopping-ledger-summary-list">
                 {ledgerSummary.map((item) => (

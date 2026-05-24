@@ -9,7 +9,6 @@ import { Btn, Field, Modal, PillTabs, SelectField, Tag, Toast, useToastState } f
 import { useLocalStorageState } from '../../hooks/useLocalStorageState';
 import { usePageTab } from '../../hooks/usePageTab';
 import {
-  SHOPPING_ALL_LEDGERS,
   buildInitialShoppingState,
   buildShoppingOverview,
   formatShoppingAmount,
@@ -160,7 +159,7 @@ export default function ShoppingPage() {
     <div className="page-stack">
       <PageHeader
         title="网上购物"
-        subtitle="将购物原型收敛到当前 LifeOS 前端体系中，统一管理用户、账本、平台、导入和消费看板。"
+        subtitle="把购物记录、平台、账本、导入和消费看板统一收进当前 LifeOS 前端体系，保持本地数据、自定义日期控件和主题风格一致。"
         actions={(
           <div className="inline-row">
             <Btn tone="secondary" onClick={() => setImportOpen(true)}>导入 Excel</Btn>
@@ -174,7 +173,7 @@ export default function ShoppingPage() {
 
       <SectionCard
         title="当前上下文"
-        description="顶部上下文会驱动默认录入用户、默认账本和总览统计；记录列表与看板仍可独立切换筛选范围。"
+        description="这里决定新建购物记录默认归属的用户和账本，同时也作为顶部总览卡的统计口径。列表和看板仍可单独切换筛选条件。"
         action={<Tag tone="green">{normalizedData.settings.currencyMode === 'USDT' ? `1 USDT = ¥${normalizedData.settings.usdtRate.toFixed(2)}` : '人民币主视图'}</Tag>}
       >
         <div className="shopping-context-grid">
@@ -243,7 +242,7 @@ export default function ShoppingPage() {
 
       <SectionCard
         title="业务视图"
-        description="购物记录、统计看板、账本管理和平台管理共享一套本地数据模型与主题组件。"
+        description="购物记录、统计看板、账本管理和平台管理共用一套本地数据模型与主题组件。"
       >
         <PillTabs
           options={TAB_OPTIONS}
@@ -425,7 +424,7 @@ export default function ShoppingPage() {
             step="0.01"
             value={settingsDraft.usdtRate}
             onChange={(event) => setSettingsDraft((previous) => ({ ...previous, usdtRate: event.target.value }))}
-            hint="仅影响购物页的金额展示换算，不会改变底层本地存储币种。"
+            hint="只影响购物页金额展示换算，不会改变底层本地存储币种。"
           />
         </div>
       </Modal>
