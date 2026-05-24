@@ -158,7 +158,7 @@ export function LoanSettingsSection({
         <div className="fitness-chart-card">
           <div className="fitness-chart-header">
             <strong>最近触发日志</strong>
-            <span>只展示贷款场景相关的通知发送和测试记录，便于回到通知中心继续追踪。</span>
+            <span>只展示借款场景相关的通知发送和测试记录，便于回到通知中心继续追踪。</span>
           </div>
           <NotificationLogTable logs={latestLogs} />
         </div>

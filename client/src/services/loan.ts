@@ -449,7 +449,7 @@ export function migrateLegacyLoanState(legacyState: LegacyLoanPageState | null |
         amount: bill.amount,
         interest: bill.interest,
         repaymentDate: bill.paidAt || bill.dueDate,
-        notes: '从旧贷款页迁移',
+        notes: '从旧借款页迁移',
         createdAt: normalizeTimestamp(bill.paidAt || bill.dueDate, bill.dueDate),
         updatedAt: normalizeTimestamp(bill.paidAt || bill.dueDate, bill.dueDate),
       })),

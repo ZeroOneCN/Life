@@ -209,7 +209,7 @@ export function LoanBillsSection({
 
     onChangeBills((previous) => createLoanBill(platforms, previous, draft));
     setForm(createDefaultFormState(activeUserId, platforms));
-    showToast('贷款账单已创建。');
+    showToast('借款账单已创建。');
   };
 
   const handleSaveEdit = () => {
@@ -227,7 +227,7 @@ export function LoanBillsSection({
     onChangeBills((previous) => updateLoanBill(platforms, previous, editingBill.id, draft));
     setEditingBill(null);
     setEditingForm(createDefaultFormState(activeUserId, platforms));
-    showToast('贷款账单已更新。');
+    showToast('借款账单已更新。');
   };
 
   const resolveSuggestedDueDate = (platformId: string, billingMonth: string, list: LoanPlatform[]) => {
@@ -247,7 +247,7 @@ export function LoanBillsSection({
 
         <div className="loan-bill-entry-grid">
           <SelectField
-            label="贷款平台"
+            label="借款平台"
             value={form.platformId}
             onChange={(event) => {
               const nextPlatformId = event.target.value;
@@ -360,7 +360,7 @@ export function LoanBillsSection({
           </>
         ) : (
           <EmptyState
-            title="暂无贷款账单"
+            title="暂无借款账单"
             description="先新建一笔账单，或调整当前用户、平台、状态和月份筛选条件。"
           />
         )}
@@ -397,7 +397,7 @@ export function LoanBillsSection({
               onChange={(event) => setEditingForm((previous) => ({ ...previous, userId: event.target.value }))}
             />
             <SelectField
-              label="贷款平台"
+              label="借款平台"
               value={editingForm.platformId}
               onChange={(event) => {
                 const nextPlatformId = event.target.value;
@@ -480,9 +480,9 @@ export function LoanBillsSection({
 
           onChangeBills((previous) => deleteLoanBill(previous, pendingDeleteId));
           setPendingDeleteId(null);
-          showToast('贷款账单已删除。');
+          showToast('借款账单已删除。');
         }}
-        title="确认删除这笔贷款账单？"
+        title="确认删除这笔借款账单？"
       >
         删除后，这笔账单将不再参与概览、统计、提醒和自动还款联动，请确认是否继续。
       </DeleteModal>

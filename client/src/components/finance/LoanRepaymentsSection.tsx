@@ -278,7 +278,7 @@ export function LoanRepaymentsSection({
             ))}
           </SelectField>
           <SelectField
-            label="贷款平台"
+            label="借款平台"
             value={form.platformId}
             onChange={(event) => setForm((previous) => ({ ...previous, platformId: event.target.value }))}
           >
@@ -413,7 +413,7 @@ export function LoanRepaymentsSection({
                 ))}
             </SelectField>
             <SelectField
-              label="贷款平台"
+              label="借款平台"
               value={editingForm.platformId}
               onChange={(event) => setEditingForm((previous) => ({ ...previous, platformId: event.target.value }))}
             >

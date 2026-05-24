@@ -113,7 +113,7 @@ export function LoanPlatformsSection({
 
     onChangePlatforms((previous) => createLoanPlatform(previous, draft));
     setForm(createDefaultFormState(activeUserId));
-    showToast('贷款平台已创建。');
+    showToast('借款平台已创建。');
   };
 
   const handleSaveEdit = () => {
@@ -140,13 +140,13 @@ export function LoanPlatformsSection({
     onChangePlatforms((previous) => updateLoanPlatform(previous, editingPlatform.id, draft));
     setEditingPlatform(null);
     setEditingForm(createDefaultFormState(activeUserId));
-    showToast('贷款平台已更新。');
+    showToast('借款平台已更新。');
   };
 
   return (
     <SectionCard
       title="平台"
-      description="维护每个贷款平台的账单日、还款日和额度，后续账单默认到期日会依赖这里的规则自动推导。"
+      description="维护每个借款平台的账单日、还款日和额度，后续账单默认到期日会依赖这里的规则自动推导。"
     >
       <div className="page-stack">
         <div className="callout callout-info">
@@ -236,8 +236,8 @@ export function LoanPlatformsSection({
           </div>
         ) : (
           <EmptyState
-            title="暂无贷款平台"
-            description="先为当前用户创建一个贷款平台，后续账单和还款记录才能完整挂接。"
+            title="暂无借款平台"
+            description="先为当前用户创建一个借款平台，后续账单和还款记录才能完整挂接。"
           />
         )}
       </div>
@@ -323,9 +323,9 @@ export function LoanPlatformsSection({
 
           onChangePlatforms((previous) => deleteLoanPlatform(previous, pendingDeletePlatform.id));
           setPendingDeletePlatform(null);
-          showToast('贷款平台已删除。');
+          showToast('借款平台已删除。');
         }}
-        title="确认删除这个贷款平台？"
+        title="确认删除这个借款平台？"
       >
         删除平台后，后续将不能再把新账单挂到它下面，因此已有账单或还款记录未清理前不允许误删。
       </DeleteModal>

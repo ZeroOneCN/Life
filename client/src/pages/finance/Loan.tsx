@@ -98,13 +98,13 @@ export default function LoanPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        title="贷款还款中心"
+        title="借款还款"
         subtitle="把平台、账单、还款、统计和提醒规则统一收进当前 LifeOS 前端体系，全部数据本地持久化，并保持主题化日期控件和紧凑后台布局一致。"
       />
 
       <SectionCard
         title="当前上下文"
-        description="这里决定当前贷款页默认归属的用户维度，新增平台、账单和还款记录都会优先沿用这一组上下文。"
+        description="这里决定当前借款页默认归属的用户维度，新增平台、账单和还款记录都会优先沿用这一组上下文。"
       >
         <div className="loan-context-grid">
           <Field

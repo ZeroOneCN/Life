@@ -17,7 +17,7 @@ export default function Dashboard() {
       <StatGrid
         items={[
           { label: '通知渠道', value: `${enabledChannels}`, helper: '来自通知中心' },
-          { label: '启用场景', value: `${enabledScenes}`, helper: '覆盖待办、号卡、贷款' },
+          { label: '启用场景', value: `${enabledScenes}`, helper: '覆盖待办、号卡、借款' },
           { label: '统一日志', value: `${notificationState.logs.length}`, helper: '前端本地模拟发送记录' },
           { label: '技术栈', value: 'React + TS', helper: 'Vite 构建' },
         ]}
@@ -30,7 +30,7 @@ export default function Dashboard() {
           <div className="bullet-list">
             <div className="bullet-item"><span className="bullet-dot" />前端入口、路由、布局和共享组件已切换到 TypeScript。</div>
             <div className="bullet-item"><span className="bullet-dot" />通知中心新增为一级菜单，并统一三类渠道。</div>
-            <div className="bullet-item"><span className="bullet-dot" />Todo、号卡、贷款页面的通知逻辑统一从通知中心发送。</div>
+            <div className="bullet-item"><span className="bullet-dot" />Todo、号卡、借款页面的通知逻辑统一从通知中心发送。</div>
             <div className="bullet-item"><span className="bullet-dot" />所有关键开关都补充了状态卡、影响范围和跳转入口。</div>
           </div>
         </SectionCard>

@@ -53,7 +53,7 @@ export function LoanDashboardSection({
   return (
     <SectionCard
       title="概览"
-      description="快速查看当前用户的贷款规模、待还压力和近期优先处理的账单。"
+      description="快速查看当前用户的借款规模、待还压力和近期优先处理的账单。"
     >
       <div className="page-stack">
         <div className="loan-context-grid">
@@ -77,7 +77,7 @@ export function LoanDashboardSection({
             {
               label: '当前用户',
               value: normalizeLoanUserId(activeUserId) || '未设置',
-              helper: '切换用户后，贷款中心所有业务区块都会同步刷新。',
+              helper: '切换用户后，借款中心所有业务区块都会同步刷新。',
             },
             { label: '总负债', value: formatLoanAmount(overview.totalDebt) },
             { label: '已还金额', value: formatLoanAmount(overview.totalPaid) },

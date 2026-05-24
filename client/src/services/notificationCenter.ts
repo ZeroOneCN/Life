@@ -70,7 +70,7 @@ const defaultScenes: Record<NotificationSceneId, NotificationSceneConfig> = {
   },
   'loan.repayment_upcoming': {
     id: 'loan.repayment_upcoming',
-    label: '贷款还款提醒',
+    label: '借款还款提醒',
     enabled: true,
     channels: ['email', 'wechatWork'],
     summary: '在还款日前提醒还款计划和金额。',
@@ -78,7 +78,7 @@ const defaultScenes: Record<NotificationSceneId, NotificationSceneConfig> = {
   },
   'loan.repayment_overdue': {
     id: 'loan.repayment_overdue',
-    label: '贷款逾期提醒',
+    label: '借款逾期提醒',
     enabled: true,
     channels: ['wechatWork', 'webhook'],
     summary: '账单逾期后立即发出高优先级提醒。',
@@ -136,13 +136,13 @@ const defaultTemplates: Record<NotificationSceneId, { sceneId: NotificationScene
   },
   'loan.repayment_upcoming': {
     sceneId: 'loan.repayment_upcoming',
-    title: '贷款还款提醒',
-    body: '你有即将到期的贷款账单，请提前安排还款。',
+    title: '借款还款提醒',
+    body: '你有即将到期的借款账单，请提前安排还款。',
   },
   'loan.repayment_overdue': {
     sceneId: 'loan.repayment_overdue',
-    title: '贷款逾期提醒',
-    body: '你有已逾期的贷款账单，请尽快处理并关注风险影响。',
+    title: '借款逾期提醒',
+    body: '你有已逾期的借款账单，请尽快处理并关注风险影响。',
   },
   'checkup.followup_reminder': {
     sceneId: 'checkup.followup_reminder',

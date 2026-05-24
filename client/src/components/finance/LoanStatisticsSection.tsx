@@ -252,7 +252,7 @@ export function LoanStatisticsSection({
             ) : (
               <EmptyState
                 title="暂无平台分布"
-                description="当前用户还没有形成可统计的贷款平台账单结构。"
+                description="当前用户还没有形成可统计的借款平台账单结构。"
               />
             )}
           </ChartCard>
