@@ -248,11 +248,10 @@ export function MedicationRecordsSection({
             value={form.dinner}
             onChange={(event) => setForm((previous) => ({ ...previous, dinner: event.target.value }))}
           />
-        </div>
-
-        <div className="fitness-form-actions">
-          <span className="subtle-text">当前记录默认按“片 / 粒 / 袋”等离散单位估算库存，便于后续低库存提醒。</span>
-          <Btn tone="primary" onClick={handleCreate}>保存每日用药</Btn>
+          <div className="medication-inline-action">
+            <span className="field-label">保存</span>
+            <Btn tone="primary" onClick={handleCreate}>保存每日用药</Btn>
+          </div>
         </div>
 
         <div className="medication-filter-grid">

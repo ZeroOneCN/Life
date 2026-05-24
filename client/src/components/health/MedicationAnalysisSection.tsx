@@ -4,7 +4,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Legend,
   Line,
   LineChart,
   Pie,
@@ -27,7 +26,7 @@ import {
   filterMedicationPurchasesByUserId,
   filterMedicationRecordsByUserId,
 } from '../../services/medication';
-import type { MedicationPurchaseRecord, MedicationRankingPoint, MedicationRecord } from '../../types/medication';
+import type { MedicationPurchaseRecord, MedicationRecord } from '../../types/medication';
 
 interface MedicationAnalysisSectionProps {
   userId: string;
@@ -42,6 +41,22 @@ const tooltipStyle = {
   borderRadius: 14,
   boxShadow: 'var(--shadow-soft)',
 };
+
+const TREND_SERIES = [
+  { key: 'breakfast', label: '早餐', color: MEDICATION_TIME_COLORS.breakfast, width: 2 },
+  { key: 'lunch', label: '午餐', color: MEDICATION_TIME_COLORS.lunch, width: 2 },
+  { key: 'dinner', label: '晚餐', color: MEDICATION_TIME_COLORS.dinner, width: 2 },
+  { key: 'total', label: '总用量', color: MEDICATION_TIME_COLORS.total, width: 2.8 },
+] as const;
+
+const TREND_ORDER: Record<(typeof TREND_SERIES)[number]['key'], number> = {
+  breakfast: 0,
+  lunch: 1,
+  dinner: 2,
+  total: 3,
+};
+
+const DOSAGE_SHARE_COLORS = ['#5e6ad2', '#1eaedb', '#27a644', '#f59e0b', '#e5484d', '#10b981', '#c084fc', '#f97316'];
 
 function ChartCard({
   title,
@@ -112,7 +127,11 @@ export function MedicationAnalysisSection({
           items={[
             { label: '总记录数', value: `${overview.totalRecords}`, helper: `覆盖 ${overview.trackedDays} 个记录日` },
             { label: '累计用量', value: `${overview.totalDosage}`, helper: `日均 ${overview.avgDailyDosage} 次` },
-            { label: '活跃药品', value: `${overview.activeMedicineCount}`, helper: overview.latestRecordDate ? `最近记录：${overview.latestRecordDate}` : '暂无最近记录' },
+            {
+              label: '活跃药品',
+              value: `${overview.activeMedicineCount}`,
+              helper: overview.latestRecordDate ? `最近记录：${overview.latestRecordDate}` : '暂无最近记录',
+            },
             { label: '购药总额', value: `¥${overview.totalPurchaseAmount.toFixed(2)}`, helper: `共 ${overview.purchaseCount} 笔购药记录` },
             { label: '今日用量', value: `${overview.todayDosage}`, helper: filteredRecords.length ? '按今天日期汇总三餐用量' : '暂无今日记录' },
           ]}
@@ -132,20 +151,43 @@ export function MedicationAnalysisSection({
         </div>
 
         <div className="medication-analysis-grid">
-          <ChartCard title="用药趋势" description="按早餐、午餐、晚餐和总用量查看近阶段变化。">
+          <ChartCard title="用药趋势" description="按早餐、午餐、晚餐、总用量查看近阶段变化。">
             {hasTrendData ? (
               <div className="fitness-chart-shell">
+                <div className="medication-chart-legend">
+                  {TREND_SERIES.map((series) => (
+                    <div key={series.key} className="medication-chart-legend-item">
+                      <span
+                        className="medication-chart-legend-dot"
+                        style={{ background: series.color }}
+                      />
+                      <span>{series.label}</span>
+                    </div>
+                  ))}
+                </div>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={trendData}>
                     <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
                     <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                    <Tooltip contentStyle={tooltipStyle} />
-                    <Legend />
-                    <Line type="monotone" dataKey="breakfast" name="早餐" stroke={MEDICATION_TIME_COLORS.breakfast} strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="lunch" name="午餐" stroke={MEDICATION_TIME_COLORS.lunch} strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="dinner" name="晚餐" stroke={MEDICATION_TIME_COLORS.dinner} strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="total" name="总用量" stroke={MEDICATION_TIME_COLORS.total} strokeWidth={2.8} dot={false} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      itemSorter={(item) => {
+                        const key = String(item.dataKey ?? '') as keyof typeof TREND_ORDER;
+                        return TREND_ORDER[key] ?? 99;
+                      }}
+                    />
+                    {TREND_SERIES.map((series) => (
+                      <Line
+                        key={series.key}
+                        type="monotone"
+                        dataKey={series.key}
+                        name={series.label}
+                        stroke={series.color}
+                        strokeWidth={series.width}
+                        dot={false}
+                      />
+                    ))}
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -172,7 +214,7 @@ export function MedicationAnalysisSection({
                       {dosageShareData.map((entry, index) => (
                         <Cell
                           key={entry.name}
-                          fill={index % 2 === 0 ? MEDICATION_TIME_COLORS.total : index % 3 === 0 ? MEDICATION_TIME_COLORS.lunch : MEDICATION_TIME_COLORS.breakfast}
+                          fill={DOSAGE_SHARE_COLORS[index % DOSAGE_SHARE_COLORS.length]}
                         />
                       ))}
                     </Pie>
@@ -222,7 +264,9 @@ export function MedicationAnalysisSection({
                       <strong>{index + 1}. {item.medicineName}</strong>
                       <div className="list-row-meta">累计用量 {item.totalDose}，占比 {item.percentage}%</div>
                     </div>
-                    <span className="subtle-text">购药记录 {filteredPurchases.filter((purchase) => purchase.medicineName === item.medicineName).length} 笔</span>
+                    <span className="subtle-text">
+                      购药记录 {filteredPurchases.filter((purchase) => purchase.medicineName === item.medicineName).length} 笔
+                    </span>
                   </div>
                 ))}
               </div>

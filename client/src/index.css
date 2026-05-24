@@ -1604,15 +1604,27 @@ textarea {
 }
 
 .medication-entry-grid {
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.5fr) repeat(3, minmax(0, 0.8fr));
+  grid-template-columns:
+    minmax(140px, 0.95fr)
+    minmax(180px, 1.35fr)
+    repeat(3, minmax(112px, 0.72fr))
+    minmax(160px, 1fr);
 }
 
 .medication-purchase-grid {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) repeat(3, minmax(0, 0.9fr)) minmax(0, 1fr);
+  grid-template-columns:
+    minmax(140px, 0.95fr)
+    minmax(180px, 1.25fr)
+    minmax(104px, 0.7fr)
+    minmax(104px, 0.75fr)
+    minmax(116px, 0.82fr)
+    minmax(116px, 0.82fr)
+    minmax(132px, 0.9fr)
+    minmax(160px, 1fr);
 }
 
 .medication-filter-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .medication-filter-grid-header {
@@ -1654,6 +1666,18 @@ textarea {
   padding-bottom: 8px;
 }
 
+.medication-inline-action {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.medication-inline-action .btn {
+  width: 100%;
+  min-height: 38px;
+}
+
 .medication-analysis-grid,
 .medication-summary-grid,
 .medication-reminder-grid {
@@ -1662,6 +1686,29 @@ textarea {
 
 .medication-range-tabs {
   justify-content: flex-start;
+}
+
+.medication-chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.medication-chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+}
+
+.medication-chart-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
 }
 
 .medication-summary-list,
@@ -2212,7 +2259,7 @@ textarea {
   .medication-filter-grid-analysis,
   .medication-filter-grid-summary,
   .medication-reminder-times {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

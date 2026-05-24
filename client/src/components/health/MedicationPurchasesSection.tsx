@@ -300,11 +300,10 @@ export function MedicationPurchasesSection({
               <option key={item} value={item}>{item}</option>
             ))}
           </SelectField>
-        </div>
-
-        <div className="fitness-form-actions">
-          <span className="subtle-text">总价会根据数量和单价自动推算，你也可以手动微调实际支付金额。</span>
-          <Btn tone="primary" onClick={handleCreate}>保存购药记录</Btn>
+          <div className="medication-inline-action">
+            <span className="field-label">保存</span>
+            <Btn tone="primary" onClick={handleCreate}>保存购药记录</Btn>
+          </div>
         </div>
 
         <div className="medication-filter-grid medication-filter-grid-purchase">
