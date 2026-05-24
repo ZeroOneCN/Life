@@ -149,18 +149,107 @@ function getDefaultState(): NotificationCenterState {
   };
 }
 
+function normalizeChannelConfig(
+  type: NotificationChannelType,
+  stored?: Partial<NotificationChannelConfig>,
+): NotificationChannelConfig {
+  const base = defaultChannels[type];
+  const next: NotificationChannelConfig = {
+    ...base,
+    ...stored,
+    type,
+  };
+
+  next.status = !next.enabled
+    ? 'disabled'
+    : isChannelReady(next)
+      ? 'ready'
+      : 'incomplete';
+
+  return next;
+}
+
+function normalizeSceneConfig(
+  sceneId: NotificationSceneId,
+  stored?: Partial<NotificationSceneConfig>,
+): NotificationSceneConfig {
+  const base = defaultScenes[sceneId];
+  const validChannels = Array.isArray(stored?.channels)
+    ? stored.channels.filter((channel): channel is NotificationChannelType => channel in defaultChannels)
+    : base.channels;
+
+  return {
+    ...base,
+    ...stored,
+    id: sceneId,
+    channels: validChannels.length ? validChannels : base.channels,
+  };
+}
+
+function normalizeTemplate(sceneId: NotificationSceneId) {
+  const base = defaultTemplates[sceneId];
+  return {
+    ...base,
+    sceneId,
+  };
+}
+
+function normalizeLogEntry(log: NotificationLogEntry): NotificationLogEntry {
+  return {
+    ...log,
+    sceneId: log.sceneId && log.sceneId in defaultScenes ? log.sceneId : null,
+  };
+}
+
+function normalizeNotificationCenterState(
+  state: NotificationCenterState | null | undefined,
+): NotificationCenterState {
+  const fallback = getDefaultState();
+  const storedChannels = state?.channels ?? fallback.channels;
+  const storedScenes = state?.scenes ?? fallback.scenes;
+  const storedTemplates = state?.templates ?? fallback.templates;
+
+  return {
+    channels: {
+      email: normalizeChannelConfig('email', storedChannels.email),
+      wechatWork: normalizeChannelConfig('wechatWork', storedChannels.wechatWork),
+      webhook: normalizeChannelConfig('webhook', storedChannels.webhook),
+    },
+    scenes: {
+      'todo.reminder': normalizeSceneConfig('todo.reminder', storedScenes['todo.reminder']),
+      'card.balance_low': normalizeSceneConfig('card.balance_low', storedScenes['card.balance_low']),
+      'card.billing_upcoming': normalizeSceneConfig('card.billing_upcoming', storedScenes['card.billing_upcoming']),
+      'loan.repayment_upcoming': normalizeSceneConfig('loan.repayment_upcoming', storedScenes['loan.repayment_upcoming']),
+      'loan.repayment_overdue': normalizeSceneConfig('loan.repayment_overdue', storedScenes['loan.repayment_overdue']),
+      'checkup.followup_reminder': normalizeSceneConfig('checkup.followup_reminder', storedScenes['checkup.followup_reminder']),
+      'checkup.abnormal_alert': normalizeSceneConfig('checkup.abnormal_alert', storedScenes['checkup.abnormal_alert']),
+    },
+    templates: {
+      'todo.reminder': { ...normalizeTemplate('todo.reminder'), ...storedTemplates['todo.reminder'] },
+      'card.balance_low': { ...normalizeTemplate('card.balance_low'), ...storedTemplates['card.balance_low'] },
+      'card.billing_upcoming': { ...normalizeTemplate('card.billing_upcoming'), ...storedTemplates['card.billing_upcoming'] },
+      'loan.repayment_upcoming': { ...normalizeTemplate('loan.repayment_upcoming'), ...storedTemplates['loan.repayment_upcoming'] },
+      'loan.repayment_overdue': { ...normalizeTemplate('loan.repayment_overdue'), ...storedTemplates['loan.repayment_overdue'] },
+      'checkup.followup_reminder': { ...normalizeTemplate('checkup.followup_reminder'), ...storedTemplates['checkup.followup_reminder'] },
+      'checkup.abnormal_alert': { ...normalizeTemplate('checkup.abnormal_alert'), ...storedTemplates['checkup.abnormal_alert'] },
+    },
+    logs: Array.isArray(state?.logs) ? state.logs.map(normalizeLogEntry) : [],
+  };
+}
+
 let notificationCenterCache: NotificationCenterState = readStorage<NotificationCenterState>(
   STORAGE_KEY,
   getDefaultState(),
 );
+notificationCenterCache = normalizeNotificationCenterState(notificationCenterCache);
 
 function emitChange() {
   window.dispatchEvent(new CustomEvent(EVENT_NAME));
 }
 
 function saveState(nextState: NotificationCenterState) {
-  notificationCenterCache = nextState;
-  writeStorage(STORAGE_KEY, nextState);
+  notificationCenterCache = normalizeNotificationCenterState(nextState);
+  writeStorage(STORAGE_KEY, notificationCenterCache);
   emitChange();
 }
 
@@ -299,7 +388,9 @@ export function enqueueSceneNotification(
 function subscribe(callback: () => void) {
   const handler = () => callback();
   const storageHandler = () => {
-    notificationCenterCache = readStorage<NotificationCenterState>(STORAGE_KEY, getDefaultState());
+    notificationCenterCache = normalizeNotificationCenterState(
+      readStorage<NotificationCenterState>(STORAGE_KEY, getDefaultState()),
+    );
     callback();
   };
 
@@ -318,8 +409,13 @@ export function useNotificationCenterState() {
 
 export function getBoundChannelCount(sceneId: NotificationSceneId) {
   const state = getNotificationCenterState();
+  const scene = state.scenes[sceneId];
 
-  return state.scenes[sceneId].channels.filter((channel) => {
+  if (!scene) {
+    return 0;
+  }
+
+  return scene.channels.filter((channel) => {
     const config = state.channels[channel];
     return config.enabled && isChannelReady(config);
   }).length;

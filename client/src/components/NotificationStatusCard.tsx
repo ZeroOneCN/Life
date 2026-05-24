@@ -18,6 +18,26 @@ export function NotificationStatusCard({
   const scene = notificationState.scenes[sceneId];
   const boundChannels = getBoundChannelCount(sceneId);
 
+  if (!scene) {
+    return (
+      <div className="card notification-status-card">
+        <div className="notification-status-top">
+          <div>
+            <h3 className="card-title">{title}</h3>
+            <p className="section-description">{summary}</p>
+          </div>
+          <Tag tone="orange">场景初始化中</Tag>
+        </div>
+        <div className="callout callout-info">
+          通知中心正在补齐该场景的本地配置，刷新后会恢复正常显示。
+        </div>
+        <Btn tone="ghost" onClick={() => navigate('/notifications?tab=scenes')}>
+          前往通知中心查看
+        </Btn>
+      </div>
+    );
+  }
+
   return (
     <div className="card notification-status-card">
       <div className="notification-status-top">
