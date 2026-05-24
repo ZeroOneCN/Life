@@ -3,6 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (() => {
+        const themeKey = 'lifeos_theme';
+        const fallbackTheme = 'dark';
+
+        try {
+          const storedTheme = window.localStorage.getItem(themeKey);
+          const theme = storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : fallbackTheme;
+
+          document.documentElement.setAttribute('data-theme', theme);
+          document.documentElement.style.colorScheme = theme;
+        } catch {
+          document.documentElement.setAttribute('data-theme', fallbackTheme);
+          document.documentElement.style.colorScheme = fallbackTheme;
+        }
+      })();
+    </script>
+    <style>
+      html {
+        background: #010102;
+        color-scheme: dark;
+      }
+
+      html[data-theme="light"] {
+        background: #f6f7fb;
+        color-scheme: light;
+      }
+    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

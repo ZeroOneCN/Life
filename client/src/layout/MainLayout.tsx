@@ -67,21 +67,30 @@ function findParentKey(pathname: string) {
   return ['health', 'finance', 'life', 'investment'].includes(prefix) ? prefix : null;
 }
 
+function getActiveMenuKey(pathname: string) {
+  return findParentKey(pathname) ?? pathname;
+}
+
 function MenuNode({
   item,
   pathname,
   collapsed,
   openGroups,
+  activeMenuKey,
   setOpenGroups,
+  setActiveMenuKey,
 }: {
   item: MenuItemConfig;
   pathname: string;
   collapsed: boolean;
   openGroups: string[];
+  activeMenuKey: string;
   setOpenGroups: React.Dispatch<React.SetStateAction<string[]>>;
+  setActiveMenuKey: React.Dispatch<React.SetStateAction<string>>;
 }) {
-  const isActive = item.key === pathname || item.children?.some((child) => child.key === pathname);
+  const isRouteActive = item.key === pathname || item.children?.some((child) => child.key === pathname);
   const isOpen = openGroups.includes(item.key);
+  const isActive = item.children?.length ? activeMenuKey === item.key : activeMenuKey === item.key || isRouteActive;
 
   if (item.children?.length) {
     return (
@@ -90,11 +99,8 @@ function MenuNode({
           type="button"
           className={`menu-link ${isActive ? 'is-active' : ''}`}
           onClick={() => {
-            setOpenGroups((previous) => (
-              previous.includes(item.key)
-                ? previous.filter((key) => key !== item.key)
-                : [item.key]
-            ));
+            setActiveMenuKey(item.key);
+            setOpenGroups((previous) => (previous.includes(item.key) ? [] : [item.key]));
           }}
           aria-expanded={isOpen}
         >
@@ -111,6 +117,7 @@ function MenuNode({
                 key={child.key}
                 to={child.key}
                 className={`menu-link menu-child ${pathname === child.key ? 'is-active' : ''}`}
+                onClick={() => setActiveMenuKey(item.key)}
               >
                 <span className="menu-link-main">
                   <Icon name={child.icon} />
@@ -125,7 +132,11 @@ function MenuNode({
   }
 
   return (
-    <Link to={item.key} className={`menu-link ${isActive ? 'is-active' : ''}`}>
+    <Link
+      to={item.key}
+      className={`menu-link ${isActive ? 'is-active' : ''}`}
+      onClick={() => setActiveMenuKey(item.key)}
+    >
       <span className="menu-link-main">
         <Icon name={item.icon} />
         {!collapsed ? <span className="menu-label">{item.label}</span> : null}
@@ -142,6 +153,7 @@ export default function MainLayout() {
     const parent = findParentKey(location.pathname);
     return parent ? [parent] : [];
   });
+  const [activeMenuKey, setActiveMenuKey] = useState(() => getActiveMenuKey(location.pathname));
 
   const route = routes.find((item) => item.path === location.pathname);
   const breadcrumb = route?.breadcrumb ?? ['页面'];
@@ -149,9 +161,8 @@ export default function MainLayout() {
 
   useEffect(() => {
     const parent = findParentKey(location.pathname);
-    if (parent) {
-      setOpenGroups([parent]);
-    }
+    setOpenGroups(parent ? [parent] : []);
+    setActiveMenuKey(getActiveMenuKey(location.pathname));
   }, [location.pathname]);
 
   return (
@@ -171,7 +182,9 @@ export default function MainLayout() {
               pathname={location.pathname}
               collapsed={collapsed}
               openGroups={openGroups}
+              activeMenuKey={activeMenuKey}
               setOpenGroups={setOpenGroups}
+              setActiveMenuKey={setActiveMenuKey}
             />
           ))}
         </nav>

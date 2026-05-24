@@ -9,6 +9,7 @@ import {
 import type { ReactNode } from 'react';
 
 const THEME_KEY = 'lifeos_theme';
+type ThemeMode = 'dark' | 'light';
 
 interface ThemeContextValue {
   isDark: boolean;
@@ -17,20 +18,29 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function getInitialTheme() {
+function resolveInitialTheme(): ThemeMode {
   try {
-    return window.localStorage.getItem(THEME_KEY) !== 'light';
+    const domTheme = document.documentElement.getAttribute('data-theme');
+    if (domTheme === 'dark' || domTheme === 'light') {
+      return domTheme;
+    }
+
+    const storedTheme = window.localStorage.getItem(THEME_KEY);
+    return storedTheme === 'light' ? 'light' : 'dark';
   } catch {
-    return true;
+    return 'dark';
   }
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [isDark, setIsDark] = useState(getInitialTheme);
+  const [isDark, setIsDark] = useState(() => resolveInitialTheme() === 'dark');
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-    window.localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+    const theme = isDark ? 'dark' : 'light';
+
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.style.colorScheme = theme;
+    window.localStorage.setItem(THEME_KEY, theme);
   }, [isDark]);
 
   const toggleTheme = useCallback(() => {
