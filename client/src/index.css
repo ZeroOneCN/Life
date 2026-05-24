@@ -18,8 +18,8 @@
   --color-success: #27a644;
   --color-danger: #e5484d;
   --color-warning: #f59e0b;
-  --font-sans: "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: "Inter", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, monospace;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 18px;
@@ -129,10 +129,9 @@ textarea {
 
 .sidebar-brand {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  padding: 10px 10px 18px;
+  padding: 10px 12px 18px;
   border-bottom: 1px solid var(--color-hairline);
 }
 
@@ -160,6 +159,13 @@ textarea {
   backdrop-filter: blur(18px);
 }
 
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
 .content {
   padding: 28px;
 }
@@ -176,34 +182,36 @@ textarea {
 .menu {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   padding-top: 16px;
 }
 
 .menu-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .submenu {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-left: 18px;
+  padding-left: 14px;
 }
 
 .menu-link {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  min-height: 42px;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
   padding: 10px 12px;
   border-radius: 12px;
   color: var(--color-ink-subtle);
   background: transparent;
   border: 1px solid transparent;
+  text-align: left;
 }
 
 .menu-link:hover {
@@ -221,6 +229,29 @@ textarea {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.menu-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-child {
+  padding-left: 14px;
+}
+
+.menu-chevron {
+  flex-shrink: 0;
+  color: var(--color-ink-tertiary);
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.menu-chevron.is-open {
+  transform: rotate(90deg);
+  color: var(--color-ink);
 }
 
 .page-stack {
@@ -727,10 +758,26 @@ textarea {
 .icon-button {
   min-width: 38px;
   min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--color-hairline);
   border-radius: 10px;
   background: var(--color-surface-2);
   color: var(--color-ink);
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.icon-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--color-hairline-strong);
+  background: var(--color-surface-3);
+}
+
+.theme-toggle {
+  font-size: 18px;
+  line-height: 1;
 }
 
 @media (max-width: 960px) {
@@ -742,10 +789,17 @@ textarea {
   .page-header,
   .switch-row,
   .notification-status-top,
-  .list-row,
-  .topbar {
+  .list-row {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .topbar {
+    align-items: stretch;
+  }
+
+  .topbar-left {
+    width: 100%;
   }
 
   .sidebar {

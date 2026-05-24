@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 
 import { menuItems, routes } from '../config/navigation';
@@ -23,6 +23,41 @@ function Icon({ name }: { name: IconKey }) {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d={iconMap[name]} />
+    </svg>
+  );
+}
+
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`menu-chevron ${open ? 'is-open' : ''}`}
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M9 6l6 6-6 6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SidebarToggleIcon({ collapsed }: { collapsed: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d={collapsed ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6'}
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -58,15 +93,16 @@ function MenuNode({
             setOpenGroups((previous) => (
               previous.includes(item.key)
                 ? previous.filter((key) => key !== item.key)
-                : [...previous, item.key]
+                : [item.key]
             ));
           }}
+          aria-expanded={isOpen}
         >
           <span className="menu-link-main">
             <Icon name={item.icon} />
-            {!collapsed ? <span>{item.label}</span> : null}
+            {!collapsed ? <span className="menu-label">{item.label}</span> : null}
           </span>
-          {!collapsed ? <span className="subtle-text">{isOpen ? '收起' : '展开'}</span> : null}
+          {!collapsed ? <ChevronIcon open={isOpen} /> : null}
         </button>
         {isOpen && !collapsed ? (
           <div className="submenu">
@@ -76,8 +112,10 @@ function MenuNode({
                 to={child.key}
                 className={`menu-link menu-child ${pathname === child.key ? 'is-active' : ''}`}
               >
-                <Icon name={child.icon} />
-                <span>{child.label}</span>
+                <span className="menu-link-main">
+                  <Icon name={child.icon} />
+                  <span className="menu-label">{child.label}</span>
+                </span>
               </Link>
             ))}
           </div>
@@ -88,8 +126,10 @@ function MenuNode({
 
   return (
     <Link to={item.key} className={`menu-link ${isActive ? 'is-active' : ''}`}>
-      <Icon name={item.icon} />
-      {!collapsed ? <span>{item.label}</span> : null}
+      <span className="menu-link-main">
+        <Icon name={item.icon} />
+        {!collapsed ? <span className="menu-label">{item.label}</span> : null}
+      </span>
     </Link>
   );
 }
@@ -122,9 +162,6 @@ export default function MainLayout() {
             <strong>{collapsed ? 'LO' : 'LifeOS'}</strong>
             {!collapsed ? <span className="subtle-text">TypeScript Admin</span> : null}
           </div>
-          <button className="icon-button" type="button" onClick={() => setCollapsed((previous) => !previous)}>
-            {collapsed ? '→' : '←'}
-          </button>
         </div>
         <nav className="menu">
           {menuItems.map((item) => (
@@ -142,16 +179,31 @@ export default function MainLayout() {
 
       <div className="layout-main" style={{ marginLeft: sidebarWidth }}>
         <header className="topbar">
-          <div className="breadcrumb">
-            {breadcrumb.map((item, index) => (
-              <span key={item} className={index === breadcrumb.length - 1 ? 'is-current' : ''}>
-                {index ? ' / ' : ''}
-                {item}
-              </span>
-            ))}
+          <div className="topbar-left">
+            <button
+              className="icon-button"
+              type="button"
+              aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
+              onClick={() => setCollapsed((previous) => !previous)}
+            >
+              <SidebarToggleIcon collapsed={collapsed} />
+            </button>
+            <div className="breadcrumb">
+              {breadcrumb.map((item, index) => (
+                <span key={item} className={index === breadcrumb.length - 1 ? 'is-current' : ''}>
+                  {index ? ' / ' : ''}
+                  {item}
+                </span>
+              ))}
+            </div>
           </div>
-          <button className="icon-button" type="button" onClick={toggleTheme}>
-            {isDark ? '浅色' : '深色'}
+          <button
+            className="icon-button theme-toggle"
+            type="button"
+            aria-label={isDark ? '切换到日间模式' : '切换到夜间模式'}
+            onClick={toggleTheme}
+          >
+            {isDark ? '☀️' : '🌙'}
           </button>
         </header>
         <main className="content">
