@@ -1722,6 +1722,113 @@ textarea {
   padding: 6px 10px;
 }
 
+.medication-modal-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.medication-modal-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.medication-modal-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-hairline));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary) 8%, transparent),
+    color-mix(in srgb, var(--color-surface-2) 96%, transparent)
+  );
+}
+
+.medication-modal-summary-card strong {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.medication-modal-summary-label {
+  color: var(--color-ink-subtle);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.medication-modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 18px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-surface-3) 92%, transparent),
+    color-mix(in srgb, var(--color-surface-2) 98%, transparent)
+  );
+}
+
+.medication-modal-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.medication-modal-section-head strong {
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.medication-modal-section-head span {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+}
+
+.medication-modal-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.medication-modal-grid-records {
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.45fr);
+}
+
+.medication-modal-grid-dose {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.medication-modal-grid-purchase-main {
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.45fr) minmax(0, 0.95fr);
+}
+
+.medication-modal-grid-purchase-pricing {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.medication-modal-grid .field-label {
+  font-size: 12px;
+}
+
+.medication-modal-grid .field {
+  gap: 6px;
+}
+
+.medication-modal-grid input,
+.medication-modal-grid select,
+.medication-modal-grid .date-trigger {
+  min-height: 40px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
 .notification-status-top,
 .list-row {
   display: flex;
@@ -2003,7 +2110,12 @@ textarea {
   .medication-analysis-grid,
   .medication-summary-grid,
   .medication-reminder-grid,
-  .medication-threshold-grid {
+  .medication-threshold-grid,
+  .medication-modal-summary,
+  .medication-modal-grid-records,
+  .medication-modal-grid-dose,
+  .medication-modal-grid-purchase-main,
+  .medication-modal-grid-purchase-pricing {
     grid-template-columns: 1fr;
   }
 

@@ -158,6 +158,10 @@ export function MedicationPurchasesSection({
     }
   }, [page, totalPages]);
 
+  const editingTotalPrice = useMemo(() => (
+    inferTotalPrice(editingForm.quantity, editingForm.unitPrice) || editingForm.totalPrice || '0.00'
+  ), [editingForm.quantity, editingForm.totalPrice, editingForm.unitPrice]);
+
   const purchaseSummary = useMemo(() => ({
     totalCount: filteredPurchases.length,
     totalQuantity: filteredPurchases.reduce((sum, record) => sum + record.quantity, 0),
@@ -277,7 +281,7 @@ export function MedicationPurchasesSection({
             step="0.01"
             value={form.unitPrice}
             onChange={(event) => setForm((previous) => ({ ...previous, unitPrice: event.target.value }))}
-            placeholder="例如：1.50"
+            placeholder="例如：12.50"
           />
           <Field
             label="总价"
@@ -346,13 +350,15 @@ export function MedicationPurchasesSection({
           setEditingForm(createDefaultFormState());
         }}
         title={editingPurchase ? `编辑购药记录：${editingPurchase.medicineName}` : '编辑购药记录'}
-        width={860}
+        width={900}
         footer={(
           <>
-            <Btn tone="secondary" onClick={() => {
-              setEditingPurchase(null);
-              setEditingForm(createDefaultFormState());
-            }}
+            <Btn
+              tone="secondary"
+              onClick={() => {
+                setEditingPurchase(null);
+                setEditingForm(createDefaultFormState());
+              }}
             >
               取消
             </Btn>
@@ -360,59 +366,92 @@ export function MedicationPurchasesSection({
           </>
         )}
       >
-        <div className="medication-purchase-grid">
-          <DatePickerField
-            label="购买日期"
-            value={editingForm.purchaseDate}
-            onChange={(value) => setEditingForm((previous) => ({ ...previous, purchaseDate: value }))}
-            clearable={false}
-          />
-          <Field
-            label="药品名称"
-            value={editingForm.medicineName}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, medicineName: event.target.value }))}
-          />
-          <Field
-            label="数量"
-            type="number"
-            min="0"
-            value={editingForm.quantity}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, quantity: event.target.value }))}
-          />
-          <SelectField
-            label="单位"
-            value={editingForm.unit}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, unit: event.target.value }))}
-          >
-            {MEDICATION_UNITS.map((item) => (
-              <option key={item} value={item}>{item}</option>
-            ))}
-          </SelectField>
-          <Field
-            label="单价"
-            type="number"
-            min="0"
-            step="0.01"
-            value={editingForm.unitPrice}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, unitPrice: event.target.value }))}
-          />
-          <Field
-            label="总价"
-            type="number"
-            min="0"
-            step="0.01"
-            value={editingForm.totalPrice}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, totalPrice: event.target.value }))}
-          />
-          <SelectField
-            label="购买渠道"
-            value={editingForm.channel}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, channel: event.target.value }))}
-          >
-            {MEDICATION_CHANNELS.map((item) => (
-              <option key={item} value={item}>{item}</option>
-            ))}
-          </SelectField>
+        <div className="medication-modal-layout">
+          <div className="medication-modal-summary">
+            <div className="medication-modal-summary-card">
+              <span className="medication-modal-summary-label">当前用户</span>
+              <strong>{editingPurchase?.userId ?? '-'}</strong>
+            </div>
+            <div className="medication-modal-summary-card">
+              <span className="medication-modal-summary-label">估算总价</span>
+              <strong>¥{editingTotalPrice}</strong>
+            </div>
+            <div className="medication-modal-summary-card">
+              <span className="medication-modal-summary-label">购买渠道</span>
+              <strong>{editingForm.channel || '-'}</strong>
+            </div>
+          </div>
+
+          <div className="medication-modal-section">
+            <div className="medication-modal-section-head">
+              <strong>基础信息</strong>
+              <span>先确认日期、药品和单位，再继续调整数量与价格。</span>
+            </div>
+            <div className="medication-modal-grid medication-modal-grid-purchase-main">
+              <DatePickerField
+                label="购买日期"
+                value={editingForm.purchaseDate}
+                onChange={(value) => setEditingForm((previous) => ({ ...previous, purchaseDate: value }))}
+                clearable={false}
+              />
+              <Field
+                label="药品名称"
+                value={editingForm.medicineName}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, medicineName: event.target.value }))}
+                placeholder="例如：感冒灵"
+              />
+              <SelectField
+                label="购买渠道"
+                value={editingForm.channel}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, channel: event.target.value }))}
+              >
+                {MEDICATION_CHANNELS.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </SelectField>
+            </div>
+          </div>
+
+          <div className="medication-modal-section">
+            <div className="medication-modal-section-head">
+              <strong>数量与金额</strong>
+              <span>金额会根据数量与单价自动联动，你仍然可以按实际支付金额覆盖总价。</span>
+            </div>
+            <div className="medication-modal-grid medication-modal-grid-purchase-pricing">
+              <Field
+                label="数量"
+                type="number"
+                min="0"
+                value={editingForm.quantity}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, quantity: event.target.value }))}
+              />
+              <SelectField
+                label="单位"
+                value={editingForm.unit}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, unit: event.target.value }))}
+              >
+                {MEDICATION_UNITS.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </SelectField>
+              <Field
+                label="单价"
+                type="number"
+                min="0"
+                step="0.01"
+                value={editingForm.unitPrice}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, unitPrice: event.target.value }))}
+              />
+              <Field
+                label="总价"
+                type="number"
+                min="0"
+                step="0.01"
+                value={editingForm.totalPrice}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, totalPrice: event.target.value }))}
+              />
+            </div>
+          </div>
         </div>
       </Modal>
 

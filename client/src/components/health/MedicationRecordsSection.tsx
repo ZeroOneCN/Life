@@ -108,6 +108,7 @@ export function MedicationRecordsSection({
       .filter((record) => (!endDate || record.date <= endDate))
       .filter((record) => {
         const total = record.breakfast + record.lunch + record.dinner;
+
         if (minimum !== null && total < minimum) {
           return false;
         }
@@ -136,6 +137,10 @@ export function MedicationRecordsSection({
       setPage(totalPages);
     }
   }, [page, totalPages]);
+
+  const editingTotalDose = useMemo(() => (
+    Number(editingForm.breakfast || 0) + Number(editingForm.lunch || 0) + Number(editingForm.dinner || 0)
+  ), [editingForm.breakfast, editingForm.dinner, editingForm.lunch]);
 
   const columns = useMemo(() => [
     { key: 'date', title: '日期', dataIndex: 'date' as const },
@@ -171,6 +176,7 @@ export function MedicationRecordsSection({
 
   const handleCreate = () => {
     const draft = parseDraft(form, activeUserId);
+
     if (!draft) {
       showToast('请补全日期、药品名称，并至少填写一个大于 0 的时段用量。', 'error');
       return;
@@ -245,7 +251,7 @@ export function MedicationRecordsSection({
         </div>
 
         <div className="fitness-form-actions">
-          <span className="subtle-text">当前记录默认按“片/粒/袋”等离散单位估算库存，便于后续低库存提醒。</span>
+          <span className="subtle-text">当前记录默认按“片 / 粒 / 袋”等离散单位估算库存，便于后续低库存提醒。</span>
           <Btn tone="primary" onClick={handleCreate}>保存每日用药</Btn>
         </div>
 
@@ -305,10 +311,12 @@ export function MedicationRecordsSection({
         width={760}
         footer={(
           <>
-            <Btn tone="secondary" onClick={() => {
-              setEditingRecord(null);
-              setEditingForm(createDefaultFormState());
-            }}
+            <Btn
+              tone="secondary"
+              onClick={() => {
+                setEditingRecord(null);
+                setEditingForm(createDefaultFormState());
+              }}
             >
               取消
             </Btn>
@@ -316,39 +324,72 @@ export function MedicationRecordsSection({
           </>
         )}
       >
-        <div className="medication-entry-grid">
-          <DatePickerField
-            label="日期"
-            value={editingForm.date}
-            onChange={(value) => setEditingForm((previous) => ({ ...previous, date: value }))}
-            clearable={false}
-          />
-          <Field
-            label="药品名称"
-            value={editingForm.medicineName}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, medicineName: event.target.value }))}
-          />
-          <Field
-            label="早餐用量"
-            type="number"
-            min="0"
-            value={editingForm.breakfast}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, breakfast: event.target.value }))}
-          />
-          <Field
-            label="午餐用量"
-            type="number"
-            min="0"
-            value={editingForm.lunch}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, lunch: event.target.value }))}
-          />
-          <Field
-            label="晚餐用量"
-            type="number"
-            min="0"
-            value={editingForm.dinner}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, dinner: event.target.value }))}
-          />
+        <div className="medication-modal-layout">
+          <div className="medication-modal-summary">
+            <div className="medication-modal-summary-card">
+              <span className="medication-modal-summary-label">当前用户</span>
+              <strong>{editingRecord?.userId ?? '-'}</strong>
+            </div>
+            <div className="medication-modal-summary-card">
+              <span className="medication-modal-summary-label">记录日期</span>
+              <strong>{editingForm.date || '-'}</strong>
+            </div>
+            <div className="medication-modal-summary-card">
+              <span className="medication-modal-summary-label">总用量</span>
+              <strong>{editingTotalDose}</strong>
+            </div>
+          </div>
+
+          <div className="medication-modal-section">
+            <div className="medication-modal-section-head">
+              <strong>基础信息</strong>
+              <span>先确认日期和药品名称，再调整三个时段的服药剂量。</span>
+            </div>
+            <div className="medication-modal-grid medication-modal-grid-records">
+              <DatePickerField
+                label="日期"
+                value={editingForm.date}
+                onChange={(value) => setEditingForm((previous) => ({ ...previous, date: value }))}
+                clearable={false}
+              />
+              <Field
+                label="药品名称"
+                value={editingForm.medicineName}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, medicineName: event.target.value }))}
+                placeholder="例如：维生素 C"
+              />
+            </div>
+          </div>
+
+          <div className="medication-modal-section">
+            <div className="medication-modal-section-head">
+              <strong>三餐用量</strong>
+              <span>保存后会同步刷新趋势分析、每日总结和提醒触发条件。</span>
+            </div>
+            <div className="medication-modal-grid medication-modal-grid-dose">
+              <Field
+                label="早餐用量"
+                type="number"
+                min="0"
+                value={editingForm.breakfast}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, breakfast: event.target.value }))}
+              />
+              <Field
+                label="午餐用量"
+                type="number"
+                min="0"
+                value={editingForm.lunch}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, lunch: event.target.value }))}
+              />
+              <Field
+                label="晚餐用量"
+                type="number"
+                min="0"
+                value={editingForm.dinner}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, dinner: event.target.value }))}
+              />
+            </div>
+          </div>
         </div>
       </Modal>
 
