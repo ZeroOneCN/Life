@@ -2453,16 +2453,29 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.rent-entry-grid-primary {
+  grid-template-columns:
+    minmax(180px, 0.9fr)
+    minmax(180px, 1fr)
+    minmax(170px, 0.9fr)
+    minmax(170px, 0.9fr);
+  align-items: end;
+}
+
 .rent-entry-grid-secondary {
   grid-template-columns: 1fr;
 }
 
 .rent-cost-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .rent-summary-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.rent-record-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .rent-detail-grid {
@@ -2471,6 +2484,15 @@ textarea {
 
 .rent-statistics-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.rent-entry-cell {
+  min-width: 0;
+}
+
+.rent-entry-cell-address,
+.rent-entry-cell-full {
+  grid-column: 1 / -1;
 }
 
 .rent-inline-action {
@@ -2525,6 +2547,21 @@ textarea {
 
 .rent-channel-form-grid-modal {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.rent-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rent-form-actions .btn {
+  min-width: 152px;
+}
+
+.rent-chart-card-compact {
+  max-width: 460px;
 }
 
 .loan-context-grid,
@@ -3163,13 +3200,21 @@ textarea {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .rent-entry-grid-primary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .rent-cost-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .rent-summary-grid,
   .rent-statistics-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rent-record-summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .rent-channel-form-grid {
@@ -3315,5 +3360,13 @@ textarea {
   .travel-pay-channel-actions,
   .travel-channel-create {
     grid-template-columns: 1fr;
+  }
+
+  .rent-form-actions {
+    justify-content: stretch;
+  }
+
+  .rent-form-actions .btn {
+    width: 100%;
   }
 }

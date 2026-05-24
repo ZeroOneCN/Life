@@ -240,7 +240,7 @@ export function RentEntrySection({
   return (
     <SectionCard
       title="录入编辑"
-      description="新增和编辑统一走大表单，避免把住房档案这种重表单挤进小弹窗里。"
+      description="新增和编辑统一走大表单，尽量把常用信息并列展开，减少上下滚动。"
       action={<Tag tone={editingRecord ? 'orange' : 'green'}>{editingRecord ? '编辑模式' : '新增模式'}</Tag>}
     >
       <div className="page-stack">
@@ -249,40 +249,54 @@ export function RentEntrySection({
           保存成功后会自动回到住房记录列表，并保留完整的渠道快照与成本统计。
         </div>
 
-        <div className="rent-entry-grid">
-          <Field
-            label="用户 ID"
-            value={form.userId}
-            onChange={(event) => setForm((previous) => ({ ...previous, userId: event.target.value }))}
-            placeholder="例如：user-001"
-          />
-          <Field
-            label="住房地址"
-            value={form.address}
-            onChange={(event) => setForm((previous) => ({ ...previous, address: event.target.value }))}
-            placeholder="例如：上海市浦东新区锦绣路 1888 弄 8 号 1202"
-          />
-          <SelectField
-            label="租房渠道"
-            value={form.channelId}
-            onChange={(event) => setForm((previous) => ({ ...previous, channelId: event.target.value }))}
-          >
-            {availableChannels.map((channel) => (
-              <option key={channel.id} value={channel.id}>{channel.name}</option>
-            ))}
-          </SelectField>
-          <DatePickerField
-            label="入住日期"
-            value={form.moveInDate}
-            onChange={(value) => setForm((previous) => ({ ...previous, moveInDate: value }))}
-            clearable={false}
-          />
-          <DatePickerField
-            label="退租日期"
-            value={form.moveOutDate}
-            onChange={(value) => setForm((previous) => ({ ...previous, moveOutDate: value }))}
-            placeholder="未退租可留空"
-          />
+        <div className="rent-entry-grid rent-entry-grid-primary">
+          <div className="rent-entry-cell rent-entry-cell-address">
+            <Field
+              label="住房地址"
+              value={form.address}
+              onChange={(event) => setForm((previous) => ({ ...previous, address: event.target.value }))}
+              placeholder="例如：上海市浦东新区锦绣路 1888 弄 8 号 1202"
+            />
+          </div>
+
+          <div className="rent-entry-cell">
+            <Field
+              label="用户 ID"
+              value={form.userId}
+              onChange={(event) => setForm((previous) => ({ ...previous, userId: event.target.value }))}
+              placeholder="例如：user-001"
+            />
+          </div>
+
+          <div className="rent-entry-cell">
+            <SelectField
+              label="租房渠道"
+              value={form.channelId}
+              onChange={(event) => setForm((previous) => ({ ...previous, channelId: event.target.value }))}
+            >
+              {availableChannels.map((channel) => (
+                <option key={channel.id} value={channel.id}>{channel.name}</option>
+              ))}
+            </SelectField>
+          </div>
+
+          <div className="rent-entry-cell">
+            <DatePickerField
+              label="入住日期"
+              value={form.moveInDate}
+              onChange={(value) => setForm((previous) => ({ ...previous, moveInDate: value }))}
+              clearable={false}
+            />
+          </div>
+
+          <div className="rent-entry-cell">
+            <DatePickerField
+              label="退租日期"
+              value={form.moveOutDate}
+              onChange={(value) => setForm((previous) => ({ ...previous, moveOutDate: value }))}
+              placeholder="未退租可留空"
+            />
+          </div>
         </div>
 
         <div className="rent-cost-grid">
@@ -311,13 +325,15 @@ export function RentEntrySection({
         </div>
 
         <div className="rent-entry-grid rent-entry-grid-secondary">
-          <TextArea
-            label="备注"
-            value={form.notes}
-            onChange={(event) => setForm((previous) => ({ ...previous, notes: event.target.value }))}
-            placeholder="记录房屋朝向、物业、地铁距离、退租原因等补充信息"
-            rows={4}
-          />
+          <div className="rent-entry-cell rent-entry-cell-full">
+            <TextArea
+              label="备注"
+              value={form.notes}
+              onChange={(event) => setForm((previous) => ({ ...previous, notes: event.target.value }))}
+              placeholder="记录房屋朝向、物业、地铁距离、退租原因等补充信息"
+              rows={3}
+            />
+          </div>
         </div>
 
         <StatGrid
@@ -336,7 +352,7 @@ export function RentEntrySection({
           ]}
         />
 
-        <div className="rent-inline-action">
+        <div className="rent-form-actions">
           <Btn tone="secondary" onClick={handleReset}>清空表单</Btn>
           <Btn tone="primary" onClick={handleSave}>{editingRecord ? '保存住房记录' : '新增住房记录'}</Btn>
         </div>

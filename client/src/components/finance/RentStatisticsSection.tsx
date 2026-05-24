@@ -81,7 +81,7 @@ export function RentStatisticsSection({
             value={userId}
             onChange={(event) => onUserIdChange(event.target.value)}
             placeholder="留空查看全部用户"
-            hint="统计页的总览卡、费用结构和渠道分布都会跟随这里刷新。"
+            hint="总览卡、费用结构和渠道分布都会跟随这里刷新。"
           />
         </div>
 
@@ -102,10 +102,14 @@ export function RentStatisticsSection({
         />
 
         <div className="rent-statistics-grid">
-          <ChartCard title="费用结构占比" description="不含押金，只统计真实居住成本。">
+          <ChartCard
+            title="费用结构占比"
+            description="不含押金，只统计真实居住成本。"
+            className="rent-chart-card-compact"
+          >
             {costBreakdown.length ? (
               <div className="fitness-chart-shell">
-                <ResponsiveContainer width="100%" height={320}>
+                <ResponsiveContainer width="100%" height={260}>
                   <PieChart>
                     <Pie
                       data={costBreakdown}
@@ -113,7 +117,7 @@ export function RentStatisticsSection({
                       nameKey="label"
                       cx="50%"
                       cy="50%"
-                      outerRadius={96}
+                      outerRadius={74}
                       label={({ name, percent }) => `${name} ${(Number(percent ?? 0) * 100).toFixed(0)}%`}
                       labelLine={false}
                     >

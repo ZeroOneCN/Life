@@ -188,7 +188,7 @@ export function RentRecordsSection({
         </div>
 
         <StatGrid
-          className="rent-summary-grid"
+          className="rent-summary-grid rent-record-summary-grid"
           items={[
             { label: '筛选结果', value: `${summary.count} 条`, helper: `当前状态：${getOccupancyLabel(occupancyFilter)}` },
             { label: '累计居住天数', value: `${summary.totalStayDays} 天` },
