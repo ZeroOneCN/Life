@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import dayjs from 'dayjs';
 import {
   Area,
   AreaChart,
@@ -8,8 +9,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import dayjs from 'dayjs';
 
+import { MonthPickerField } from '../date';
 import {
   STEP_AGGREGATE_PAGE_SIZE,
   STEP_HOURS,
@@ -35,7 +36,7 @@ const granularityOptions: StepStatsGranularity[] = ['daily', 'monthly'];
 
 function formatCompareLabel(changePercentage: number | null, trend: 'up' | 'down' | 'flat' | 'none') {
   if (changePercentage === null) {
-    return '上月无可比数据';
+    return '上月暂无可比数据';
   }
 
   if (trend === 'up') {
@@ -165,28 +166,19 @@ export function StepTrendSection({
           </label>
 
           {granularity === 'daily' ? (
-            <label className="field">
-              <span className="field-label">月份</span>
-              <div className="field-control field-control-date">
-                <input
-                  className="input-date-themed"
-                  type="month"
-                  value={selectedMonth}
-                  onChange={(event) => setSelectedMonth(event.target.value)}
-                />
-                <span className="field-control-icon" aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M7 2v3M17 2v3M4 9h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
-              </div>
-            </label>
+            <MonthPickerField
+              label="月份"
+              value={selectedMonth}
+              onChange={(nextValue) => {
+                if (!nextValue) {
+                  return;
+                }
+
+                setSelectedMonth(nextValue);
+              }}
+              clearable={false}
+              hint="按月份查看每日趋势。"
+            />
           ) : (
             <label className="field">
               <span className="field-label">年份</span>
@@ -267,7 +259,7 @@ export function StepTrendSection({
               </ResponsiveContainer>
             </div>
           ) : (
-            <EmptyState title="暂无统计数据" description="调整筛选条件或先录入几条步数记录。" />
+            <EmptyState title="暂无统计数据" description="调整筛选条件，或者先录入几条步数记录。" />
           )}
         </div>
 
@@ -290,7 +282,9 @@ export function StepTrendSection({
                   ? '-'
                   : `${compareSummary.changePercentage > 0 ? '+' : ''}${compareSummary.changePercentage}%`}
               </strong>
-              <Tag tone={getCompareTone(compareSummary.trend)}>{formatCompareLabel(compareSummary.changePercentage, compareSummary.trend)}</Tag>
+              <Tag tone={getCompareTone(compareSummary.trend)}>
+                {formatCompareLabel(compareSummary.changePercentage, compareSummary.trend)}
+              </Tag>
             </div>
           </div>
         ) : null}

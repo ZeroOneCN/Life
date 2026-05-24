@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import dayjs from 'dayjs';
 
+import { DateTimePickerField } from '../date';
+import { DeleteModal, Modal, Pagination, Btn, Field, SelectField } from '../ui';
 import {
   STEP_HOURS,
   STEP_RECORD_PAGE_SIZE,
@@ -11,7 +14,6 @@ import {
   inferStepHourFromRecordTime,
 } from '../../services/stepRecords';
 import type { StepHour, StepRecord, StepRecordDraft, StepRecordSortField } from '../../types/health';
-import { DeleteModal, Modal, Pagination, Btn, Field, SelectField } from '../ui';
 import { SectionCard } from '../page';
 
 type SortDirection = 'asc' | 'desc';
@@ -23,6 +25,14 @@ interface StepRecordsSectionProps {
   onDeleteRecord: (id: string) => void;
   onDeleteRecords: (ids: string[]) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
+}
+
+function getSortIndicator(active: boolean, direction: SortDirection) {
+  if (!active) {
+    return '↕';
+  }
+
+  return direction === 'asc' ? '↑' : '↓';
 }
 
 export function StepRecordsSection({
@@ -77,7 +87,7 @@ export function StepRecordsSection({
     if (page > totalPages) {
       setPage(totalPages);
     }
-  }, [page, totalPages, records.length]);
+  }, [page, records.length, totalPages]);
 
   const allPageSelected = pageRecords.length > 0 && pageRecords.every((record) => selectedIds.includes(record.id));
 
@@ -117,14 +127,23 @@ export function StepRecordsSection({
       return;
     }
 
-    const duplicate = findDuplicateStepRecord(records, {
-      steps,
-      hour: editingHour,
-      recordTime: editingRecordTime,
-    }, editingRecord.id);
+    if (!dayjs(editingRecordTime).isValid()) {
+      showToast('请选择有效的记录时间。', 'error');
+      return;
+    }
+
+    const duplicate = findDuplicateStepRecord(
+      records,
+      {
+        steps,
+        hour: editingHour,
+        recordTime: editingRecordTime,
+      },
+      editingRecord.id,
+    );
 
     if (duplicate) {
-      showToast('该时间段已存在记录，请调整时间段后再保存。', 'error');
+      showToast('该时间段已经存在记录，请调整后再保存。', 'error');
       return;
     }
 
@@ -138,7 +157,7 @@ export function StepRecordsSection({
   };
 
   return (
-    <SectionCard title="记录管理" description="支持排序、分页、编辑和批量删除。">
+    <SectionCard title="记录管理" description="支持排序、分页、编辑以及批量删除。">
       <div className="page-stack">
         <div className="step-records-toolbar">
           <div className="step-records-selection">
@@ -180,19 +199,19 @@ export function StepRecordsSection({
                     <th>
                       <button type="button" className="step-sort-button" onClick={() => toggleSort('steps')}>
                         步数
-                        <span>{sortField === 'steps' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}</span>
+                        <span>{getSortIndicator(sortField === 'steps', sortDirection)}</span>
                       </button>
                     </th>
                     <th>
                       <button type="button" className="step-sort-button" onClick={() => toggleSort('hour')}>
                         时间段
-                        <span>{sortField === 'hour' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}</span>
+                        <span>{getSortIndicator(sortField === 'hour', sortDirection)}</span>
                       </button>
                     </th>
                     <th>
                       <button type="button" className="step-sort-button" onClick={() => toggleSort('recordTime')}>
                         记录时间
-                        <span>{sortField === 'recordTime' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}</span>
+                        <span>{getSortIndicator(sortField === 'recordTime', sortDirection)}</span>
                       </button>
                     </th>
                     <th>距离</th>
@@ -237,7 +256,7 @@ export function StepRecordsSection({
         ) : (
           <div className="empty-state">
             <strong>还没有步数记录</strong>
-            <span>先在上方录入一条记录，这里会自动显示管理列表。</span>
+            <span>先在上方录入一条记录，这里会自动展示可管理的列表。</span>
           </div>
         )}
       </div>
@@ -262,35 +281,35 @@ export function StepRecordsSection({
             onChange={(event) => setEditingSteps(event.target.value)}
           />
 
-          <Field
+          <DateTimePickerField
             label="记录时间"
-            type="datetime-local"
             value={editingRecordTime}
-            onChange={(event) => {
-              const nextValue = event.target.value;
+            clearable={false}
+            onChange={(nextValue) => {
               setEditingRecordTime(nextValue);
               setEditingHour(inferStepHourFromRecordTime(nextValue));
             }}
+            hint="如果改到 23:59，会自动识别为全天记录。"
           />
 
           <SelectField
             label="时间段"
-              value={editingHour ?? ''}
-              onChange={(event) => {
-                const nextHour = event.target.value ? Number(event.target.value) as Exclude<StepHour, null> : null;
-                setEditingHour(nextHour);
+            value={editingHour ?? ''}
+            onChange={(event) => {
+              const nextHour = event.target.value ? Number(event.target.value) as Exclude<StepHour, null> : null;
+              setEditingHour(nextHour);
 
-                if (!editingRecordTime) {
-                  return;
-                }
+              if (!editingRecordTime) {
+                return;
+              }
 
-                setEditingRecordTime(buildStepRecordTime(editingRecordTime, nextHour, nextHour === null ? 59 : 0));
-              }}
-            >
-              <option value="">全天</option>
-              {STEP_HOURS.map((hour) => (
-                <option key={hour} value={hour}>{getStepHourLabel(hour)}</option>
-              ))}
+              setEditingRecordTime(buildStepRecordTime(editingRecordTime, nextHour, nextHour === null ? 59 : 0));
+            }}
+          >
+            <option value="">全天</option>
+            {STEP_HOURS.map((hour) => (
+              <option key={hour} value={hour}>{getStepHourLabel(hour)}</option>
+            ))}
           </SelectField>
         </div>
       </Modal>
@@ -310,7 +329,7 @@ export function StepRecordsSection({
         }}
         title="确认删除这条步数记录？"
       >
-        删除后，趋势统计和记录列表会立即同步更新。
+        删除后，趋势统计和记录列表会立即同步刷新。
       </DeleteModal>
 
       <DeleteModal

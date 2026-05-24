@@ -109,6 +109,11 @@ export default function StepPage() {
       return;
     }
 
+    if (!dayjs(recordTime).isValid()) {
+      showToast('请选择有效的记录时间。', 'error');
+      return;
+    }
+
     const draft: StepRecordDraft = {
       steps,
       hour: selectedHour,
@@ -128,7 +133,7 @@ export default function StepPage() {
     <div className="page-stack">
       <PageHeader
         title="运动步数"
-        subtitle="将参考原型重构为当前 LifeOS 的正式前端页面，统一走本地数据、Recharts 趋势和 TypeScript 状态管理。"
+        subtitle="把参考原型重构进当前 LifeOS 体系，统一本地数据、Recharts 趋势和 TypeScript 页面状态。"
       />
 
       <StatGrid
@@ -146,12 +151,14 @@ export default function StepPage() {
           {
             label: '历史记录',
             value: `${data.records.length}`,
-            helper: '支持编辑、排序与批量删除',
+            helper: '支持编辑、排序和批量删除',
           },
           {
             label: '当前步幅',
             value: `${data.settings.strideLength} m`,
-            helper: compareSummary.changePercentage === null ? '上月暂无可比数据' : `本月较上月 ${compareSummary.changePercentage > 0 ? '+' : ''}${compareSummary.changePercentage}%`,
+            helper: compareSummary.changePercentage === null
+              ? '上月暂无可比数据'
+              : `本月较上月 ${compareSummary.changePercentage > 0 ? '+' : ''}${compareSummary.changePercentage}%`,
           },
         ]}
       />
@@ -241,8 +248,8 @@ export default function StepPage() {
         )}
       >
         <SectionCard
-          title="重复记录提示"
-          description="同一天同一时间段只保留一条记录，确认后将使用本次输入覆盖旧数据。"
+          title="重复记录提醒"
+          description="同一天的同一时间段只保留一条记录，确认后会用本次输入覆盖旧数据。"
         >
           <div className="step-duplicate-summary">
             <div className="status-metadata">
@@ -250,7 +257,7 @@ export default function StepPage() {
               <span>新输入步数：{pendingDuplicate?.draft.steps.toLocaleString() ?? '-'}</span>
             </div>
             <div className="callout callout-info">
-              覆盖后，趋势统计、月对比和记录表格会立即同步更新。
+              覆盖后，趋势统计、月对比和记录表格都会立即同步更新。
             </div>
           </div>
         </SectionCard>

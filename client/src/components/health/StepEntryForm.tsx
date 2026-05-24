@@ -1,5 +1,6 @@
 import type { Ref } from 'react';
 
+import { DateTimePickerField } from '../date';
 import { Btn } from '../ui';
 import { STEP_HOURS, getStepHourLabel } from '../../services/stepRecords';
 import type { StepHour } from '../../types/health';
@@ -23,8 +24,8 @@ function getEntryTitle(hour: StepHour) {
 
 function getEntryDescription(hour: StepHour) {
   return hour === null
-    ? '适合补录当天总步数，重复提交会提醒是否覆盖。'
-    : '添加成功后会自动尝试切到下一个小时，连续录入更顺手。';
+    ? '适合补录当天总步数，重复提交时会提醒是否覆盖原有记录。'
+    : '保存成功后会自动尝试切到下一个小时，连续录入更顺手。';
 }
 
 export function StepEntryForm({
@@ -55,7 +56,7 @@ export function StepEntryForm({
               ref={stepsInputRef}
               type="number"
               min="1"
-              placeholder="输入步数"
+              placeholder="输入本次步数"
               value={stepsInput}
               onChange={(event) => onStepsInputChange(event.target.value)}
               onKeyDown={(event) => {
@@ -67,28 +68,13 @@ export function StepEntryForm({
             />
           </label>
 
-          <label className="field">
-            <span className="field-label">记录时间</span>
-            <div className="field-control field-control-date">
-              <input
-                className="input-date-themed"
-                type="datetime-local"
-                value={recordTime}
-                onChange={(event) => onRecordTimeChange(event.target.value)}
-              />
-              <span className="field-control-icon" aria-hidden="true">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M7 2v3M17 2v3M4 9h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-            </div>
-          </label>
+          <DateTimePickerField
+            label="记录时间"
+            value={recordTime}
+            onChange={onRecordTimeChange}
+            clearable={false}
+            hint="会和下方时间段联动，全天记录默认使用 23:59 保存。"
+          />
         </div>
 
         <div className="field">
@@ -109,13 +95,13 @@ export function StepEntryForm({
               className={`step-hour-button ${selectedHour === null ? 'is-active' : ''}`}
               onClick={() => onSelectHour(null)}
             >
-              全
+              全天
             </button>
           </div>
         </div>
 
         <div className="step-quick-actions">
-          <span className="step-quick-actions-label">快速选择时间点</span>
+          <span className="step-quick-actions-label">快捷时间点</span>
           <div className="step-quick-actions-list">
             {[7, 8, 9, 12, 18, 23].map((hour) => (
               <Btn
