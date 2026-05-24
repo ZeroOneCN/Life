@@ -4,6 +4,7 @@ import type {
   InputHTMLAttributes,
   PropsWithChildren,
   ReactNode,
+  SelectHTMLAttributes,
 } from 'react';
 import { useState } from 'react';
 
@@ -32,6 +33,12 @@ interface ModalProps {
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   hint?: string;
+}
+
+interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  label?: string;
+  hint?: string;
+  children: ReactNode;
 }
 
 interface SwitchProps {
@@ -161,10 +168,52 @@ export function PillTabs({
 }
 
 export function Field({ label, hint, ...rest }: FieldProps) {
+  const isDateLike = rest.type === 'date' || rest.type === 'month' || rest.type === 'datetime-local';
+
   return (
     <label className="field">
       {label ? <span className="field-label">{label}</span> : null}
-      <input {...rest} />
+      <div className={isDateLike ? 'field-control field-control-date' : undefined}>
+        <input className={isDateLike ? 'input-date-themed' : undefined} {...rest} />
+        {isDateLike ? (
+          <span className="field-control-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M7 2v3M17 2v3M4 9h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+        ) : null}
+      </div>
+      {hint ? <span className="field-hint">{hint}</span> : null}
+    </label>
+  );
+}
+
+export function SelectField({ label, hint, children, className = '', ...rest }: SelectFieldProps) {
+  return (
+    <label className="field">
+      {label ? <span className="field-label">{label}</span> : null}
+      <div className="field-control field-control-select">
+        <select className={`select-themed ${className}`.trim()} {...rest}>
+          {children}
+        </select>
+        <span className="field-control-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M7 10l5 5 5-5"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+      </div>
       {hint ? <span className="field-hint">{hint}</span> : null}
     </label>
   );

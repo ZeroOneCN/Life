@@ -104,6 +104,20 @@ textarea {
   resize: vertical;
 }
 
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] input[type="month"],
+[data-theme="dark"] input[type="datetime-local"],
+[data-theme="dark"] select {
+  color-scheme: dark;
+}
+
+[data-theme="light"] input[type="date"],
+[data-theme="light"] input[type="month"],
+[data-theme="light"] input[type="datetime-local"],
+[data-theme="light"] select {
+  color-scheme: light;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -451,6 +465,49 @@ textarea {
 .field-label {
   font-size: 14px;
   color: var(--color-ink-muted);
+}
+
+.field-control {
+  position: relative;
+}
+
+.field-control input,
+.field-control select {
+  padding-right: 42px;
+}
+
+.field-control-icon {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-ink-tertiary);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.select-themed {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: none;
+}
+
+.input-date-themed::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+
+.input-date-themed::-webkit-datetime-edit,
+.input-date-themed::-webkit-datetime-edit-fields-wrapper,
+.input-date-themed::-webkit-datetime-edit-text,
+.input-date-themed::-webkit-datetime-edit-month-field,
+.input-date-themed::-webkit-datetime-edit-day-field,
+.input-date-themed::-webkit-datetime-edit-year-field,
+.input-date-themed::-webkit-datetime-edit-hour-field,
+.input-date-themed::-webkit-datetime-edit-minute-field {
+  color: inherit;
 }
 
 .step-entry-panel,

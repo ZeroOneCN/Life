@@ -69,11 +69,25 @@ export function StepEntryForm({
 
           <label className="field">
             <span className="field-label">记录时间</span>
-            <input
-              type="datetime-local"
-              value={recordTime}
-              onChange={(event) => onRecordTimeChange(event.target.value)}
-            />
+            <div className="field-control field-control-date">
+              <input
+                className="input-date-themed"
+                type="datetime-local"
+                value={recordTime}
+                onChange={(event) => onRecordTimeChange(event.target.value)}
+              />
+              <span className="field-control-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M7 2v3M17 2v3M4 9h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+            </div>
           </label>
         </div>
 

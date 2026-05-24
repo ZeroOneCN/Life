@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { NotificationStatusCard } from '../../components/NotificationStatusCard';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { SettingSwitchCard } from '../../components/SettingSwitchCard';
-import { Btn, DataTable, Field, PillTabs, Toast, useToastState } from '../../components/ui';
+import { Btn, DataTable, Field, PillTabs, SelectField, Toast, useToastState } from '../../components/ui';
 import { useLocalStorageState } from '../../hooks/useLocalStorageState';
 import { usePageTab } from '../../hooks/usePageTab';
 import { enqueueSceneNotification, updateSceneConfig } from '../../services/notificationCenter';
@@ -149,9 +149,8 @@ export default function LoanPage() {
       {tab === 'bills' ? (
         <SectionCard title="账单规则" description="用统一规则梳理提醒频率和提前天数。">
           <div className="form-grid">
-            <label className="field">
-              <span className="field-label">提醒频率</span>
-              <select
+            <SelectField
+              label="提醒频率"
                 value={data.settings.notificationFrequency}
                 onChange={(event) => {
                   setData((previous) => ({
@@ -165,8 +164,7 @@ export default function LoanPage() {
               >
                 <option value="daily">每天一次</option>
                 <option value="always">每次进入</option>
-              </select>
-            </label>
+            </SelectField>
             <Field
               label="提前提醒天数"
               type="number"
@@ -221,9 +219,8 @@ export default function LoanPage() {
                   }));
                 }}
               />
-              <label className="field">
-                <span className="field-label">提醒频率</span>
-                <select
+              <SelectField
+                label="提醒频率"
                   value={data.settings.notificationFrequency}
                   onChange={(event) => {
                     setData((previous) => ({
@@ -237,8 +234,7 @@ export default function LoanPage() {
                 >
                   <option value="daily">每天一次</option>
                   <option value="always">每次进入</option>
-                </select>
-              </label>
+              </SelectField>
             </div>
           </SettingSwitchCard>
 

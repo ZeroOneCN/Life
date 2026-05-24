@@ -11,7 +11,7 @@ import {
   inferStepHourFromRecordTime,
 } from '../../services/stepRecords';
 import type { StepHour, StepRecord, StepRecordDraft, StepRecordSortField } from '../../types/health';
-import { DeleteModal, Modal, Pagination, Btn } from '../ui';
+import { DeleteModal, Modal, Pagination, Btn, Field, SelectField } from '../ui';
 import { SectionCard } from '../page';
 
 type SortDirection = 'asc' | 'desc';
@@ -254,32 +254,27 @@ export function StepRecordsSection({
         )}
       >
         <div className="page-stack">
-          <label className="field">
-            <span className="field-label">步数</span>
-            <input
-              type="number"
-              min="1"
-              value={editingSteps}
-              onChange={(event) => setEditingSteps(event.target.value)}
-            />
-          </label>
+          <Field
+            label="步数"
+            type="number"
+            min="1"
+            value={editingSteps}
+            onChange={(event) => setEditingSteps(event.target.value)}
+          />
 
-          <label className="field">
-            <span className="field-label">记录时间</span>
-            <input
-              type="datetime-local"
-              value={editingRecordTime}
-              onChange={(event) => {
-                const nextValue = event.target.value;
-                setEditingRecordTime(nextValue);
-                setEditingHour(inferStepHourFromRecordTime(nextValue));
-              }}
-            />
-          </label>
+          <Field
+            label="记录时间"
+            type="datetime-local"
+            value={editingRecordTime}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+              setEditingRecordTime(nextValue);
+              setEditingHour(inferStepHourFromRecordTime(nextValue));
+            }}
+          />
 
-          <label className="field">
-            <span className="field-label">时间段</span>
-            <select
+          <SelectField
+            label="时间段"
               value={editingHour ?? ''}
               onChange={(event) => {
                 const nextHour = event.target.value ? Number(event.target.value) as Exclude<StepHour, null> : null;
@@ -296,8 +291,7 @@ export function StepRecordsSection({
               {STEP_HOURS.map((hour) => (
                 <option key={hour} value={hour}>{getStepHourLabel(hour)}</option>
               ))}
-            </select>
-          </label>
+          </SelectField>
         </div>
       </Modal>
 

@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { NotificationStatusCard } from '../../components/NotificationStatusCard';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { SettingSwitchCard } from '../../components/SettingSwitchCard';
-import { Btn, Checkbox, Field, PillTabs, Toast, useToastState } from '../../components/ui';
+import { Btn, Checkbox, Field, PillTabs, SelectField, Toast, useToastState } from '../../components/ui';
 import { useLocalStorageState } from '../../hooks/useLocalStorageState';
 import { usePageTab } from '../../hooks/usePageTab';
 import { enqueueSceneNotification, updateSceneConfig } from '../../services/notificationCenter';
@@ -107,15 +107,12 @@ export default function TodoPage() {
                 onChange={(event) => setTaskTitle(event.target.value)}
                 placeholder="例如：确认周会材料"
               />
-              <label className="field">
-                <span className="field-label">分类</span>
-                <select value={taskCategory} onChange={(event) => setTaskCategory(event.target.value)}>
+              <SelectField label="分类" value={taskCategory} onChange={(event) => setTaskCategory(event.target.value)}>
                   <option value="生活">生活</option>
                   <option value="工作">工作</option>
                   <option value="健康">健康</option>
                   <option value="财务">财务</option>
-                </select>
-              </label>
+              </SelectField>
             </div>
             <Btn tone="primary" onClick={addTask}>添加待办</Btn>
           </SectionCard>
