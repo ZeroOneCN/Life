@@ -3649,6 +3649,147 @@ textarea {
   }
 }
 
+.subscription-context-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.subscription-top-summary,
+.subscription-records-summary,
+.subscription-dashboard-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.subscription-entry-grid,
+.subscription-filter-grid,
+.subscription-category-entry,
+.subscription-dashboard-toolbar,
+.subscription-settings-inline {
+  display: grid;
+  gap: 12px;
+}
+
+.subscription-entry-grid {
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  align-items: end;
+}
+
+.subscription-entry-grid > .field:nth-child(1),
+.subscription-entry-grid > .field:nth-child(2) {
+  grid-column: span 2;
+}
+
+.subscription-entry-grid > .field:nth-child(3),
+.subscription-entry-grid > .field:nth-child(4),
+.subscription-entry-grid > .field:nth-child(5),
+.subscription-entry-grid > .field:nth-child(6),
+.subscription-entry-grid > .field:nth-child(7) {
+  grid-column: span 1;
+}
+
+.subscription-entry-grid > .subscription-toggle-field,
+.subscription-entry-grid > .subscription-entry-action {
+  grid-column: span 1;
+}
+
+.subscription-filter-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: end;
+}
+
+.subscription-filter-grid > .field:first-child {
+  grid-column: span 2;
+}
+
+.subscription-category-entry {
+  grid-template-columns: minmax(180px, 1fr) minmax(260px, 1.4fr) auto;
+  align-items: end;
+}
+
+.subscription-dashboard-toolbar {
+  grid-template-columns: minmax(180px, 220px);
+}
+
+.subscription-dashboard-grid,
+.subscription-settings-grid,
+.subscription-notification-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.subscription-upcoming-list {
+  display: grid;
+  gap: 10px;
+}
+
+.subscription-upcoming-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-surface-2) 84%, transparent);
+}
+
+.subscription-upcoming-item strong,
+.subscription-upcoming-item span {
+  display: block;
+}
+
+.subscription-upcoming-item span {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+}
+
+.subscription-toggle-field {
+  display: grid;
+  gap: 8px;
+}
+
+.subscription-entry-action {
+  display: flex;
+  align-items: flex-end;
+  min-height: 42px;
+}
+
+.subscription-entry-action .btn {
+  width: 100%;
+}
+
+.subscription-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.subscription-modal-grid-small {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.subscription-modal-grid > .field:nth-child(1),
+.subscription-modal-grid > .field:nth-child(2),
+.subscription-modal-grid > .field:nth-child(3),
+.subscription-modal-grid > .field:nth-child(4),
+.subscription-modal-grid > .field:nth-child(5),
+.subscription-modal-grid > .field:nth-child(6),
+.subscription-modal-grid > .field:nth-child(7) {
+  grid-column: span 1;
+}
+
+.subscription-modal-grid > .subscription-toggle-field,
+.subscription-duration-callout {
+  grid-column: span 2;
+}
+
+.subscription-duration-callout {
+  display: flex;
+  align-items: center;
+}
+
 @media (max-width: 960px) {
   .fitness-overview-grid,
   .fitness-entry-grid-diet,
@@ -3709,7 +3850,20 @@ textarea {
   .medication-filter-grid-purchase,
   .medication-filter-grid-analysis,
   .medication-filter-grid-summary,
-  .medication-reminder-times {
+  .medication-reminder-times,
+  .subscription-context-summary,
+  .subscription-top-summary,
+  .subscription-records-summary,
+  .subscription-dashboard-summary,
+  .subscription-entry-grid,
+  .subscription-filter-grid,
+  .subscription-category-entry,
+  .subscription-dashboard-grid,
+  .subscription-settings-grid,
+  .subscription-notification-grid,
+  .subscription-settings-inline,
+  .subscription-modal-grid,
+  .subscription-modal-grid-small {
     grid-template-columns: 1fr;
   }
 
@@ -3753,6 +3907,10 @@ textarea {
 
   .forex-dashboard-stat-grid,
   .forex-calculator-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .subscription-upcoming-item {
     grid-template-columns: 1fr;
   }
 }

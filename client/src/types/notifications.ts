@@ -9,7 +9,9 @@ export type NotificationSceneId =
   | 'checkup.followup_reminder'
   | 'checkup.abnormal_alert'
   | 'medication.dose_reminder'
-  | 'medication.stock_low';
+  | 'medication.stock_low'
+  | 'subscription.renewal_upcoming'
+  | 'subscription.expired';
 
 export interface NotificationChannelConfig {
   type: NotificationChannelType;

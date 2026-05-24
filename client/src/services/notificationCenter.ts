@@ -116,6 +116,22 @@ const defaultScenes: Record<NotificationSceneId, NotificationSceneConfig> = {
     summary: '当药品剩余库存低于阈值时，统一写入通知中心并按渠道发送提醒。',
     description: '基于购药记录与累计服药量估算库存，只对单位一致的药品进行低库存检测。',
   },
+  'subscription.renewal_upcoming': {
+    id: 'subscription.renewal_upcoming',
+    label: '订阅即将到期',
+    enabled: true,
+    channels: ['email'],
+    summary: '在订阅进入续费窗口时发送提醒，便于提前决定续费或取消。',
+    description: '适用于软件会员、云服务与内容订阅等场景，帮助在到期前统一追踪续费事项。',
+  },
+  'subscription.expired': {
+    id: 'subscription.expired',
+    label: '订阅到期或逾期',
+    enabled: true,
+    channels: ['email', 'wechatWork'],
+    summary: '在到期当天或过期后生成提醒日志，降低关键服务中断风险。',
+    description: '用于记录已经到期或已经逾期的订阅事项，便于后续补费、停用或成本清理。',
+  },
 };
 
 const defaultTemplates: Record<NotificationSceneId, { sceneId: NotificationSceneId; title: string; body: string }> = {
@@ -163,6 +179,16 @@ const defaultTemplates: Record<NotificationSceneId, { sceneId: NotificationScene
     sceneId: 'medication.stock_low',
     title: '低库存提醒',
     body: '你的药品库存已低于提醒阈值，请及时补货并更新购药记录。',
+  },
+  'subscription.renewal_upcoming': {
+    sceneId: 'subscription.renewal_upcoming',
+    title: '服务订阅即将到期',
+    body: '检测到订阅进入续费提醒窗口，请及时确认是否续费、取消或替换。',
+  },
+  'subscription.expired': {
+    sceneId: 'subscription.expired',
+    title: '服务订阅已到期',
+    body: '检测到订阅已到期或已逾期，请尽快处理以避免服务中断或无效支出。',
   },
 };
 
@@ -260,6 +286,8 @@ function normalizeNotificationCenterState(
       'checkup.abnormal_alert': normalizeSceneConfig('checkup.abnormal_alert', storedScenes['checkup.abnormal_alert']),
       'medication.dose_reminder': normalizeSceneConfig('medication.dose_reminder', storedScenes['medication.dose_reminder']),
       'medication.stock_low': normalizeSceneConfig('medication.stock_low', storedScenes['medication.stock_low']),
+      'subscription.renewal_upcoming': normalizeSceneConfig('subscription.renewal_upcoming', storedScenes['subscription.renewal_upcoming']),
+      'subscription.expired': normalizeSceneConfig('subscription.expired', storedScenes['subscription.expired']),
     },
     templates: {
       'todo.reminder': { ...normalizeTemplate('todo.reminder'), ...storedTemplates['todo.reminder'] },
@@ -271,6 +299,8 @@ function normalizeNotificationCenterState(
       'checkup.abnormal_alert': { ...normalizeTemplate('checkup.abnormal_alert'), ...storedTemplates['checkup.abnormal_alert'] },
       'medication.dose_reminder': { ...normalizeTemplate('medication.dose_reminder'), ...storedTemplates['medication.dose_reminder'] },
       'medication.stock_low': { ...normalizeTemplate('medication.stock_low'), ...storedTemplates['medication.stock_low'] },
+      'subscription.renewal_upcoming': { ...normalizeTemplate('subscription.renewal_upcoming'), ...storedTemplates['subscription.renewal_upcoming'] },
+      'subscription.expired': { ...normalizeTemplate('subscription.expired'), ...storedTemplates['subscription.expired'] },
     },
     logs: Array.isArray(state?.logs) ? state.logs.map(normalizeLogEntry) : [],
   };
