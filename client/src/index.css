@@ -1072,6 +1072,86 @@ textarea {
   flex-wrap: wrap;
 }
 
+.fitness-form-actions,
+.fitness-row-actions,
+.fitness-chart-header,
+.fitness-insight-head,
+.fitness-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fitness-form-actions,
+.fitness-chart-header,
+.fitness-insight-head {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.fitness-row-actions {
+  flex-wrap: wrap;
+}
+
+.fitness-section-summary {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.fitness-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.fitness-chart-card,
+.fitness-insight-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--color-hairline);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-3) 90%, transparent), color-mix(in srgb, var(--color-surface-2) 98%, transparent));
+}
+
+.fitness-chart-header strong,
+.fitness-insight-head strong {
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.fitness-chart-header span,
+.fitness-insight-card p,
+.fitness-legend-item {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+}
+
+.fitness-insight-card p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.fitness-chart-shell {
+  width: 100%;
+  min-height: 280px;
+}
+
+.fitness-legend-list,
+.fitness-insight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fitness-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
 .step-record-checkbox {
   width: 18px;
   min-height: 18px;
@@ -1621,6 +1701,7 @@ textarea {
   .step-filter-grid,
   .step-compare-grid,
   .step-aggregate-grid,
+  .fitness-dashboard-grid,
   .date-time-layout,
   .date-time-columns {
     grid-template-columns: 1fr;
@@ -1632,7 +1713,10 @@ textarea {
   .list-row,
   .step-entry-actions,
   .step-chart-toolbar,
-  .step-records-toolbar {
+  .step-records-toolbar,
+  .fitness-form-actions,
+  .fitness-chart-header,
+  .fitness-insight-head {
     flex-direction: column;
     align-items: stretch;
   }
