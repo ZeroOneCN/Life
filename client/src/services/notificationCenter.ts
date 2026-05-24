@@ -123,17 +123,23 @@ function getDefaultState(): NotificationCenterState {
   };
 }
 
+let notificationCenterCache: NotificationCenterState = readStorage<NotificationCenterState>(
+  STORAGE_KEY,
+  getDefaultState(),
+);
+
 function emitChange() {
   window.dispatchEvent(new CustomEvent(EVENT_NAME));
 }
 
 function saveState(nextState: NotificationCenterState) {
+  notificationCenterCache = nextState;
   writeStorage(STORAGE_KEY, nextState);
   emitChange();
 }
 
 export function getNotificationCenterState() {
-  return readStorage<NotificationCenterState>(STORAGE_KEY, getDefaultState());
+  return notificationCenterCache;
 }
 
 export function updateChannelConfig(
@@ -267,13 +273,17 @@ export function enqueueSceneNotification(
 
 function subscribe(callback: () => void) {
   const handler = () => callback();
+  const storageHandler = () => {
+    notificationCenterCache = readStorage<NotificationCenterState>(STORAGE_KEY, getDefaultState());
+    callback();
+  };
 
   window.addEventListener(EVENT_NAME, handler);
-  window.addEventListener('storage', handler);
+  window.addEventListener('storage', storageHandler);
 
   return () => {
     window.removeEventListener(EVENT_NAME, handler);
-    window.removeEventListener('storage', handler);
+    window.removeEventListener('storage', storageHandler);
   };
 }
 
