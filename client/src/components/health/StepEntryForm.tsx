@@ -1,16 +1,18 @@
 import type { Ref } from 'react';
 
 import { DateTimePickerField } from '../date';
-import { Btn } from '../ui';
+import { Btn, Field } from '../ui';
 import { STEP_HOURS, getStepHourLabel } from '../../services/stepRecords';
 import type { StepHour } from '../../types/health';
 import { SectionCard } from '../page';
 
 interface StepEntryFormProps {
+  userId: string;
   stepsInput: string;
   selectedHour: StepHour;
   recordTime: string;
   stepsInputRef: Ref<HTMLInputElement>;
+  onUserIdChange: (value: string) => void;
   onStepsInputChange: (value: string) => void;
   onSelectHour: (hour: StepHour) => void;
   onRecordTimeChange: (value: string) => void;
@@ -24,15 +26,17 @@ function getEntryTitle(hour: StepHour) {
 
 function getEntryDescription(hour: StepHour) {
   return hour === null
-    ? '适合补录当天总步数，重复提交时会提醒是否覆盖原有记录。'
-    : '保存成功后会自动尝试切到下一个小时，连续录入更顺手。';
+    ? '适合补录当天总步数，重复提交时会提醒你是否覆盖原有记录。'
+    : '保存成功后会自动尝试切到下一个小时，连续录入会更顺手。';
 }
 
 export function StepEntryForm({
+  userId,
   stepsInput,
   selectedHour,
   recordTime,
   stepsInputRef,
+  onUserIdChange,
   onStepsInputChange,
   onSelectHour,
   onRecordTimeChange,
@@ -40,7 +44,7 @@ export function StepEntryForm({
   onSubmit,
 }: StepEntryFormProps) {
   return (
-    <SectionCard title="步数录入" description="按全天或具体时间段记录今天的步数变化。">
+    <SectionCard title="步数录入" description="支持按用户、全天或具体小时录入步数记录。">
       <div className="step-entry-panel">
         <div className="step-entry-meta">
           <div>
@@ -50,6 +54,19 @@ export function StepEntryForm({
         </div>
 
         <div className="form-grid">
+          <Field
+            label="用户 ID"
+            placeholder="例如 user-001"
+            value={userId}
+            onChange={(event) => onUserIdChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                onSubmit();
+              }
+            }}
+          />
+
           <label className="field">
             <span className="field-label">步数</span>
             <input
@@ -73,7 +90,7 @@ export function StepEntryForm({
             value={recordTime}
             onChange={onRecordTimeChange}
             clearable={false}
-            hint="会和下方时间段联动，全天记录默认使用 23:59 保存。"
+            hint="会和下方时间段联动，全天记录默认按 23:59 保存。"
           />
         </div>
 

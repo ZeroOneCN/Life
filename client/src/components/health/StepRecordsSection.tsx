@@ -8,6 +8,7 @@ import {
   STEP_RECORD_PAGE_SIZE,
   buildStepRecordTime,
   calculateStepDistanceKm,
+  filterStepRecordsByUserId,
   findDuplicateStepRecord,
   formatStepRecordTime,
   getStepHourLabel,
@@ -20,7 +21,9 @@ type SortDirection = 'asc' | 'desc';
 
 interface StepRecordsSectionProps {
   records: StepRecord[];
+  filterUserId: string;
   strideLength: number;
+  onFilterUserIdChange: (value: string) => void;
   onUpdateRecord: (id: string, draft: StepRecordDraft) => void;
   onDeleteRecord: (id: string) => void;
   onDeleteRecords: (ids: string[]) => void;
@@ -37,7 +40,9 @@ function getSortIndicator(active: boolean, direction: SortDirection) {
 
 export function StepRecordsSection({
   records,
+  filterUserId,
   strideLength,
+  onFilterUserIdChange,
   onUpdateRecord,
   onDeleteRecord,
   onDeleteRecords,
@@ -48,14 +53,20 @@ export function StepRecordsSection({
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editingRecord, setEditingRecord] = useState<StepRecord | null>(null);
+  const [editingUserId, setEditingUserId] = useState('');
   const [editingSteps, setEditingSteps] = useState('');
   const [editingHour, setEditingHour] = useState<StepHour>(null);
   const [editingRecordTime, setEditingRecordTime] = useState('');
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [showBatchDeleteModal, setShowBatchDeleteModal] = useState(false);
 
+  const filteredRecords = useMemo(
+    () => filterStepRecordsByUserId(records, filterUserId),
+    [filterUserId, records],
+  );
+
   const sortedRecords = useMemo(() => {
-    const nextRecords = [...records];
+    const nextRecords = [...filteredRecords];
 
     nextRecords.sort((left, right) => {
       if (sortField === 'steps') {
@@ -74,7 +85,7 @@ export function StepRecordsSection({
     });
 
     return nextRecords;
-  }, [records, sortDirection, sortField]);
+  }, [filteredRecords, sortDirection, sortField]);
 
   const totalPages = Math.max(1, Math.ceil(sortedRecords.length / STEP_RECORD_PAGE_SIZE));
   const pageRecords = useMemo(() => {
@@ -83,11 +94,17 @@ export function StepRecordsSection({
   }, [page, sortedRecords]);
 
   useEffect(() => {
+    setPage(1);
     setSelectedIds([]);
+  }, [filterUserId]);
+
+  useEffect(() => {
+    setSelectedIds((previous) => previous.filter((id) => filteredRecords.some((record) => record.id === id)));
+
     if (page > totalPages) {
       setPage(totalPages);
     }
-  }, [page, records.length, totalPages]);
+  }, [filteredRecords, page, totalPages]);
 
   const allPageSelected = pageRecords.length > 0 && pageRecords.every((record) => selectedIds.includes(record.id));
 
@@ -103,6 +120,7 @@ export function StepRecordsSection({
 
   const openEditModal = (record: StepRecord) => {
     setEditingRecord(record);
+    setEditingUserId(record.userId);
     setEditingSteps(String(record.steps));
     setEditingHour(record.hour);
     setEditingRecordTime(record.recordTime);
@@ -110,6 +128,7 @@ export function StepRecordsSection({
 
   const closeEditModal = () => {
     setEditingRecord(null);
+    setEditingUserId('');
     setEditingSteps('');
     setEditingHour(null);
     setEditingRecordTime('');
@@ -121,6 +140,11 @@ export function StepRecordsSection({
     }
 
     const steps = Number(editingSteps);
+
+    if (!editingUserId.trim()) {
+      showToast('请输入用户 ID。', 'error');
+      return;
+    }
 
     if (!Number.isFinite(steps) || steps <= 0) {
       showToast('请输入有效的步数。', 'error');
@@ -135,6 +159,7 @@ export function StepRecordsSection({
     const duplicate = findDuplicateStepRecord(
       records,
       {
+        userId: editingUserId,
         steps,
         hour: editingHour,
         recordTime: editingRecordTime,
@@ -143,11 +168,12 @@ export function StepRecordsSection({
     );
 
     if (duplicate) {
-      showToast('该时间段已经存在记录，请调整后再保存。', 'error');
+      showToast('该用户在同一天的同一时间段已经有记录，请调整后再保存。', 'error');
       return;
     }
 
     onUpdateRecord(editingRecord.id, {
+      userId: editingUserId,
       steps,
       hour: editingHour,
       recordTime: editingRecordTime,
@@ -157,8 +183,18 @@ export function StepRecordsSection({
   };
 
   return (
-    <SectionCard title="记录管理" description="支持排序、分页、编辑以及批量删除。">
+    <SectionCard title="记录管理" description="支持按用户筛选、排序、分页、编辑和批量删除。">
       <div className="page-stack">
+        <div className="step-filter-grid">
+          <Field
+            label="记录用户 ID"
+            placeholder="留空查看全部用户"
+            value={filterUserId}
+            onChange={(event) => onFilterUserIdChange(event.target.value)}
+            hint="用于筛选当前列表，留空时会显示全部用户记录。"
+          />
+        </div>
+
         <div className="step-records-toolbar">
           <div className="step-records-selection">
             <label className="checkbox">
@@ -167,11 +203,11 @@ export function StepRecordsSection({
                 checked={allPageSelected}
                 onChange={(event) => {
                   if (event.target.checked) {
-                    setSelectedIds(pageRecords.map((record) => record.id));
+                    setSelectedIds((previous) => [...new Set([...previous, ...pageRecords.map((record) => record.id)])]);
                     return;
                   }
 
-                  setSelectedIds([]);
+                  setSelectedIds((previous) => previous.filter((id) => !pageRecords.some((record) => record.id === id)));
                 }}
               />
               <span>全选当前页</span>
@@ -185,17 +221,20 @@ export function StepRecordsSection({
             </Btn>
           </div>
           <span className="subtle-text">
-            共 {records.length} 条记录{selectedIds.length ? `，已选择 ${selectedIds.length} 条` : ''}
+            共 {filteredRecords.length} 条记录
+            {filterUserId.trim() ? `（用户 ${filterUserId.trim()}）` : '（全部用户）'}
+            {selectedIds.length ? `，已选择 ${selectedIds.length} 条` : ''}
           </span>
         </div>
 
-        {records.length ? (
+        {filteredRecords.length ? (
           <>
             <div className="table-wrap">
               <table className="data-table">
                 <thead>
                   <tr>
                     <th style={{ width: 54 }}>选择</th>
+                    <th>用户 ID</th>
                     <th>
                       <button type="button" className="step-sort-button" onClick={() => toggleSort('steps')}>
                         步数
@@ -236,6 +275,7 @@ export function StepRecordsSection({
                           }}
                         />
                       </td>
+                      <td>{record.userId}</td>
                       <td>{record.steps.toLocaleString()}</td>
                       <td>{getStepHourLabel(record.hour)}</td>
                       <td>{formatStepRecordTime(record.recordTime)}</td>
@@ -256,7 +296,7 @@ export function StepRecordsSection({
         ) : (
           <div className="empty-state">
             <strong>还没有步数记录</strong>
-            <span>先在上方录入一条记录，这里会自动展示可管理的列表。</span>
+            <span>{filterUserId.trim() ? '这个用户当前还没有记录。' : '先在上方录入一条记录，这里会自动展示可管理的列表。'}</span>
           </div>
         )}
       </div>
@@ -275,6 +315,12 @@ export function StepRecordsSection({
       >
         <div className="page-stack">
           <Field
+            label="用户 ID"
+            value={editingUserId}
+            onChange={(event) => setEditingUserId(event.target.value)}
+          />
+
+          <Field
             label="步数"
             type="number"
             min="1"
@@ -291,7 +337,7 @@ export function StepRecordsSection({
               setEditingRecordTime(nextValue);
               setEditingHour(inferStepHourFromRecordTime(nextValue));
             }}
-            hint="如果改到 23:59，会自动识别为全天记录。"
+            hint="如果改成 23:59，会自动识别为全天记录。"
           />
 
           <SelectField
@@ -345,7 +391,7 @@ export function StepRecordsSection({
         }}
         title={`确认批量删除 ${selectedIds.length} 条记录？`}
       >
-        该操作不可恢复，删除后聚合统计和图表会立即更新。
+        这个操作不可恢复，删除后聚合统计和图表会立即更新。
       </DeleteModal>
     </SectionCard>
   );

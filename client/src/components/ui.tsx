@@ -142,7 +142,7 @@ export function DeleteModal({
         </>
       )}
     >
-      <p className="subtle-text">{children ?? '该操作不可恢复，请确认是否继续。'}</p>
+      <p className="subtle-text">{children ?? '这个操作不可恢复，请确认是否继续。'}</p>
     </Modal>
   );
 }

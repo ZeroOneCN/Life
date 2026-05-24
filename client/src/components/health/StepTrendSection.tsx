@@ -17,17 +17,20 @@ import {
   aggregateStepRecordsByDay,
   aggregateStepRecordsByMonth,
   buildStepMonthCompare,
+  filterStepRecordsByUserId,
 } from '../../services/stepRecords';
 import type { StepConcreteHour, StepRecord, StepStatsGranularity } from '../../types/health';
 import { usePageTab } from '../../hooks/usePageTab';
-import { Btn, Pagination, Tag } from '../ui';
+import { Btn, Field, Pagination, Tag } from '../ui';
 import { EmptyState, SectionCard } from '../page';
 
 type ChartHourFilter = 'all' | StepConcreteHour;
 
 interface StepTrendSectionProps {
   records: StepRecord[];
+  userId: string;
   strideLength: number;
+  onUserIdChange: (value: string) => void;
   onStrideLengthChange: (value: number) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
@@ -68,7 +71,9 @@ function getCompareTone(trend: 'up' | 'down' | 'flat' | 'none') {
 
 export function StepTrendSection({
   records,
+  userId,
   strideLength,
+  onUserIdChange,
   onStrideLengthChange,
   showToast,
 }: StepTrendSectionProps) {
@@ -85,15 +90,20 @@ export function StepTrendSection({
 
   useEffect(() => {
     setAggregatePage(1);
-  }, [chartHourFilter, granularity, selectedMonth, selectedYear]);
+  }, [chartHourFilter, granularity, selectedMonth, selectedYear, userId]);
+
+  const filteredRecords = useMemo(
+    () => filterStepRecordsByUserId(records, userId),
+    [records, userId],
+  );
 
   const aggregateData = useMemo(
     () => (
       granularity === 'daily'
-        ? aggregateStepRecordsByDay(records, selectedMonth, strideLength, chartHourFilter)
-        : aggregateStepRecordsByMonth(records, selectedYear, strideLength, chartHourFilter)
+        ? aggregateStepRecordsByDay(filteredRecords, selectedMonth, strideLength, chartHourFilter)
+        : aggregateStepRecordsByMonth(filteredRecords, selectedYear, strideLength, chartHourFilter)
     ),
-    [chartHourFilter, granularity, records, selectedMonth, selectedYear, strideLength],
+    [chartHourFilter, filteredRecords, granularity, selectedMonth, selectedYear, strideLength],
   );
 
   const pagedAggregateData = useMemo(() => {
@@ -106,14 +116,14 @@ export function StepTrendSection({
   const totalPages = Math.max(1, Math.ceil(aggregateData.length / STEP_AGGREGATE_PAGE_SIZE));
 
   const compareSummary = useMemo(
-    () => buildStepMonthCompare(records, strideLength),
-    [records, strideLength],
+    () => buildStepMonthCompare(filteredRecords, strideLength),
+    [filteredRecords, strideLength],
   );
 
   return (
     <SectionCard
       title="统计趋势"
-      description="查看每日或每月步数走势，支持步幅换算和时间段筛选。"
+      description="按用户查看每日或每月趋势，支持步幅换算和时间段筛选。"
       action={<Tag tone="blue">{granularity === 'daily' ? '每日趋势' : '每月趋势'}</Tag>}
     >
       <div className="page-stack">
@@ -135,6 +145,14 @@ export function StepTrendSection({
         </div>
 
         <div className="step-filter-grid">
+          <Field
+            label="统计用户 ID"
+            placeholder="留空查看全部用户"
+            value={userId}
+            onChange={(event) => onUserIdChange(event.target.value)}
+            hint="支持按指定用户查看趋势，也可以留空统计全部用户。"
+          />
+
           <label className="field">
             <span className="field-label">步幅（米）</span>
             <div className="step-inline-input">
@@ -180,16 +198,14 @@ export function StepTrendSection({
               hint="按月份查看每日趋势。"
             />
           ) : (
-            <label className="field">
-              <span className="field-label">年份</span>
-              <input
-                type="number"
-                min="2020"
-                max="2099"
-                value={selectedYear}
-                onChange={(event) => setSelectedYear(event.target.value)}
-              />
-            </label>
+            <Field
+              label="年份"
+              type="number"
+              min="2020"
+              max="2099"
+              value={selectedYear}
+              onChange={(event) => setSelectedYear(event.target.value)}
+            />
           )}
         </div>
 
@@ -237,15 +253,7 @@ export function StepTrendSection({
                       borderRadius: 14,
                       boxShadow: 'var(--shadow-soft)',
                     }}
-                    formatter={(value, name) => {
-                      const numericValue = Number(value ?? 0);
-
-                      if (name === 'distanceKm') {
-                        return [`${numericValue} 公里`, '距离'];
-                      }
-
-                      return [`${numericValue.toLocaleString()} 步`, '步数'];
-                    }}
+                    formatter={(value) => [`${Number(value ?? 0).toLocaleString()} 步`, '步数']}
                   />
                   <Area
                     type="monotone"
@@ -259,7 +267,10 @@ export function StepTrendSection({
               </ResponsiveContainer>
             </div>
           ) : (
-            <EmptyState title="暂无统计数据" description="调整筛选条件，或者先录入几条步数记录。" />
+            <EmptyState
+              title="暂无统计数据"
+              description={userId ? '这个用户当前筛选条件下还没有步数记录。' : '调整筛选条件，或先录入几条步数记录。'}
+            />
           )}
         </div>
 
@@ -268,12 +279,12 @@ export function StepTrendSection({
             <div className="step-compare-card is-primary">
               <span className="step-compare-label">本月</span>
               <strong>{compareSummary.currentSteps.toLocaleString()}</strong>
-              <span>{compareSummary.currentLabel} · {compareSummary.currentDistanceKm} 公里</span>
+              <span>{compareSummary.currentLabel} / {compareSummary.currentDistanceKm} 公里</span>
             </div>
             <div className="step-compare-card is-secondary">
               <span className="step-compare-label">上月</span>
               <strong>{compareSummary.previousSteps.toLocaleString()}</strong>
-              <span>{compareSummary.previousLabel} · {compareSummary.previousDistanceKm} 公里</span>
+              <span>{compareSummary.previousLabel} / {compareSummary.previousDistanceKm} 公里</span>
             </div>
             <div className="step-compare-card is-highlight">
               <span className="step-compare-label">变化</span>

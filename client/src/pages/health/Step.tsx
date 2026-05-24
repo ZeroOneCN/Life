@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { StepEntryForm } from '../../components/health/StepEntryForm';
@@ -14,10 +14,13 @@ import {
   createStepRecord,
   deleteStepRecord,
   deleteStepRecords,
+  filterStepRecordsByUserId,
   findDuplicateStepRecord,
   getNextStepHour,
   getTodayEndDateTime,
   inferStepHourFromRecordTime,
+  normalizeStepPageState,
+  normalizeStepUserId,
   updateStepRecord,
 } from '../../services/stepRecords';
 import type { StepHour, StepPageState, StepRecord, StepRecordDraft } from '../../types/health';
@@ -46,17 +49,31 @@ export default function StepPage() {
   } | null>(null);
   const { toast, showToast } = useToastState();
   const stepsInputRef = useRef<HTMLInputElement>(null);
+  const normalizedData = useMemo(() => normalizeStepPageState(data), [data]);
+
+  useEffect(() => {
+    const shouldSync = JSON.stringify(normalizedData) !== JSON.stringify(data);
+
+    if (shouldSync) {
+      setData(normalizedData);
+    }
+  }, [data, normalizedData, setData]);
+
+  const activeUserRecords = useMemo(
+    () => filterStepRecordsByUserId(normalizedData.records, normalizedData.settings.activeUserId),
+    [normalizedData.records, normalizedData.settings.activeUserId],
+  );
 
   const compareSummary = useMemo(
-    () => buildStepMonthCompare(data.records, data.settings.strideLength),
-    [data.records, data.settings.strideLength],
+    () => buildStepMonthCompare(activeUserRecords, normalizedData.settings.strideLength),
+    [activeUserRecords, normalizedData.settings.strideLength],
   );
 
   const recentSevenDaySteps = useMemo(
-    () => data.records
+    () => activeUserRecords
       .filter((record) => dayjs(record.recordTime).isAfter(dayjs().subtract(7, 'day')))
       .reduce((sum, record) => sum + record.steps, 0),
-    [data.records],
+    [activeUserRecords],
   );
 
   const focusStepsInput = () => {
@@ -64,6 +81,16 @@ export default function StepPage() {
       stepsInputRef.current?.focus();
       stepsInputRef.current?.select();
     }, 0);
+  };
+
+  const updateSettings = (patch: Partial<StepPageState['settings']>) => {
+    setData((previous) => ({
+      ...previous,
+      settings: {
+        ...previous.settings,
+        ...patch,
+      },
+    }));
   };
 
   const handleSelectHour = (hour: StepHour) => {
@@ -102,7 +129,13 @@ export default function StepPage() {
   };
 
   const handleCreateRecord = () => {
+    const userId = normalizeStepUserId(normalizedData.settings.activeUserId);
     const steps = Number(stepsInput);
+
+    if (!userId) {
+      showToast('请输入用户 ID。', 'error');
+      return;
+    }
 
     if (!Number.isFinite(steps) || steps <= 0) {
       showToast('请输入有效的步数。', 'error');
@@ -115,12 +148,13 @@ export default function StepPage() {
     }
 
     const draft: StepRecordDraft = {
+      userId,
       steps,
       hour: selectedHour,
       recordTime,
     };
 
-    const duplicate = findDuplicateStepRecord(data.records, draft);
+    const duplicate = findDuplicateStepRecord(normalizedData.records, draft);
     if (duplicate) {
       setPendingDuplicate({ existing: duplicate, draft });
       return;
@@ -133,41 +167,41 @@ export default function StepPage() {
     <div className="page-stack">
       <PageHeader
         title="运动步数"
-        subtitle="把参考原型重构进当前 LifeOS 体系，统一本地数据、Recharts 趋势和 TypeScript 页面状态。"
+        subtitle="把原型页重构进当前 LifeOS 体系，并恢复用户 ID 维度的录入、统计和记录管理能力。"
       />
 
       <StatGrid
         items={[
           {
+            label: '当前用户',
+            value: normalizeStepUserId(normalizedData.settings.activeUserId) || '-',
+            helper: '录入区按这个用户 ID 创建步数记录',
+          },
+          {
             label: '本月累计',
             value: compareSummary.currentSteps.toLocaleString(),
-            helper: `${compareSummary.currentLabel} · ${compareSummary.currentDistanceKm} 公里`,
+            helper: `${compareSummary.currentLabel} / ${compareSummary.currentDistanceKm} 公里`,
           },
           {
             label: '近 7 天步数',
             value: recentSevenDaySteps.toLocaleString(),
-            helper: '按最近七天记录自动汇总',
+            helper: '按当前用户最近七天记录自动汇总',
           },
           {
-            label: '历史记录',
-            value: `${data.records.length}`,
-            helper: '支持编辑、排序和批量删除',
-          },
-          {
-            label: '当前步幅',
-            value: `${data.settings.strideLength} m`,
-            helper: compareSummary.changePercentage === null
-              ? '上月暂无可比数据'
-              : `本月较上月 ${compareSummary.changePercentage > 0 ? '+' : ''}${compareSummary.changePercentage}%`,
+            label: '当前用户记录数',
+            value: `${activeUserRecords.length}`,
+            helper: `当前步幅 ${normalizedData.settings.strideLength} m`,
           },
         ]}
       />
 
       <StepEntryForm
+        userId={normalizedData.settings.activeUserId}
         stepsInput={stepsInput}
         selectedHour={selectedHour}
         recordTime={recordTime}
         stepsInputRef={stepsInputRef}
+        onUserIdChange={(value) => updateSettings({ activeUserId: value })}
         onStepsInputChange={setStepsInput}
         onSelectHour={handleSelectHour}
         onRecordTimeChange={handleRecordTimeChange}
@@ -180,8 +214,10 @@ export default function StepPage() {
       />
 
       <StepTrendSection
-        records={data.records}
-        strideLength={data.settings.strideLength}
+        records={normalizedData.records}
+        userId={normalizedData.settings.statsUserId}
+        strideLength={normalizedData.settings.strideLength}
+        onUserIdChange={(value) => updateSettings({ statsUserId: value })}
         onStrideLengthChange={(value) => {
           setData((previous) => ({
             ...previous,
@@ -195,8 +231,10 @@ export default function StepPage() {
       />
 
       <StepRecordsSection
-        records={data.records}
-        strideLength={data.settings.strideLength}
+        records={normalizedData.records}
+        filterUserId={normalizedData.settings.recordsUserId}
+        strideLength={normalizedData.settings.strideLength}
+        onFilterUserIdChange={(value) => updateSettings({ recordsUserId: value })}
         onUpdateRecord={(id, draft) => {
           setData((previous) => ({
             ...previous,
@@ -221,7 +259,7 @@ export default function StepPage() {
       <Modal
         open={Boolean(pendingDuplicate)}
         onClose={() => setPendingDuplicate(null)}
-        title="检测到同时间段已有记录"
+        title="检测到该用户在同一时间段已有记录"
         width={480}
         footer={(
           <>
@@ -249,10 +287,11 @@ export default function StepPage() {
       >
         <SectionCard
           title="重复记录提醒"
-          description="同一天的同一时间段只保留一条记录，确认后会用本次输入覆盖旧数据。"
+          description="同一用户在同一天的同一时间段只保留一条记录，确认后会用本次输入覆盖旧数据。"
         >
           <div className="step-duplicate-summary">
             <div className="status-metadata">
+              <span>用户 ID：{pendingDuplicate?.draft.userId ?? '-'}</span>
               <span>已有记录步数：{pendingDuplicate?.existing.steps.toLocaleString() ?? '-'}</span>
               <span>新输入步数：{pendingDuplicate?.draft.steps.toLocaleString() ?? '-'}</span>
             </div>
