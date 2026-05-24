@@ -2071,6 +2071,12 @@ textarea {
   gap: 18px;
 }
 
+.travel-modal-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 .shopping-modal-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -2088,6 +2094,278 @@ textarea {
 .shopping-import-errors span {
   color: var(--color-ink-subtle);
   font-size: 13px;
+}
+
+.travel-context-grid,
+.travel-book-form-grid,
+.travel-record-entry-grid,
+.travel-filter-grid,
+.travel-dashboard-grid,
+.travel-import-result-grid,
+.travel-report-overview,
+.travel-report-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.travel-context-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.travel-book-form-grid {
+  grid-template-columns:
+    minmax(140px, 0.9fr)
+    minmax(180px, 1.2fr)
+    minmax(140px, 0.84fr)
+    minmax(140px, 0.84fr)
+    minmax(220px, 1.3fr)
+    176px;
+  align-items: end;
+}
+
+.travel-record-entry-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.travel-filter-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.travel-filter-grid-stats,
+.travel-filter-grid-report {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.travel-dashboard-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.travel-inline-action {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.travel-inline-action .btn {
+  width: 100%;
+}
+
+.travel-import-result-grid,
+.travel-report-overview {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.travel-import-meta,
+.travel-summary-bar,
+.travel-report-list-row,
+.travel-pay-channel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.travel-import-result,
+.travel-import-errors,
+.travel-pay-channel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.travel-import-errors span,
+.travel-pay-channel-row span,
+.travel-report-header p,
+.travel-report-meta span,
+.travel-report-summary,
+.travel-report-empty {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+}
+
+.travel-amount-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.travel-amount-stack strong {
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.travel-amount-stack span {
+  color: var(--color-ink-subtle);
+  font-size: 12px;
+}
+
+.travel-duration-card,
+.travel-summary-card,
+.travel-pay-channel-row {
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid var(--color-hairline);
+  background: color-mix(in srgb, var(--color-surface-2) 88%, transparent);
+}
+
+.travel-duration-card,
+.travel-summary-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.travel-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.travel-summary-card-head strong,
+.travel-duration-card strong,
+.travel-report-panel strong,
+.travel-report-header h3,
+.travel-pay-channel-row strong {
+  font-size: 16px;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.travel-summary-actions,
+.travel-pay-channel-actions,
+.travel-channel-create {
+  display: grid;
+  gap: 12px;
+}
+
+.travel-summary-actions {
+  grid-template-columns: 120px 120px;
+  justify-content: flex-end;
+}
+
+.travel-pay-channel-actions {
+  grid-template-columns: minmax(180px, 1fr) 100px 100px;
+  align-items: end;
+}
+
+.travel-channel-create {
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) 176px;
+  align-items: end;
+}
+
+.travel-report-column-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+}
+
+.travel-report-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
+  border-radius: 24px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-hairline));
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent 22%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface-1) 96%, transparent), color-mix(in srgb, var(--color-surface-2) 98%, transparent));
+  box-shadow: var(--shadow-soft);
+}
+
+.travel-report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.travel-report-header h3 {
+  font-size: 24px;
+}
+
+.travel-report-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.travel-report-overview-card,
+.travel-report-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--color-hairline);
+  background: color-mix(in srgb, var(--color-surface-2) 88%, transparent);
+}
+
+.travel-report-overview-card span {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+}
+
+.travel-report-overview-card strong {
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+
+.travel-report-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.travel-report-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.travel-report-list-row {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-surface-3) 88%, transparent);
+}
+
+.travel-report-list-row strong {
+  font-size: 14px;
+}
+
+.travel-report-summary {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+.travel-report-chart {
+  width: 100%;
+  height: 260px;
+}
+
+.travel-report-table-wrap {
+  overflow-x: auto;
+}
+
+.travel-report-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.travel-report-table th,
+.travel-report-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-hairline);
+  text-align: left;
+  vertical-align: top;
+  font-size: 12px;
+}
+
+.travel-report-table th {
+  color: var(--color-ink-muted);
+  background: color-mix(in srgb, var(--color-surface-3) 90%, transparent);
 }
 
 .notification-status-top,
@@ -2375,6 +2653,14 @@ textarea {
   .shopping-platform-grid,
   .shopping-modal-grid,
   .shopping-import-result-grid,
+  .travel-context-grid,
+  .travel-book-form-grid,
+  .travel-record-entry-grid,
+  .travel-filter-grid,
+  .travel-dashboard-grid,
+  .travel-import-result-grid,
+  .travel-report-overview,
+  .travel-report-grid,
   .medication-analysis-grid,
   .medication-summary-grid,
   .medication-reminder-grid,
@@ -2406,7 +2692,14 @@ textarea {
   .shopping-ledger-card-metrics,
   .shopping-platform-card-meta,
   .shopping-ledger-summary-head,
-  .shopping-ledger-summary-metrics {
+  .shopping-ledger-summary-metrics,
+  .travel-summary-bar,
+  .travel-pay-channel-row,
+  .travel-report-header,
+  .travel-report-meta,
+  .travel-report-list-row,
+  .travel-duration-card,
+  .travel-summary-card-head {
     flex-direction: column;
     align-items: stretch;
   }
@@ -2487,6 +2780,18 @@ textarea {
     grid-template-columns: minmax(0, 1fr) 180px;
   }
 
+  .travel-book-form-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .travel-record-entry-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .travel-filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .checkup-entry-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2520,6 +2825,15 @@ textarea {
   .shopping-filter-grid-dashboard,
   .shopping-ledger-form-grid,
   .shopping-platform-form-grid,
+  .travel-book-form-grid,
+  .travel-record-entry-grid,
+  .travel-filter-grid,
+  .travel-filter-grid-stats,
+  .travel-filter-grid-report,
+  .travel-dashboard-grid,
+  .travel-import-result-grid,
+  .travel-report-overview,
+  .travel-report-grid,
   .medication-entry-grid,
   .medication-purchase-grid,
   .medication-filter-grid,
@@ -2531,6 +2845,12 @@ textarea {
   }
 
   .shopping-platform-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .travel-summary-actions,
+  .travel-pay-channel-actions,
+  .travel-channel-create {
     grid-template-columns: 1fr;
   }
 }
