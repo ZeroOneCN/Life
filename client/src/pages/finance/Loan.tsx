@@ -1,292 +1,233 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 
-import { NotificationStatusCard } from '../../components/NotificationStatusCard';
+import { LoanBillsSection } from '../../components/finance/LoanBillsSection';
+import { LoanDashboardSection } from '../../components/finance/LoanDashboardSection';
+import { LoanPlatformsSection } from '../../components/finance/LoanPlatformsSection';
+import { LoanRepaymentsSection } from '../../components/finance/LoanRepaymentsSection';
+import { LoanSettingsSection } from '../../components/finance/LoanSettingsSection';
+import { LoanStatisticsSection } from '../../components/finance/LoanStatisticsSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
-import { SettingSwitchCard } from '../../components/SettingSwitchCard';
-import { Btn, DataTable, Field, PillTabs, SelectField, Toast, useToastState } from '../../components/ui';
+import { Field, PillTabs, Toast, useToastState } from '../../components/ui';
 import { useLocalStorageState } from '../../hooks/useLocalStorageState';
 import { usePageTab } from '../../hooks/usePageTab';
-import { enqueueSceneNotification, updateSceneConfig } from '../../services/notificationCenter';
-import type { LoanPageState } from '../../types/pages';
+import {
+  buildInitialLoanState,
+  buildLoanOverview,
+  filterLoanPlatformsByUserId,
+  formatLoanAmount,
+  markLoanBillAsPaid,
+  normalizeLoanPageState,
+} from '../../services/loan';
+import type { LoanPageState, LoanTab } from '../../types/loan';
 
-const STORAGE_KEY = 'lifeos_loan_page';
+const STORAGE_KEY = 'lifeos_finance_loan_page';
 
-const initialState: LoanPageState = {
-  bills: [
-    { id: 'loan-1', platform: '花呗', dueDate: '2026-05-26', amount: 1680, paid: false },
-    { id: 'loan-2', platform: '借呗', dueDate: '2026-05-29', amount: 4200, paid: false },
-    { id: 'loan-3', platform: '京东白条', dueDate: '2026-05-18', amount: 980, paid: false },
-    { id: 'loan-4', platform: '微粒贷', dueDate: '2026-05-10', amount: 2500, paid: true },
-  ],
-  settings: {
-    repaymentReminderEnabled: true,
-    overdueReminderEnabled: true,
-    autoRepaymentOnMarkPaid: true,
-    notificationFrequency: 'daily',
-    upcomingDays: 7,
-  },
-};
-
-const tabOptions = [
-  { value: 'overview', label: '概览' },
+const TAB_OPTIONS: Array<{ value: LoanTab; label: string }> = [
+  { value: 'dashboard', label: '概览' },
+  { value: 'platforms', label: '平台' },
   { value: 'bills', label: '账单' },
+  { value: 'repayments', label: '还款' },
+  { value: 'statistics', label: '统计' },
   { value: 'settings', label: '设置' },
-] as const;
+];
 
 export default function LoanPage() {
-  const [data, setData] = useLocalStorageState<LoanPageState>(STORAGE_KEY, initialState);
-  const [tab, setTab] = usePageTab('overview', tabOptions.map((item) => item.value));
+  const [data, setData] = useLocalStorageState<LoanPageState>(STORAGE_KEY, buildInitialLoanState);
+  const [tab, setTab] = usePageTab<LoanTab>('dashboard', TAB_OPTIONS.map((item) => item.value), 'loanTab');
   const { toast, showToast } = useToastState();
-  const [editingDays, setEditingDays] = useState(String(data.settings.upcomingDays));
+  const normalizedData = useMemo(() => normalizeLoanPageState(data), [data]);
 
-  const upcomingBills = useMemo(
-    () => data.bills.filter((bill) => !bill.paid),
-    [data.bills],
+  useEffect(() => {
+    const shouldSync = JSON.stringify(normalizedData) !== JSON.stringify(data);
+
+    if (shouldSync) {
+      setData(normalizedData);
+    }
+  }, [data, normalizedData, setData]);
+
+  const overview = useMemo(
+    () => buildLoanOverview(normalizedData.bills, normalizedData.repayments, normalizedData.settings.activeUserId),
+    [normalizedData.bills, normalizedData.repayments, normalizedData.settings.activeUserId],
   );
 
-  const overdueBills = useMemo(
-    () => data.bills.filter((bill) => !bill.paid && new Date(bill.dueDate).getTime() < Date.now()),
-    [data.bills],
+  const activePlatforms = useMemo(
+    () => filterLoanPlatformsByUserId(normalizedData.platforms, normalizedData.settings.activeUserId),
+    [normalizedData.platforms, normalizedData.settings.activeUserId],
   );
 
-  const totalUnpaid = upcomingBills.reduce((sum, bill) => sum + bill.amount, 0);
+  const updateSettings = (patch: Partial<LoanPageState['settings']>) => {
+    setData((previous) => ({
+      ...previous,
+      settings: {
+        ...previous.settings,
+        ...patch,
+      },
+    }));
+  };
+
+  const handleActiveUserChange = (value: string) => {
+    updateSettings({
+      activeUserId: value,
+      billsUserId: value,
+      repaymentsUserId: value,
+      statisticsUserId: value,
+    });
+  };
+
+  const handleMarkPaid = (billId: string) => {
+    const result = markLoanBillAsPaid(
+      normalizedData.bills,
+      normalizedData.repayments,
+      billId,
+      normalizedData.settings.autoRepaymentOnMarkPaid,
+    );
+
+    setData((previous) => ({
+      ...previous,
+      bills: result.bills,
+      repayments: result.repayments,
+    }));
+
+    showToast(
+      result.createdRepayment
+        ? '账单已标记为已还，并自动生成了一笔还款记录。'
+        : '账单已标记为已还。',
+    );
+  };
 
   return (
     <div className="page-stack">
       <PageHeader
-        title="贷款还款"
-        subtitle="提醒配置已收敛为通知中心发送，页面只保留业务规则、开关和账单操作。"
-        actions={(
-          <div className="inline-row">
-            <Btn
-              tone="secondary"
-              onClick={() => {
-                const result = enqueueSceneNotification('loan.repayment_upcoming', {
-                  message: `当前有 ${upcomingBills.length} 笔待还账单，总额 ¥${totalUnpaid.toFixed(2)}。`,
-                });
-                showToast(result.some((item) => item.status === 'success') ? '还款提醒已进入通知中心。' : '还款提醒未发送，请检查通知中心渠道。', result.some((item) => item.status === 'success') ? 'success' : 'error');
-              }}
-            >
-              模拟还款提醒
-            </Btn>
-            <Btn
-              tone="primary"
-              onClick={() => {
-                const result = enqueueSceneNotification('loan.repayment_overdue', {
-                  message: `当前有 ${overdueBills.length} 笔逾期账单，请尽快处理。`,
-                });
-                showToast(result.some((item) => item.status === 'success') ? '逾期提醒已进入通知中心。' : '逾期提醒未发送，请检查通知中心渠道。', result.some((item) => item.status === 'success') ? 'success' : 'error');
-              }}
-            >
-              模拟逾期提醒
-            </Btn>
-          </div>
-        )}
+        title="贷款还款中心"
+        subtitle="把平台、账单、还款、统计和提醒规则统一收进当前 LifeOS 前端体系，全部数据本地持久化，并保持主题化日期控件和紧凑后台布局一致。"
       />
 
-      <PillTabs
-        options={tabOptions.map((item) => ({ value: item.value, label: item.label }))}
-        value={tab}
-        onChange={(value) => setTab(value as (typeof tabOptions)[number]['value'])}
-      />
-
-      {tab === 'overview' ? (
-        <>
-          <StatGrid
-            items={[
-              { label: '待还账单', value: `${upcomingBills.length}` },
-              { label: '逾期账单', value: `${overdueBills.length}`, helper: '会触发高优先级提醒' },
-              { label: '待还总额', value: `¥${totalUnpaid.toFixed(2)}` },
-            ]}
+      <SectionCard
+        title="当前上下文"
+        description="这里决定当前贷款页默认归属的用户维度，新增平台、账单和还款记录都会优先沿用这一组上下文。"
+      >
+        <div className="loan-context-grid">
+          <Field
+            label="当前用户 ID"
+            value={normalizedData.settings.activeUserId}
+            onChange={(event) => handleActiveUserChange(event.target.value)}
+            placeholder="例如：user-001"
           />
-          <SectionCard title="近期账单" description="可以在这里确认是否已还款，自动记账开关会直接影响标记行为。">
-            <DataTable
-              rowKey="id"
-              data={data.bills}
-              columns={[
-                { key: 'platform', title: '平台', dataIndex: 'platform' },
-                { key: 'dueDate', title: '到期日', dataIndex: 'dueDate' },
-                {
-                  key: 'amount',
-                  title: '金额',
-                  dataIndex: 'amount',
-                  render: (value) => `¥${Number(value).toFixed(2)}`,
-                },
-                {
-                  key: 'status',
-                  title: '状态',
-                  render: (_, row) => (
-                    row.paid ? '已还款' : (new Date(String(row.dueDate)).getTime() < Date.now() ? '已逾期' : '待还款')
-                  ),
-                },
-                {
-                  key: 'actions',
-                  title: '操作',
-                  render: (_, row) => (
-                    <Btn
-                      tone="secondary"
-                      disabled={Boolean(row.paid)}
-                      onClick={() => {
-                        setData((previous) => ({
-                          ...previous,
-                          bills: previous.bills.map((bill) => (
-                            bill.id === row.id ? { ...bill, paid: true } : bill
-                          )),
-                        }));
-                        showToast(data.settings.autoRepaymentOnMarkPaid ? '账单已标记为已还款，并按当前规则自动联动。' : '账单已标记为已还款。');
-                      }}
-                    >
-                      标记已还
-                    </Btn>
-                  ),
-                },
-              ]}
-            />
-          </SectionCard>
-        </>
+          <div className="loan-context-summary">
+            <span>当前用户平台 {activePlatforms.length} 个</span>
+            <span>账单 {overview.totalBillCount} 笔</span>
+            <span>还款 {overview.repaymentCount} 笔</span>
+          </div>
+        </div>
+      </SectionCard>
+
+      <StatGrid
+        items={[
+          {
+            label: '当前用户',
+            value: normalizedData.settings.activeUserId || '未设置',
+            helper: '平台、账单、还款和统计默认都会跟随这里的用户上下文',
+          },
+          { label: '总负债', value: formatLoanAmount(overview.totalDebt) },
+          { label: '已还金额', value: formatLoanAmount(overview.totalPaid) },
+          { label: '待还金额', value: formatLoanAmount(overview.totalUnpaid) },
+          {
+            label: '当前风险',
+            value: `${overview.upcomingCount} 待还 / ${overview.overdueCount} 逾期`,
+            helper: '提醒场景会复用通知中心的统一发送入口',
+          },
+          { label: '总利息', value: formatLoanAmount(overview.totalInterest) },
+        ]}
+      />
+
+      <SectionCard
+        title="业务视图"
+        description="概览、平台、账单、还款、统计和设置共用一套本地数据模型、通知联动规则和主题化日期交互。"
+      >
+        <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as LoanTab)} />
+      </SectionCard>
+
+      {tab === 'dashboard' ? (
+        <LoanDashboardSection
+          activeUserId={normalizedData.settings.activeUserId}
+          bills={normalizedData.bills}
+          platforms={normalizedData.platforms}
+          repayments={normalizedData.repayments}
+          onActiveUserIdChange={handleActiveUserChange}
+          onMarkPaid={handleMarkPaid}
+          onOpenTab={(nextTab) => setTab(nextTab)}
+        />
+      ) : null}
+
+      {tab === 'platforms' ? (
+        <LoanPlatformsSection
+          activeUserId={normalizedData.settings.activeUserId}
+          bills={normalizedData.bills}
+          platforms={normalizedData.platforms}
+          repayments={normalizedData.repayments}
+          onChangePlatforms={(updater) => {
+            setData((previous) => ({
+              ...previous,
+              platforms: updater(previous.platforms),
+            }));
+          }}
+          showToast={showToast}
+        />
       ) : null}
 
       {tab === 'bills' ? (
-        <SectionCard title="账单规则" description="用统一规则梳理提醒频率和提前天数。">
-          <div className="form-grid">
-            <SelectField
-              label="提醒频率"
-                value={data.settings.notificationFrequency}
-                onChange={(event) => {
-                  setData((previous) => ({
-                    ...previous,
-                    settings: {
-                      ...previous.settings,
-                      notificationFrequency: event.target.value as 'daily' | 'always',
-                    },
-                  }));
-                }}
-              >
-                <option value="daily">每天一次</option>
-                <option value="always">每次进入</option>
-            </SelectField>
-            <Field
-              label="提前提醒天数"
-              type="number"
-              value={editingDays}
-              onChange={(event) => {
-                setEditingDays(event.target.value);
-                setData((previous) => ({
-                  ...previous,
-                  settings: {
-                    ...previous.settings,
-                    upcomingDays: Number(event.target.value),
-                  },
-                }));
-              }}
-            />
-          </div>
-        </SectionCard>
+        <LoanBillsSection
+          activeUserId={normalizedData.settings.activeUserId}
+          filterUserId={normalizedData.settings.billsUserId}
+          bills={normalizedData.bills}
+          platforms={normalizedData.platforms}
+          onFilterUserIdChange={(value) => updateSettings({ billsUserId: value })}
+          onChangeBills={(updater) => {
+            setData((previous) => ({
+              ...previous,
+              bills: updater(previous.bills),
+            }));
+          }}
+          onMarkPaid={handleMarkPaid}
+          showToast={showToast}
+        />
+      ) : null}
+
+      {tab === 'repayments' ? (
+        <LoanRepaymentsSection
+          activeUserId={normalizedData.settings.activeUserId}
+          filterUserId={normalizedData.settings.repaymentsUserId}
+          bills={normalizedData.bills}
+          platforms={normalizedData.platforms}
+          repayments={normalizedData.repayments}
+          onFilterUserIdChange={(value) => updateSettings({ repaymentsUserId: value })}
+          onChangeRepayments={(updater) => {
+            setData((previous) => ({
+              ...previous,
+              repayments: updater(previous.repayments),
+            }));
+          }}
+          showToast={showToast}
+        />
+      ) : null}
+
+      {tab === 'statistics' ? (
+        <LoanStatisticsSection
+          userId={normalizedData.settings.statisticsUserId}
+          bills={normalizedData.bills}
+          platforms={normalizedData.platforms}
+          repayments={normalizedData.repayments}
+          onUserIdChange={(value) => updateSettings({ statisticsUserId: value })}
+        />
       ) : null}
 
       {tab === 'settings' ? (
-        <div className="page-stack">
-          <SettingSwitchCard
-            title="还款提醒"
-            description="在还款日前按频率向通知中心发起统一提醒。"
-            checked={data.settings.repaymentReminderEnabled}
-            onChange={(checked) => {
-              setData((previous) => ({
-                ...previous,
-                settings: {
-                  ...previous.settings,
-                  repaymentReminderEnabled: checked,
-                },
-              }));
-              updateSceneConfig('loan.repayment_upcoming', { enabled: checked });
-              showToast(`还款提醒已${checked ? '启用' : '停用'}。`);
-            }}
-            statusText={data.settings.repaymentReminderEnabled ? '已启用' : '已停用'}
-            impact="关闭后，业务页不再对临近账单发起提醒请求，但通知中心中的场景记录仍然保留。"
-          >
-            <div className="form-grid">
-              <Field
-                label="提前提醒天数"
-                type="number"
-                value={data.settings.upcomingDays}
-                onChange={(event) => {
-                  setData((previous) => ({
-                    ...previous,
-                    settings: {
-                      ...previous.settings,
-                      upcomingDays: Number(event.target.value),
-                    },
-                  }));
-                }}
-              />
-              <SelectField
-                label="提醒频率"
-                  value={data.settings.notificationFrequency}
-                  onChange={(event) => {
-                    setData((previous) => ({
-                      ...previous,
-                      settings: {
-                        ...previous.settings,
-                        notificationFrequency: event.target.value as 'daily' | 'always',
-                      },
-                    }));
-                  }}
-                >
-                  <option value="daily">每天一次</option>
-                  <option value="always">每次进入</option>
-              </SelectField>
-            </div>
-          </SettingSwitchCard>
-
-          <NotificationStatusCard
-            sceneId="loan.repayment_upcoming"
-            title="还款提醒的通知中心状态"
-            summary="查看当前已绑定的渠道，以及通知中心是否能完成统一发送。"
-          />
-
-          <SettingSwitchCard
-            title="逾期提醒"
-            description="用于逾期账单的高优先级提醒。"
-            checked={data.settings.overdueReminderEnabled}
-            onChange={(checked) => {
-              setData((previous) => ({
-                ...previous,
-                settings: {
-                  ...previous.settings,
-                  overdueReminderEnabled: checked,
-                },
-              }));
-              updateSceneConfig('loan.repayment_overdue', { enabled: checked });
-              showToast(`逾期提醒已${checked ? '启用' : '停用'}。`);
-            }}
-            statusText={data.settings.overdueReminderEnabled ? '已启用' : '已停用'}
-            impact="关闭后，逾期账单仍会在页面中显示，但不再向通知中心发起高优先级告警。"
-          />
-
-          <NotificationStatusCard
-            sceneId="loan.repayment_overdue"
-            title="逾期提醒的通知中心状态"
-            summary="建议至少绑定一个高优先级渠道，例如企业微信或 Webhook。"
-          />
-
-          <SettingSwitchCard
-            title="标记已还时自动联动"
-            description="控制账单手动标记为已还时，是否同步执行自动记账动作。"
-            checked={data.settings.autoRepaymentOnMarkPaid}
-            onChange={(checked) => {
-              setData((previous) => ({
-                ...previous,
-                settings: {
-                  ...previous.settings,
-                  autoRepaymentOnMarkPaid: checked,
-                },
-              }));
-              showToast(`自动联动已${checked ? '启用' : '停用'}。`);
-            }}
-            statusText={data.settings.autoRepaymentOnMarkPaid ? '自动联动中' : '仅更新账单状态'}
-            impact="这是业务联动开关，不会直接发送通知，但会影响标记账单后的系统行为，因此同样需要明显提示。"
-          />
-        </div>
+        <LoanSettingsSection
+          bills={normalizedData.bills}
+          settings={normalizedData.settings}
+          onSettingsChange={updateSettings}
+          showToast={showToast}
+        />
       ) : null}
 
       <Toast toast={toast} />

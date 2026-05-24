@@ -2412,6 +2412,212 @@ textarea {
   background: color-mix(in srgb, var(--color-surface-3) 90%, transparent);
 }
 
+.loan-context-grid,
+.loan-dashboard-grid,
+.loan-platform-grid,
+.loan-platform-form-grid,
+.loan-bill-entry-grid,
+.loan-repayment-entry-grid,
+.loan-filter-grid,
+.loan-modal-grid,
+.loan-settings-grid,
+.loan-settings-inline-grid,
+.loan-statistics-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.loan-context-grid {
+  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.1fr);
+  align-items: end;
+}
+
+.loan-context-summary,
+.loan-dashboard-actions,
+.loan-summary-bar,
+.loan-summary-card-meta,
+.loan-summary-card-metrics {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.loan-context-summary,
+.loan-summary-card-meta,
+.loan-summary-card-metrics {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+}
+
+.loan-dashboard-actions {
+  justify-content: flex-end;
+}
+
+.loan-dashboard-grid,
+.loan-settings-grid,
+.loan-statistics-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.loan-platform-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.loan-platform-form-grid {
+  grid-template-columns:
+    minmax(170px, 1.1fr)
+    minmax(110px, 0.7fr)
+    minmax(110px, 0.7fr)
+    minmax(140px, 0.9fr)
+    176px;
+  align-items: end;
+}
+
+.loan-bill-entry-grid {
+  grid-template-columns:
+    minmax(160px, 1fr)
+    minmax(120px, 0.8fr)
+    minmax(120px, 0.8fr)
+    minmax(150px, 0.9fr)
+    minmax(150px, 0.9fr)
+    minmax(220px, 1.2fr)
+    176px;
+  align-items: end;
+}
+
+.loan-repayment-entry-grid {
+  grid-template-columns:
+    minmax(220px, 1.25fr)
+    minmax(160px, 0.95fr)
+    minmax(120px, 0.75fr)
+    minmax(120px, 0.75fr)
+    minmax(150px, 0.9fr)
+    minmax(220px, 1.1fr)
+    176px;
+  align-items: end;
+}
+
+.loan-filter-grid-bills {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.loan-filter-grid-repayments {
+  grid-template-columns:
+    minmax(150px, 0.9fr)
+    minmax(150px, 0.9fr)
+    minmax(140px, 0.82fr)
+    minmax(140px, 0.82fr)
+    minmax(200px, 1.1fr);
+}
+
+.loan-filter-grid-statistics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.loan-filter-grid-dates {
+  grid-template-columns: repeat(2, minmax(180px, 240px));
+}
+
+.loan-modal-grid-platform {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.loan-modal-grid-bill,
+.loan-modal-grid-repayment {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.loan-modal-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.loan-modal-date-slot {
+  position: relative;
+  min-width: 0;
+}
+
+.loan-modal-date-slot .date-popover {
+  width: min(360px, calc(100vw - 72px));
+  min-width: 320px;
+}
+
+.loan-modal-date-slot-end .date-popover {
+  left: auto;
+  right: 0;
+}
+
+.loan-inline-action {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.loan-inline-action .btn {
+  width: 100%;
+}
+
+.loan-summary-bar {
+  justify-content: space-between;
+}
+
+.loan-list-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.loan-platform-card,
+.loan-summary-card,
+.loan-platform-spotlight {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-surface-2) 88%, transparent);
+}
+
+.loan-summary-card.is-overdue {
+  border-color: color-mix(in srgb, var(--color-danger) 52%, var(--color-hairline));
+}
+
+.loan-summary-card.is-unpaid {
+  border-color: color-mix(in srgb, var(--color-warning) 52%, var(--color-hairline));
+}
+
+.loan-summary-card.is-paid {
+  border-color: color-mix(in srgb, var(--color-success) 42%, var(--color-hairline));
+}
+
+.loan-platform-card-head,
+.loan-summary-card-head,
+.loan-platform-spotlight-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.loan-platform-card strong,
+.loan-summary-card strong,
+.loan-platform-spotlight strong {
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.loan-settings-inline-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.loan-chart-card-full {
+  grid-column: 1 / -1;
+}
+
 .notification-status-top,
 .list-row {
   display: flex;
@@ -2690,6 +2896,17 @@ textarea {
   .checkup-setting-grid,
   .checkup-template-grid,
   .checkup-insight-grid,
+  .loan-context-grid,
+  .loan-dashboard-grid,
+  .loan-platform-grid,
+  .loan-platform-form-grid,
+  .loan-bill-entry-grid,
+  .loan-repayment-entry-grid,
+  .loan-filter-grid,
+  .loan-modal-grid,
+  .loan-settings-grid,
+  .loan-settings-inline-grid,
+  .loan-statistics-grid,
   .shopping-context-grid,
   .shopping-filter-grid,
   .shopping-dashboard-grid,
@@ -2728,6 +2945,14 @@ textarea {
   .fitness-chart-header,
   .fitness-insight-head,
   .checkup-batch-header,
+  .loan-context-summary,
+  .loan-dashboard-actions,
+  .loan-summary-bar,
+  .loan-platform-card-head,
+  .loan-summary-card-head,
+  .loan-platform-spotlight-head,
+  .loan-summary-card-meta,
+  .loan-summary-card-metrics,
   .shopping-summary-bar,
   .shopping-import-meta,
   .shopping-ledger-card-head,
@@ -2824,6 +3049,21 @@ textarea {
     grid-template-columns: minmax(0, 1fr) 180px;
   }
 
+  .loan-platform-form-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .loan-bill-entry-grid,
+  .loan-repayment-entry-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .loan-filter-grid-bills,
+  .loan-filter-grid-repayments,
+  .loan-filter-grid-statistics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .travel-book-form-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -2869,6 +3109,18 @@ textarea {
   .shopping-filter-grid-dashboard,
   .shopping-ledger-form-grid,
   .shopping-platform-form-grid,
+  .loan-platform-form-grid,
+  .loan-bill-entry-grid,
+  .loan-repayment-entry-grid,
+  .loan-filter-grid-bills,
+  .loan-filter-grid-repayments,
+  .loan-filter-grid-statistics,
+  .loan-filter-grid-dates,
+  .loan-settings-inline-grid,
+  .loan-dashboard-grid,
+  .loan-platform-grid,
+  .loan-settings-grid,
+  .loan-statistics-grid,
   .travel-book-form-grid,
   .travel-record-entry-grid,
   .travel-filter-grid,
@@ -2890,6 +3142,14 @@ textarea {
 
   .travel-book-modal-date-slot .date-popover,
   .travel-book-modal-date-slot-end .date-popover {
+    left: 0;
+    right: auto;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .loan-modal-date-slot .date-popover,
+  .loan-modal-date-slot-end .date-popover {
     left: 0;
     right: auto;
     width: 100%;
