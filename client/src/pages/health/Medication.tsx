@@ -171,7 +171,7 @@ export default function MedicationPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        title="日常用药中心"
+        title="日常用药"
         subtitle="把旧版用药记录、购药、分析与设置原型收敛进当前 LifeOS 前端体系，统一管理每日服药、库存估算、总结和通知联动。"
         actions={(
           <>

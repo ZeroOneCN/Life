@@ -174,7 +174,7 @@ export default function CheckupPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        title="体检指标中心"
+        title="体检数据"
         subtitle="将旧版生化检查原型重构进当前 LifeOS 前端体系，统一管理指标记录、批量录入、模板复用、本地分析和通知联动。"
         actions={(
           <>

@@ -1876,6 +1876,222 @@ textarea {
   padding-bottom: 8px;
 }
 
+.shopping-context-grid,
+.shopping-entry-grid,
+.shopping-filter-grid,
+.shopping-ledger-form-grid,
+.shopping-platform-form-grid,
+.shopping-dashboard-grid,
+.shopping-ledger-grid,
+.shopping-platform-grid,
+.shopping-modal-grid,
+.shopping-import-result-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.shopping-context-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.shopping-entry-grid-records {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.shopping-filter-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.shopping-filter-grid-dashboard {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.shopping-entry-grid .field-label,
+.shopping-filter-grid .field-label,
+.shopping-ledger-form-grid .field-label,
+.shopping-platform-form-grid .field-label,
+.shopping-context-grid .field-label,
+.shopping-modal-grid .field-label {
+  margin-bottom: 8px;
+}
+
+.shopping-entry-grid .field,
+.shopping-filter-grid .field,
+.shopping-ledger-form-grid .field,
+.shopping-platform-form-grid .field,
+.shopping-context-grid .field,
+.shopping-modal-grid .field {
+  width: 100%;
+}
+
+.shopping-entry-grid input,
+.shopping-entry-grid select,
+.shopping-entry-grid .date-trigger,
+.shopping-filter-grid input,
+.shopping-filter-grid select,
+.shopping-filter-grid .date-trigger,
+.shopping-ledger-form-grid input,
+.shopping-ledger-form-grid select,
+.shopping-ledger-form-grid .date-trigger,
+.shopping-platform-form-grid input,
+.shopping-platform-form-grid select,
+.shopping-context-grid input,
+.shopping-context-grid select,
+.shopping-modal-grid input,
+.shopping-modal-grid select,
+.shopping-modal-grid .date-trigger {
+  min-height: 44px;
+}
+
+.shopping-inline-action {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.shopping-inline-action .btn {
+  width: 100%;
+}
+
+.shopping-summary-bar,
+.shopping-import-meta,
+.shopping-ledger-card-meta,
+.shopping-ledger-card-metrics,
+.shopping-platform-card-meta,
+.shopping-ledger-summary-metrics,
+.shopping-ledger-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.shopping-dashboard-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.shopping-ledger-form-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 16px;
+}
+
+.shopping-ledger-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.shopping-platform-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.shopping-ledger-card,
+.shopping-platform-card,
+.shopping-ledger-summary-item,
+.shopping-import-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-surface-2) 86%, transparent);
+}
+
+.shopping-ledger-card.is-current {
+  border-color: color-mix(in srgb, var(--color-primary) 52%, var(--color-hairline));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 24%, transparent);
+}
+
+.shopping-ledger-card-head,
+.shopping-platform-card-head,
+.shopping-platform-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.shopping-ledger-card-head strong,
+.shopping-platform-chip strong,
+.shopping-ledger-summary-head strong {
+  font-size: 16px;
+}
+
+.shopping-ledger-card-description {
+  margin: 0;
+  color: var(--color-ink-subtle);
+  font-size: 14px;
+}
+
+.shopping-ledger-card-meta,
+.shopping-ledger-card-metrics,
+.shopping-platform-card-meta,
+.shopping-ledger-summary-metrics {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+}
+
+.shopping-platform-form-grid {
+  grid-template-columns: minmax(0, 1fr) 180px 180px;
+}
+
+.shopping-platform-chip {
+  justify-content: flex-start;
+}
+
+.shopping-platform-color {
+  display: inline-flex;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.shopping-platform-card-amount {
+  font-size: 24px;
+  letter-spacing: -0.03em;
+}
+
+.shopping-ledger-summary-list {
+  display: grid;
+  gap: 14px;
+}
+
+.shopping-ledger-summary-item {
+  gap: 10px;
+}
+
+.shopping-ledger-summary-item span {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+}
+
+.shopping-modal-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.shopping-modal-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.shopping-import-result {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.shopping-import-result-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.shopping-import-errors span {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+}
+
 .notification-status-top,
 .list-row {
   display: flex;
@@ -2154,6 +2370,13 @@ textarea {
   .checkup-setting-grid,
   .checkup-template-grid,
   .checkup-insight-grid,
+  .shopping-context-grid,
+  .shopping-filter-grid,
+  .shopping-dashboard-grid,
+  .shopping-ledger-grid,
+  .shopping-platform-grid,
+  .shopping-modal-grid,
+  .shopping-import-result-grid,
   .medication-analysis-grid,
   .medication-summary-grid,
   .medication-reminder-grid,
@@ -2176,7 +2399,16 @@ textarea {
   .fitness-form-actions,
   .fitness-chart-header,
   .fitness-insight-head,
-  .checkup-batch-header {
+  .checkup-batch-header,
+  .shopping-summary-bar,
+  .shopping-import-meta,
+  .shopping-ledger-card-head,
+  .shopping-platform-card-head,
+  .shopping-ledger-card-meta,
+  .shopping-ledger-card-metrics,
+  .shopping-platform-card-meta,
+  .shopping-ledger-summary-head,
+  .shopping-ledger-summary-metrics {
     flex-direction: column;
     align-items: stretch;
   }
@@ -2241,6 +2473,22 @@ textarea {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .shopping-entry-grid-records {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .shopping-filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .shopping-ledger-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .shopping-platform-form-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .checkup-entry-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2269,6 +2517,11 @@ textarea {
   .fitness-entry-grid-exercise,
   .fitness-entry-grid-shopping,
   .fitness-entry-grid-weight,
+  .shopping-entry-grid-records,
+  .shopping-filter-grid,
+  .shopping-filter-grid-dashboard,
+  .shopping-ledger-form-grid,
+  .shopping-platform-form-grid,
   .medication-entry-grid,
   .medication-purchase-grid,
   .medication-filter-grid,
@@ -2276,6 +2529,14 @@ textarea {
   .medication-filter-grid-analysis,
   .medication-filter-grid-summary,
   .medication-reminder-times {
+    grid-template-columns: 1fr;
+  }
+
+  .shopping-ledger-form-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .shopping-platform-grid {
     grid-template-columns: 1fr;
   }
 }
