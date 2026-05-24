@@ -31,6 +31,7 @@ interface DateFieldBaseProps {
   disabled?: boolean;
   clearable?: boolean;
   tone?: CalendarTone;
+  popoverStrategy?: 'floating' | 'inline';
 }
 
 export interface DatePickerFieldProps extends DateFieldBaseProps {

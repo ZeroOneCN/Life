@@ -286,6 +286,7 @@ export function StepRecordsSection({
             label="记录时间"
             value={editingRecordTime}
             clearable={false}
+            popoverStrategy="inline"
             onChange={(nextValue) => {
               setEditingRecordTime(nextValue);
               setEditingHour(inferStepHourFromRecordTime(nextValue));

@@ -492,6 +492,10 @@ textarea {
   position: relative;
 }
 
+.date-field.has-inline-popover {
+  padding-bottom: 6px;
+}
+
 .date-trigger {
   width: 100%;
   min-height: 42px;
@@ -574,6 +578,23 @@ textarea {
     linear-gradient(180deg, color-mix(in srgb, var(--color-surface-1) 96%, transparent), color-mix(in srgb, var(--color-surface-2) 98%, transparent));
   box-shadow: var(--shadow-soft);
   overflow: hidden;
+}
+
+.date-field.has-inline-popover .date-popover {
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 10px;
+  transform: none;
+}
+
+.date-field.has-inline-popover .date-popover.is-datetime {
+  left: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .date-popover.is-datetime {
@@ -1394,14 +1415,17 @@ textarea {
   position: fixed;
   inset: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  overflow-y: auto;
+  padding: 32px 16px;
   background: rgba(4, 4, 8, 0.6);
   z-index: 30;
 }
 
 .modal-panel {
   max-width: calc(100vw - 32px);
+  margin: auto 0;
   background: var(--color-surface-1);
   border: 1px solid var(--color-hairline);
   border-radius: 18px;

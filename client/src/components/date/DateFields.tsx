@@ -189,6 +189,7 @@ function DateFieldFrame({
   displayValue,
   icon,
   disabled = false,
+  popoverStrategy = 'floating',
   onToggle,
   children,
 }: {
@@ -201,11 +202,15 @@ function DateFieldFrame({
   displayValue: string;
   icon: ReactNode;
   disabled?: boolean;
+  popoverStrategy?: 'floating' | 'inline';
   onToggle: () => void;
   children?: ReactNode;
 }) {
   return (
-    <div className={`field date-field ${disabled ? 'is-disabled' : ''}`} ref={rootRef}>
+    <div
+      className={`field date-field ${disabled ? 'is-disabled' : ''} ${popoverStrategy === 'inline' ? 'has-inline-popover' : ''}`.trim()}
+      ref={rootRef}
+    >
       {label ? <span className="field-label">{label}</span> : null}
       <button
         id={id}
@@ -357,6 +362,7 @@ export function DatePickerField({
   placeholder = '请选择日期',
   disabled = false,
   clearable = true,
+  popoverStrategy = 'floating',
   minValue,
   maxValue,
   disabledDates,
@@ -396,6 +402,7 @@ export function DatePickerField({
       displayValue={selectedDate?.format(DATE_FORMAT) ?? ''}
       icon={<CalendarIcon />}
       disabled={disabled}
+      popoverStrategy={popoverStrategy}
       onToggle={() => {
         if (open) {
           setOpen(false);
@@ -465,6 +472,7 @@ export function MonthPickerField({
   placeholder = '请选择月份',
   disabled = false,
   clearable = true,
+  popoverStrategy = 'floating',
   minValue,
   maxValue,
   isMonthDisabled,
@@ -497,6 +505,7 @@ export function MonthPickerField({
       displayValue={selectedMonth?.format('YYYY年MM月') ?? ''}
       icon={<CalendarIcon />}
       disabled={disabled}
+      popoverStrategy={popoverStrategy}
       onToggle={() => {
         if (open) {
           setOpen(false);
@@ -597,6 +606,7 @@ export function DateTimePickerField({
   placeholder = '请选择日期和时间',
   disabled = false,
   clearable = true,
+  popoverStrategy = 'floating',
   minuteStep = 15,
   minValue,
   maxValue,
@@ -646,6 +656,7 @@ export function DateTimePickerField({
       displayValue={selectedDateTime?.format(DISPLAY_DATE_TIME_FORMAT) ?? ''}
       icon={<ClockIcon />}
       disabled={disabled}
+      popoverStrategy={popoverStrategy}
       onToggle={() => {
         if (open) {
           setOpen(false);

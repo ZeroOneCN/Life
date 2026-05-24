@@ -7,7 +7,7 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { TabOption, TableColumn } from '../types/ui';
 
@@ -77,6 +77,23 @@ export function Toast({ toast }: { toast: ToastState | null }) {
 }
 
 export function Modal({ open, onClose, title, width = 560, footer, children }: ModalProps) {
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [open]);
+
   if (!open) {
     return null;
   }
