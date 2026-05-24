@@ -84,7 +84,7 @@ function SummaryBlock({
         { label: '保证金占用', value: formatForexPercent(result.accountSummary.marginUsageRatio) },
         { label: '可用保证金', value: formatForexMoney(result.accountSummary.remainingAvailableMargin), accent: result.accountSummary.remainingAvailableMargin >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
       ]}
-      className="forex-mini-stat-grid"
+      className="forex-calculator-stat-grid"
     />
   );
 }

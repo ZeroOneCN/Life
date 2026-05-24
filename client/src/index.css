@@ -3250,7 +3250,7 @@ textarea {
 .forex-insight-grid,
 .forex-calculator-result-grid {
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .visually-hidden {
@@ -3287,6 +3287,7 @@ textarea {
 
 .forex-dashboard-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
 }
 
 .forex-dashboard-grid > :first-child {
@@ -3308,7 +3309,7 @@ textarea {
 .forex-position-row,
 .forex-result-card,
 .forex-insight-card {
-  padding: 18px;
+  padding: 20px;
 }
 
 .forex-chart-header,
@@ -3348,6 +3349,10 @@ textarea {
   min-height: 300px;
 }
 
+.forex-chart-shell-compact {
+  min-height: 220px;
+}
+
 .forex-action-row {
   display: flex;
   align-items: center;
@@ -3366,6 +3371,16 @@ textarea {
 
 .forex-mini-stat-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.forex-dashboard-stat-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.forex-calculator-stat-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
 }
 
 .forex-import-result {
@@ -3403,7 +3418,7 @@ textarea {
 
 .forex-position-list {
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .forex-position-row {
@@ -3415,6 +3430,11 @@ textarea {
 .forex-insight-grid,
 .forex-instrument-summary {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.forex-instrument-panel {
+  display: grid;
+  gap: 18px;
 }
 
 .forex-result-card,
@@ -3442,7 +3462,16 @@ textarea {
 }
 
 .forex-instrument-summary-card {
-  padding: 14px 16px;
+  padding: 16px 18px;
+}
+
+.forex-instrument-summary-card strong {
+  color: var(--color-ink);
+  font-size: 15px;
+}
+
+.forex-chart-card-compact {
+  max-width: 440px;
 }
 
 @media (max-width: 1280px) {
@@ -3565,6 +3594,10 @@ textarea {
   .forex-filter-grid,
   .forex-position-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .forex-chart-card-compact {
+    max-width: none;
   }
 }
 

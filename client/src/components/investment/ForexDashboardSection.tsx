@@ -1,7 +1,5 @@
 import { useMemo, type ReactNode } from 'react';
 import {
-  Bar,
-  BarChart,
   CartesianGrid,
   Cell,
   Line,
@@ -18,7 +16,6 @@ import { DatePickerField } from '../date';
 import { EmptyState, SectionCard, StatGrid } from '../page';
 import { Tag } from '../ui';
 import {
-  FOREX_INSTRUMENT_COLORS,
   FOREX_PNL_COLORS,
   buildForexDailyPnlTrend,
   buildForexDashboardSummary,
@@ -50,14 +47,16 @@ const tooltipStyle = {
 function ChartCard({
   title,
   description,
+  className = '',
   children,
 }: {
   title: string;
   description: string;
+  className?: string;
   children: ReactNode;
 }) {
   return (
-    <div className="forex-chart-card">
+    <div className={`forex-chart-card ${className}`.trim()}>
       <div className="forex-chart-header">
         <strong>{title}</strong>
         <span>{description}</span>
@@ -137,6 +136,7 @@ export function ForexDashboardSection({
         </div>
 
         <StatGrid
+          className="forex-dashboard-stat-grid"
           items={[
             { label: '总交易数', value: `${summary.tradeCount} 笔`, helper: `做多 ${summary.longCount} / 做空 ${summary.shortCount}` },
             { label: '总毛盈亏', value: formatForexAmount(summary.grossPnl), accent: summary.grossPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
@@ -193,10 +193,14 @@ export function ForexDashboardSection({
             )}
           </ChartCard>
 
-          <ChartCard title="盈亏分布" description="把盈利、亏损和手续费拆开看，能更快判断收益到底是被什么吃掉了。">
+          <ChartCard
+            title="盈亏分布"
+            description="把盈利、亏损和手续费拆开看，能更快判断收益到底是被什么吃掉了。"
+            className="forex-chart-card-compact"
+          >
             {hasDistributionData ? (
-              <div className="forex-chart-shell">
-                <ResponsiveContainer width="100%" height={300}>
+              <div className="forex-chart-shell forex-chart-shell-compact">
+                <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
                     <Pie
                       data={pnlDistribution}
@@ -204,7 +208,7 @@ export function ForexDashboardSection({
                       nameKey="name"
                       cx="50%"
                       cy="50%"
-                      outerRadius={92}
+                      outerRadius={76}
                       label={({ name, percent }) => `${name} ${(Number(percent ?? 0) * 100).toFixed(0)}%`}
                       labelLine={false}
                     >
@@ -226,35 +230,14 @@ export function ForexDashboardSection({
 
           <ChartCard title="品种分析" description="对比黄金和白银在笔数、净收益上的差异，方便发现自己更擅长的节奏。">
             {hasInstrumentData ? (
-              <div className="forex-chart-shell">
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={instrumentSummary}>
-                    <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="instrument" tickFormatter={(value) => value === 'XAUUSD' ? '黄金' : '白银'} tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                    <Tooltip
-                      contentStyle={tooltipStyle}
-                      formatter={(value, name) => {
-                        if (name === '交易数') {
-                          return [`${String(value ?? 0)} 笔`, '交易数'];
-                        }
-
-                        return [formatForexMoney(Number(value ?? 0)), String(name)];
-                      }}
-                    />
-                    <Bar dataKey="netPnl" name="净收益" radius={[10, 10, 0, 0]}>
-                      {instrumentSummary.map((item) => (
-                        <Cell key={item.instrument} fill={FOREX_INSTRUMENT_COLORS[item.instrument]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="forex-instrument-panel">
                 <div className="forex-instrument-summary">
                   {instrumentSummary.map((item) => (
                     <div className="forex-instrument-summary-card" key={item.instrument}>
                       <strong>{getForexInstrumentLabel(item.instrument)}</strong>
                       <span>{`${item.tradeCount} 笔 / 胜率 ${formatForexPercent(item.winRate)}`}</span>
                       <span>{`净收益 ${formatForexAmount(item.netPnl)} / 平均手数 ${item.avgLotSize.toFixed(2)}`}</span>
+                      <span>{`做多 ${item.longCount} / 做空 ${item.shortCount} / 手续费 ${formatForexMoney(item.totalCommission)}`}</span>
                     </div>
                   ))}
                 </div>
