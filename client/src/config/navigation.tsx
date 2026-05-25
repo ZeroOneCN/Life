@@ -50,7 +50,7 @@ export const menuItems: MenuItemConfig[] = [
     icon: 'box',
     label: '生活中心',
     children: [
-      { key: '/life/storage', icon: 'box', label: '物品归纳' },
+      { key: '/life/storage', icon: 'box', label: '物品追踪' },
       { key: '/life/card', icon: 'card', label: '号卡中心' },
       { key: '/life/todo', icon: 'task', label: '待办事项' },
     ],
@@ -80,7 +80,7 @@ export const routes: RouteConfig[] = [
   { path: '/finance/loan', label: '借款还款', breadcrumb: ['财务中心', '借款还款'], menuKey: '/finance/loan', component: LoanPage },
   { path: '/finance/subscription', label: '服务订阅', breadcrumb: ['财务中心', '服务订阅'], menuKey: '/finance/subscription', component: SubscriptionPage },
   { path: '/finance/rent', label: '房租水电', breadcrumb: ['财务中心', '房租水电'], menuKey: '/finance/rent', component: RentPage },
-  { path: '/life/storage', label: '物品归纳', breadcrumb: ['生活中心', '物品归纳'], menuKey: '/life/storage', component: StoragePage },
+  { path: '/life/storage', label: '物品追踪', breadcrumb: ['生活中心', '物品追踪'], menuKey: '/life/storage', component: StoragePage },
   { path: '/life/card', label: '号卡中心', breadcrumb: ['生活中心', '号卡中心'], menuKey: '/life/card', component: CardPage },
   { path: '/life/todo', label: '待办事项', breadcrumb: ['生活中心', '待办事项'], menuKey: '/life/todo', component: TodoPage },
   { path: '/investment/forex', label: '外汇市场', breadcrumb: ['投资中心', '外汇市场'], menuKey: '/investment/forex', component: ForexPage },

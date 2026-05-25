@@ -3793,6 +3793,129 @@ textarea {
   align-items: center;
 }
 
+.storage-overview-grid,
+.storage-list-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.storage-entry-grid,
+.storage-filter-grid,
+.storage-dashboard-grid,
+.storage-settings-grid,
+.storage-modal-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.storage-entry-grid {
+  grid-template-columns:
+    minmax(180px, 1.15fr)
+    minmax(120px, 0.78fr)
+    minmax(150px, 0.92fr)
+    minmax(150px, 0.92fr)
+    minmax(220px, 1.2fr)
+    170px;
+  align-items: end;
+}
+
+.storage-filter-grid {
+  grid-template-columns:
+    minmax(220px, 1.2fr)
+    minmax(140px, 0.82fr)
+    minmax(150px, 0.92fr)
+    minmax(150px, 0.92fr)
+    minmax(120px, 0.72fr)
+    minmax(120px, 0.72fr);
+  align-items: end;
+}
+
+.storage-filter-grid-archive {
+  grid-template-columns: minmax(240px, 1.35fr) minmax(160px, 0.95fr) minmax(160px, 0.95fr);
+}
+
+.storage-inline-action {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.storage-inline-action .btn {
+  width: 100%;
+}
+
+.storage-dashboard-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px);
+}
+
+.storage-dashboard-grid,
+.storage-settings-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.storage-chart-card-wide {
+  grid-column: 1 / -1;
+}
+
+.storage-ranking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.storage-ranking-item,
+.storage-item-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.storage-ranking-item {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-surface-2) 88%, transparent);
+}
+
+.storage-ranking-item span,
+.storage-item-name span {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+}
+
+.storage-ranking-index {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+  color: var(--color-ink);
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.storage-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.storage-modal-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.storage-modal-grid-full {
+  grid-column: 1 / -1;
+}
+
 .card-overview-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -4274,6 +4397,13 @@ textarea {
   .subscription-settings-inline,
   .subscription-modal-grid,
   .subscription-modal-grid-small,
+  .storage-overview-grid,
+  .storage-list-summary-grid,
+  .storage-entry-grid,
+  .storage-filter-grid,
+  .storage-dashboard-grid,
+  .storage-settings-grid,
+  .storage-modal-grid,
   .card-overview-grid,
   .card-entry-grid,
   .card-filter-grid,
