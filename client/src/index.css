@@ -3853,6 +3853,27 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.storage-dashboard-columns,
+.storage-dashboard-stack,
+.storage-dashboard-mini-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.storage-dashboard-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-column: 1 / -1;
+}
+
+.storage-dashboard-stack {
+  grid-template-columns: 1fr;
+  align-content: start;
+}
+
+.storage-dashboard-mini-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .storage-chart-card-wide {
   grid-column: 1 / -1;
 }
@@ -3879,6 +3900,33 @@ textarea {
   border: 1px solid var(--color-hairline);
   border-radius: 16px;
   background: color-mix(in srgb, var(--color-surface-2) 88%, transparent);
+}
+
+.storage-ranking-main,
+.storage-ranking-value,
+.storage-price-legend,
+.storage-price-legend-main,
+.storage-price-legend-value {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.storage-ranking-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.storage-ranking-value {
+  min-width: 116px;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.storage-ranking-value strong,
+.storage-price-legend-value strong {
+  font-size: 15px;
+  letter-spacing: -0.01em;
 }
 
 .storage-ranking-item span,
@@ -3914,6 +3962,56 @@ textarea {
 
 .storage-modal-grid-full {
   grid-column: 1 / -1;
+}
+
+.storage-price-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.storage-price-chart {
+  min-width: 0;
+}
+
+.storage-price-legend {
+  display: grid;
+  gap: 10px;
+}
+
+.storage-price-legend-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-surface-2) 88%, transparent);
+}
+
+.storage-price-legend-main {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.storage-price-legend-main > div {
+  min-width: 0;
+}
+
+.storage-price-legend-value {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.storage-price-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
 }
 
 .card-overview-grid {
@@ -4402,6 +4500,8 @@ textarea {
   .storage-entry-grid,
   .storage-filter-grid,
   .storage-dashboard-grid,
+  .storage-dashboard-columns,
+  .storage-dashboard-mini-grid,
   .storage-settings-grid,
   .storage-modal-grid,
   .card-overview-grid,
@@ -4473,6 +4573,20 @@ textarea {
 
   .subscription-upcoming-item {
     grid-template-columns: 1fr;
+  }
+
+  .storage-ranking-item,
+  .storage-price-layout,
+  .storage-price-legend-item {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .storage-ranking-value,
+  .storage-price-legend-value {
+    align-items: flex-start;
+    text-align: left;
   }
 
   .todo-batch-toolbar {

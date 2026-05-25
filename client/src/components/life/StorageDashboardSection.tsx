@@ -19,6 +19,7 @@ import {
   buildStorageOverview,
   buildStoragePurchaseTrend,
   formatStorageMoney,
+  getStorageStatusLabel,
 } from '../../services/storage';
 import type { StorageItemRecord, StoragePageSettings } from '../../types/storage';
 
@@ -70,8 +71,12 @@ export function StorageDashboardSection({
   const activeRanking = ranking.filter((item) => item.status === 'active').slice(0, 6);
   const durationRanking = [...ranking].sort((left, right) => right.usageDays - left.usageDays).slice(0, 6);
   const priceBreakdown = ranking.slice(0, 6).map((item, index) => ({
+    id: item.id,
     name: item.itemName,
     value: item.purchasePrice,
+    dailyCost: item.dailyCost,
+    usageDays: item.usageDays,
+    status: item.status,
     color: chartColors[index % chartColors.length],
   }));
   const hasData = items.length > 0;
@@ -103,7 +108,7 @@ export function StorageDashboardSection({
             { label: '使用中物品数', value: `${overview.activeCount} 件` },
             { label: '已归档物品数', value: `${overview.archivedCount} 件` },
             { label: '累计购入金额', value: formatStorageMoney(overview.totalPurchaseAmount) },
-            { label: '当前总日均成本', value: formatStorageMoney(overview.currentDailyCostTotal) },
+            { label: '当前总日均成本', value: formatStorageMoney(overview.currentDailyCostTotal), helper: '按自然日持续摊销' },
             { label: '平均持有天数', value: `${overview.averageUsageDays} 天` },
             { label: '本月新增物品数', value: `${overview.currentMonthNewCount} 件` },
             {
@@ -141,83 +146,128 @@ export function StorageDashboardSection({
               </div>
             </ChartCard>
 
-            <ChartCard
-              title="当前使用中物品日均成本排行"
-              description="优先识别哪些东西虽然已经买下，但每天仍在高频“消耗”你的预算。"
-            >
-              {activeRanking.length ? (
-                <div className="storage-ranking-list">
-                  {activeRanking.map((item, index) => (
-                    <article key={item.id} className="storage-ranking-item">
-                      <span className="storage-ranking-index">{index + 1}</span>
-                      <div>
-                        <strong>{item.itemName}</strong>
-                        <span>{item.usageDays} 天 · {formatStorageMoney(item.purchasePrice)}</span>
-                      </div>
-                      <strong>{formatStorageMoney(item.dailyCost)}</strong>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState title="暂无使用中的排行数据" description="至少保留一件使用中的物品，日均成本排行才会出现。" />
-              )}
-            </ChartCard>
+            <div className="storage-dashboard-columns">
+              <div className="storage-dashboard-stack">
+                <ChartCard
+                  title="当前使用中物品日均成本排行"
+                  description="优先识别哪些东西虽然已经买下，但每天仍在高频“消耗”你的预算。"
+                >
+                  {activeRanking.length ? (
+                    <div className="storage-ranking-list">
+                      {activeRanking.map((item, index) => (
+                        <article key={item.id} className="storage-ranking-item">
+                          <span className="storage-ranking-index">{index + 1}</span>
+                          <div className="storage-ranking-main">
+                            <strong>{item.itemName}</strong>
+                            <span>{item.usageDays} 天 · 买入 {formatStorageMoney(item.purchasePrice)}</span>
+                          </div>
+                          <div className="storage-ranking-value">
+                            <strong>{formatStorageMoney(item.dailyCost)}</strong>
+                            <span>每日摊销</span>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState title="暂无使用中的排行数据" description="至少保留一件使用中的物品，日均成本排行才会出现。" />
+                  )}
+                </ChartCard>
 
-            <ChartCard
-              title="持有天数排行"
-              description="把持有最久的物品列出来，帮助你判断哪些投入已经被充分摊薄。"
-            >
-              {durationRanking.length ? (
-                <div className="storage-ranking-list">
-                  {durationRanking.map((item, index) => (
-                    <article key={item.id} className="storage-ranking-item">
-                      <span className="storage-ranking-index">{index + 1}</span>
-                      <div>
-                        <strong>{item.itemName}</strong>
-                        <span>{item.purchaseDate}{item.endDate ? ` → ${item.endDate}` : ' → 今天'}</span>
-                      </div>
-                      <strong>{item.usageDays} 天</strong>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState title="暂无持有天数排行" description="录入更多物品后，这里会自动按使用天数拉开差异。" />
-              )}
-            </ChartCard>
+                <ChartCard
+                  title="持有天数排行"
+                  description="把持有最久的物品列出来，帮助你判断哪些投入已经被充分摊薄。"
+                >
+                  {durationRanking.length ? (
+                    <div className="storage-ranking-list">
+                      {durationRanking.map((item, index) => (
+                        <article key={item.id} className="storage-ranking-item">
+                          <span className="storage-ranking-index">{index + 1}</span>
+                          <div className="storage-ranking-main">
+                            <strong>{item.itemName}</strong>
+                            <span>{item.purchaseDate}{item.endDate ? ` → ${item.endDate}` : ' → 今天'}</span>
+                          </div>
+                          <div className="storage-ranking-value">
+                            <strong>{item.usageDays} 天</strong>
+                            <span>{item.endDate ? '最终持有' : '持续累计'}</span>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState title="暂无持有天数排行" description="录入更多物品后，这里会自动按使用天数拉开差异。" />
+                  )}
+                </ChartCard>
+              </div>
 
-            <ChartCard
-              title="购入价格分布"
-              description="按购入价格查看当前最重的预算投入，和日均成本排行互相补充。"
-            >
-              {priceBreakdown.length ? (
-                <div className="fitness-chart-shell">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={priceBreakdown}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={96}
-                        paddingAngle={3}
-                      >
+              <div className="storage-dashboard-stack">
+                <ChartCard
+                  title="购入价格分布"
+                  description="按购入价格查看当前最重的预算投入，并配合明细摘要一起回看每件物品的摊销状态。"
+                >
+                  {priceBreakdown.length ? (
+                    <div className="storage-price-layout">
+                      <div className="storage-price-chart">
+                        <ResponsiveContainer width="100%" height={280}>
+                          <PieChart>
+                            <Pie
+                              data={priceBreakdown}
+                              dataKey="value"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={52}
+                              outerRadius={92}
+                              paddingAngle={3}
+                            >
+                              {priceBreakdown.map((item) => (
+                                <Cell key={item.id} fill={item.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              contentStyle={tooltipStyle}
+                              formatter={(value) => [formatStorageMoney(Number(value ?? 0)), '购买价格']}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      <div className="storage-price-legend">
                         {priceBreakdown.map((item) => (
-                          <Cell key={item.name} fill={item.color} />
+                          <article key={item.id} className="storage-price-legend-item">
+                            <div className="storage-price-legend-main">
+                              <span className="storage-price-legend-dot" style={{ background: item.color }} />
+                              <div>
+                                <strong>{item.name}</strong>
+                                <span>{getStorageStatusLabel(item.status)} · {item.usageDays} 天</span>
+                              </div>
+                            </div>
+                            <div className="storage-price-legend-value">
+                              <strong>{formatStorageMoney(item.value)}</strong>
+                              <span>{formatStorageMoney(item.dailyCost)} / 天</span>
+                            </div>
+                          </article>
                         ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={tooltipStyle}
-                        formatter={(value) => [formatStorageMoney(Number(value ?? 0)), '购买价格']}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                      </div>
+                    </div>
+                  ) : (
+                    <EmptyState title="暂无购入价格分布" description="物品数量增加后，价格分布图会更有参考价值。" />
+                  )}
+                </ChartCard>
+
+                <div className="storage-dashboard-mini-grid">
+                  <div className="callout callout-neutral">
+                    <strong>当前最高日均成本</strong>
+                    <span>{overview.highestDailyCostItemName}</span>
+                    <div>{overview.highestDailyCost ? formatStorageMoney(overview.highestDailyCost) : '暂无数据'}</div>
+                  </div>
+                  <div className="callout callout-neutral">
+                    <strong>平均持有天数</strong>
+                    <span>当前统计样本的平均生命周期</span>
+                    <div>{overview.averageUsageDays} 天</div>
+                  </div>
                 </div>
-              ) : (
-                <EmptyState title="暂无购入价格分布" description="物品数量增加后，价格分布图会更有参考价值。" />
-              )}
-            </ChartCard>
+              </div>
+            </div>
           </div>
         ) : (
           <EmptyState
