@@ -17,7 +17,6 @@ import { createMedicationRouter } from '../modules/health/medication.router';
 import { createCheckupRouter } from '../modules/health/checkup.router';
 import { createForexRouter } from '../modules/investment/forex.router';
 import { requireJwtAuth } from '../shared/http/auth-middleware';
-import { createPlaceholderRouter } from './placeholder-router';
 
 export function createApiRouter() {
   const router = Router();
@@ -50,8 +49,6 @@ export function createApiRouter() {
   router.use('/health/medication', createMedicationRouter());
   router.use('/health/checkup', createCheckupRouter());
   router.use('/investment/forex', createForexRouter());
-
-  router.use(createPlaceholderRouter());
 
   return router;
 }

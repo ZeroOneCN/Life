@@ -26,16 +26,17 @@ export function TodoSettingsSection({
     [tasks, settings],
   );
 
-  const triggerReminder = () => {
-    const result = enqueueSceneNotification('todo.reminder', {
+  const triggerReminder = async () => {
+    const result = await enqueueSceneNotification('todo.reminder', {
       message: reminderPayload.message,
     });
 
+    const success = result.some((item) => item.status === 'success');
     showToast(
-      result.some((item) => item.status === 'success')
+      success
         ? '今日待办提醒已写入通知中心日志。'
         : '今日待办提醒未发送，请检查通知中心渠道状态。',
-      result.some((item) => item.status === 'success') ? 'success' : 'error',
+      success ? 'success' : 'error',
     );
   };
 
@@ -43,7 +44,7 @@ export function TodoSettingsSection({
     <SectionCard
       title="提醒设置"
       description="待办页只维护提醒规则和触发条件，渠道、模板与发送日志继续统一交给通知中心。"
-      action={<Btn tone="primary" onClick={triggerReminder}>手动发送今日提醒</Btn>}
+      action={<Btn tone="primary" onClick={() => void triggerReminder()}>手动发送今日提醒</Btn>}
     >
       <div className="page-stack">
         <div className="todo-settings-grid">
@@ -53,11 +54,11 @@ export function TodoSettingsSection({
             checked={settings.reminderEnabled}
             onChange={(checked) => {
               onSettingsChange({ reminderEnabled: checked });
-              updateSceneConfig('todo.reminder', { enabled: checked });
+              void updateSceneConfig('todo.reminder', { enabled: checked });
               showToast(`待办提醒已${checked ? '启用' : '停用'}。`);
             }}
             statusText={settings.reminderEnabled ? '已启用' : '已停用'}
-            impact={`当前将在每天 ${settings.reminderTime} 后扫描提醒，窗口为未来 ${settings.leadDays} 天。`}
+            impact={`当前会在每天 ${settings.reminderTime} 后扫描提醒，窗口为未来 ${settings.leadDays} 天。`}
           >
             <div className="todo-settings-inline-grid">
               <Field

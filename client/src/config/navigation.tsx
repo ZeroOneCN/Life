@@ -40,7 +40,7 @@ export const menuItems: MenuItemConfig[] = [
     children: [
       { key: '/finance/shopping', icon: 'task', label: '网上购物' },
       { key: '/finance/travel', icon: 'spark', label: '旅行游玩' },
-      { key: '/finance/loan', icon: 'wallet', label: '借款还款' },
+      { key: '/finance/loan', icon: 'wallet', label: '贷款还款' },
       { key: '/finance/subscription', icon: 'bell', label: '服务订阅' },
       { key: '/finance/rent', icon: 'box', label: '房租水电' },
     ],
@@ -77,7 +77,7 @@ export const routes: RouteConfig[] = [
   { path: '/health/medication', label: '日常用药', breadcrumb: ['健康中心', '日常用药'], menuKey: '/health/medication', component: MedicationPage },
   { path: '/finance/shopping', label: '网上购物', breadcrumb: ['财务中心', '网上购物'], menuKey: '/finance/shopping', component: ShoppingPage },
   { path: '/finance/travel', label: '旅行游玩', breadcrumb: ['财务中心', '旅行游玩'], menuKey: '/finance/travel', component: TravelPage },
-  { path: '/finance/loan', label: '借款还款', breadcrumb: ['财务中心', '借款还款'], menuKey: '/finance/loan', component: LoanPage },
+  { path: '/finance/loan', label: '贷款还款', breadcrumb: ['财务中心', '贷款还款'], menuKey: '/finance/loan', component: LoanPage },
   { path: '/finance/subscription', label: '服务订阅', breadcrumb: ['财务中心', '服务订阅'], menuKey: '/finance/subscription', component: SubscriptionPage },
   { path: '/finance/rent', label: '房租水电', breadcrumb: ['财务中心', '房租水电'], menuKey: '/finance/rent', component: RentPage },
   { path: '/life/storage', label: '物品追踪', breadcrumb: ['生活中心', '物品追踪'], menuKey: '/life/storage', component: StoragePage },

@@ -68,6 +68,7 @@ export const appDataSource = new DataSource({
   password: env.DB_PASSWORD,
   database: env.DB_DATABASE,
   synchronize: env.DB_SYNCHRONIZE,
+  migrations: ['dist/db/migrations/*.js'],
   entities: [
     SystemUserAccountEntity,
     SystemUserProfileEntity,

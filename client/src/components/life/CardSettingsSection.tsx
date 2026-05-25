@@ -40,39 +40,37 @@ export function CardSettingsSection({
   }), [cards, settings.notificationDaysBefore]);
 
   const latestLogs = useMemo(
-    () => (notificationState?.logs ?? [])
+    () => notificationState.logs
       .filter((log) => log.sceneId === 'card.balance_low' || log.sceneId === 'card.billing_upcoming')
       .slice(0, 8),
-    [notificationState],
+    [notificationState.logs],
   );
 
-  const triggerLowBalanceReminder = () => {
-    const result = enqueueSceneNotification('card.balance_low', {
+  const triggerLowBalanceReminder = async () => {
+    const result = await enqueueSceneNotification('card.balance_low', {
       message: lowBalanceCards.length
-        ? `当前有 ${lowBalanceCards.length} 张号卡余额低于 ${formatLifeCardMoney(settings.balanceThreshold)}，请及时充值。`
+        ? `当前有 ${lowBalanceCards.length} 张号卡低于 ${formatLifeCardMoney(settings.balanceThreshold)}，请及时充值。`
         : `当前没有余额低于 ${formatLifeCardMoney(settings.balanceThreshold)} 的号卡。`,
     });
 
+    const success = result.some((item) => item.status === 'success');
     showToast(
-      result.some((item) => item.status === 'success')
-        ? '低余额提醒已写入通知中心日志。'
-        : '低余额提醒未发送，请检查通知中心渠道状态。',
-      result.some((item) => item.status === 'success') ? 'success' : 'error',
+      success ? '低余额提醒已写入通知中心日志。' : '低余额提醒未发送，请检查通知中心渠道状态。',
+      success ? 'success' : 'error',
     );
   };
 
-  const triggerBillingReminder = () => {
-    const result = enqueueSceneNotification('card.billing_upcoming', {
+  const triggerBillingReminder = async () => {
+    const result = await enqueueSceneNotification('card.billing_upcoming', {
       message: billingWindowCards.length
         ? `当前有 ${billingWindowCards.length} 张号卡进入账单日前 ${settings.notificationDaysBefore} 天提醒窗口。`
         : `当前没有号卡进入账单日前 ${settings.notificationDaysBefore} 天提醒窗口。`,
     });
 
+    const success = result.some((item) => item.status === 'success');
     showToast(
-      result.some((item) => item.status === 'success')
-        ? '账单日前提醒已写入通知中心日志。'
-        : '账单日前提醒未发送，请检查通知中心渠道状态。',
-      result.some((item) => item.status === 'success') ? 'success' : 'error',
+      success ? '账单日前提醒已写入通知中心日志。' : '账单日前提醒未发送，请检查通知中心渠道状态。',
+      success ? 'success' : 'error',
     );
   };
 
@@ -82,8 +80,8 @@ export function CardSettingsSection({
       description="号卡页只维护业务规则和触发入口，真正的发送渠道、模板和完整日志继续统一归通知中心。"
       action={(
         <div className="inline-row">
-          <Btn tone="secondary" onClick={triggerLowBalanceReminder}>模拟低余额提醒</Btn>
-          <Btn tone="primary" onClick={triggerBillingReminder}>模拟账单提醒</Btn>
+          <Btn tone="secondary" onClick={() => void triggerLowBalanceReminder()}>模拟低余额提醒</Btn>
+          <Btn tone="primary" onClick={() => void triggerBillingReminder()}>模拟账单提醒</Btn>
         </div>
       )}
     >
@@ -95,7 +93,7 @@ export function CardSettingsSection({
             checked={settings.balanceLowEnabled}
             onChange={(checked) => {
               onSettingsChange({ balanceLowEnabled: checked });
-              updateSceneConfig('card.balance_low', { enabled: checked });
+              void updateSceneConfig('card.balance_low', { enabled: checked });
               showToast(`低余额提醒已${checked ? '启用' : '停用'}。`);
             }}
             statusText={settings.balanceLowEnabled ? '已启用' : '已停用'}
@@ -125,7 +123,7 @@ export function CardSettingsSection({
             checked={settings.billingUpcomingEnabled}
             onChange={(checked) => {
               onSettingsChange({ billingUpcomingEnabled: checked });
-              updateSceneConfig('card.billing_upcoming', { enabled: checked });
+              void updateSceneConfig('card.billing_upcoming', { enabled: checked });
               showToast(`账单日前提醒已${checked ? '启用' : '停用'}。`);
             }}
             statusText={settings.billingUpcomingEnabled ? '已启用' : '已停用'}

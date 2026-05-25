@@ -3,7 +3,6 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 
-import { mockJwtAuth } from './shared/http/auth-middleware';
 import { errorHandler, notFoundHandler } from './shared/http/error-handler';
 import { createApiRouter } from './routes';
 
@@ -26,7 +25,7 @@ export function createApp() {
     });
   });
 
-  app.use('/api', mockJwtAuth, createApiRouter());
+  app.use('/api', createApiRouter());
   app.use(notFoundHandler);
   app.use(errorHandler);
 

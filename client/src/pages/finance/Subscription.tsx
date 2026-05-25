@@ -48,8 +48,8 @@ export default function SubscriptionPage() {
   );
 
   useEffect(() => {
-    updateSceneConfig('subscription.renewal_upcoming', { enabled: normalizedData.settings.reminderEnabled });
-    updateSceneConfig('subscription.expired', { enabled: normalizedData.settings.expiryDayReminderEnabled });
+    void updateSceneConfig('subscription.renewal_upcoming', { enabled: normalizedData.settings.reminderEnabled });
+    void updateSceneConfig('subscription.expired', { enabled: normalizedData.settings.expiryDayReminderEnabled });
   }, [normalizedData.settings.expiryDayReminderEnabled, normalizedData.settings.reminderEnabled]);
 
   useEffect(() => {
@@ -59,14 +59,14 @@ export default function SubscriptionPage() {
       return;
     }
 
-    dueReminders.forEach((item) => {
-      enqueueSceneNotification(item.sceneId, { message: item.message });
+    void Promise.all(
+      dueReminders.map((item) => enqueueSceneNotification(item.sceneId, { message: item.message })),
+    ).then(() => {
+      setData((previous) => ({
+        ...previous,
+        records: applySubscriptionReminderMarkers(previous.records, dueReminders),
+      }));
     });
-
-    setData((previous) => ({
-      ...previous,
-      records: applySubscriptionReminderMarkers(previous.records, dueReminders),
-    }));
   }, [normalizedData.records, normalizedData.settings, setData]);
 
   const updateSettings = (patch: Partial<SubscriptionPageState['settings']>) => {
@@ -114,10 +114,10 @@ export default function SubscriptionPage() {
       <StatGrid
         className="subscription-top-summary"
         items={[
-          { label: '总订阅数', value: `${overview.totalCount} 个` },
-          { label: '活跃订阅', value: `${overview.activeCount} 个` },
-          { label: '即将到期', value: `${overview.upcomingCount} 个`, accent: 'var(--color-warning)' },
-          { label: '自动续费', value: `${overview.autoRenewCount} 个` },
+          { label: '总订阅数', value: `${overview.totalCount} 项` },
+          { label: '活跃订阅', value: `${overview.activeCount} 项` },
+          { label: '即将到期', value: `${overview.upcomingCount} 项`, accent: 'var(--color-warning)' },
+          { label: '自动续费', value: `${overview.autoRenewCount} 项` },
           { label: '月均支出', value: formatSubscriptionAmount(overview.monthlyEstimate) },
           { label: '年度估算', value: formatSubscriptionAmount(overview.annualEstimate) },
         ]}

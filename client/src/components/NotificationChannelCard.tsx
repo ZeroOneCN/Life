@@ -54,8 +54,7 @@ export function NotificationChannelCard({
       )}
       <div className="inline-row">
         <span className="subtle-text">
-          最近测试：
-          {config.lastTestAt ? new Date(config.lastTestAt).toLocaleString() : '尚未测试'}
+          最近测试：{config.lastTestAt ? new Date(config.lastTestAt).toLocaleString() : '尚未测试'}
         </span>
         <Btn tone="secondary" onClick={() => onTest(config.type)}>
           测试发送

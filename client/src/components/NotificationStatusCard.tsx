@@ -26,10 +26,10 @@ export function NotificationStatusCard({
             <h3 className="card-title">{title}</h3>
             <p className="section-description">{summary}</p>
           </div>
-          <Tag tone="orange">场景初始化中</Tag>
+          <Tag tone="orange">场景加载中</Tag>
         </div>
         <div className="callout callout-info">
-          通知中心正在补齐该场景的本地配置，刷新后会恢复正常显示。
+          通知中心正在同步该场景的后端配置，稍后刷新即可恢复正常显示。
         </div>
         <Btn tone="ghost" onClick={() => navigate('/notifications?tab=scenes')}>
           前往通知中心查看
@@ -50,7 +50,7 @@ export function NotificationStatusCard({
         </Tag>
       </div>
       <div className="status-metadata">
-        <span>已绑定渠道 {boundChannels} 个</span>
+        <span>已绑定就绪渠道 {boundChannels} 个</span>
         <span>{scene.channels.length ? scene.channels.join(' / ') : '尚未绑定渠道'}</span>
       </div>
       <div className="callout callout-info">

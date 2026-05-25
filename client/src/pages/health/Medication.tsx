@@ -96,19 +96,19 @@ export default function MedicationPage() {
       && record[slot] > 0
     ));
 
-    const results = enqueueSceneNotification('medication.dose_reminder', {
+    void enqueueSceneNotification('medication.dose_reminder', {
       message: todayRecords.length
-        ? `${targetUserId} 在${MEDICATION_REMINDER_META[slot].label}时段共有 ${todayRecords.length} 条待服药记录，请按计划完成。`
-        : `${targetUserId} 的${MEDICATION_REMINDER_META[slot].label}已触发，请确认是否按计划服药。`,
+        ? `${targetUserId} 在 ${MEDICATION_REMINDER_META[slot].label} 时段共有 ${todayRecords.length} 条待服药记录，请按计划完成。`
+        : `${targetUserId} 的 ${MEDICATION_REMINDER_META[slot].label} 提醒已触发，请确认是否按计划服药。`,
+    }).then((results) => {
+      const success = results.some((item) => item.status === 'success');
+      showToast(
+        success
+          ? `${MEDICATION_REMINDER_META[slot].label}已写入通知中心。`
+          : `${MEDICATION_REMINDER_META[slot].label}未发送成功，请检查通知中心渠道状态。`,
+        success ? 'success' : 'error',
+      );
     });
-
-    const success = results.some((item) => item.status === 'success');
-    showToast(
-      success
-        ? `${MEDICATION_REMINDER_META[slot].label}已写入通知中心。`
-        : `${MEDICATION_REMINDER_META[slot].label}未发送成功，请检查通知中心渠道状态。`,
-      success ? 'success' : 'error',
-    );
   };
 
   const handleTriggerStockReminder = () => {
@@ -134,17 +134,17 @@ export default function MedicationPage() {
       return;
     }
 
-    const results = enqueueSceneNotification('medication.stock_low', {
+    void enqueueSceneNotification('medication.stock_low', {
       message: `${targetUserId} 共有 ${stockItems.length} 个药品进入低库存阈值：${stockItems.map((item) => item.medicineName).join('、')}。`,
+    }).then((results) => {
+      const success = results.some((item) => item.status === 'success');
+      showToast(
+        success
+          ? '低库存提醒已写入通知中心。'
+          : '低库存提醒未发送成功，请检查通知中心渠道状态。',
+        success ? 'success' : 'error',
+      );
     });
-
-    const success = results.some((item) => item.status === 'success');
-    showToast(
-      success
-        ? '低库存提醒已写入通知中心。'
-        : '低库存提醒未发送成功，请检查通知中心渠道状态。',
-      success ? 'success' : 'error',
-    );
   };
 
   const handleSaveSummary = (date: string, content: string) => {
@@ -172,7 +172,7 @@ export default function MedicationPage() {
     <div className="page-stack">
       <PageHeader
         title="日常用药"
-        subtitle="把旧版用药记录、购药、分析与设置原型收敛进当前 LifeOS 前端体系，统一管理每日服药、库存估算、总结和通知联动。"
+        subtitle="把用药记录、购药记录、分析看板与提醒联动统一收进当前 LifeOS 健康体系。"
         actions={(
           <>
             <Tag tone="blue">本地健康档案</Tag>
@@ -192,7 +192,7 @@ export default function MedicationPage() {
             value={normalizedData.settings.activeUserId}
             onChange={(event) => updateSettings({ activeUserId: event.target.value })}
             placeholder="例如：user-001"
-            hint="四个 tab 中的新建记录都会默认使用这个用户，也可以在各自视图里独立切换筛选用户。"
+            hint="四个 tab 中的新建记录都会默认使用这个用户，也可以在各自视图里单独切换筛选用户。"
           />
         </div>
       </SectionCard>
@@ -202,7 +202,7 @@ export default function MedicationPage() {
           {
             label: '当前用户',
             value: normalizeMedicationUserId(normalizedData.settings.activeUserId) || '-',
-            helper: '顶部当前用户用于新增记录和总览统计',
+            helper: '顶部当前用户用于新增记录和概览统计',
           },
           {
             label: '累计用量',
@@ -291,12 +291,12 @@ export default function MedicationPage() {
           onSaveSummary={handleSaveSummary}
           onDoseReminderToggle={(checked) => {
             updateSettings({ doseReminderEnabled: checked });
-            updateSceneConfig('medication.dose_reminder', { enabled: checked });
+            void updateSceneConfig('medication.dose_reminder', { enabled: checked });
             showToast(`服药提醒已${checked ? '启用' : '停用'}。`);
           }}
           onStockReminderToggle={(checked) => {
             updateSettings({ stockReminderEnabled: checked });
-            updateSceneConfig('medication.stock_low', { enabled: checked });
+            void updateSceneConfig('medication.stock_low', { enabled: checked });
             showToast(`低库存提醒已${checked ? '启用' : '停用'}。`);
           }}
           onTriggerDoseReminder={handleTriggerDoseReminder}

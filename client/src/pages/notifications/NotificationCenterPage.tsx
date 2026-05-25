@@ -1,11 +1,13 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { NotificationChannelCard } from '../../components/NotificationChannelCard';
 import { NotificationLogTable } from '../../components/NotificationLogTable';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Checkbox, PillTabs, Switch, Tag, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
+import { buildApiErrorMessage } from '../../lib/api';
 import {
+  hydrateNotificationCenterState,
   sendTestNotification,
   updateChannelConfig,
   updateSceneConfig,
@@ -29,7 +31,19 @@ const channelLabels: Record<NotificationChannelType, string> = {
 export default function NotificationCenterPage() {
   const notificationState = useNotificationCenterState();
   const [tab, setTab] = usePageTab('overview', tabOptions.map((item) => item.value));
+  const [loading, setLoading] = useState(true);
   const { toast, showToast } = useToastState();
+
+  useEffect(() => {
+    setLoading(true);
+    void hydrateNotificationCenterState()
+      .catch((error) => {
+        showToast(buildApiErrorMessage(error, '通知中心加载失败。'), 'error');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [showToast]);
 
   const metrics = useMemo(() => {
     const channels = Object.values(notificationState.channels);
@@ -46,21 +60,26 @@ export default function NotificationCenterPage() {
   const sceneList = Object.values(notificationState.scenes);
   const latestLogs = notificationState.logs.slice(0, 5);
 
-  const toggleSceneChannel = (sceneId: NotificationSceneId, channel: NotificationChannelType) => {
+  const toggleSceneChannel = async (sceneId: NotificationSceneId, channel: NotificationChannelType) => {
     const current = notificationState.scenes[sceneId];
     const nextChannels = current.channels.includes(channel)
       ? current.channels.filter((item) => item !== channel)
       : [...current.channels, channel];
 
-    updateSceneConfig(sceneId, { channels: nextChannels });
+    try {
+      await updateSceneConfig(sceneId, { channels: nextChannels });
+      showToast('场景渠道绑定已更新。');
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '场景渠道绑定更新失败。'), 'error');
+    }
   };
 
   return (
     <div className="page-stack">
       <PageHeader
         title="通知中心"
-        subtitle="统一配置通知渠道、业务场景和测试日志，所有提醒都从这里发出。"
-        actions={<Tag tone="blue">一级菜单</Tag>}
+        subtitle="统一配置通知渠道、业务场景和发送日志。所有业务提醒都从这里出发，不再经过浏览器本地业务存储。"
+        actions={<Tag tone="blue">{loading ? '同步中' : '后端已接入'}</Tag>}
       />
 
       <PillTabs
@@ -80,11 +99,11 @@ export default function NotificationCenterPage() {
             ]}
           />
           <div className="two-column-layout">
-            <SectionCard title="统一发送说明" description="前端 v1 采用 mock adapter，本轮不接后端。">
+            <SectionCard title="统一发送说明" description="当前已经切到后端通知中心，日志、模板、场景和渠道都以数据库为准。">
               <div className="bullet-list">
                 <div className="bullet-item"><span className="bullet-dot" />所有测试发送和业务提醒都会写入统一日志。</div>
-                <div className="bullet-item"><span className="bullet-dot" />渠道启用状态、场景绑定和日志都持久化在本地存储。</div>
-                <div className="bullet-item"><span className="bullet-dot" />业务页只负责开关、规则和触发条件，不再各自维护发送逻辑。</div>
+                <div className="bullet-item"><span className="bullet-dot" />业务页面只维护触发规则，不再各自保存通知状态。</div>
+                <div className="bullet-item"><span className="bullet-dot" />默认场景、模板和渠道说明由 seed 提供，而不是前端写死。</div>
               </div>
             </SectionCard>
             <SectionCard title="最近发送记录" description="便于快速确认通知中心是否正常工作。">
@@ -101,13 +120,31 @@ export default function NotificationCenterPage() {
               key={channel.type}
               config={channel}
               onToggle={(enabled) => {
-                updateChannelConfig(channel.type, { enabled });
-                showToast(`${channel.label} 已${enabled ? '启用' : '停用'}。`);
+                void updateChannelConfig(channel.type, { enabled })
+                  .then(() => {
+                    showToast(`${channel.label} 已${enabled ? '启用' : '停用'}。`);
+                  })
+                  .catch((error) => {
+                    showToast(buildApiErrorMessage(error, `${channel.label} 更新失败。`), 'error');
+                  });
               }}
-              onUpdate={(patch) => updateChannelConfig(channel.type, patch)}
+              onUpdate={(patch) => {
+                void updateChannelConfig(channel.type, patch)
+                  .then(() => {
+                    showToast(`${channel.label} 配置已更新。`);
+                  })
+                  .catch((error) => {
+                    showToast(buildApiErrorMessage(error, `${channel.label} 更新失败。`), 'error');
+                  });
+              }}
               onTest={(type) => {
-                const result = sendTestNotification(type);
-                showToast(result.message, result.success ? 'success' : 'error');
+                void sendTestNotification(type)
+                  .then((result) => {
+                    showToast(result.message, result.success ? 'success' : 'error');
+                  })
+                  .catch((error) => {
+                    showToast(buildApiErrorMessage(error, '测试发送失败。'), 'error');
+                  });
               }}
             />
           ))}
@@ -122,8 +159,13 @@ export default function NotificationCenterPage() {
                 <Switch
                   checked={scene.enabled}
                   onChange={(enabled) => {
-                    updateSceneConfig(scene.id, { enabled });
-                    showToast(`${scene.label} 已${enabled ? '启用' : '停用'}。`);
+                    void updateSceneConfig(scene.id, { enabled })
+                      .then(() => {
+                        showToast(`${scene.label} 已${enabled ? '启用' : '停用'}。`);
+                      })
+                      .catch((error) => {
+                        showToast(buildApiErrorMessage(error, `${scene.label} 更新失败。`), 'error');
+                      });
                   }}
                   label="场景开关"
                   description={scene.summary}
@@ -134,7 +176,9 @@ export default function NotificationCenterPage() {
                     <Checkbox
                       key={`${scene.id}-${channel.type}`}
                       checked={scene.channels.includes(channel.type)}
-                      onChange={() => toggleSceneChannel(scene.id, channel.type)}
+                      onChange={() => {
+                        void toggleSceneChannel(scene.id, channel.type);
+                      }}
                     >
                       {channelLabels[channel.type]}
                     </Checkbox>

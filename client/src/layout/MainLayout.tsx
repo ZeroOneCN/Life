@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 
 import { menuItems, routes } from '../config/navigation';
 import { useTheme } from '../hooks/useTheme';
+import { logout, useAuthState } from '../services/auth';
 import type { IconKey, MenuItemConfig } from '../types/navigation';
 
 const iconMap: Record<IconKey, string> = {
@@ -147,6 +148,7 @@ function MenuNode({
 
 export default function MainLayout() {
   const { isDark, toggleTheme } = useTheme();
+  const authState = useAuthState();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>(() => {
@@ -171,7 +173,7 @@ export default function MainLayout() {
         <div className="sidebar-brand">
           <div className="sidebar-brand-copy">
             <strong>{collapsed ? 'LO' : 'LifeOS'}</strong>
-            {!collapsed ? <span className="subtle-text brand-subtitle">TypeScript Admin</span> : null}
+            {!collapsed ? <span className="subtle-text brand-subtitle">Database-first console</span> : null}
           </div>
         </div>
         <nav className="menu">
@@ -210,14 +212,24 @@ export default function MainLayout() {
               ))}
             </div>
           </div>
-          <button
-            className="icon-button theme-toggle"
-            type="button"
-            aria-label={isDark ? '切换到日间模式' : '切换到夜间模式'}
-            onClick={toggleTheme}
-          >
-            {isDark ? '☀️' : '🌙'}
-          </button>
+
+          <div className="topbar-right">
+            <div className="topbar-user-meta">
+              <strong>{authState.session?.user.nickname ?? authState.session?.user.username ?? '当前用户'}</strong>
+              <span>{authState.session?.user.email ?? '未登录邮箱'}</span>
+            </div>
+            <button className="icon-button" type="button" onClick={() => void logout()}>
+              退出
+            </button>
+            <button
+              className="icon-button theme-toggle"
+              type="button"
+              aria-label={isDark ? '切换到日间模式' : '切换到夜间模式'}
+              onClick={toggleTheme}
+            >
+              {isDark ? 'Light' : 'Dark'}
+            </button>
+          </div>
         </header>
         <main className="content">
           <Outlet />

@@ -40,35 +40,33 @@ export function LoanSettingsSection({
   );
 
   const latestLogs = useMemo(
-    () => (notificationState?.logs ?? [])
+    () => notificationState.logs
       .filter((log) => log.sceneId === 'loan.repayment_upcoming' || log.sceneId === 'loan.repayment_overdue')
       .slice(0, 6),
-    [notificationState],
+    [notificationState.logs],
   );
 
-  const triggerUpcomingReminder = () => {
-    const result = enqueueSceneNotification('loan.repayment_upcoming', {
+  const triggerUpcomingReminder = async () => {
+    const result = await enqueueSceneNotification('loan.repayment_upcoming', {
       message: `当前有 ${upcomingBills.length} 笔待还账单，建议在 ${settings.upcomingDays} 天窗口内优先处理。`,
     });
 
+    const success = result.some((item) => item.status === 'success');
     showToast(
-      result.some((item) => item.status === 'success')
-        ? '还款提醒已写入通知中心日志。'
-        : '还款提醒未发送，请检查通知中心渠道配置。',
-      result.some((item) => item.status === 'success') ? 'success' : 'error',
+      success ? '还款提醒已写入通知中心日志。' : '还款提醒未发送，请检查通知中心渠道配置。',
+      success ? 'success' : 'error',
     );
   };
 
-  const triggerOverdueReminder = () => {
-    const result = enqueueSceneNotification('loan.repayment_overdue', {
+  const triggerOverdueReminder = async () => {
+    const result = await enqueueSceneNotification('loan.repayment_overdue', {
       message: `当前有 ${overdueBills.length} 笔逾期账单，请尽快处理并评估风险。`,
     });
 
+    const success = result.some((item) => item.status === 'success');
     showToast(
-      result.some((item) => item.status === 'success')
-        ? '逾期提醒已写入通知中心日志。'
-        : '逾期提醒未发送，请检查通知中心渠道配置。',
-      result.some((item) => item.status === 'success') ? 'success' : 'error',
+      success ? '逾期提醒已写入通知中心日志。' : '逾期提醒未发送，请检查通知中心渠道配置。',
+      success ? 'success' : 'error',
     );
   };
 
@@ -78,8 +76,8 @@ export function LoanSettingsSection({
       description="统一维护提醒规则、自动联动开关和通知中心状态，不在页面内单独维护渠道配置。"
       action={(
         <div className="inline-row">
-          <Btn tone="secondary" onClick={triggerUpcomingReminder}>模拟还款提醒</Btn>
-          <Btn tone="primary" onClick={triggerOverdueReminder}>模拟逾期提醒</Btn>
+          <Btn tone="secondary" onClick={() => void triggerUpcomingReminder()}>模拟还款提醒</Btn>
+          <Btn tone="primary" onClick={() => void triggerOverdueReminder()}>模拟逾期提醒</Btn>
         </div>
       )}
     >
@@ -91,7 +89,7 @@ export function LoanSettingsSection({
             checked={settings.repaymentReminderEnabled}
             onChange={(checked) => {
               onSettingsChange({ repaymentReminderEnabled: checked });
-              updateSceneConfig('loan.repayment_upcoming', { enabled: checked });
+              void updateSceneConfig('loan.repayment_upcoming', { enabled: checked });
               showToast(`还款提醒已${checked ? '启用' : '停用'}。`);
             }}
             statusText={settings.repaymentReminderEnabled ? '已启用' : '已停用'}
@@ -129,11 +127,11 @@ export function LoanSettingsSection({
             checked={settings.overdueReminderEnabled}
             onChange={(checked) => {
               onSettingsChange({ overdueReminderEnabled: checked });
-              updateSceneConfig('loan.repayment_overdue', { enabled: checked });
+              void updateSceneConfig('loan.repayment_overdue', { enabled: checked });
               showToast(`逾期提醒已${checked ? '启用' : '停用'}。`);
             }}
             statusText={settings.overdueReminderEnabled ? '已启用' : '已停用'}
-            impact={`当前用户下共有 ${overdueBills.length} 笔逾期账单。关闭后，页面依然会显示逾期状态，但不会再向通知中心发起逾期提醒请求。`}
+            impact={`当前用户下共有 ${overdueBills.length} 笔逾期账单。关闭后页面仍会显示逾期状态，但不会再向通知中心发起逾期提醒请求。`}
           />
 
           <NotificationStatusCard
@@ -151,14 +149,14 @@ export function LoanSettingsSection({
               showToast(`自动生成还款记录已${checked ? '启用' : '停用'}。`);
             }}
             statusText={settings.autoRepaymentOnMarkPaid ? '账单状态与还款记录联动中' : '仅更新账单状态'}
-            impact="这是业务联动开关，不会直接发送通知，但会影响账单标记后的数据完整性和统计口径，因此同样需要明显提示。"
+            impact="这是业务联动开关，不会直接发送通知，但会影响账单标记后的数据完整性和统计口径。"
           />
         </div>
 
         <div className="fitness-chart-card">
           <div className="fitness-chart-header">
             <strong>最近触发日志</strong>
-            <span>只展示借款场景相关的通知发送和测试记录，便于回到通知中心继续追踪。</span>
+            <span>这里只展示贷款场景相关的通知发送和测试记录，便于回到通知中心继续追踪。</span>
           </div>
           <NotificationLogTable logs={latestLogs} />
         </div>

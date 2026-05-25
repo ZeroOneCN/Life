@@ -43,8 +43,8 @@ export default function CardPage() {
   }, [data, normalizedData, setData]);
 
   useEffect(() => {
-    updateSceneConfig('card.balance_low', { enabled: normalizedData.settings.balanceLowEnabled });
-    updateSceneConfig('card.billing_upcoming', { enabled: normalizedData.settings.billingUpcomingEnabled });
+    void updateSceneConfig('card.balance_low', { enabled: normalizedData.settings.balanceLowEnabled });
+    void updateSceneConfig('card.billing_upcoming', { enabled: normalizedData.settings.billingUpcomingEnabled });
   }, [normalizedData.settings.balanceLowEnabled, normalizedData.settings.billingUpcomingEnabled]);
 
   useEffect(() => {
@@ -53,14 +53,14 @@ export default function CardPage() {
       return;
     }
 
-    dueNotifications.forEach((item) => {
-      enqueueSceneNotification(item.sceneId, { message: item.message });
+    void Promise.all(
+      dueNotifications.map((item) => enqueueSceneNotification(item.sceneId, { message: item.message })),
+    ).then(() => {
+      setData((previous) => ({
+        ...previous,
+        cards: triggerLifeCardNotifications(previous.cards, dueNotifications),
+      }));
     });
-
-    setData((previous) => ({
-      ...previous,
-      cards: triggerLifeCardNotifications(previous.cards, dueNotifications),
-    }));
   }, [normalizedData.cards, normalizedData.settings, setData]);
 
   const overview = useMemo(
@@ -112,7 +112,7 @@ export default function CardPage() {
 
       <SectionCard
         title="业务视图"
-        description="号卡列表、账单、统计、运营商和提醒设置共享同一套本地状态模型，并与通知中心联动。"
+        description="号卡列表、账单、统计、运营商和提醒设置共用同一套本地状态模型，并与通知中心联动。"
       >
         <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as CardTab)} />
       </SectionCard>

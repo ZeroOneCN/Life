@@ -41,7 +41,7 @@ export default function TodoPage() {
   }, [data, normalizedData, setData]);
 
   useEffect(() => {
-    updateSceneConfig('todo.reminder', { enabled: normalizedData.settings.reminderEnabled });
+    void updateSceneConfig('todo.reminder', { enabled: normalizedData.settings.reminderEnabled });
   }, [normalizedData.settings.reminderEnabled]);
 
   useEffect(() => {
@@ -51,15 +51,15 @@ export default function TodoPage() {
       return;
     }
 
-    enqueueSceneNotification('todo.reminder', { message: payload.message });
-
-    setData((previous) => ({
-      ...previous,
-      settings: {
-        ...previous.settings,
-        lastAutoReminderDate: payload.date,
-      },
-    }));
+    void enqueueSceneNotification('todo.reminder', { message: payload.message }).then(() => {
+      setData((previous) => ({
+        ...previous,
+        settings: {
+          ...previous.settings,
+          lastAutoReminderDate: payload.date,
+        },
+      }));
+    });
   }, [normalizedData.settings, normalizedData.tasks, setData]);
 
   const overview = useMemo(() => buildTodoOverview(normalizedData.tasks), [normalizedData.tasks]);

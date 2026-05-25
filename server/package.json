@@ -8,7 +8,10 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "check": "tsc --noEmit -p tsconfig.json",
-    "seed": "tsx src/db/seed.ts"
+    "seed": "tsx src/db/seed.ts",
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate src/db/migrations/lifeos-baseline -d src/db/data-source.ts",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/db/data-source.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/db/data-source.ts"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -40,6 +43,7 @@
     "@types/node": "^22.10.5",
     "@types/passport-jwt": "^4.0.1",
     "ts-node": "^10.9.2",
+    "typeorm-ts-node-commonjs": "^0.3.20",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
