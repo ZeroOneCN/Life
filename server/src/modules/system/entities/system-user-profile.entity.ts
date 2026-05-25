@@ -5,7 +5,7 @@ import { UserScopedEntity } from '../../../shared/persistence/user-scoped.entity
 @Entity('system_user_profile')
 export class SystemUserProfileEntity extends UserScopedEntity {
   @Column({ type: 'varchar', length: 64 })
-  display_name!: string;
+  nickname!: string;
 
   @Column({ type: 'varchar', length: 128, nullable: true })
   avatar_url!: string | null;
