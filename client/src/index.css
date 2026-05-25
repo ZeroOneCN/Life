@@ -3793,6 +3793,172 @@ textarea {
   align-items: center;
 }
 
+.card-overview-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.card-entry-grid,
+.card-filter-grid,
+.card-bill-entry-grid,
+.card-bill-filter-grid,
+.card-bill-modal-grid,
+.card-modal-grid,
+.card-recharge-grid,
+.card-carrier-entry-grid,
+.card-carrier-modal-grid,
+.card-settings-grid,
+.card-settings-inline-grid,
+.card-statistics-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.card-entry-grid {
+  grid-template-columns:
+    minmax(200px, 1.2fr)
+    minmax(150px, 0.9fr)
+    minmax(130px, 0.85fr)
+    minmax(120px, 0.7fr)
+    minmax(120px, 0.7fr)
+    minmax(100px, 0.65fr)
+    minmax(170px, 1fr)
+    minmax(160px, 0.9fr)
+    minmax(150px, 0.9fr)
+    minmax(160px, 0.9fr)
+    160px;
+  align-items: end;
+}
+
+.card-filter-grid {
+  grid-template-columns: minmax(240px, 1.4fr) repeat(4, minmax(140px, 0.85fr));
+  align-items: end;
+}
+
+.card-bill-entry-grid {
+  grid-template-columns:
+    minmax(240px, 1.2fr)
+    minmax(150px, 0.9fr)
+    repeat(4, minmax(120px, 0.72fr))
+    160px;
+  align-items: end;
+}
+
+.card-bill-filter-grid {
+  grid-template-columns: repeat(3, minmax(180px, 1fr)) minmax(220px, 1.2fr);
+  align-items: end;
+}
+
+.card-bill-modal-grid,
+.card-modal-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.card-recharge-grid,
+.card-settings-inline-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.card-carrier-entry-grid {
+  grid-template-columns: minmax(260px, 1fr) 160px;
+  align-items: end;
+}
+
+.card-carrier-modal-grid {
+  grid-template-columns: 1fr;
+  margin-bottom: 14px;
+}
+
+.card-entry-action {
+  display: flex;
+  align-items: end;
+}
+
+.card-entry-action .btn {
+  width: 100%;
+}
+
+.card-settings-grid {
+  grid-template-columns: 1.08fr 0.92fr;
+}
+
+.card-statistics-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.card-chart-card-wide {
+  grid-column: 1 / -1;
+}
+
+.card-legend-list,
+.card-ranking-list,
+.card-tag-list {
+  display: grid;
+  gap: 10px;
+}
+
+.card-legend-item,
+.card-ranking-item {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-legend-item {
+  grid-template-columns: 12px 1fr auto;
+}
+
+.card-ranking-item {
+  grid-template-columns: 28px 1fr auto;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--color-hairline);
+  background: color-mix(in srgb, var(--color-surface-3) 84%, transparent);
+}
+
+.card-ranking-item span,
+.card-legend-item span {
+  color: var(--color-ink-subtle);
+}
+
+.card-ranking-item strong,
+.card-legend-item strong {
+  color: var(--color-ink);
+}
+
+.card-ranking-item > div,
+.card-legend-item > div {
+  display: grid;
+  gap: 4px;
+}
+
+.card-ranking-index {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.card-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  display: inline-flex;
+}
+
+.card-import-actions,
+.section-head-inline {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+}
+
 .todo-overview-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -4086,6 +4252,19 @@ textarea {
   .subscription-settings-inline,
   .subscription-modal-grid,
   .subscription-modal-grid-small,
+  .card-overview-grid,
+  .card-entry-grid,
+  .card-filter-grid,
+  .card-bill-entry-grid,
+  .card-bill-filter-grid,
+  .card-bill-modal-grid,
+  .card-modal-grid,
+  .card-recharge-grid,
+  .card-carrier-entry-grid,
+  .card-carrier-modal-grid,
+  .card-settings-grid,
+  .card-settings-inline-grid,
+  .card-statistics-grid,
   .todo-overview-grid,
   .todo-entry-grid,
   .todo-filter-grid,
@@ -4166,5 +4345,11 @@ textarea {
   .todo-markdown-preview-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .card-import-actions,
+  .section-head-inline {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

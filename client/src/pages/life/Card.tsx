@@ -1,211 +1,196 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
-import { NotificationStatusCard } from '../../components/NotificationStatusCard';
+import { CardBillsSection } from '../../components/life/CardBillsSection';
+import { CardCardsSection } from '../../components/life/CardCardsSection';
+import { CardCarriersSection } from '../../components/life/CardCarriersSection';
+import { CardSettingsSection } from '../../components/life/CardSettingsSection';
+import { CardStatisticsSection } from '../../components/life/CardStatisticsSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
-import { SettingSwitchCard } from '../../components/SettingSwitchCard';
-import { Btn, DataTable, Field, PillTabs, Toast, useToastState } from '../../components/ui';
+import { PillTabs, Tag, Toast, useToastState } from '../../components/ui';
 import { useLocalStorageState } from '../../hooks/useLocalStorageState';
 import { usePageTab } from '../../hooks/usePageTab';
+import {
+  buildInitialCardState,
+  buildLifeCardDueNotifications,
+  buildLifeCardOverview,
+  normalizeCardPageState,
+  triggerLifeCardNotifications,
+} from '../../services/card';
 import { enqueueSceneNotification, updateSceneConfig } from '../../services/notificationCenter';
-import type { CardPageState } from '../../types/pages';
+import type { CardTab, LifeCardPageState } from '../../types/card';
 
-const STORAGE_KEY = 'lifeos_card_page';
+const STORAGE_KEY = 'lifeos_life_card_page';
 
-const initialState: CardPageState = {
-  cards: [
-    { id: 'sim-1', phone: '18316426417', carrier: '中国移动', city: '上海', balance: 8.2, monthlyFee: 29, billingDay: 8, trafficPlan: '30GB/月' },
-    { id: 'sim-2', phone: '13377632105', carrier: '中国电信', city: '北京', balance: 42.5, monthlyFee: 19, billingDay: 12, trafficPlan: '20GB/月' },
-    { id: 'sim-3', phone: '15912345678', carrier: '中国联通', city: '深圳', balance: 5.9, monthlyFee: 39, billingDay: 23, trafficPlan: '100GB/月' },
-  ],
-  settings: {
-    balanceLowEnabled: true,
-    billingUpcomingEnabled: true,
-    balanceThreshold: 10,
-    notificationDaysBefore: 3,
-  },
-};
-
-const tabOptions = [
+const TAB_OPTIONS: Array<{ value: CardTab; label: string }> = [
   { value: 'cards', label: '号卡列表' },
-  { value: 'settings', label: '提醒规则' },
-] as const;
+  { value: 'bills', label: '账单管理' },
+  { value: 'statistics', label: '统计分析' },
+  { value: 'carriers', label: '运营商管理' },
+  { value: 'settings', label: '提醒设置' },
+];
 
 export default function CardPage() {
-  const [data, setData] = useLocalStorageState<CardPageState>(STORAGE_KEY, initialState);
-  const [tab, setTab] = usePageTab('cards', tabOptions.map((item) => item.value));
+  const [data, setData] = useLocalStorageState<LifeCardPageState>(STORAGE_KEY, buildInitialCardState);
+  const [tab, setTab] = usePageTab<CardTab>('cards', TAB_OPTIONS.map((item) => item.value), 'cardTab');
   const { toast, showToast } = useToastState();
+  const normalizedData = useMemo(() => normalizeCardPageState(data), [data]);
 
-  const lowBalanceCards = useMemo(
-    () => data.cards.filter((card) => card.balance <= data.settings.balanceThreshold),
-    [data.cards, data.settings.balanceThreshold],
+  useEffect(() => {
+    const shouldSync = JSON.stringify(normalizedData) !== JSON.stringify(data);
+    if (shouldSync) {
+      setData(normalizedData);
+    }
+  }, [data, normalizedData, setData]);
+
+  useEffect(() => {
+    updateSceneConfig('card.balance_low', { enabled: normalizedData.settings.balanceLowEnabled });
+    updateSceneConfig('card.billing_upcoming', { enabled: normalizedData.settings.billingUpcomingEnabled });
+  }, [normalizedData.settings.balanceLowEnabled, normalizedData.settings.billingUpcomingEnabled]);
+
+  useEffect(() => {
+    const dueNotifications = buildLifeCardDueNotifications(normalizedData.cards, normalizedData.settings);
+    if (!dueNotifications.length) {
+      return;
+    }
+
+    dueNotifications.forEach((item) => {
+      enqueueSceneNotification(item.sceneId, { message: item.message });
+    });
+
+    setData((previous) => ({
+      ...previous,
+      cards: triggerLifeCardNotifications(previous.cards, dueNotifications),
+    }));
+  }, [normalizedData.cards, normalizedData.settings, setData]);
+
+  const overview = useMemo(
+    () => buildLifeCardOverview(
+      normalizedData.cards,
+      normalizedData.bills,
+      normalizedData.recharges,
+      normalizedData.settings,
+    ),
+    [normalizedData.bills, normalizedData.cards, normalizedData.recharges, normalizedData.settings],
   );
 
-  const totalBalance = useMemo(
-    () => data.cards.reduce((sum, card) => sum + card.balance, 0),
-    [data.cards],
-  );
+  const updateSettings = (patch: Partial<LifeCardPageState['settings']>) => {
+    setData((previous) => ({
+      ...previous,
+      settings: {
+        ...previous.settings,
+        ...patch,
+      },
+    }));
+  };
 
   return (
     <div className="page-stack">
       <PageHeader
-        title="号卡管理"
-        subtitle="通知渠道已迁入通知中心，这里保留业务规则和触发模拟。"
+        title="号卡中心"
+        subtitle="把号卡资料、充值、账单、运营商和提醒规则统一收进当前 LifeOS 的正式生活模块里，提醒场景继续由通知中心统一接管。"
         actions={(
           <div className="inline-row">
-            <Btn
-              tone="secondary"
-              onClick={() => {
-                const result = enqueueSceneNotification('card.balance_low', {
-                  message: `当前有 ${lowBalanceCards.length} 张号卡余额低于阈值。`,
-                });
-                showToast(result.some((item) => item.status === 'success') ? '低余额提醒已进入通知中心。' : '低余额提醒未发送，请检查通知中心渠道配置。', result.some((item) => item.status === 'success') ? 'success' : 'error');
-              }}
-            >
-              模拟低余额提醒
-            </Btn>
-            <Btn
-              tone="primary"
-              onClick={() => {
-                const result = enqueueSceneNotification('card.billing_upcoming', {
-                  message: `共有 ${data.cards.length} 张号卡需要在账单日前 ${data.settings.notificationDaysBefore} 天提醒。`,
-                });
-                showToast(result.some((item) => item.status === 'success') ? '账单日前提醒已进入通知中心。' : '账单日前提醒未发送，请检查通知中心渠道配置。', result.some((item) => item.status === 'success') ? 'success' : 'error');
-              }}
-            >
-              模拟账单日前提醒
-            </Btn>
+            <Tag tone="blue">低余额 {overview.lowBalanceCount} 张</Tag>
+            <Tag tone="default">本月账单 {overview.currentMonthBillCount} 条</Tag>
           </div>
         )}
       />
 
-      <PillTabs
-        options={tabOptions.map((item) => ({ value: item.value, label: item.label }))}
-        value={tab}
-        onChange={(value) => setTab(value as (typeof tabOptions)[number]['value'])}
+      <StatGrid
+        className="card-overview-grid"
+        items={[
+          { label: '总号卡数', value: `${overview.totalCards} 张` },
+          { label: '低余额数', value: `${overview.lowBalanceCount} 张` },
+          { label: '总余额', value: `¥${overview.totalBalance.toFixed(2)}` },
+          { label: '月租合计', value: `¥${overview.monthlyFeeTotal.toFixed(2)}` },
+          { label: '运营商数', value: `${overview.carrierCount}` },
+          { label: '本月账单数', value: `${overview.currentMonthBillCount}` },
+          { label: '本月账单金额', value: `¥${overview.currentMonthBillAmount.toFixed(2)}` },
+          { label: '累计充值额', value: `¥${overview.totalRechargeAmount.toFixed(2)}` },
+        ]}
       />
 
+      <SectionCard
+        title="业务视图"
+        description="号卡列表、账单、统计、运营商和提醒设置共享同一套本地状态模型，并与通知中心联动。"
+      >
+        <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as CardTab)} />
+      </SectionCard>
+
       {tab === 'cards' ? (
-        <>
-          <StatGrid
-            items={[
-              { label: '号卡数量', value: `${data.cards.length}` },
-              { label: '低余额预警', value: `${lowBalanceCards.length}`, helper: `阈值 ¥${data.settings.balanceThreshold}` },
-              { label: '总余额', value: `¥${totalBalance.toFixed(2)}` },
-            ]}
-          />
-          <SectionCard title="号卡清单" description="重点关注低余额和临近账单日的号码。">
-            <DataTable
-              rowKey="id"
-              data={data.cards}
-              columns={[
-                { key: 'phone', title: '号码', dataIndex: 'phone' },
-                { key: 'carrier', title: '运营商', dataIndex: 'carrier' },
-                { key: 'city', title: '归属地', dataIndex: 'city' },
-                { key: 'trafficPlan', title: '套餐', dataIndex: 'trafficPlan' },
-                {
-                  key: 'balance',
-                  title: '余额',
-                  dataIndex: 'balance',
-                  render: (value) => `¥${Number(value).toFixed(2)}`,
-                },
-                {
-                  key: 'billingDay',
-                  title: '账单日',
-                  dataIndex: 'billingDay',
-                  render: (value) => `${value} 日`,
-                },
-              ]}
-            />
-          </SectionCard>
-        </>
+        <CardCardsSection
+          cards={normalizedData.cards}
+          carriers={normalizedData.carriers}
+          settings={normalizedData.settings}
+          onChangeCards={(updater) => {
+            setData((previous) => ({
+              ...previous,
+              cards: updater(previous.cards),
+            }));
+          }}
+          onRecharge={(updater) => {
+            setData((previous) => {
+              const next = updater({
+                cards: previous.cards,
+                recharges: previous.recharges,
+              });
+
+              return {
+                ...previous,
+                cards: next.cards,
+                recharges: next.recharges,
+              };
+            });
+          }}
+          showToast={showToast}
+        />
+      ) : null}
+
+      {tab === 'bills' ? (
+        <CardBillsSection
+          cards={normalizedData.cards}
+          bills={normalizedData.bills}
+          onChangeBills={(updater) => {
+            setData((previous) => ({
+              ...previous,
+              bills: updater(previous.bills),
+            }));
+          }}
+          showToast={showToast}
+        />
+      ) : null}
+
+      {tab === 'statistics' ? (
+        <CardStatisticsSection
+          cards={normalizedData.cards}
+          bills={normalizedData.bills}
+          recharges={normalizedData.recharges}
+          settings={normalizedData.settings}
+        />
+      ) : null}
+
+      {tab === 'carriers' ? (
+        <CardCarriersSection
+          carriers={normalizedData.carriers}
+          cards={normalizedData.cards}
+          bills={normalizedData.bills}
+          onChangeCarriers={(updater) => {
+            setData((previous) => ({
+              ...previous,
+              carriers: updater(previous.carriers),
+            }));
+          }}
+          showToast={showToast}
+        />
       ) : null}
 
       {tab === 'settings' ? (
-        <div className="page-stack">
-          <SettingSwitchCard
-            title="低余额提醒"
-            description="当号卡余额低于阈值时，向通知中心发起统一发送。"
-            checked={data.settings.balanceLowEnabled}
-            onChange={(checked) => {
-              setData((previous) => ({
-                ...previous,
-                settings: {
-                  ...previous.settings,
-                  balanceLowEnabled: checked,
-                },
-              }));
-              updateSceneConfig('card.balance_low', { enabled: checked });
-              showToast(`低余额提醒已${checked ? '启用' : '停用'}。`);
-            }}
-            statusText={data.settings.balanceLowEnabled ? '已启用' : '已停用'}
-            impact="提醒渠道绑定由通知中心统一管理，本页只维护触发规则。"
-          >
-            <div className="form-grid">
-              <Field
-                label="余额阈值"
-                type="number"
-                value={data.settings.balanceThreshold}
-                onChange={(event) => {
-                  setData((previous) => ({
-                    ...previous,
-                    settings: {
-                      ...previous.settings,
-                      balanceThreshold: Number(event.target.value),
-                    },
-                  }));
-                }}
-              />
-            </div>
-          </SettingSwitchCard>
-
-          <NotificationStatusCard
-            sceneId="card.balance_low"
-            title="低余额提醒的通知中心状态"
-            summary="查看该场景当前绑定了哪些渠道，以及渠道是否已经就绪。"
-          />
-
-          <SettingSwitchCard
-            title="账单日前提醒"
-            description="在账单日前若干天提示检查余额、套餐和扣费安排。"
-            checked={data.settings.billingUpcomingEnabled}
-            onChange={(checked) => {
-              setData((previous) => ({
-                ...previous,
-                settings: {
-                  ...previous.settings,
-                  billingUpcomingEnabled: checked,
-                },
-              }));
-              updateSceneConfig('card.billing_upcoming', { enabled: checked });
-              showToast(`账单日前提醒已${checked ? '启用' : '停用'}。`);
-            }}
-            statusText={data.settings.billingUpcomingEnabled ? '已启用' : '已停用'}
-            impact="开启后，账单日前提醒会统一走通知中心，不再由页面单独配置邮件或企业微信。"
-          >
-            <div className="form-grid">
-              <Field
-                label="提前提醒天数"
-                type="number"
-                value={data.settings.notificationDaysBefore}
-                onChange={(event) => {
-                  setData((previous) => ({
-                    ...previous,
-                    settings: {
-                      ...previous.settings,
-                      notificationDaysBefore: Number(event.target.value),
-                    },
-                  }));
-                }}
-              />
-            </div>
-          </SettingSwitchCard>
-
-          <NotificationStatusCard
-            sceneId="card.billing_upcoming"
-            title="账单日前提醒的通知中心状态"
-            summary="在通知中心调整邮件、企业微信和 Webhook 的绑定关系。"
-          />
-        </div>
+        <CardSettingsSection
+          cards={normalizedData.cards}
+          settings={normalizedData.settings}
+          onSettingsChange={updateSettings}
+          showToast={showToast}
+        />
       ) : null}
 
       <Toast toast={toast} />

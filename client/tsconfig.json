@@ -24,6 +24,12 @@
     "src/pages/health/HealthRecords.tsx",
     "src/pages/health/MealRecords.tsx",
     "src/pages/health/Settings.tsx",
-    "src/pages/health/SleepRecords.tsx"
+    "src/pages/health/SleepRecords.tsx",
+    "src/pages/life/BillImport.tsx",
+    "src/pages/life/BillManagement.tsx",
+    "src/pages/life/Settings.tsx",
+    "src/pages/life/SimCardForm.tsx",
+    "src/pages/life/SimCardList.tsx",
+    "src/pages/life/Statistics.tsx"
   ]
 }
