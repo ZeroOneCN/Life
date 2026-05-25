@@ -7,7 +7,6 @@ import { FinanceLoanPlatformEntity } from './entities/finance-loan-platform.enti
 import { FinanceLoanBillEntity } from './entities/finance-loan-bill.entity';
 import { FinanceLoanRepaymentEntity } from './entities/finance-loan-repayment.entity';
 import { FinanceLoanSettingEntity } from './entities/finance-loan-setting.entity';
-import { NotificationCenterLogEntity } from '../notifications/entities/notification-center-log.entity';
 import { asyncHandler } from '../../shared/http/async-handler';
 import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
 import { requireAuthUser } from '../../shared/http/request';
@@ -17,6 +16,7 @@ import { parsePagination } from '../../shared/utils/pagination';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { normalizeDate, normalizeMonth } from '../../shared/utils/date';
 import { AppError } from '../../shared/errors/app-error';
+import { sendNotificationSceneLogs } from '../../shared/domain/notification';
 
 const platformSchema = z.object({
   userId: z.string().trim().optional(),
@@ -138,6 +138,72 @@ function buildOverview(bills: FinanceLoanBillEntity[], repayments: FinanceLoanRe
   };
 }
 
+function buildLoanReminderItems(
+  bills: FinanceLoanBillEntity[],
+  settings: FinanceLoanSettingEntity,
+) {
+  const today = dayjs().startOf('day');
+
+  return bills
+    .filter((bill) => !bill.is_paid)
+    .flatMap((bill) => {
+      const dueDate = dayjs(bill.due_date).startOf('day');
+      const diff = dueDate.diff(today, 'day');
+      const items: Array<{
+        bill: FinanceLoanBillEntity;
+        sceneId: 'loan.repayment_upcoming' | 'loan.repayment_overdue';
+        title: string;
+        message: string;
+        severity: 'high' | 'medium';
+      }> = [];
+
+      if (settings.repayment_reminder_enabled && diff >= 0 && diff <= settings.upcoming_days) {
+        items.push({
+          bill,
+          sceneId: 'loan.repayment_upcoming',
+          title: '贷款还款提醒',
+          message: `${bill.platform_name} 账单将在 ${bill.due_date} 到期，待还金额 ${Number(bill.amount).toFixed(2)}。`,
+          severity: diff === 0 ? 'high' : 'medium',
+        });
+      }
+
+      if (settings.overdue_reminder_enabled && diff < 0) {
+        items.push({
+          bill,
+          sceneId: 'loan.repayment_overdue',
+          title: '贷款逾期提醒',
+          message: `${bill.platform_name} 账单已逾期 ${Math.abs(diff)} 天，待还金额 ${Number(bill.amount).toFixed(2)}。`,
+          severity: 'high',
+        });
+      }
+
+      return items;
+    });
+}
+
+async function triggerLoanReminderLogs(
+  userId: string,
+  bills: FinanceLoanBillEntity[],
+  settings: FinanceLoanSettingEntity,
+) {
+  const items = buildLoanReminderItems(bills, settings);
+  const logs = [];
+
+  for (const item of items) {
+    logs.push(...(await sendNotificationSceneLogs({
+      userId,
+      sceneId: item.sceneId,
+      title: item.title,
+      message: item.message,
+    })));
+  }
+
+  return {
+    items,
+    logs,
+  };
+}
+
 export function createLoanRouter() {
   const router = Router();
 
@@ -214,14 +280,25 @@ export function createLoanRouter() {
     const userId = requireAuthUser(request);
     const { page, pageSize, skip } = parsePagination(request.query as Record<string, unknown>);
     const repository = appDataSource.getRepository(FinanceLoanBillEntity);
-    const [items, total] = await repository.findAndCount({
+    const platformId = String(request.query.platformId ?? '').trim();
+    const status = String(request.query.status ?? '').trim();
+    const billingMonth = String(request.query.billingMonth ?? '').trim();
+    const dueStartDate = String(request.query.dueStartDate ?? '').trim();
+    const dueEndDate = String(request.query.dueEndDate ?? '').trim();
+    const keyword = String(request.query.keyword ?? '').trim().toLowerCase();
+    const items = await repository.find({
       where: { user_id: userId },
       order: { due_date: 'ASC', updated_at: 'DESC' },
-      skip,
-      take: pageSize,
     });
+    const filtered = items
+      .filter((item) => !platformId || item.platform_id === platformId)
+      .filter((item) => !status || getBillStatus(item) === status)
+      .filter((item) => !billingMonth || item.billing_month === normalizeMonth(billingMonth))
+      .filter((item) => !dueStartDate || !dayjs(item.due_date).isBefore(dueStartDate, 'day'))
+      .filter((item) => !dueEndDate || !dayjs(item.due_date).isAfter(dueEndDate, 'day'))
+      .filter((item) => !keyword || [item.platform_name, item.notes, item.billing_month].some((value) => value.toLowerCase().includes(keyword)));
 
-    response.json(successResponse(buildListData(items.map(mapBill), page, pageSize, total)));
+    response.json(successResponse(buildListData(filtered.slice(skip, skip + pageSize).map(mapBill), page, pageSize, filtered.length)));
   }));
 
   router.post('/bills', asyncHandler(async (request: AuthenticatedRequest, response) => {
@@ -303,14 +380,21 @@ export function createLoanRouter() {
     const userId = requireAuthUser(request);
     const { page, pageSize, skip } = parsePagination(request.query as Record<string, unknown>);
     const repository = appDataSource.getRepository(FinanceLoanRepaymentEntity);
-    const [items, total] = await repository.findAndCount({
+    const platformId = String(request.query.platformId ?? '').trim();
+    const repaymentStartDate = String(request.query.repaymentStartDate ?? '').trim();
+    const repaymentEndDate = String(request.query.repaymentEndDate ?? '').trim();
+    const keyword = String(request.query.keyword ?? '').trim().toLowerCase();
+    const items = await repository.find({
       where: { user_id: userId },
       order: { repayment_date: 'DESC', updated_at: 'DESC' },
-      skip,
-      take: pageSize,
     });
+    const filtered = items
+      .filter((item) => !platformId || item.platform_id === platformId)
+      .filter((item) => !repaymentStartDate || !dayjs(item.repayment_date).isBefore(repaymentStartDate, 'day'))
+      .filter((item) => !repaymentEndDate || !dayjs(item.repayment_date).isAfter(repaymentEndDate, 'day'))
+      .filter((item) => !keyword || [item.platform_name, item.notes, item.repayment_date].some((value) => value.toLowerCase().includes(keyword)));
 
-    response.json(successResponse(buildListData(items.map(mapRepayment), page, pageSize, total)));
+    response.json(successResponse(buildListData(filtered.slice(skip, skip + pageSize).map(mapRepayment), page, pageSize, filtered.length)));
   }));
 
   router.post('/repayments', asyncHandler(async (request: AuthenticatedRequest, response) => {
@@ -572,29 +656,51 @@ export function createLoanRouter() {
   router.post('/actions/trigger-reminders', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const payload = validateBody(triggerReminderSchema, request.body);
-    const logRepo = appDataSource.getRepository(NotificationCenterLogEntity);
-    const logs = await Promise.all([
-      logRepo.save(logRepo.create({
-        user_id: userId,
-        channel: 'email',
-        scene_id: 'loan.repayment_upcoming',
-        kind: 'scene',
-        status: 'success',
-        title: payload.title ?? '贷款还款提醒',
-        message: '已手动触发贷款还款提醒。',
-      })),
-      logRepo.save(logRepo.create({
-        user_id: userId,
-        channel: 'email',
-        scene_id: 'loan.repayment_overdue',
-        kind: 'scene',
-        status: 'success',
-        title: payload.title ?? '贷款逾期提醒',
-        message: '已手动触发贷款逾期提醒。',
-      })),
-    ]);
+    const billRepo = appDataSource.getRepository(FinanceLoanBillEntity);
+    const settings = await settingService.getOrCreate(userId, {
+      active_user_id: userId,
+      bills_user_id: userId,
+      repayments_user_id: userId,
+      statistics_user_id: userId,
+      repayment_reminder_enabled: true,
+      overdue_reminder_enabled: true,
+      auto_repayment_on_mark_paid: true,
+      notification_frequency: 'daily',
+      upcoming_days: 7,
+    });
+    const bills = await billRepo.find({ where: { user_id: userId } });
+    const result = await triggerLoanReminderLogs(userId, bills, settings);
 
-    response.json(successResponse(logs, 'trigger_loan_reminders_success'));
+    if (!result.logs.length) {
+      result.logs.push(
+        ...(await sendNotificationSceneLogs({
+          userId,
+          sceneId: 'loan.repayment_upcoming',
+          title: payload.title ?? '贷款还款提醒',
+          message: '已手动触发贷款还款提醒。',
+        })),
+        ...(await sendNotificationSceneLogs({
+          userId,
+          sceneId: 'loan.repayment_overdue',
+          title: payload.title ?? '贷款逾期提醒',
+          message: '已手动触发贷款逾期提醒。',
+        })),
+      );
+    }
+
+    response.json(successResponse({
+      items: result.items.map((item) => ({
+        billId: item.bill.id,
+        platformId: item.bill.platform_id,
+        platformName: item.bill.platform_name,
+        dueDate: item.bill.due_date,
+        amount: Number(item.bill.amount),
+        sceneId: item.sceneId,
+        severity: item.severity,
+        message: item.message,
+      })),
+      logs: result.logs,
+    }, 'trigger_loan_reminders_success'));
   }));
 
   return router;

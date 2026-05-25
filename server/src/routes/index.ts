@@ -8,6 +8,14 @@ import { createStorageRouter } from '../modules/life/storage.router';
 import { createCardRouter } from '../modules/life/card.router';
 import { createSubscriptionRouter } from '../modules/finance/subscription.router';
 import { createLoanRouter } from '../modules/finance/loan.router';
+import { createRentRouter } from '../modules/finance/rent.router';
+import { createShoppingRouter } from '../modules/finance/shopping.router';
+import { createTravelRouter } from '../modules/finance/travel.router';
+import { createStepRouter } from '../modules/health/step.router';
+import { createFitnessRouter } from '../modules/health/fitness.router';
+import { createMedicationRouter } from '../modules/health/medication.router';
+import { createCheckupRouter } from '../modules/health/checkup.router';
+import { createForexRouter } from '../modules/investment/forex.router';
 import { requireJwtAuth } from '../shared/http/auth-middleware';
 import { createPlaceholderRouter } from './placeholder-router';
 
@@ -34,6 +42,14 @@ export function createApiRouter() {
   router.use('/life/card', createCardRouter());
   router.use('/finance/subscription', createSubscriptionRouter());
   router.use('/finance/loan', createLoanRouter());
+  router.use('/finance/rent', createRentRouter());
+  router.use('/finance/shopping', createShoppingRouter());
+  router.use('/finance/travel', createTravelRouter());
+  router.use('/health/step', createStepRouter());
+  router.use('/health/fitness', createFitnessRouter());
+  router.use('/health/medication', createMedicationRouter());
+  router.use('/health/checkup', createCheckupRouter());
+  router.use('/investment/forex', createForexRouter());
 
   router.use(createPlaceholderRouter());
 

@@ -46,11 +46,19 @@ function buildMockPayload(path: string, method: string) {
 const implementedPrefixes = [
   '/dashboard',
   '/notifications',
+  '/health/step',
+  '/health/fitness',
+  '/health/checkup',
+  '/health/medication',
+  '/finance/shopping',
+  '/finance/travel',
   '/life/todo',
   '/life/storage',
   '/life/card',
   '/finance/subscription',
   '/finance/loan',
+  '/finance/rent',
+  '/investment/forex',
 ];
 
 export function createPlaceholderRouter() {

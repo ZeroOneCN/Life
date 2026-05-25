@@ -6,125 +6,311 @@ import { asyncHandler } from '../../shared/http/async-handler';
 import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
 import { requireAuthUser } from '../../shared/http/request';
 import { successResponse } from '../../shared/http/response';
-import { LifeTodoTaskEntity } from '../life/entities/life-todo-task.entity';
-import { FinanceSubscriptionRecordEntity } from '../finance/entities/finance-subscription-record.entity';
 import { FinanceLoanBillEntity } from '../finance/entities/finance-loan-bill.entity';
+import { FinanceSubscriptionRecordEntity } from '../finance/entities/finance-subscription-record.entity';
+import { HealthCheckupRecordEntity } from '../health/entities/health-checkup-record.entity';
+import { HealthFitnessDietRecordEntity } from '../health/entities/health-fitness-diet-record.entity';
+import { HealthFitnessExerciseRecordEntity } from '../health/entities/health-fitness-exercise-record.entity';
+import { HealthFitnessWeightRecordEntity } from '../health/entities/health-fitness-weight-record.entity';
+import { HealthMedicationPurchaseEntity } from '../health/entities/health-medication-purchase.entity';
+import { HealthMedicationRecordEntity } from '../health/entities/health-medication-record.entity';
+import { HealthMedicationThresholdEntity } from '../health/entities/health-medication-threshold.entity';
+import { HealthStepRecordEntity } from '../health/entities/health-step-record.entity';
+import { InvestmentForexCapitalFlowEntity } from '../investment/entities/investment-forex-capital-flow.entity';
+import { InvestmentForexTradeRecordEntity } from '../investment/entities/investment-forex-trade-record.entity';
 import { LifeCardRecordEntity } from '../life/entities/life-card-record.entity';
 import { LifeStorageItemEntity } from '../life/entities/life-storage-item.entity';
+import { LifeTodoTaskEntity } from '../life/entities/life-todo-task.entity';
+import { NotificationCenterChannelEntity } from '../notifications/entities/notification-center-channel.entity';
 import { NotificationCenterLogEntity } from '../notifications/entities/notification-center-log.entity';
 import { NotificationCenterSceneEntity } from '../notifications/entities/notification-center-scene.entity';
+
+function calculateMedicationLowStockCount(
+  records: HealthMedicationRecordEntity[],
+  purchases: HealthMedicationPurchaseEntity[],
+  thresholds: HealthMedicationThresholdEntity[],
+  defaultThreshold = 3,
+) {
+  const usedMap = new Map<string, number>();
+  const purchasedMap = new Map<string, number>();
+  const thresholdMap = new Map(thresholds.map((item) => [item.medicine_name, Number(item.threshold)]));
+
+  records.forEach((record) => {
+    usedMap.set(record.medicine_name, (usedMap.get(record.medicine_name) ?? 0) + Number(record.breakfast) + Number(record.lunch) + Number(record.dinner));
+  });
+  purchases.forEach((purchase) => {
+    purchasedMap.set(purchase.medicine_name, (purchasedMap.get(purchase.medicine_name) ?? 0) + Number(purchase.quantity));
+  });
+
+  return Array.from(new Set([...usedMap.keys(), ...purchasedMap.keys()]))
+    .filter((name) => {
+      const remaining = (purchasedMap.get(name) ?? 0) - (usedMap.get(name) ?? 0);
+      return remaining <= (thresholdMap.get(name) ?? defaultThreshold);
+    }).length;
+}
+
+function buildForexSummary(trades: InvestmentForexTradeRecordEntity[], capitalFlows: InvestmentForexCapitalFlowEntity[]) {
+  const grossPnl = trades.reduce((sum, item) => sum + Number(item.pnl), 0);
+  const totalCommission = trades.reduce((sum, item) => sum + Number(item.commission), 0);
+  const realizedNetPnl = grossPnl + totalCommission;
+  const deposits = capitalFlows.filter((item) => item.flow_type === 'deposit').reduce((sum, item) => sum + Number(item.amount), 0);
+  const withdrawals = capitalFlows.filter((item) => item.flow_type === 'withdrawal').reduce((sum, item) => sum + Number(item.amount), 0);
+  const winners = trades.filter((item) => Number(item.pnl) > 0).length;
+
+  return {
+    netPnl: Number(realizedNetPnl.toFixed(2)),
+    winRate: trades.length ? winners / trades.length : 0,
+    activeTradeCount: trades.length,
+    netCapital: Number((deposits - withdrawals).toFixed(2)),
+  };
+}
+
+function buildAgendaItems(input: {
+  todos: LifeTodoTaskEntity[];
+  subscriptions: FinanceSubscriptionRecordEntity[];
+  loans: FinanceLoanBillEntity[];
+  cards: LifeCardRecordEntity[];
+  checkups: HealthCheckupRecordEntity[];
+  medicationRecords: HealthMedicationRecordEntity[];
+  medicationPurchases: HealthMedicationPurchaseEntity[];
+  medicationThresholds: HealthMedicationThresholdEntity[];
+}) {
+  const today = dayjs().startOf('day');
+  const agenda: Array<{
+    id: string;
+    module: string;
+    title: string;
+    summary: string;
+    severity: 'high' | 'medium' | 'low';
+    targetDate: string;
+    href: string;
+  }> = [];
+
+  input.todos
+    .filter((task) => !task.completed && !task.trashed_at)
+    .forEach((task) => {
+      const targetDate = task.due_date ?? '';
+      const due = targetDate ? dayjs(targetDate).startOf('day') : null;
+      let severity: 'high' | 'medium' | 'low' = task.priority === 'high' ? 'high' : task.priority === 'medium' ? 'medium' : 'low';
+      if (due && due.isBefore(today)) {
+        severity = 'high';
+      }
+
+      agenda.push({
+        id: `todo-${task.id}`,
+        module: 'todo',
+        title: task.title,
+        summary: task.description_markdown || '待处理任务',
+        severity,
+        targetDate,
+        href: '/life/todo?todoTab=tasks',
+      });
+    });
+
+  input.subscriptions.forEach((record) => {
+    const diff = dayjs(record.end_date).startOf('day').diff(today, 'day');
+    if (diff <= 7) {
+      agenda.push({
+        id: `subscription-${record.id}`,
+        module: 'subscription',
+        title: record.service_name,
+        summary: diff < 0 ? '订阅已逾期，请尽快处理。' : '订阅即将到期，请关注续费。',
+        severity: diff < 0 ? 'high' : diff === 0 ? 'high' : 'medium',
+        targetDate: record.end_date,
+        href: '/finance/subscription?subscriptionTab=records',
+      });
+    }
+  });
+
+  input.loans
+    .filter((bill) => !bill.is_paid)
+    .forEach((bill) => {
+      const diff = dayjs(bill.due_date).startOf('day').diff(today, 'day');
+      if (diff <= 7) {
+        agenda.push({
+          id: `loan-${bill.id}`,
+          module: 'loan',
+          title: bill.platform_name,
+          summary: diff < 0 ? '贷款账单已逾期。' : '贷款账单临近还款日。',
+          severity: diff < 0 ? 'high' : diff === 0 ? 'high' : 'medium',
+          targetDate: bill.due_date,
+          href: '/finance/loan?loanTab=bills',
+        });
+      }
+    });
+
+  input.cards
+    .filter((card) => Number(card.balance) <= 10)
+    .forEach((card) => {
+      agenda.push({
+        id: `card-${card.id}`,
+        module: 'card',
+        title: card.phone_number,
+        summary: '号卡余额已低于提醒阈值。',
+        severity: 'medium',
+        targetDate: '',
+        href: '/life/card?cardTab=cards',
+      });
+    });
+
+  input.checkups
+    .filter((record) => record.follow_up_date && (record.status === 'abnormal' || record.status === 'attention'))
+    .forEach((record) => {
+      const diff = dayjs(record.follow_up_date).startOf('day').diff(today, 'day');
+      if (diff <= 7) {
+        agenda.push({
+          id: `checkup-${record.id}`,
+          module: 'checkup',
+          title: record.test_name,
+          summary: diff < 0 ? '体检复查已逾期。' : '体检项目进入复查窗口。',
+          severity: diff < 0 ? 'high' : 'medium',
+          targetDate: record.follow_up_date ?? '',
+          href: '/health/checkup',
+        });
+      }
+    });
+
+  const lowStockCount = calculateMedicationLowStockCount(
+    input.medicationRecords,
+    input.medicationPurchases,
+    input.medicationThresholds,
+  );
+
+  if (lowStockCount > 0) {
+    agenda.push({
+      id: 'medication-stock',
+      module: 'medication',
+      title: '药品库存提醒',
+      summary: `当前有 ${lowStockCount} 种药品低于库存阈值。`,
+      severity: 'medium',
+      targetDate: '',
+      href: '/health/medication',
+    });
+  }
+
+  return agenda
+    .sort((left, right) => {
+      const severityOrder = { high: 0, medium: 1, low: 2 } as const;
+      const severityDiff = severityOrder[left.severity] - severityOrder[right.severity];
+      if (severityDiff !== 0) {
+        return severityDiff;
+      }
+
+      const leftDate = left.targetDate ? dayjs(left.targetDate).valueOf() : Number.MAX_SAFE_INTEGER;
+      const rightDate = right.targetDate ? dayjs(right.targetDate).valueOf() : Number.MAX_SAFE_INTEGER;
+      return leftDate - rightDate;
+    })
+    .slice(0, 20);
+}
 
 export function createDashboardRouter() {
   const router = Router();
 
   router.get('/summary', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
-    const todoRepo = appDataSource.getRepository(LifeTodoTaskEntity);
-    const subscriptionRepo = appDataSource.getRepository(FinanceSubscriptionRecordEntity);
-    const loanRepo = appDataSource.getRepository(FinanceLoanBillEntity);
-    const cardRepo = appDataSource.getRepository(LifeCardRecordEntity);
-    const storageRepo = appDataSource.getRepository(LifeStorageItemEntity);
-    const logRepo = appDataSource.getRepository(NotificationCenterLogEntity);
-    const sceneRepo = appDataSource.getRepository(NotificationCenterSceneEntity);
-
-    const [todos, subscriptions, loans, cards, storageItems, logs, scenes] = await Promise.all([
-      todoRepo.find({ where: { user_id: userId } }),
-      subscriptionRepo.find({ where: { user_id: userId } }),
-      loanRepo.find({ where: { user_id: userId } }),
-      cardRepo.find({ where: { user_id: userId } }),
-      storageRepo.find({ where: { user_id: userId } }),
-      logRepo.find({
-        where: { user_id: userId },
-        order: { created_at: 'DESC' },
-        take: 8,
-      }),
-      sceneRepo.find({ where: { user_id: userId } }),
+    const [
+      todos,
+      subscriptions,
+      loans,
+      cards,
+      storageItems,
+      logs,
+      scenes,
+      channels,
+      stepRecords,
+      fitnessDietRecords,
+      fitnessExerciseRecords,
+      fitnessWeightRecords,
+      medicationRecords,
+      medicationPurchases,
+      medicationThresholds,
+      checkups,
+      forexTrades,
+      forexCapitalFlows,
+    ] = await Promise.all([
+      appDataSource.getRepository(LifeTodoTaskEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(FinanceSubscriptionRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(FinanceLoanBillEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(LifeCardRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(LifeStorageItemEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(NotificationCenterLogEntity).find({ where: { user_id: userId }, order: { created_at: 'DESC' }, take: 8 }),
+      appDataSource.getRepository(NotificationCenterSceneEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(NotificationCenterChannelEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthStepRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthFitnessDietRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthFitnessExerciseRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthFitnessWeightRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthMedicationRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthMedicationPurchaseEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthMedicationThresholdEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthCheckupRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(InvestmentForexTradeRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(InvestmentForexCapitalFlowEntity).find({ where: { user_id: userId } }),
     ]);
 
-    const now = dayjs();
     const pendingTodos = todos.filter((task) => !task.completed && !task.trashed_at).length;
-    const dueTodayTodos = todos.filter((task) => !task.completed && !task.trashed_at && task.due_date && dayjs(task.due_date).isSame(now, 'day')).length;
+    const dueTodayTodos = todos.filter((task) => !task.completed && !task.trashed_at && task.due_date && dayjs(task.due_date).isSame(dayjs(), 'day')).length;
+    const activeStorageCount = storageItems.filter((item) => item.status === 'active').length;
+    const lowBalanceCards = cards.filter((card) => Number(card.balance) <= 10).length;
+    const overdueLoans = loans.filter((bill) => !bill.is_paid && dayjs(bill.due_date).isBefore(dayjs(), 'day')).length;
     const upcomingSubscriptions = subscriptions.filter((record) => {
-      const diff = dayjs(record.end_date).startOf('day').diff(now.startOf('day'), 'day');
+      const diff = dayjs(record.end_date).startOf('day').diff(dayjs().startOf('day'), 'day');
       return diff >= 0 && diff <= 7;
     }).length;
-    const overdueLoans = loans.filter((bill) => !bill.is_paid && dayjs(bill.due_date).isBefore(now, 'day')).length;
-    const lowBalanceCards = cards.filter((card) => Number(card.balance) <= 10).length;
+    const stepToday = stepRecords.filter((item) => dayjs(item.record_time).isSame(dayjs(), 'day')).reduce((sum, item) => sum + item.steps, 0);
+    const lowMedicationCount = calculateMedicationLowStockCount(medicationRecords, medicationPurchases, medicationThresholds);
+    const dueCheckups = checkups.filter((record) => record.follow_up_date && dayjs(record.follow_up_date).diff(dayjs(), 'day') <= 7).length;
+    const forexSummary = buildForexSummary(forexTrades, forexCapitalFlows);
+    const agenda = buildAgendaItems({
+      todos,
+      subscriptions,
+      loans,
+      cards,
+      checkups,
+      medicationRecords,
+      medicationPurchases,
+      medicationThresholds,
+    });
 
-    const agenda = [
-      ...todos
-        .filter((task) => !task.completed && !task.trashed_at)
-        .map((task) => ({
-          id: `todo-${task.id}`,
-          module: 'todo',
-          title: task.title,
-          summary: task.description_markdown || '待处理任务',
-          severity: task.priority === 'high' ? 'high' : task.priority === 'medium' ? 'medium' : 'low',
-          targetDate: task.due_date ?? '',
-          href: '/life/todo?todoTab=tasks',
-        })),
-      ...subscriptions.map((record) => ({
-        id: `subscription-${record.id}`,
-        module: 'subscription',
-        title: record.service_name,
-        summary: '订阅到期关注项',
-        severity: dayjs(record.end_date).isBefore(now, 'day') ? 'high' : 'medium',
-        targetDate: record.end_date,
-        href: '/finance/subscription?subscriptionTab=records',
-      })),
-      ...loans.filter((bill) => !bill.is_paid).map((bill) => ({
-        id: `loan-${bill.id}`,
-        module: 'loan',
-        title: bill.platform_name,
-        summary: '贷款账单待处理',
-        severity: dayjs(bill.due_date).isBefore(now, 'day') ? 'high' : 'medium',
-        targetDate: bill.due_date,
-        href: '/finance/loan?loanTab=bills',
-      })),
-      ...cards.filter((card) => Number(card.balance) <= 10).map((card) => ({
-        id: `card-${card.id}`,
-        module: 'card',
-        title: card.phone_number,
-        summary: '号卡低余额提醒',
-        severity: 'medium',
-        targetDate: '',
-        href: '/life/card?cardTab=cards',
-      })),
-    ].sort((left, right) => {
-      const order = { high: 0, medium: 1, low: 2 } as const;
-      const severityDiff = order[left.severity as keyof typeof order] - order[right.severity as keyof typeof order];
-      if (severityDiff !== 0) {
-        return severityDiff;
-      }
-      if (!left.targetDate) {
-        return 1;
-      }
-      if (!right.targetDate) {
-        return -1;
-      }
-      return dayjs(left.targetDate).valueOf() - dayjs(right.targetDate).valueOf();
-    }).slice(0, 20);
+    const financeMonthSpend = subscriptions.reduce((sum, item) => {
+      if (item.billing_cycle === 'monthly') return sum + Number(item.cycle_price);
+      if (item.billing_cycle === 'quarterly') return sum + (Number(item.cycle_price) / 3);
+      if (item.billing_cycle === 'yearly') return sum + (Number(item.cycle_price) / 12);
+      return sum;
+    }, 0);
 
     response.json(successResponse({
       overviewCards: [
-        { key: 'modules', label: '已接入模块数', value: 14 },
+        { key: 'modules', label: '已接入模块数', value: 17 },
         { key: 'scenes', label: '启用通知场景数', value: scenes.filter((scene) => scene.enabled).length },
         { key: 'logs', label: '最近通知日志数', value: logs.length },
         { key: 'agenda', label: '统一待处理总数', value: agenda.length },
-        { key: 'health', label: '健康中心今日关注数', value: 0 },
-        { key: 'finance', label: '财务中心待还摘要', value: overdueLoans + loans.filter((bill) => !bill.is_paid).length },
-        { key: 'life', label: '生活中心活跃事项数', value: pendingTodos + storageItems.filter((item) => item.status === 'active').length + lowBalanceCards },
-        { key: 'investment', label: '投资中心净收益摘要', value: 0 },
+        { key: 'health', label: '健康中心今日关注数', value: dueCheckups + lowMedicationCount + (stepToday > 0 ? 1 : 0) },
+        { key: 'finance', label: '财务中心本月支出/待还摘要', value: Number((financeMonthSpend + loans.filter((bill) => !bill.is_paid).reduce((sum, item) => sum + Number(item.amount), 0)).toFixed(2)) },
+        { key: 'life', label: '生活中心活跃事项数', value: pendingTodos + activeStorageCount + lowBalanceCards },
+        { key: 'investment', label: '投资中心净收益摘要', value: forexSummary.netPnl },
       ],
       agenda,
       health: {
         title: '健康中心摘要',
         stats: {
-          todayFocusCount: 0,
-          checkupPendingCount: 0,
-          medicationLowStockCount: 0,
+          todayStepCount: stepToday,
+          latestWeight: fitnessWeightRecords.sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())[0]?.weight ?? null,
+          todayCalorieNet: Number((
+            fitnessDietRecords.filter((item) => item.date === dayjs().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories), 0)
+            - fitnessExerciseRecords.filter((item) => item.date === dayjs().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories), 0)
+          ).toFixed(1)),
+          checkupPendingCount: dueCheckups,
+          medicationLowStockCount: lowMedicationCount,
         },
-        trend: [],
+        trend: Array.from({ length: 7 }, (_, index) => {
+          const date = dayjs().subtract(6 - index, 'day');
+          return {
+            date: date.format('YYYY-MM-DD'),
+            label: date.format('MM-DD'),
+            steps: stepRecords.filter((item) => dayjs(item.record_time).isSame(date, 'day')).reduce((sum, item) => sum + item.steps, 0),
+          };
+        }),
       },
       finance: {
         title: '财务中心摘要',
@@ -132,29 +318,53 @@ export function createDashboardRouter() {
           upcomingSubscriptionCount: upcomingSubscriptions,
           overdueLoanCount: overdueLoans,
           activeSubscriptionCount: subscriptions.length,
+          totalUnpaidLoanAmount: Number(loans.filter((bill) => !bill.is_paid).reduce((sum, item) => sum + Number(item.amount), 0).toFixed(2)),
         },
-        trend: [],
+        trend: Array.from({ length: 6 }, (_, index) => {
+          const month = dayjs().subtract(5 - index, 'month').format('YYYY-MM');
+          return {
+            month,
+            label: dayjs(`${month}-01`).format('MM月'),
+            subscriptionCount: subscriptions.filter((item) => dayjs(item.end_date).format('YYYY-MM') === month).length,
+            loanAmount: Number(loans.filter((item) => item.billing_month === month).reduce((sum, bill) => sum + Number(bill.amount), 0).toFixed(2)),
+          };
+        }),
       },
       life: {
         title: '生活中心摘要',
         stats: {
           pendingTodoCount: pendingTodos,
           dueTodayTodoCount: dueTodayTodos,
-          activeStorageCount: storageItems.filter((item) => item.status === 'active').length,
+          activeStorageCount,
           lowBalanceCardCount: lowBalanceCards,
         },
-        trend: [],
+        trend: [
+          { key: 'todo', label: '未完成待办', value: pendingTodos },
+          { key: 'storage', label: '使用中物品', value: activeStorageCount },
+          { key: 'card', label: '低余额号卡', value: lowBalanceCards },
+        ],
       },
       investment: {
         title: '投资中心摘要',
         stats: {
-          netPnl: 0,
-          winRate: 0,
-          activeTradeCount: 0,
+          netPnl: forexSummary.netPnl,
+          winRate: forexSummary.winRate,
+          netCapital: forexSummary.netCapital,
+          activeTradeCount: forexSummary.activeTradeCount,
         },
-        trend: [],
+        trend: Array.from({ length: 7 }, (_, index) => {
+          const date = dayjs().subtract(6 - index, 'day').format('YYYY-MM-DD');
+          const scoped = forexTrades.filter((item) => item.trade_date === date);
+          return {
+            date,
+            label: dayjs(date).format('MM-DD'),
+            netPnl: Number(scoped.reduce((sum, item) => sum + Number(item.pnl) + Number(item.commission), 0).toFixed(2)),
+            tradeCount: scoped.length,
+          };
+        }),
       },
       notifications: {
+        enabledChannelCount: channels.filter((channel) => channel.enabled).length,
         enabledSceneCount: scenes.filter((scene) => scene.enabled).length,
         recentLogs: logs,
         hottestSceneId: logs[0]?.scene_id ?? '',
@@ -164,44 +374,86 @@ export function createDashboardRouter() {
 
   router.get('/agenda', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
-    const todoRepo = appDataSource.getRepository(LifeTodoTaskEntity);
-    const tasks = await todoRepo.find({ where: { user_id: userId } });
-    const items = tasks
-      .filter((task) => !task.completed && !task.trashed_at)
-      .map((task) => ({
-        id: task.id,
-        module: 'todo',
-        title: task.title,
-        summary: task.description_markdown || '待处理任务',
-        severity: task.priority,
-        targetDate: task.due_date ?? '',
-        href: '/life/todo?todoTab=tasks',
-      }));
-    response.json(successResponse(items));
+    const [
+      todos,
+      subscriptions,
+      loans,
+      cards,
+      checkups,
+      medicationRecords,
+      medicationPurchases,
+      medicationThresholds,
+    ] = await Promise.all([
+      appDataSource.getRepository(LifeTodoTaskEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(FinanceSubscriptionRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(FinanceLoanBillEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(LifeCardRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthCheckupRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthMedicationRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthMedicationPurchaseEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthMedicationThresholdEntity).find({ where: { user_id: userId } }),
+    ]);
+
+    response.json(successResponse(buildAgendaItems({
+      todos,
+      subscriptions,
+      loans,
+      cards,
+      checkups,
+      medicationRecords,
+      medicationPurchases,
+      medicationThresholds,
+    })));
   }));
 
-  router.get('/health-snapshot', (_request, response) => {
+  router.get('/health-snapshot', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const [stepRecords, weightRecords, dietRecords, exerciseRecords, checkups, medicationRecords, medicationPurchases, medicationThresholds] = await Promise.all([
+      appDataSource.getRepository(HealthStepRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthFitnessWeightRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthFitnessDietRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthFitnessExerciseRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthCheckupRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthMedicationRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthMedicationPurchaseEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(HealthMedicationThresholdEntity).find({ where: { user_id: userId } }),
+    ]);
+
     response.json(successResponse({
       title: '健康中心摘要',
       stats: {
-        todayFocusCount: 0,
+        todayStepCount: stepRecords.filter((item) => dayjs(item.record_time).isSame(dayjs(), 'day')).reduce((sum, item) => sum + item.steps, 0),
+        latestWeight: weightRecords.sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())[0]?.weight ?? null,
+        todayCalorieNet: Number((
+          dietRecords.filter((item) => item.date === dayjs().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories), 0)
+          - exerciseRecords.filter((item) => item.date === dayjs().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories), 0)
+        ).toFixed(1)),
+        checkupPendingCount: checkups.filter((record) => record.follow_up_date && dayjs(record.follow_up_date).diff(dayjs(), 'day') <= 7).length,
+        medicationLowStockCount: calculateMedicationLowStockCount(medicationRecords, medicationPurchases, medicationThresholds),
       },
-      trend: [],
+      trend: Array.from({ length: 7 }, (_, index) => {
+        const date = dayjs().subtract(6 - index, 'day');
+        return {
+          date: date.format('YYYY-MM-DD'),
+          label: date.format('MM-DD'),
+          steps: stepRecords.filter((item) => dayjs(item.record_time).isSame(date, 'day')).reduce((sum, item) => sum + item.steps, 0),
+        };
+      }),
     }));
-  });
+  }));
 
   router.get('/finance-snapshot', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
-    const loanRepo = appDataSource.getRepository(FinanceLoanBillEntity);
-    const subscriptionRepo = appDataSource.getRepository(FinanceSubscriptionRecordEntity);
     const [loans, subscriptions] = await Promise.all([
-      loanRepo.find({ where: { user_id: userId } }),
-      subscriptionRepo.find({ where: { user_id: userId } }),
+      appDataSource.getRepository(FinanceLoanBillEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(FinanceSubscriptionRecordEntity).find({ where: { user_id: userId } }),
     ]);
+
     response.json(successResponse({
       title: '财务中心摘要',
       stats: {
         loanCount: loans.length,
+        unpaidLoanAmount: Number(loans.filter((bill) => !bill.is_paid).reduce((sum, item) => sum + Number(item.amount), 0).toFixed(2)),
         subscriptionCount: subscriptions.length,
       },
       trend: [],
@@ -210,14 +462,12 @@ export function createDashboardRouter() {
 
   router.get('/life-snapshot', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
-    const todoRepo = appDataSource.getRepository(LifeTodoTaskEntity);
-    const cardRepo = appDataSource.getRepository(LifeCardRecordEntity);
-    const storageRepo = appDataSource.getRepository(LifeStorageItemEntity);
     const [todos, cards, storageItems] = await Promise.all([
-      todoRepo.find({ where: { user_id: userId } }),
-      cardRepo.find({ where: { user_id: userId } }),
-      storageRepo.find({ where: { user_id: userId } }),
+      appDataSource.getRepository(LifeTodoTaskEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(LifeCardRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(LifeStorageItemEntity).find({ where: { user_id: userId } }),
     ]);
+
     response.json(successResponse({
       title: '生活中心摘要',
       stats: {
@@ -229,26 +479,38 @@ export function createDashboardRouter() {
     }));
   }));
 
-  router.get('/investment-snapshot', (_request, response) => {
+  router.get('/investment-snapshot', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const [trades, capitalFlows] = await Promise.all([
+      appDataSource.getRepository(InvestmentForexTradeRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(InvestmentForexCapitalFlowEntity).find({ where: { user_id: userId } }),
+    ]);
+    const summary = buildForexSummary(trades, capitalFlows);
+
     response.json(successResponse({
       title: '投资中心摘要',
-      stats: {
-        netPnl: 0,
-        activeTradeCount: 0,
-      },
-      trend: [],
+      stats: summary,
+      trend: Array.from({ length: 7 }, (_, index) => {
+        const date = dayjs().subtract(6 - index, 'day').format('YYYY-MM-DD');
+        return {
+          date,
+          label: dayjs(date).format('MM-DD'),
+          netPnl: Number(trades.filter((item) => item.trade_date === date).reduce((sum, item) => sum + Number(item.pnl) + Number(item.commission), 0).toFixed(2)),
+        };
+      }),
     }));
-  });
+  }));
 
   router.get('/notification-snapshot', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
-    const sceneRepo = appDataSource.getRepository(NotificationCenterSceneEntity);
-    const logRepo = appDataSource.getRepository(NotificationCenterLogEntity);
-    const [scenes, logs] = await Promise.all([
-      sceneRepo.find({ where: { user_id: userId } }),
-      logRepo.find({ where: { user_id: userId }, order: { created_at: 'DESC' }, take: 8 }),
+    const [scenes, channels, logs] = await Promise.all([
+      appDataSource.getRepository(NotificationCenterSceneEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(NotificationCenterChannelEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(NotificationCenterLogEntity).find({ where: { user_id: userId }, order: { created_at: 'DESC' }, take: 8 }),
     ]);
+
     response.json(successResponse({
+      enabledChannelCount: channels.filter((channel) => channel.enabled).length,
       enabledSceneCount: scenes.filter((scene) => scene.enabled).length,
       recentLogs: logs,
       hottestSceneId: logs[0]?.scene_id ?? '',

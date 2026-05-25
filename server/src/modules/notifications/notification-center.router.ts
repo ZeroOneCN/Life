@@ -14,6 +14,7 @@ import { successResponse, buildListData } from '../../shared/http/response';
 import { validateBody } from '../../shared/http/validation';
 import { parsePagination } from '../../shared/utils/pagination';
 import { AppError } from '../../shared/errors/app-error';
+import { sendNotificationSceneLogs } from '../../shared/domain/notification';
 
 const channelSchema = z.object({
   type: z.enum(['email', 'wechatWork', 'webhook']),
@@ -243,17 +244,24 @@ export function createNotificationCenterRouter() {
   router.get('/logs', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const { page, pageSize, skip } = parsePagination(request.query as Record<string, unknown>);
+    const sceneId = String(request.query.sceneId ?? '').trim();
+    const status = String(request.query.status ?? '').trim();
+    const channel = String(request.query.channel ?? '').trim();
     const repository = appDataSource.getRepository(NotificationCenterLogEntity);
-    const [items, total] = await repository.findAndCount({
+    const allItems = await repository.find({
       where: {
         user_id: userId,
       },
       order: {
         created_at: 'DESC',
       },
-      skip,
-      take: pageSize,
     });
+    const filtered = allItems
+      .filter((item) => !sceneId || item.scene_id === sceneId)
+      .filter((item) => !status || item.status === status)
+      .filter((item) => !channel || item.channel === channel);
+    const items = filtered.slice(skip, skip + pageSize);
+    const total = filtered.length;
 
     response.json(successResponse(buildListData(items, page, pageSize, total)));
   }));
@@ -296,51 +304,12 @@ export function createNotificationCenterRouter() {
   router.post('/actions/send-scene', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const payload = validateBody(sendSceneSchema, request.body);
-    const sceneRepo = appDataSource.getRepository(NotificationCenterSceneEntity);
-    const relationRepo = appDataSource.getRepository(NotificationCenterSceneChannelEntity);
-    const channelRepo = appDataSource.getRepository(NotificationCenterChannelEntity);
-    const logRepo = appDataSource.getRepository(NotificationCenterLogEntity);
-
-    const scene = await sceneRepo.findOne({
-      where: {
-        user_id: userId,
-        scene_id: payload.sceneId,
-      },
+    const logs = await sendNotificationSceneLogs({
+      userId,
+      sceneId: payload.sceneId,
+      message: payload.message,
+      preferredChannels: payload.preferredChannels,
     });
-
-    if (!scene) {
-      throw new AppError('notification_scene_not_found', 404, 404);
-    }
-
-    const relations = await relationRepo.find({
-      where: {
-        user_id: userId,
-        scene_id: payload.sceneId,
-      },
-    });
-    const channels = await channelRepo.find({
-      where: {
-        user_id: userId,
-      },
-    });
-
-    const candidateTypes = payload.preferredChannels?.length
-      ? relations.map((item) => item.channel_type).filter((item) => payload.preferredChannels?.includes(item as never))
-      : relations.map((item) => item.channel_type);
-
-    const logs = [];
-    for (const type of candidateTypes) {
-      const channel = channels.find((item) => item.channel_type === type);
-      logs.push(await logRepo.save(logRepo.create({
-        user_id: userId,
-        channel: type,
-        scene_id: scene.scene_id,
-        kind: 'scene',
-        status: scene.enabled && channel?.enabled ? 'success' : 'skipped',
-        title: scene.label,
-        message: payload.message ?? scene.summary,
-      })));
-    }
 
     response.json(successResponse(logs, 'send_notification_scene_success'));
   }));

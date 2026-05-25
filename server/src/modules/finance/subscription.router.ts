@@ -6,7 +6,6 @@ import { appDataSource } from '../../db/data-source';
 import { FinanceSubscriptionRecordEntity } from './entities/finance-subscription-record.entity';
 import { FinanceSubscriptionCategoryEntity } from './entities/finance-subscription-category.entity';
 import { FinanceSubscriptionSettingEntity } from './entities/finance-subscription-setting.entity';
-import { NotificationCenterLogEntity } from '../notifications/entities/notification-center-log.entity';
 import { asyncHandler } from '../../shared/http/async-handler';
 import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
 import { requireAuthUser } from '../../shared/http/request';
@@ -16,6 +15,7 @@ import { parsePagination } from '../../shared/utils/pagination';
 import { normalizeDate } from '../../shared/utils/date';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { AppError } from '../../shared/errors/app-error';
+import { sendNotificationSceneLogs } from '../../shared/domain/notification';
 
 const recordSchema = z.object({
   serviceName: z.string().trim().min(1).max(255),
@@ -146,21 +146,100 @@ function buildOverview(records: FinanceSubscriptionRecordEntity[], leadDays: num
   });
 }
 
+async function triggerSubscriptionReminderLogs(
+  userId: string,
+  records: FinanceSubscriptionRecordEntity[],
+  settings: FinanceSubscriptionSettingEntity,
+) {
+  const today = dayjs().startOf('day');
+  const repository = appDataSource.getRepository(FinanceSubscriptionRecordEntity);
+  const logs = [];
+
+  for (const record of records) {
+    const end = dayjs(record.end_date).startOf('day');
+    const diff = end.diff(today, 'day');
+    const base = `${record.id}:${record.end_date}`;
+
+    if (
+      settings.reminder_enabled
+      && diff >= 0
+      && diff <= settings.lead_days
+      && (settings.include_auto_renew_in_reminders || !record.auto_renew)
+    ) {
+      const marker = `${base}:upcoming:${today.format('YYYY-MM-DD')}`;
+      if (record.last_upcoming_reminder_marker !== marker) {
+        logs.push(...(await sendNotificationSceneLogs({
+          userId,
+          sceneId: 'subscription.renewal_upcoming',
+          title: '服务订阅即将到期',
+          message: `${record.service_name} 将在 ${record.end_date} 到期，距离到期还有 ${diff} 天。`,
+        })));
+        record.last_upcoming_reminder_marker = marker;
+      }
+    }
+
+    if (settings.expiry_day_reminder_enabled && diff <= 0) {
+      const marker = `${base}:expired:${today.format('YYYY-MM-DD')}`;
+      if (record.last_expired_reminder_marker !== marker) {
+        logs.push(...(await sendNotificationSceneLogs({
+          userId,
+          sceneId: 'subscription.expired',
+          title: '服务订阅已到期',
+          message: diff === 0
+            ? `${record.service_name} 今天到期，请及时确认续费或停用。`
+            : `${record.service_name} 已于 ${record.end_date} 到期，当前已逾期 ${Math.abs(diff)} 天。`,
+        })));
+        record.last_expired_reminder_marker = marker;
+      }
+    }
+  }
+
+  if (records.length) {
+    await repository.save(records);
+  }
+
+  return logs;
+}
+
 export function createSubscriptionRouter() {
   const router = Router();
 
   router.get('/records', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const { page, pageSize, skip } = parsePagination(request.query as Record<string, unknown>);
+    const keyword = String(request.query.keyword ?? '').trim().toLowerCase();
+    const categoryId = String(request.query.categoryId ?? 'all');
+    const status = String(request.query.status ?? 'all');
+    const autoRenewFilter = String(request.query.autoRenew ?? 'all');
+    const expiryStartDate = String(request.query.expiryStartDate ?? '').trim();
+    const expiryEndDate = String(request.query.expiryEndDate ?? '').trim();
     const repository = appDataSource.getRepository(FinanceSubscriptionRecordEntity);
-    const [items, total] = await repository.findAndCount({
+    const settings = await settingService.getOrCreate(userId, {
+      records_keyword: '',
+      records_category_id: 'all',
+      records_status: 'all',
+      records_auto_renew_filter: 'all',
+      records_expiry_start_date: null,
+      records_expiry_end_date: null,
+      dashboard_range_days: 90,
+      reminder_enabled: true,
+      expiry_day_reminder_enabled: true,
+      lead_days: 7,
+      include_auto_renew_in_reminders: false,
+    });
+    const items = await repository.find({
       where: { user_id: userId },
       order: { end_date: 'ASC', updated_at: 'DESC' },
-      skip,
-      take: pageSize,
     });
+    const filtered = items
+      .filter((item) => !keyword || [item.service_name, item.plan_name, item.category_name, item.notes].some((value) => value.toLowerCase().includes(keyword)))
+      .filter((item) => categoryId === 'all' || item.category_id === categoryId)
+      .filter((item) => status === 'all' || getStatus(item, settings.lead_days) === status)
+      .filter((item) => autoRenewFilter === 'all' || (autoRenewFilter === 'auto' ? item.auto_renew : !item.auto_renew))
+      .filter((item) => !expiryStartDate || !dayjs(item.end_date).isBefore(expiryStartDate, 'day'))
+      .filter((item) => !expiryEndDate || !dayjs(item.end_date).isAfter(expiryEndDate, 'day'));
 
-    response.json(successResponse(buildListData(items.map(mapRecord), page, pageSize, total)));
+    response.json(successResponse(buildListData(filtered.slice(skip, skip + pageSize).map(mapRecord), page, pageSize, filtered.length)));
   }));
 
   router.post('/records', asyncHandler(async (request: AuthenticatedRequest, response) => {
@@ -187,6 +266,21 @@ export function createSubscriptionRouter() {
       last_upcoming_reminder_marker: null,
       last_expired_reminder_marker: null,
     }));
+
+    const settings = await settingService.getOrCreate(userId, {
+      records_keyword: '',
+      records_category_id: 'all',
+      records_status: 'all',
+      records_auto_renew_filter: 'all',
+      records_expiry_start_date: null,
+      records_expiry_end_date: null,
+      dashboard_range_days: 90,
+      reminder_enabled: true,
+      expiry_day_reminder_enabled: true,
+      lead_days: 7,
+      include_auto_renew_in_reminders: false,
+    });
+    await triggerSubscriptionReminderLogs(userId, [item], settings);
 
     response.json(successResponse(mapRecord(item), 'create_subscription_record_success'));
   }));
@@ -222,6 +316,21 @@ export function createSubscriptionRouter() {
       auto_renew: payload.autoRenew ?? current.auto_renew,
       notes: payload.notes ?? current.notes,
     });
+
+    const settings = await settingService.getOrCreate(userId, {
+      records_keyword: '',
+      records_category_id: 'all',
+      records_status: 'all',
+      records_auto_renew_filter: 'all',
+      records_expiry_start_date: null,
+      records_expiry_end_date: null,
+      dashboard_range_days: 90,
+      reminder_enabled: true,
+      expiry_day_reminder_enabled: true,
+      lead_days: 7,
+      include_auto_renew_in_reminders: false,
+    });
+    await triggerSubscriptionReminderLogs(userId, [next], settings);
 
     response.json(successResponse(mapRecord(next), 'update_subscription_record_success'));
   }));
@@ -547,27 +656,39 @@ export function createSubscriptionRouter() {
   router.post('/actions/trigger-reminders', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const payload = validateBody(triggerReminderSchema, request.body);
-    const logRepo = appDataSource.getRepository(NotificationCenterLogEntity);
-    const logs = await Promise.all([
-      logRepo.save(logRepo.create({
-        user_id: userId,
-        channel: 'email',
-        scene_id: 'subscription.renewal_upcoming',
-        kind: 'scene',
-        status: 'success',
-        title: payload.title ?? '订阅即将到期',
-        message: '已手动触发订阅即将到期提醒。',
-      })),
-      logRepo.save(logRepo.create({
-        user_id: userId,
-        channel: 'email',
-        scene_id: 'subscription.expired',
-        kind: 'scene',
-        status: 'success',
-        title: payload.title ?? '订阅到期提醒',
-        message: '已手动触发订阅到期或逾期提醒。',
-      })),
-    ]);
+    const repository = appDataSource.getRepository(FinanceSubscriptionRecordEntity);
+    const settings = await settingService.getOrCreate(userId, {
+      records_keyword: '',
+      records_category_id: 'all',
+      records_status: 'all',
+      records_auto_renew_filter: 'all',
+      records_expiry_start_date: null,
+      records_expiry_end_date: null,
+      dashboard_range_days: 90,
+      reminder_enabled: true,
+      expiry_day_reminder_enabled: true,
+      lead_days: 7,
+      include_auto_renew_in_reminders: false,
+    });
+    const records = await repository.find({ where: { user_id: userId } });
+
+    const logs = await triggerSubscriptionReminderLogs(userId, records, settings);
+    if (!logs.length) {
+      logs.push(
+        ...(await sendNotificationSceneLogs({
+          userId,
+          sceneId: 'subscription.renewal_upcoming',
+          title: payload.title ?? '服务订阅即将到期',
+          message: '已手动触发订阅即将到期提醒。',
+        })),
+        ...(await sendNotificationSceneLogs({
+          userId,
+          sceneId: 'subscription.expired',
+          title: payload.title ?? '服务订阅已到期',
+          message: '已手动触发订阅到期或逾期提醒。',
+        })),
+      );
+    }
 
     response.json(successResponse(logs, 'trigger_subscription_reminders_success'));
   }));

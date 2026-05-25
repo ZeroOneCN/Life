@@ -8,7 +8,7 @@ import { LifeCardBillRecordEntity } from './entities/life-card-bill-record.entit
 import { LifeCardRechargeRecordEntity } from './entities/life-card-recharge-record.entity';
 import { LifeCardCarrierEntity } from './entities/life-card-carrier.entity';
 import { LifeCardSettingEntity } from './entities/life-card-setting.entity';
-import { NotificationCenterLogEntity } from '../notifications/entities/notification-center-log.entity';
+import { LifeCardBillImportBatchEntity } from './entities/life-card-bill-import-batch.entity';
 import { asyncHandler } from '../../shared/http/async-handler';
 import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
 import { requireAuthUser } from '../../shared/http/request';
@@ -18,6 +18,7 @@ import { parsePagination } from '../../shared/utils/pagination';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { normalizeDate, normalizeMonth } from '../../shared/utils/date';
 import { AppError } from '../../shared/errors/app-error';
+import { sendNotificationSceneLogs } from '../../shared/domain/notification';
 
 const cardSchema = z.object({
   phoneNumber: z.string().trim().min(1).max(32),
@@ -76,7 +77,73 @@ const triggerReminderSchema = z.object({
   title: z.string().trim().min(1).max(255).optional(),
 });
 
+const importBillRowSchema = z.object({
+  phoneNumber: z.string().trim().optional(),
+  billingMonth: z.string().optional(),
+  monthlyFee: z.union([z.number(), z.string()]).optional(),
+  actualFee: z.union([z.number(), z.string()]).optional(),
+  extraCharges: z.union([z.number(), z.string()]).optional(),
+  totalFee: z.union([z.number(), z.string()]).optional(),
+  note: z.string().optional(),
+});
+
+const importBillsSchema = z.object({
+  fileName: z.string().trim().optional().default('card-bills-import.json'),
+  rows: z.array(importBillRowSchema).default([]),
+});
+
 const settingService = new BaseUserSettingService(LifeCardSettingEntity);
+
+async function triggerRuleBasedCardReminders(
+  userId: string,
+  cards: LifeCardRecordEntity[],
+  settings: LifeCardSettingEntity,
+) {
+  const today = dayjs();
+  const repository = appDataSource.getRepository(LifeCardRecordEntity);
+  const logs = [];
+
+  for (const card of cards) {
+    if (settings.balance_low_enabled && Number(card.balance) <= Number(settings.balance_threshold)) {
+      const marker = `${today.format('YYYY-MM-DD')}:balance:${Number(settings.balance_threshold).toFixed(2)}`;
+      if (card.last_balance_reminder_marker !== marker) {
+        logs.push(...(await sendNotificationSceneLogs({
+          userId,
+          sceneId: 'card.balance_low',
+          title: '号卡低余额提醒',
+          message: `${card.phone_number} 当前余额 ${Number(card.balance).toFixed(2)}，已低于阈值 ${Number(settings.balance_threshold).toFixed(2)}。`,
+        })));
+        card.last_balance_reminder_marker = marker;
+      }
+    }
+
+    if (settings.billing_upcoming_enabled) {
+      let billingDate = today.date(card.billing_day);
+      if (billingDate.endOf('day').isBefore(today)) {
+        billingDate = today.add(1, 'month').date(card.billing_day);
+      }
+      const diff = billingDate.startOf('day').diff(today.startOf('day'), 'day');
+      if (diff >= 0 && diff <= settings.notification_days_before) {
+        const marker = `${billingDate.format('YYYY-MM-DD')}:billing:${settings.notification_days_before}`;
+        if (card.last_billing_reminder_marker !== marker) {
+          logs.push(...(await sendNotificationSceneLogs({
+            userId,
+            sceneId: 'card.billing_upcoming',
+            title: '号卡账单日前提醒',
+            message: `${card.phone_number} 将在 ${billingDate.format('YYYY-MM-DD')} 进入账单日窗口，请检查余额和套餐。`,
+          })));
+          card.last_billing_reminder_marker = marker;
+        }
+      }
+    }
+  }
+
+  if (cards.length) {
+    await repository.save(cards);
+  }
+
+  return logs;
+}
 
 function mapCard(entity: LifeCardRecordEntity) {
   return {
@@ -259,6 +326,14 @@ export function createCardRouter() {
       last_billing_reminder_marker: null,
     }));
 
+    const settings = await settingService.getOrCreate(userId, {
+      balance_low_enabled: true,
+      billing_upcoming_enabled: true,
+      balance_threshold: 10,
+      notification_days_before: 3,
+    });
+    await triggerRuleBasedCardReminders(userId, [item], settings);
+
     response.json(successResponse(mapCard(item), 'create_life_card_success'));
   }));
 
@@ -290,6 +365,14 @@ export function createCardRouter() {
       activation_date: payload.activationDate ? normalizeDate(payload.activationDate) : current.activation_date,
       notes: payload.notes ?? current.notes,
     });
+
+    const settings = await settingService.getOrCreate(userId, {
+      balance_low_enabled: true,
+      billing_upcoming_enabled: true,
+      balance_threshold: 10,
+      notification_days_before: 3,
+    });
+    await triggerRuleBasedCardReminders(userId, [next], settings);
 
     response.json(successResponse(mapCard(next), 'update_life_card_success'));
   }));
@@ -427,6 +510,14 @@ export function createCardRouter() {
       recharge_date: normalizeDate(payload.rechargeDate),
       note: payload.note,
     }));
+
+    const settings = await settingService.getOrCreate(userId, {
+      balance_low_enabled: true,
+      billing_upcoming_enabled: true,
+      balance_threshold: 10,
+      notification_days_before: 3,
+    });
+    await triggerRuleBasedCardReminders(userId, [card], settings);
 
     response.json(successResponse(mapRecharge(item), 'create_life_card_recharge_success'));
   }));
@@ -619,42 +710,124 @@ export function createCardRouter() {
       note: payload.note ?? '',
     }));
 
+    const settings = await settingService.getOrCreate(userId, {
+      balance_low_enabled: true,
+      billing_upcoming_enabled: true,
+      balance_threshold: 10,
+      notification_days_before: 3,
+    });
+    await triggerRuleBasedCardReminders(userId, [card], settings);
+
     response.json(successResponse(mapRecharge(recharge), 'recharge_life_card_success'));
   }));
 
-  router.post('/actions/import-bills', asyncHandler(async (_request: AuthenticatedRequest, response) => {
+  router.post('/actions/import-bills', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const payload = validateBody(importBillsSchema, request.body);
+    const rows = payload.rows ?? [];
+    const billRepo = appDataSource.getRepository(LifeCardBillRecordEntity);
+    const batchRepo = appDataSource.getRepository(LifeCardBillImportBatchEntity);
+    const cardRepo = appDataSource.getRepository(LifeCardRecordEntity);
+    const [existingBills, cards] = await Promise.all([
+      billRepo.find({ where: { user_id: userId } }),
+      cardRepo.find({ where: { user_id: userId } }),
+    ]);
+    const seen = new Set(existingBills.map((item) => [
+      item.phone_number,
+      item.billing_month,
+      Number(item.total_fee).toFixed(2),
+      item.note.trim().toLowerCase(),
+    ].join('|')));
+
+    let importedCount = 0;
+    let duplicateCount = 0;
+    let invalidCount = 0;
+    const toSave: LifeCardBillRecordEntity[] = [];
+
+    rows.forEach((row) => {
+      const phoneNumber = row.phoneNumber?.trim() ?? '';
+      const billingMonth = row.billingMonth ? normalizeMonth(row.billingMonth) : '';
+      const totalFee = Number.isFinite(Number(row.totalFee))
+        ? Number(Number(row.totalFee).toFixed(2))
+        : Number((((Number(row.actualFee) || 0) + (Number(row.extraCharges) || 0))).toFixed(2));
+
+      if (!phoneNumber || !billingMonth || !Number.isFinite(totalFee) || totalFee < 0) {
+        invalidCount += 1;
+        return;
+      }
+
+      const card = cards.find((item) => item.phone_number === phoneNumber);
+      if (!card) {
+        invalidCount += 1;
+        return;
+      }
+
+      const note = row.note ?? '';
+      const key = [phoneNumber, billingMonth, totalFee.toFixed(2), note.trim().toLowerCase()].join('|');
+      if (seen.has(key)) {
+        duplicateCount += 1;
+        return;
+      }
+
+      seen.add(key);
+      importedCount += 1;
+      toSave.push(billRepo.create({
+        user_id: userId,
+        sim_id: card.id,
+        phone_number: phoneNumber,
+        carrier_name: card.carrier_name,
+        billing_month: billingMonth,
+        monthly_fee: Number(Number(row.monthlyFee ?? card.monthly_fee).toFixed(2)),
+        actual_fee: Number.isFinite(Number(row.actualFee)) ? Number(Number(row.actualFee).toFixed(2)) : 0,
+        extra_charges: Number.isFinite(Number(row.extraCharges)) ? Number(Number(row.extraCharges).toFixed(2)) : 0,
+        total_fee: totalFee,
+        note,
+      }));
+    });
+
+    if (toSave.length) {
+      await billRepo.save(toSave);
+    }
+
+    await batchRepo.save(batchRepo.create({
+      user_id: userId,
+      file_name: payload.fileName,
+      total_rows: rows.length,
+      imported_count: importedCount,
+      duplicate_count: duplicateCount,
+      invalid_count: invalidCount,
+      summary_json: {
+        importedCount,
+        duplicateCount,
+        invalidCount,
+      },
+    }));
+
     response.json(successResponse({
-      total_rows: 0,
-      imported_count: 0,
-      duplicate_count: 0,
-      invalid_count: 0,
-    }, 'import_life_card_bills_placeholder'));
+      total_rows: rows.length,
+      imported_count: importedCount,
+      duplicate_count: duplicateCount,
+      invalid_count: invalidCount,
+    }, 'import_life_card_bills_success'));
   }));
 
   router.post('/actions/trigger-reminders', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const payload = validateBody(triggerReminderSchema, request.body);
-    const logRepo = appDataSource.getRepository(NotificationCenterLogEntity);
-    const logs = await Promise.all([
-      logRepo.save(logRepo.create({
-        user_id: userId,
-        channel: 'email',
-        scene_id: 'card.balance_low',
-        kind: 'scene',
-        status: 'success',
+    const logs = [
+      ...(await sendNotificationSceneLogs({
+        userId,
+        sceneId: 'card.balance_low',
         title: payload.title ?? '号卡低余额提醒',
         message: '已手动触发号卡低余额提醒。',
       })),
-      logRepo.save(logRepo.create({
-        user_id: userId,
-        channel: 'email',
-        scene_id: 'card.billing_upcoming',
-        kind: 'scene',
-        status: 'success',
+      ...(await sendNotificationSceneLogs({
+        userId,
+        sceneId: 'card.billing_upcoming',
         title: payload.title ?? '号卡账单日前提醒',
         message: '已手动触发号卡账单日前提醒。',
       })),
-    ]);
+    ];
 
     response.json(successResponse(logs, 'trigger_life_card_reminders_success'));
   }));
