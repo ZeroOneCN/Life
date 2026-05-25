@@ -4332,6 +4332,206 @@ textarea {
   word-break: break-word;
 }
 
+.dashboard-page {
+  gap: 22px;
+}
+
+.dashboard-header-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dashboard-overview-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.dashboard-agenda-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.dashboard-agenda-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  gap: 20px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px solid var(--color-hairline);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-3) 92%, transparent), var(--color-surface-2));
+  transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+}
+
+.dashboard-agenda-item:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-hairline));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 10%, var(--color-surface-3)), var(--color-surface-2));
+  transform: translateY(-1px);
+}
+
+.dashboard-agenda-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dashboard-agenda-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dashboard-agenda-module {
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+}
+
+.dashboard-agenda-main strong {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.dashboard-agenda-main p {
+  margin: 0;
+  color: var(--color-ink-subtle);
+  line-height: 1.55;
+}
+
+.dashboard-agenda-side {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 6px;
+  padding-left: 20px;
+  border-left: 1px solid var(--color-hairline);
+  text-align: right;
+}
+
+.dashboard-agenda-side span {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+}
+
+.dashboard-agenda-side strong {
+  font-size: 16px;
+}
+
+.dashboard-bottom-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.dashboard-snapshot-stack,
+.dashboard-notification-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dashboard-snapshot-stat-grid,
+.dashboard-notification-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-snapshot-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: 18px;
+}
+
+.dashboard-chart-card,
+.dashboard-list-card {
+  min-width: 0;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid var(--color-hairline);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-3) 92%, transparent), var(--color-surface-2));
+}
+
+.dashboard-block-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.dashboard-block-header strong {
+  font-size: 16px;
+}
+
+.dashboard-block-header span {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dashboard-chart-shell {
+  width: 100%;
+  height: 240px;
+}
+
+.dashboard-summary-list,
+.dashboard-notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dashboard-summary-item,
+.dashboard-notification-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.dashboard-summary-item:first-child,
+.dashboard-notification-item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.dashboard-summary-copy,
+.dashboard-notification-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.dashboard-summary-copy strong,
+.dashboard-notification-copy strong {
+  font-size: 15px;
+}
+
+.dashboard-summary-copy span,
+.dashboard-notification-copy span,
+.dashboard-notification-meta span {
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dashboard-summary-value {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.dashboard-notification-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .todo-modal-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   margin-bottom: 14px;
