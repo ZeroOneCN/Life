@@ -3854,19 +3854,37 @@ textarea {
   margin-bottom: 14px;
 }
 
+.card-modal-grid-date-friendly {
+  grid-template-columns:
+    minmax(180px, 1.1fr)
+    minmax(150px, 0.9fr)
+    minmax(120px, 0.8fr)
+    minmax(120px, 0.8fr)
+    minmax(120px, 0.8fr)
+    minmax(96px, 0.7fr)
+    minmax(150px, 1fr)
+    minmax(140px, 0.95fr)
+    minmax(140px, 0.95fr)
+    minmax(170px, 1fr);
+}
+
 .card-recharge-grid,
 .card-settings-inline-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .card-carrier-entry-grid {
-  grid-template-columns: minmax(260px, 1fr) 160px;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(320px, 1.4fr) 160px;
   align-items: end;
 }
 
 .card-carrier-modal-grid {
   grid-template-columns: 1fr;
   margin-bottom: 14px;
+}
+
+.card-carrier-modal-grid-inline {
+  grid-template-columns: minmax(220px, 0.95fr) minmax(320px, 1.45fr);
 }
 
 .card-entry-action {
@@ -3888,6 +3906,10 @@ textarea {
 
 .card-chart-card-wide {
   grid-column: 1 / -1;
+}
+
+.card-chart-card-tall-compact {
+  min-height: 0;
 }
 
 .card-legend-list,

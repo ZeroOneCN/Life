@@ -120,17 +120,16 @@ export function CardCarriersSection({
             onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
             placeholder="例如 中国移动"
           />
+          <Field
+            label="描述"
+            value={form.description}
+            onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+            placeholder="例如 适合日常通话与流量套餐管理"
+          />
           <div className="card-entry-action">
             <Btn tone="primary" onClick={handleCreate}>新增运营商</Btn>
           </div>
         </div>
-
-        <TextArea
-          label="描述"
-          value={form.description}
-          onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-          placeholder="例如 适合日常通话与流量套餐管理"
-        />
 
         {carriers.length ? (
           <DataTable
@@ -189,18 +188,18 @@ export function CardCarriersSection({
           </>
         )}
       >
-        <div className="card-carrier-modal-grid">
+        <div className="card-carrier-modal-grid card-carrier-modal-grid-inline">
           <Field
             label="运营商名称"
             value={editingForm.name}
             onChange={(event) => setEditingForm((current) => ({ ...current, name: event.target.value }))}
           />
+          <Field
+            label="描述"
+            value={editingForm.description}
+            onChange={(event) => setEditingForm((current) => ({ ...current, description: event.target.value }))}
+          />
         </div>
-        <TextArea
-          label="描述"
-          value={editingForm.description}
-          onChange={(event) => setEditingForm((current) => ({ ...current, description: event.target.value }))}
-        />
       </Modal>
 
       <DeleteModal

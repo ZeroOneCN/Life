@@ -433,7 +433,14 @@ export function CardCardsSection({
                   width: 90,
                   render: (_, row) => `${row.billingDay} 日`,
                 },
-                { key: 'activationDate', title: '开卡时间', dataIndex: 'activationDate', width: 120 },
+                {
+                  key: 'activationDate',
+                  title: '开卡时间',
+                  width: 132,
+                  render: (_, row) => dayjs(row.activationDate).isValid()
+                    ? dayjs(row.activationDate).format('YYYY/MM/DD')
+                    : '-',
+                },
                 { key: 'notes', title: '备注', render: (_, row) => row.notes || '-', width: 220 },
                 {
                   key: 'actions',
@@ -485,7 +492,7 @@ export function CardCardsSection({
           </>
         )}
       >
-        <div className="card-modal-grid">
+        <div className="card-modal-grid card-modal-grid-date-friendly">
           <Field
             label="电话号码"
             value={editingForm.phoneNumber}

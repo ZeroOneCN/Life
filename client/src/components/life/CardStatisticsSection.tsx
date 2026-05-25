@@ -14,7 +14,6 @@ import {
 
 import { EmptyState, SectionCard, StatGrid } from '../page';
 import {
-  buildLifeCardBalanceDistribution,
   buildLifeCardCarrierBreakdown,
   buildLifeCardMonthlyTrend,
   buildLifeCardOverview,
@@ -43,7 +42,6 @@ export function CardStatisticsSection({
   );
   const monthlyTrend = useMemo(() => buildLifeCardMonthlyTrend(bills), [bills]);
   const carrierBreakdown = useMemo(() => buildLifeCardCarrierBreakdown(cards, bills), [bills, cards]);
-  const balanceDistribution = useMemo(() => buildLifeCardBalanceDistribution(cards), [cards]);
   const ranking = useMemo(() => buildLifeCardRanking(cards, bills, recharges).slice(0, 8), [bills, cards, recharges]);
   const hasData = Boolean(cards.length || bills.length || recharges.length);
 
@@ -122,26 +120,10 @@ export function CardStatisticsSection({
               </div>
             </div>
 
-            <div className="card chart-card">
-              <div className="fitness-chart-header">
-                <strong>余额区间分布</strong>
-                <span>快速识别低余额号卡集中在哪个区间。</span>
-              </div>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={balanceDistribution}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-hairline)" />
-                  <XAxis dataKey="range" stroke="var(--color-ink-subtle)" interval={0} angle={-18} textAnchor="end" height={72} />
-                  <YAxis stroke="var(--color-ink-subtle)" />
-                  <Tooltip formatter={(value) => `${Number(value ?? 0)} 张`} />
-                  <Bar dataKey="count" fill="var(--color-primary-strong)" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="card chart-card">
+            <div className="card chart-card card-chart-card-tall-compact">
               <div className="fitness-chart-header">
                 <strong>号卡累计支出排行</strong>
-                <span>按累计账单金额排序，帮助判断哪些号卡最值得重点优化。</span>
+                <span>按累计账单金额排序，帮助判断哪些号卡最值得重点优化，替代原来的余额区间模块。</span>
               </div>
               <div className="card-ranking-list">
                 {ranking.map((item, index) => (
