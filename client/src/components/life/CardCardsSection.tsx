@@ -409,43 +409,43 @@ export function CardCardsSection({
               rowKey="id"
               data={pageRecords}
               columns={[
-                { key: 'phoneNumber', title: '电话号码', dataIndex: 'phoneNumber', width: 150 },
-                { key: 'carrierName', title: '运营商', dataIndex: 'carrierName', width: 110 },
-                { key: 'location', title: '归属地', dataIndex: 'location', width: 100, render: (value) => String(value || '-') },
-                { key: 'dataPlan', title: '流量套餐', dataIndex: 'dataPlan', width: 140, render: (value) => String(value || '-') },
+                { key: 'phoneNumber', title: '电话号码', dataIndex: 'phoneNumber', width: 128 },
+                { key: 'carrierName', title: '运营商', dataIndex: 'carrierName', width: 88 },
+                { key: 'location', title: '归属地', dataIndex: 'location', width: 78, render: (value) => String(value || '-') },
+                { key: 'dataPlan', title: '流量套餐', dataIndex: 'dataPlan', width: 108, render: (value) => String(value || '-') },
                 {
                   key: 'balance',
                   title: '余额',
-                  width: 110,
+                  width: 88,
                   align: 'right',
                   render: (_, row) => formatLifeCardMoney(row.balance),
                 },
                 {
                   key: 'monthlyFee',
                   title: '月租',
-                  width: 110,
+                  width: 84,
                   align: 'right',
                   render: (_, row) => formatLifeCardMoney(row.monthlyFee),
                 },
                 {
                   key: 'billingDay',
                   title: '账单日',
-                  width: 90,
+                  width: 70,
                   render: (_, row) => `${row.billingDay} 日`,
                 },
                 {
                   key: 'activationDate',
                   title: '开卡时间',
-                  width: 132,
+                  width: 104,
                   render: (_, row) => dayjs(row.activationDate).isValid()
                     ? dayjs(row.activationDate).format('YYYY/MM/DD')
                     : '-',
                 },
-                { key: 'notes', title: '备注', render: (_, row) => row.notes || '-', width: 220 },
+                { key: 'notes', title: '备注', render: (_, row) => row.notes || '-', width: 136 },
                 {
                   key: 'actions',
                   title: '操作',
-                  width: 220,
+                  width: 154,
                   render: (_, row) => (
                     <div className="table-actions">
                       <Btn tone="ghost" onClick={() => {
