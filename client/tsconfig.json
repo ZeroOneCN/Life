@@ -18,6 +18,8 @@
   },
   "include": ["src", "vite.config.ts"],
   "exclude": [
+    "dist",
+    "node_modules",
     "src/pages/health/AIAnalysis.tsx",
     "src/pages/health/BiochemicalTests.tsx",
     "src/pages/health/Dashboard.tsx",

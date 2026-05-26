@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 require("reflect-metadata");
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const bootstrap_1 = require("./bootstrap");
 const data_source_1 = require("./data-source");
 const finance_subscription_category_entity_1 = require("../modules/finance/entities/finance-subscription-category.entity");
 const life_card_carrier_entity_1 = require("../modules/life/entities/life-card-carrier.entity");
@@ -115,6 +116,7 @@ const subscriptionCategories = [
 ];
 async function seed() {
     await data_source_1.appDataSource.initialize();
+    await (0, bootstrap_1.ensureDatabaseSchema)({ forceSync: true });
     const userRepo = data_source_1.appDataSource.getRepository(system_user_account_entity_1.SystemUserAccountEntity);
     const profileRepo = data_source_1.appDataSource.getRepository(system_user_profile_entity_1.SystemUserProfileEntity);
     const channelRepo = data_source_1.appDataSource.getRepository(notification_center_channel_entity_1.NotificationCenterChannelEntity);

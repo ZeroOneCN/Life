@@ -18,9 +18,17 @@ const envSchema = zod_1.z.object({
     DB_USERNAME: zod_1.z.string().min(1).default('root'),
     DB_PASSWORD: zod_1.z.string().default('root'),
     DB_DATABASE: zod_1.z.string().min(1).default('lifeos'),
-    DB_SYNCHRONIZE: zod_1.z
-        .string()
-        .optional()
-        .transform((value) => value === 'true'),
+    DB_SYNCHRONIZE: zod_1.z.string().optional(),
+    DB_AUTO_BOOTSTRAP: zod_1.z.string().optional(),
 });
-exports.env = envSchema.parse(process.env);
+const parsedEnv = envSchema.parse(process.env);
+const isProduction = parsedEnv.NODE_ENV === 'production';
+exports.env = {
+    ...parsedEnv,
+    DB_SYNCHRONIZE: parsedEnv.DB_SYNCHRONIZE === undefined
+        ? !isProduction
+        : parsedEnv.DB_SYNCHRONIZE === 'true',
+    DB_AUTO_BOOTSTRAP: parsedEnv.DB_AUTO_BOOTSTRAP === undefined
+        ? !isProduction
+        : parsedEnv.DB_AUTO_BOOTSTRAP === 'true',
+};
