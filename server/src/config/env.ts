@@ -14,10 +14,19 @@ const envSchema = z.object({
   DB_USERNAME: z.string().min(1).default('root'),
   DB_PASSWORD: z.string().default('root'),
   DB_DATABASE: z.string().min(1).default('lifeos'),
-  DB_SYNCHRONIZE: z
-    .string()
-    .optional()
-    .transform((value) => value === 'true'),
+  DB_SYNCHRONIZE: z.string().optional(),
+  DB_AUTO_BOOTSTRAP: z.string().optional(),
 });
 
-export const env = envSchema.parse(process.env);
+const parsedEnv = envSchema.parse(process.env);
+const isProduction = parsedEnv.NODE_ENV === 'production';
+
+export const env = {
+  ...parsedEnv,
+  DB_SYNCHRONIZE: parsedEnv.DB_SYNCHRONIZE === undefined
+    ? !isProduction
+    : parsedEnv.DB_SYNCHRONIZE === 'true',
+  DB_AUTO_BOOTSTRAP: parsedEnv.DB_AUTO_BOOTSTRAP === undefined
+    ? !isProduction
+    : parsedEnv.DB_AUTO_BOOTSTRAP === 'true',
+};

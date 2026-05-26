@@ -2,6 +2,7 @@ import 'reflect-metadata';
 
 import { createApp } from './app';
 import { env } from './config/env';
+import { ensureDatabaseSchema } from './db/bootstrap';
 import { appDataSource } from './db/data-source';
 
 async function bootstrap() {
@@ -14,6 +15,12 @@ async function bootstrap() {
 
     // eslint-disable-next-line no-console
     console.log(`LifeOS entity metadata loaded: ${appDataSource.entityMetadatas.length}`);
+
+    const schemaState = await ensureDatabaseSchema();
+    if (schemaState.synchronized) {
+      // eslint-disable-next-line no-console
+      console.log('LifeOS database schema synchronized automatically on startup.');
+    }
 
     const app = createApp();
 

@@ -2,6 +2,7 @@ import 'reflect-metadata';
 
 import bcrypt from 'bcrypt';
 
+import { ensureDatabaseSchema } from './bootstrap';
 import { appDataSource } from './data-source';
 import { FinanceSubscriptionCategoryEntity } from '../modules/finance/entities/finance-subscription-category.entity';
 import { LifeCardCarrierEntity } from '../modules/life/entities/life-card-carrier.entity';
@@ -120,6 +121,7 @@ const subscriptionCategories = [
 
 async function seed() {
   await appDataSource.initialize();
+  await ensureDatabaseSchema({ forceSync: true });
 
   const userRepo = appDataSource.getRepository(SystemUserAccountEntity);
   const profileRepo = appDataSource.getRepository(SystemUserProfileEntity);
