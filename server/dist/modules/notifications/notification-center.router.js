@@ -4,18 +4,18 @@ exports.createNotificationCenterRouter = createNotificationCenterRouter;
 const express_1 = require("express");
 const zod_1 = require("zod");
 const data_source_1 = require("../../db/data-source");
-const notification_center_channel_entity_1 = require("./entities/notification-center-channel.entity");
-const notification_center_scene_entity_1 = require("./entities/notification-center-scene.entity");
-const notification_center_template_entity_1 = require("./entities/notification-center-template.entity");
-const notification_center_log_entity_1 = require("./entities/notification-center-log.entity");
-const notification_center_scene_channel_entity_1 = require("./entities/notification-center-scene-channel.entity");
+const app_error_1 = require("../../shared/errors/app-error");
 const async_handler_1 = require("../../shared/http/async-handler");
 const request_1 = require("../../shared/http/request");
 const response_1 = require("../../shared/http/response");
 const validation_1 = require("../../shared/http/validation");
-const pagination_1 = require("../../shared/utils/pagination");
-const app_error_1 = require("../../shared/errors/app-error");
 const notification_1 = require("../../shared/domain/notification");
+const pagination_1 = require("../../shared/utils/pagination");
+const notification_center_channel_entity_1 = require("./entities/notification-center-channel.entity");
+const notification_center_log_entity_1 = require("./entities/notification-center-log.entity");
+const notification_center_scene_channel_entity_1 = require("./entities/notification-center-scene-channel.entity");
+const notification_center_scene_entity_1 = require("./entities/notification-center-scene.entity");
+const notification_center_template_entity_1 = require("./entities/notification-center-template.entity");
 const channelSchema = zod_1.z.object({
     type: zod_1.z.enum(['email', 'wechatWork', 'webhook']),
     label: zod_1.z.string().trim().min(1).max(64).optional(),
@@ -58,12 +58,8 @@ function createNotificationCenterRouter() {
         const userId = (0, request_1.requireAuthUser)(request);
         const repository = data_source_1.appDataSource.getRepository(notification_center_channel_entity_1.NotificationCenterChannelEntity);
         const items = await repository.find({
-            where: {
-                user_id: userId,
-            },
-            order: {
-                channel_type: 'ASC',
-            },
+            where: { user_id: userId },
+            order: { channel_type: 'ASC' },
         });
         response.json((0, response_1.successResponse)((0, response_1.buildListData)(items)));
     }));
@@ -87,10 +83,7 @@ function createNotificationCenterRouter() {
         const payload = (0, validation_1.validateBody)(channelSchema.partial().omit({ type: true }), request.body);
         const repository = data_source_1.appDataSource.getRepository(notification_center_channel_entity_1.NotificationCenterChannelEntity);
         const current = await repository.findOne({
-            where: {
-                id: channelId,
-                user_id: userId,
-            },
+            where: { id: channelId, user_id: userId },
         });
         if (!current) {
             throw new app_error_1.AppError('notification_channel_not_found', 404, 404);
@@ -110,22 +103,20 @@ function createNotificationCenterRouter() {
         const userId = (0, request_1.requireAuthUser)(request);
         const sceneRepo = data_source_1.appDataSource.getRepository(notification_center_scene_entity_1.NotificationCenterSceneEntity);
         const relationRepo = data_source_1.appDataSource.getRepository(notification_center_scene_channel_entity_1.NotificationCenterSceneChannelEntity);
-        const scenes = await sceneRepo.find({
-            where: {
-                user_id: userId,
-            },
-            order: {
-                scene_id: 'ASC',
-            },
-        });
-        const relations = await relationRepo.find({
-            where: {
-                user_id: userId,
-            },
-        });
+        const [scenes, relations] = await Promise.all([
+            sceneRepo.find({
+                where: { user_id: userId },
+                order: { scene_id: 'ASC' },
+            }),
+            relationRepo.find({
+                where: { user_id: userId },
+            }),
+        ]);
         const items = scenes.map((scene) => ({
             ...scene,
-            channels: relations.filter((relation) => relation.scene_id === scene.scene_id).map((relation) => relation.channel_type),
+            channels: relations
+                .filter((relation) => relation.scene_id === scene.scene_id)
+                .map((relation) => relation.channel_type),
         }));
         response.json((0, response_1.successResponse)((0, response_1.buildListData)(items)));
     }));
@@ -136,10 +127,7 @@ function createNotificationCenterRouter() {
         const sceneRepo = data_source_1.appDataSource.getRepository(notification_center_scene_entity_1.NotificationCenterSceneEntity);
         const relationRepo = data_source_1.appDataSource.getRepository(notification_center_scene_channel_entity_1.NotificationCenterSceneChannelEntity);
         const current = await sceneRepo.findOne({
-            where: {
-                scene_id: sceneId,
-                user_id: userId,
-            },
+            where: { scene_id: sceneId, user_id: userId },
         });
         if (!current) {
             throw new app_error_1.AppError('notification_scene_not_found', 404, 404);
@@ -163,10 +151,7 @@ function createNotificationCenterRouter() {
             })));
         }
         const channels = payload.channels ?? (await relationRepo.find({
-            where: {
-                scene_id: current.scene_id,
-                user_id: userId,
-            },
+            where: { scene_id: current.scene_id, user_id: userId },
         })).map((item) => item.channel_type);
         response.json((0, response_1.successResponse)({
             ...next,
@@ -177,12 +162,8 @@ function createNotificationCenterRouter() {
         const userId = (0, request_1.requireAuthUser)(request);
         const repository = data_source_1.appDataSource.getRepository(notification_center_template_entity_1.NotificationCenterTemplateEntity);
         const items = await repository.find({
-            where: {
-                user_id: userId,
-            },
-            order: {
-                scene_id: 'ASC',
-            },
+            where: { user_id: userId },
+            order: { scene_id: 'ASC' },
         });
         response.json((0, response_1.successResponse)((0, response_1.buildListData)(items)));
     }));
@@ -192,10 +173,7 @@ function createNotificationCenterRouter() {
         const payload = (0, validation_1.validateBody)(templateSchema, request.body);
         const repository = data_source_1.appDataSource.getRepository(notification_center_template_entity_1.NotificationCenterTemplateEntity);
         const current = await repository.findOne({
-            where: {
-                scene_id: sceneId,
-                user_id: userId,
-            },
+            where: { scene_id: sceneId, user_id: userId },
         });
         if (!current) {
             throw new app_error_1.AppError('notification_template_not_found', 404, 404);
@@ -211,24 +189,30 @@ function createNotificationCenterRouter() {
         const userId = (0, request_1.requireAuthUser)(request);
         const { page, pageSize, skip } = (0, pagination_1.parsePagination)(request.query);
         const sceneId = String(request.query.sceneId ?? '').trim();
+        const sceneIds = String(request.query.sceneIds ?? '')
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
         const status = String(request.query.status ?? '').trim();
         const channel = String(request.query.channel ?? '').trim();
         const repository = data_source_1.appDataSource.getRepository(notification_center_log_entity_1.NotificationCenterLogEntity);
         const allItems = await repository.find({
-            where: {
-                user_id: userId,
-            },
-            order: {
-                created_at: 'DESC',
-            },
+            where: { user_id: userId },
+            order: { created_at: 'DESC' },
         });
         const filtered = allItems
-            .filter((item) => !sceneId || item.scene_id === sceneId)
+            .filter((item) => {
+            if (sceneId && item.scene_id !== sceneId) {
+                return false;
+            }
+            if (sceneIds.length && (!item.scene_id || !sceneIds.includes(item.scene_id))) {
+                return false;
+            }
+            return true;
+        })
             .filter((item) => !status || item.status === status)
             .filter((item) => !channel || item.channel === channel);
-        const items = filtered.slice(skip, skip + pageSize);
-        const total = filtered.length;
-        response.json((0, response_1.successResponse)((0, response_1.buildListData)(items, page, pageSize, total)));
+        response.json((0, response_1.successResponse)((0, response_1.buildListData)(filtered.slice(skip, skip + pageSize), page, pageSize, filtered.length)));
     }));
     router.post('/actions/test-channel', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);
@@ -236,15 +220,13 @@ function createNotificationCenterRouter() {
         const channelRepo = data_source_1.appDataSource.getRepository(notification_center_channel_entity_1.NotificationCenterChannelEntity);
         const logRepo = data_source_1.appDataSource.getRepository(notification_center_log_entity_1.NotificationCenterLogEntity);
         const channel = await channelRepo.findOne({
-            where: {
-                user_id: userId,
-                channel_type: payload.channel,
-            },
+            where: { user_id: userId, channel_type: payload.channel },
         });
         const success = Boolean(channel?.enabled);
+        const channelLabel = channel?.label ?? payload.channel;
         const message = success
-            ? `${channel?.label ?? payload.channel} 测试发送已记录。`
-            : `${channel?.label ?? payload.channel} 未启用或配置不完整，测试发送已跳过。`;
+            ? `${channelLabel} 测试发送已记录。`
+            : `${channelLabel} 未启用或配置不完整，测试发送已跳过。`;
         const logEntry = await logRepo.save(logRepo.create({
             user_id: userId,
             channel: payload.channel,

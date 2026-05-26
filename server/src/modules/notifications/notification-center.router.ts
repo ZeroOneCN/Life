@@ -2,19 +2,19 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import { appDataSource } from '../../db/data-source';
+import { AppError } from '../../shared/errors/app-error';
+import { asyncHandler } from '../../shared/http/async-handler';
+import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
+import { requireAuthUser } from '../../shared/http/request';
+import { buildListData, successResponse } from '../../shared/http/response';
+import { validateBody } from '../../shared/http/validation';
+import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { parsePagination } from '../../shared/utils/pagination';
 import { NotificationCenterChannelEntity } from './entities/notification-center-channel.entity';
-import { NotificationCenterSceneEntity } from './entities/notification-center-scene.entity';
-import { NotificationCenterTemplateEntity } from './entities/notification-center-template.entity';
 import { NotificationCenterLogEntity } from './entities/notification-center-log.entity';
 import { NotificationCenterSceneChannelEntity } from './entities/notification-center-scene-channel.entity';
-import { asyncHandler } from '../../shared/http/async-handler';
-import { requireAuthUser } from '../../shared/http/request';
-import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
-import { successResponse, buildListData } from '../../shared/http/response';
-import { validateBody } from '../../shared/http/validation';
-import { parsePagination } from '../../shared/utils/pagination';
-import { AppError } from '../../shared/errors/app-error';
-import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { NotificationCenterSceneEntity } from './entities/notification-center-scene.entity';
+import { NotificationCenterTemplateEntity } from './entities/notification-center-template.entity';
 
 const channelSchema = z.object({
   type: z.enum(['email', 'wechatWork', 'webhook']),
@@ -67,12 +67,8 @@ export function createNotificationCenterRouter() {
     const userId = requireAuthUser(request);
     const repository = appDataSource.getRepository(NotificationCenterChannelEntity);
     const items = await repository.find({
-      where: {
-        user_id: userId,
-      },
-      order: {
-        channel_type: 'ASC',
-      },
+      where: { user_id: userId },
+      order: { channel_type: 'ASC' },
     });
 
     response.json(successResponse(buildListData(items)));
@@ -101,10 +97,7 @@ export function createNotificationCenterRouter() {
     const payload = validateBody(channelSchema.partial().omit({ type: true }), request.body);
     const repository = appDataSource.getRepository(NotificationCenterChannelEntity);
     const current = await repository.findOne({
-      where: {
-        id: channelId,
-        user_id: userId,
-      },
+      where: { id: channelId, user_id: userId },
     });
 
     if (!current) {
@@ -128,23 +121,21 @@ export function createNotificationCenterRouter() {
     const userId = requireAuthUser(request);
     const sceneRepo = appDataSource.getRepository(NotificationCenterSceneEntity);
     const relationRepo = appDataSource.getRepository(NotificationCenterSceneChannelEntity);
-    const scenes = await sceneRepo.find({
-      where: {
-        user_id: userId,
-      },
-      order: {
-        scene_id: 'ASC',
-      },
-    });
-    const relations = await relationRepo.find({
-      where: {
-        user_id: userId,
-      },
-    });
+    const [scenes, relations] = await Promise.all([
+      sceneRepo.find({
+        where: { user_id: userId },
+        order: { scene_id: 'ASC' },
+      }),
+      relationRepo.find({
+        where: { user_id: userId },
+      }),
+    ]);
 
     const items = scenes.map((scene) => ({
       ...scene,
-      channels: relations.filter((relation) => relation.scene_id === scene.scene_id).map((relation) => relation.channel_type),
+      channels: relations
+        .filter((relation) => relation.scene_id === scene.scene_id)
+        .map((relation) => relation.channel_type),
     }));
 
     response.json(successResponse(buildListData(items)));
@@ -157,10 +148,7 @@ export function createNotificationCenterRouter() {
     const sceneRepo = appDataSource.getRepository(NotificationCenterSceneEntity);
     const relationRepo = appDataSource.getRepository(NotificationCenterSceneChannelEntity);
     const current = await sceneRepo.findOne({
-      where: {
-        scene_id: sceneId,
-        user_id: userId,
-      },
+      where: { scene_id: sceneId, user_id: userId },
     });
 
     if (!current) {
@@ -189,10 +177,7 @@ export function createNotificationCenterRouter() {
     }
 
     const channels = payload.channels ?? (await relationRepo.find({
-      where: {
-        scene_id: current.scene_id,
-        user_id: userId,
-      },
+      where: { scene_id: current.scene_id, user_id: userId },
     })).map((item) => item.channel_type);
 
     response.json(successResponse({
@@ -205,12 +190,8 @@ export function createNotificationCenterRouter() {
     const userId = requireAuthUser(request);
     const repository = appDataSource.getRepository(NotificationCenterTemplateEntity);
     const items = await repository.find({
-      where: {
-        user_id: userId,
-      },
-      order: {
-        scene_id: 'ASC',
-      },
+      where: { user_id: userId },
+      order: { scene_id: 'ASC' },
     });
 
     response.json(successResponse(buildListData(items)));
@@ -222,10 +203,7 @@ export function createNotificationCenterRouter() {
     const payload = validateBody(templateSchema, request.body);
     const repository = appDataSource.getRepository(NotificationCenterTemplateEntity);
     const current = await repository.findOne({
-      where: {
-        scene_id: sceneId,
-        user_id: userId,
-      },
+      where: { scene_id: sceneId, user_id: userId },
     });
 
     if (!current) {
@@ -245,25 +223,39 @@ export function createNotificationCenterRouter() {
     const userId = requireAuthUser(request);
     const { page, pageSize, skip } = parsePagination(request.query as Record<string, unknown>);
     const sceneId = String(request.query.sceneId ?? '').trim();
+    const sceneIds = String(request.query.sceneIds ?? '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
     const status = String(request.query.status ?? '').trim();
     const channel = String(request.query.channel ?? '').trim();
     const repository = appDataSource.getRepository(NotificationCenterLogEntity);
     const allItems = await repository.find({
-      where: {
-        user_id: userId,
-      },
-      order: {
-        created_at: 'DESC',
-      },
+      where: { user_id: userId },
+      order: { created_at: 'DESC' },
     });
+
     const filtered = allItems
-      .filter((item) => !sceneId || item.scene_id === sceneId)
+      .filter((item) => {
+        if (sceneId && item.scene_id !== sceneId) {
+          return false;
+        }
+
+        if (sceneIds.length && (!item.scene_id || !sceneIds.includes(item.scene_id))) {
+          return false;
+        }
+
+        return true;
+      })
       .filter((item) => !status || item.status === status)
       .filter((item) => !channel || item.channel === channel);
-    const items = filtered.slice(skip, skip + pageSize);
-    const total = filtered.length;
 
-    response.json(successResponse(buildListData(items, page, pageSize, total)));
+    response.json(successResponse(buildListData(
+      filtered.slice(skip, skip + pageSize),
+      page,
+      pageSize,
+      filtered.length,
+    )));
   }));
 
   router.post('/actions/test-channel', asyncHandler(async (request: AuthenticatedRequest, response) => {
@@ -273,16 +265,14 @@ export function createNotificationCenterRouter() {
     const logRepo = appDataSource.getRepository(NotificationCenterLogEntity);
 
     const channel = await channelRepo.findOne({
-      where: {
-        user_id: userId,
-        channel_type: payload.channel,
-      },
+      where: { user_id: userId, channel_type: payload.channel },
     });
 
     const success = Boolean(channel?.enabled);
+    const channelLabel = channel?.label ?? payload.channel;
     const message = success
-      ? `${channel?.label ?? payload.channel} 测试发送已记录。`
-      : `${channel?.label ?? payload.channel} 未启用或配置不完整，测试发送已跳过。`;
+      ? `${channelLabel} 测试发送已记录。`
+      : `${channelLabel} 未启用或配置不完整，测试发送已跳过。`;
 
     const logEntry = await logRepo.save(logRepo.create({
       user_id: userId,

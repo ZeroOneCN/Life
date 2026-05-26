@@ -258,14 +258,38 @@ function createCardRouter() {
     router.get('/cards', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);
         const { page, pageSize, skip } = (0, pagination_1.parsePagination)(request.query);
+        const keyword = String(request.query.keyword ?? '').trim().toLowerCase();
+        const carrierId = String(request.query.carrierId ?? '').trim();
+        const location = String(request.query.location ?? '').trim().toLowerCase();
+        const minBalance = Number(request.query.minBalance ?? '');
+        const maxBalance = Number(request.query.maxBalance ?? '');
         const repository = data_source_1.appDataSource.getRepository(life_card_record_entity_1.LifeCardRecordEntity);
-        const [items, total] = await repository.findAndCount({
+        const items = await repository.find({
             where: { user_id: userId },
             order: { updated_at: 'DESC' },
-            skip,
-            take: pageSize,
         });
-        response.json((0, response_1.successResponse)((0, response_1.buildListData)(items.map(mapCard), page, pageSize, total)));
+        const filtered = items.filter((item) => {
+            if (keyword) {
+                const haystack = [item.phone_number, item.carrier_name, item.data_plan, item.notes].join(' ').toLowerCase();
+                if (!haystack.includes(keyword)) {
+                    return false;
+                }
+            }
+            if (carrierId && item.carrier_id !== carrierId) {
+                return false;
+            }
+            if (location && !item.location.toLowerCase().includes(location)) {
+                return false;
+            }
+            if (Number.isFinite(minBalance) && Number(item.balance) < minBalance) {
+                return false;
+            }
+            if (Number.isFinite(maxBalance) && Number(item.balance) > maxBalance) {
+                return false;
+            }
+            return true;
+        });
+        response.json((0, response_1.successResponse)((0, response_1.buildListData)(filtered.slice(skip, skip + pageSize).map(mapCard), page, pageSize, filtered.length)));
     }));
     router.post('/cards', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);
@@ -348,14 +372,34 @@ function createCardRouter() {
     router.get('/bills', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);
         const { page, pageSize, skip } = (0, pagination_1.parsePagination)(request.query);
+        const simId = String(request.query.simId ?? '').trim();
+        const carrierName = String(request.query.carrierName ?? '').trim();
+        const billingMonth = String(request.query.billingMonth ?? '').trim();
+        const keyword = String(request.query.keyword ?? '').trim().toLowerCase();
         const repository = data_source_1.appDataSource.getRepository(life_card_bill_record_entity_1.LifeCardBillRecordEntity);
-        const [items, total] = await repository.findAndCount({
+        const items = await repository.find({
             where: { user_id: userId },
             order: { billing_month: 'DESC', updated_at: 'DESC' },
-            skip,
-            take: pageSize,
         });
-        response.json((0, response_1.successResponse)((0, response_1.buildListData)(items.map(mapBill), page, pageSize, total)));
+        const filtered = items.filter((item) => {
+            if (simId && item.sim_id !== simId) {
+                return false;
+            }
+            if (carrierName && item.carrier_name !== carrierName) {
+                return false;
+            }
+            if (billingMonth && item.billing_month !== (0, date_1.normalizeMonth)(billingMonth)) {
+                return false;
+            }
+            if (keyword) {
+                const haystack = [item.phone_number, item.carrier_name, item.note, item.billing_month].join(' ').toLowerCase();
+                if (!haystack.includes(keyword)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+        response.json((0, response_1.successResponse)((0, response_1.buildListData)(filtered.slice(skip, skip + pageSize).map(mapBill), page, pageSize, filtered.length)));
     }));
     router.post('/bills', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);
@@ -416,14 +460,26 @@ function createCardRouter() {
     router.get('/recharges', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);
         const { page, pageSize, skip } = (0, pagination_1.parsePagination)(request.query);
+        const simId = String(request.query.simId ?? '').trim();
+        const keyword = String(request.query.keyword ?? '').trim().toLowerCase();
         const repository = data_source_1.appDataSource.getRepository(life_card_recharge_record_entity_1.LifeCardRechargeRecordEntity);
-        const [items, total] = await repository.findAndCount({
+        const items = await repository.find({
             where: { user_id: userId },
             order: { recharge_date: 'DESC', updated_at: 'DESC' },
-            skip,
-            take: pageSize,
         });
-        response.json((0, response_1.successResponse)((0, response_1.buildListData)(items.map(mapRecharge), page, pageSize, total)));
+        const filtered = items.filter((item) => {
+            if (simId && item.sim_id !== simId) {
+                return false;
+            }
+            if (keyword) {
+                const haystack = [item.phone_number, item.note, item.recharge_date].join(' ').toLowerCase();
+                if (!haystack.includes(keyword)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+        response.json((0, response_1.successResponse)((0, response_1.buildListData)(filtered.slice(skip, skip + pageSize).map(mapRecharge), page, pageSize, filtered.length)));
     }));
     router.post('/recharges', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);
@@ -588,6 +644,10 @@ function createCardRouter() {
             balance_threshold: 10,
             notification_days_before: 3,
         });
+        await (0, notification_1.syncNotificationScenesEnabled)(userId, [
+            { sceneId: 'card.balance_low', enabled: settings.balance_low_enabled },
+            { sceneId: 'card.billing_upcoming', enabled: settings.billing_upcoming_enabled },
+        ]);
         response.json((0, response_1.successResponse)({
             balanceLowEnabled: settings.balance_low_enabled,
             billingUpcomingEnabled: settings.billing_upcoming_enabled,

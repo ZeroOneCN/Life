@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { SubscriptionCategoriesSection } from '../../components/finance/SubscriptionCategoriesSection';
 import { SubscriptionDashboardSection } from '../../components/finance/SubscriptionDashboardSection';
@@ -6,20 +6,17 @@ import { SubscriptionRecordsSection } from '../../components/finance/Subscriptio
 import { SubscriptionSettingsSection } from '../../components/finance/SubscriptionSettingsSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, Tag, Toast, useToastState } from '../../components/ui';
-import { useLocalStorageState } from '../../hooks/useLocalStorageState';
 import { usePageTab } from '../../hooks/usePageTab';
-import {
-  applySubscriptionReminderMarkers,
-  buildDueSubscriptionReminders,
-  buildInitialSubscriptionState,
-  buildSubscriptionOverview,
-  formatSubscriptionAmount,
-  normalizeSubscriptionPageState,
-} from '../../services/subscription';
-import { enqueueSceneNotification, updateSceneConfig } from '../../services/notificationCenter';
-import type { SubscriptionPageState, SubscriptionTab } from '../../types/subscription';
-
-const STORAGE_KEY = 'lifeos_finance_subscription_page';
+import { buildApiErrorMessage } from '../../lib/api';
+import { getNotificationLogs, hydrateNotificationCenterState } from '../../services/notificationCenter';
+import { subscriptionApi } from '../../services/subscriptionApi';
+import type {
+  SubscriptionCategory,
+  SubscriptionOverviewSummary,
+  SubscriptionPageState,
+  SubscriptionRecord,
+  SubscriptionTab,
+} from '../../types/subscription';
 
 const TAB_OPTIONS: Array<{ value: SubscriptionTab; label: string }> = [
   { value: 'records', label: '订阅记录' },
@@ -28,119 +25,221 @@ const TAB_OPTIONS: Array<{ value: SubscriptionTab; label: string }> = [
   { value: 'settings', label: '提醒设置' },
 ];
 
+const EMPTY_OVERVIEW: SubscriptionOverviewSummary = {
+  totalCount: 0,
+  activeCount: 0,
+  upcomingCount: 0,
+  expiredCount: 0,
+  autoRenewCount: 0,
+  monthlyEstimate: 0,
+  annualEstimate: 0,
+  nearestExpiryDate: '',
+};
+
+const EMPTY_SETTINGS: SubscriptionPageState['settings'] = {
+  recordsKeyword: '',
+  recordsCategoryId: 'all',
+  recordsStatus: 'all',
+  recordsAutoRenewFilter: 'all',
+  recordsExpiryStartDate: '',
+  recordsExpiryEndDate: '',
+  dashboardRangeDays: 90,
+  reminderEnabled: true,
+  expiryDayReminderEnabled: true,
+  leadDays: 7,
+  includeAutoRenewInReminders: false,
+};
+
+function findCreated<T extends { id: string }>(previous: T[], next: T[]) {
+  return next.filter((item) => !previous.some((record) => record.id === item.id));
+}
+
+function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
+  return previous.filter((item) => !next.some((record) => record.id === item.id)).map((item) => item.id);
+}
+
 export default function SubscriptionPage() {
-  const [data, setData] = useLocalStorageState<SubscriptionPageState>(STORAGE_KEY, buildInitialSubscriptionState);
   const [tab, setTab] = usePageTab<SubscriptionTab>('records', TAB_OPTIONS.map((item) => item.value), 'subscriptionTab');
   const { toast, showToast } = useToastState();
-  const normalizedData = useMemo(() => normalizeSubscriptionPageState(data), [data]);
+  const [records, setRecords] = useState<SubscriptionRecord[]>([]);
+  const [categories, setCategories] = useState<SubscriptionCategory[]>([]);
+  const [overview, setOverview] = useState<SubscriptionOverviewSummary>(EMPTY_OVERVIEW);
+  const [settings, setSettings] = useState<SubscriptionPageState['settings']>(EMPTY_SETTINGS);
+  const [loading, setLoading] = useState(true);
+  const [refreshToken, setRefreshToken] = useState(0);
+
+  const reload = useCallback(async () => {
+    const [
+      nextRecords,
+      nextCategories,
+      nextOverview,
+      nextSettings,
+    ] = await Promise.all([
+      subscriptionApi.listRecords({ page: 1, page_size: 1000 }),
+      subscriptionApi.listCategories(),
+      subscriptionApi.getOverview(),
+      subscriptionApi.getSettings(),
+    ]);
+
+    setRecords(nextRecords.items);
+    setCategories(nextCategories.items);
+    setOverview(nextOverview);
+    setSettings(nextSettings);
+  }, []);
+
+  const refreshPage = useCallback(() => {
+    setRefreshToken((current) => current + 1);
+  }, []);
 
   useEffect(() => {
-    const shouldSync = JSON.stringify(normalizedData) !== JSON.stringify(data);
+    let cancelled = false;
 
-    if (shouldSync) {
-      setData(normalizedData);
+    const load = async () => {
+      setLoading(true);
+      try {
+        await reload();
+        await hydrateNotificationCenterState();
+      } catch (error) {
+        if (!cancelled) {
+          showToast(buildApiErrorMessage(error, '订阅中心加载失败。'), 'error');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reload, refreshToken, showToast]);
+
+  const updateSettings = useCallback(async (patch: Partial<SubscriptionPageState['settings']>) => {
+    try {
+      const next = await subscriptionApi.updateSettings(patch);
+      setSettings(next);
+      await hydrateNotificationCenterState();
+      showToast('订阅提醒设置已更新。');
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '订阅提醒设置更新失败。'), 'error');
     }
-  }, [data, normalizedData, setData]);
+  }, [showToast]);
 
-  const overview = useMemo(
-    () => buildSubscriptionOverview(normalizedData.records, normalizedData.settings.leadDays),
-    [normalizedData.records, normalizedData.settings.leadDays],
-  );
+  const handleRecordsChange = useCallback(async (updater: (items: SubscriptionRecord[]) => SubscriptionRecord[]) => {
+    const previous = records;
+    const next = updater(previous);
+    setRecords(next);
 
-  useEffect(() => {
-    void updateSceneConfig('subscription.renewal_upcoming', { enabled: normalizedData.settings.reminderEnabled });
-    void updateSceneConfig('subscription.expired', { enabled: normalizedData.settings.expiryDayReminderEnabled });
-  }, [normalizedData.settings.expiryDayReminderEnabled, normalizedData.settings.reminderEnabled]);
+    try {
+      const created = findCreated(previous, next);
+      const deletedIds = findDeletedIds(previous, next);
+      const updated = next.filter((item) => previous.some((record) => record.id === item.id && JSON.stringify(record) !== JSON.stringify(item)));
 
-  useEffect(() => {
-    const dueReminders = buildDueSubscriptionReminders(normalizedData.records, normalizedData.settings);
-
-    if (!dueReminders.length) {
-      return;
+      await Promise.all([
+        ...created.map((item) => subscriptionApi.createRecord({
+          serviceName: item.serviceName,
+          planName: item.planName,
+          categoryId: item.categoryId,
+          startDate: item.startDate,
+          endDate: item.endDate,
+          billingCycle: item.billingCycle,
+          cyclePrice: item.cyclePrice,
+          autoRenew: item.autoRenew,
+          notes: item.notes,
+        })),
+        ...updated.map((item) => subscriptionApi.updateRecord(item.id, {
+          serviceName: item.serviceName,
+          planName: item.planName,
+          categoryId: item.categoryId,
+          startDate: item.startDate,
+          endDate: item.endDate,
+          billingCycle: item.billingCycle,
+          cyclePrice: item.cyclePrice,
+          autoRenew: item.autoRenew,
+          notes: item.notes,
+        })),
+        ...deletedIds.map((id) => subscriptionApi.deleteRecord(id)),
+      ]);
+      await reload();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '订阅记录保存失败。'), 'error');
+      await reload();
     }
+  }, [records, reload, showToast]);
 
-    void Promise.all(
-      dueReminders.map((item) => enqueueSceneNotification(item.sceneId, { message: item.message })),
-    ).then(() => {
-      setData((previous) => ({
-        ...previous,
-        records: applySubscriptionReminderMarkers(previous.records, dueReminders),
-      }));
-    });
-  }, [normalizedData.records, normalizedData.settings, setData]);
+  const handleCategoriesChange = useCallback(async (updater: (items: SubscriptionCategory[]) => SubscriptionCategory[]) => {
+    const previous = categories;
+    const next = updater(previous);
+    setCategories(next);
 
-  const updateSettings = (patch: Partial<SubscriptionPageState['settings']>) => {
-    setData((previous) => ({
-      ...previous,
-      settings: {
-        ...previous.settings,
-        ...patch,
-      },
-    }));
-  };
+    try {
+      const created = findCreated(previous, next);
+      const deletedIds = findDeletedIds(previous, next);
+      const updated = next.filter((item) => previous.some((record) => record.id === item.id && JSON.stringify(record) !== JSON.stringify(item)));
+
+      await Promise.all([
+        ...created.map((item) => subscriptionApi.createCategory({
+          name: item.name,
+          description: item.description,
+        })),
+        ...updated.map((item) => subscriptionApi.updateCategory(item.id, {
+          name: item.name,
+          description: item.description,
+        })),
+        ...deletedIds.map((id) => subscriptionApi.deleteCategory(id)),
+      ]);
+      await reload();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '分类保存失败。'), 'error');
+      await reload();
+    }
+  }, [categories, reload, showToast]);
+
+  const summaryCards = useMemo(() => ([
+    { label: '总订阅数', value: `${overview.totalCount} 项` },
+    { label: '活跃订阅', value: `${overview.activeCount} 项` },
+    { label: '即将到期', value: `${overview.upcomingCount} 项` },
+    { label: '自动续费', value: `${overview.autoRenewCount} 项` },
+    { label: '月均支出', value: `¥${overview.monthlyEstimate.toFixed(2)}` },
+    { label: '年度支出', value: `¥${overview.annualEstimate.toFixed(2)}` },
+  ]), [overview]);
+
+  const recentLogs = useCallback(async () => getNotificationLogs({
+    page: 1,
+    pageSize: 8,
+    sceneIds: ['subscription.renewal_upcoming', 'subscription.expired'],
+  }), []);
 
   return (
     <div className="page-stack">
       <PageHeader
         title="服务订阅中心"
-        subtitle="把软件会员、内容订阅和云服务统一收进当前 LifeOS 财务体系，续费提醒和逾期日志都接到通知中心统一处理。"
+        subtitle={loading ? '正在从后端加载订阅记录、分类和提醒设置。' : '订阅中心已切换为后端唯一数据源。'}
+        actions={<Tag tone="blue">{loading ? '同步中' : '后端已接入'}</Tag>}
       />
 
-      <SectionCard
-        title="当前订阅摘要"
-        description="这里会从整个订阅池里提炼出最值得关注的状态，方便快速看清支出压力、自动续费比例和临近到期情况。"
-        action={<Tag tone="blue">{overview.nearestExpiryDate ? `最近到期：${overview.nearestExpiryDate}` : '暂无到期记录'}</Tag>}
-      >
-        <div className="subscription-context-summary">
-          <div className="callout callout-neutral">
-            <strong>续费提醒规则</strong>
-            <span>
-              {normalizedData.settings.reminderEnabled
-                ? `提前 ${normalizedData.settings.leadDays} 天提醒`
-                : '续费提醒已关闭'}
-            </span>
-          </div>
-          <div className="callout callout-neutral">
-            <strong>到期提醒</strong>
-            <span>{normalizedData.settings.expiryDayReminderEnabled ? '到期当天与逾期都会记录' : '到期提醒已关闭'}</span>
-          </div>
-          <div className="callout callout-neutral">
-            <strong>自动续费策略</strong>
-            <span>{normalizedData.settings.includeAutoRenewInReminders ? '自动续费项也纳入提醒' : '默认跳过自动续费项'}</span>
-          </div>
-        </div>
-      </SectionCard>
-
-      <StatGrid
-        className="subscription-top-summary"
-        items={[
-          { label: '总订阅数', value: `${overview.totalCount} 项` },
-          { label: '活跃订阅', value: `${overview.activeCount} 项` },
-          { label: '即将到期', value: `${overview.upcomingCount} 项`, accent: 'var(--color-warning)' },
-          { label: '自动续费', value: `${overview.autoRenewCount} 项` },
-          { label: '月均支出', value: formatSubscriptionAmount(overview.monthlyEstimate) },
-          { label: '年度估算', value: formatSubscriptionAmount(overview.annualEstimate) },
-        ]}
-      />
+      <StatGrid className="subscription-top-summary" items={summaryCards} />
 
       <SectionCard
         title="业务视图"
-        description="订阅记录、统计、分类和提醒设置共用同一套本地状态模型与通知中心联动规则。"
+        description="订阅记录、看板、分类与提醒设置共用同一套后端数据模型，并统一联动通知中心。"
       >
         <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as SubscriptionTab)} />
       </SectionCard>
 
       {tab === 'records' ? (
         <SubscriptionRecordsSection
-          records={normalizedData.records}
-          categories={normalizedData.categories}
-          settings={normalizedData.settings}
-          onSettingsChange={updateSettings}
+          records={records}
+          categories={categories}
+          settings={settings}
+          onSettingsChange={(patch) => {
+            void updateSettings(patch);
+          }}
           onChangeRecords={(updater) => {
-            setData((previous) => ({
-              ...previous,
-              records: updater(previous.records),
-            }));
+            void handleRecordsChange(updater);
           }}
           showToast={showToast}
         />
@@ -148,22 +247,21 @@ export default function SubscriptionPage() {
 
       {tab === 'dashboard' ? (
         <SubscriptionDashboardSection
-          records={normalizedData.records}
-          categories={normalizedData.categories}
-          settings={normalizedData.settings}
-          onSettingsChange={updateSettings}
+          records={records}
+          categories={categories}
+          settings={settings}
+          onSettingsChange={(patch) => {
+            void updateSettings(patch);
+          }}
         />
       ) : null}
 
       {tab === 'categories' ? (
         <SubscriptionCategoriesSection
-          categories={normalizedData.categories}
-          records={normalizedData.records}
+          categories={categories}
+          records={records}
           onChangeCategories={(updater) => {
-            setData((previous) => ({
-              ...previous,
-              categories: updater(previous.categories),
-            }));
+            void handleCategoriesChange(updater);
           }}
           showToast={showToast}
         />
@@ -171,8 +269,10 @@ export default function SubscriptionPage() {
 
       {tab === 'settings' ? (
         <SubscriptionSettingsSection
-          settings={normalizedData.settings}
-          onSettingsChange={updateSettings}
+          settings={settings}
+          onSettingsChange={(patch) => {
+            void updateSettings(patch);
+          }}
         />
       ) : null}
 

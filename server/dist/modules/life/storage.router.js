@@ -115,18 +115,46 @@ function createStorageRouter() {
     router.get('/items', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);
         const { page, pageSize, skip } = (0, pagination_1.parsePagination)(request.query);
+        const keyword = String(request.query.keyword ?? '').trim().toLowerCase();
+        const status = String(request.query.status ?? '').trim();
+        const purchaseStartDate = String(request.query.purchaseStartDate ?? '').trim();
+        const purchaseEndDate = String(request.query.purchaseEndDate ?? '').trim();
+        const minPrice = Number(request.query.minPrice ?? '');
+        const maxPrice = Number(request.query.maxPrice ?? '');
         const repository = data_source_1.appDataSource.getRepository(life_storage_item_entity_1.LifeStorageItemEntity);
-        const [items, total] = await repository.findAndCount({
+        const items = await repository.find({
             where: {
                 user_id: userId,
             },
             order: {
                 updated_at: 'DESC',
             },
-            skip,
-            take: pageSize,
         });
-        response.json((0, response_1.successResponse)((0, response_1.buildListData)(items.map(mapStorageItem), page, pageSize, total)));
+        const filtered = items.filter((item) => {
+            if (status && status !== 'all' && item.status !== status) {
+                return false;
+            }
+            if (keyword) {
+                const haystack = [item.item_name, item.notes].join(' ').toLowerCase();
+                if (!haystack.includes(keyword)) {
+                    return false;
+                }
+            }
+            if (purchaseStartDate && (0, dayjs_1.default)(item.purchase_date).isBefore(purchaseStartDate, 'day')) {
+                return false;
+            }
+            if (purchaseEndDate && (0, dayjs_1.default)(item.purchase_date).isAfter(purchaseEndDate, 'day')) {
+                return false;
+            }
+            if (Number.isFinite(minPrice) && Number(item.purchase_price) < minPrice) {
+                return false;
+            }
+            if (Number.isFinite(maxPrice) && Number(item.purchase_price) > maxPrice) {
+                return false;
+            }
+            return true;
+        });
+        response.json((0, response_1.successResponse)((0, response_1.buildListData)(filtered.slice(skip, skip + pageSize).map(mapStorageItem), page, pageSize, filtered.length)));
     }));
     router.post('/items', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);

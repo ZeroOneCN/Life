@@ -13,6 +13,34 @@ export interface SendNotificationSceneOptions {
   preferredChannels?: string[];
 }
 
+export async function syncNotificationSceneEnabled(userId: string, sceneId: string, enabled: boolean) {
+  const sceneRepo = appDataSource.getRepository(NotificationCenterSceneEntity);
+  const scene = await sceneRepo.findOne({
+    where: {
+      user_id: userId,
+      scene_id: sceneId,
+    },
+  });
+
+  if (!scene) {
+    return null;
+  }
+
+  if (scene.enabled === enabled) {
+    return scene;
+  }
+
+  scene.enabled = enabled;
+  return sceneRepo.save(scene);
+}
+
+export async function syncNotificationScenesEnabled(
+  userId: string,
+  scenes: Array<{ sceneId: string; enabled: boolean }>,
+) {
+  return Promise.all(scenes.map((scene) => syncNotificationSceneEnabled(userId, scene.sceneId, scene.enabled)));
+}
+
 export async function sendNotificationSceneLogs(options: SendNotificationSceneOptions) {
   const sceneRepo = appDataSource.getRepository(NotificationCenterSceneEntity);
   const relationRepo = appDataSource.getRepository(NotificationCenterSceneChannelEntity);

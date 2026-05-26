@@ -16,22 +16,6 @@ let FinanceLoanSettingEntity = class FinanceLoanSettingEntity extends user_setti
 };
 exports.FinanceLoanSettingEntity = FinanceLoanSettingEntity;
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 36, nullable: true }),
-    __metadata("design:type", Object)
-], FinanceLoanSettingEntity.prototype, "active_user_id", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 36, nullable: true }),
-    __metadata("design:type", Object)
-], FinanceLoanSettingEntity.prototype, "bills_user_id", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 36, nullable: true }),
-    __metadata("design:type", Object)
-], FinanceLoanSettingEntity.prototype, "repayments_user_id", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 36, nullable: true }),
-    __metadata("design:type", Object)
-], FinanceLoanSettingEntity.prototype, "statistics_user_id", void 0);
-__decorate([
     (0, typeorm_1.Column)({ type: 'tinyint', width: 1, default: 1 }),
     __metadata("design:type", Boolean)
 ], FinanceLoanSettingEntity.prototype, "repayment_reminder_enabled", void 0);

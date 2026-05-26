@@ -4,25 +4,15 @@ import dayjs from 'dayjs';
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard, StatGrid } from '../page';
 import { Btn, DataTable, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
-import {
-  STORAGE_ALL_STATUSES,
-  STORAGE_PAGE_SIZE,
-  archiveStorageItem,
-  calculateStorageDailyCost,
-  calculateStorageUsageDays,
-  createStorageItem,
-  filterStorageItems,
-  formatStorageMoney,
-  getStorageStatusLabel,
-  updateStorageItem,
-} from '../../services/storage';
+import { buildApiErrorMessage } from '../../lib/api';
+import { calculateStorageDailyCost, calculateStorageUsageDays, formatStorageMoney, getStorageStatusLabel } from '../../services/storage';
+import { storageApi } from '../../services/storageApi';
 import type { StorageItemDraft, StorageItemRecord, StoragePageSettings } from '../../types/storage';
 
 interface StorageItemsSectionProps {
-  items: StorageItemRecord[];
   settings: StoragePageSettings;
-  onChangeItems: (updater: (items: StorageItemRecord[]) => StorageItemRecord[]) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
+  onChanged: () => void;
 }
 
 interface StorageFormState {
@@ -32,6 +22,8 @@ interface StorageFormState {
   endDate: string;
   notes: string;
 }
+
+const PAGE_SIZE = 10;
 
 function createDefaultFormState(): StorageFormState {
   return {
@@ -78,78 +70,61 @@ function getStatusTone(status: StorageItemRecord['status']): 'green' | 'blue' {
 }
 
 export function StorageItemsSection({
-  items,
   settings,
-  onChangeItems,
   showToast,
+  onChanged,
 }: StorageItemsSectionProps) {
   const [form, setForm] = useState<StorageFormState>(createDefaultFormState);
   const [keyword, setKeyword] = useState('');
-  const [statusFilter, setStatusFilter] = useState<typeof STORAGE_ALL_STATUSES | StorageItemRecord['status']>('active');
+  const [statusFilter, setStatusFilter] = useState<'all' | StorageItemRecord['status']>('active');
   const [purchaseStartDate, setPurchaseStartDate] = useState('');
   const [purchaseEndDate, setPurchaseEndDate] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [page, setPage] = useState(1);
+  const [items, setItems] = useState<StorageItemRecord[]>([]);
+  const [total, setTotal] = useState(0);
   const [editingItem, setEditingItem] = useState<StorageItemRecord | null>(null);
   const [editingForm, setEditingForm] = useState<StorageFormState>(createDefaultFormState);
 
-  const filteredItems = useMemo(
-    () => filterStorageItems(items, {
-      keyword,
-      status: statusFilter,
-      purchaseStartDate,
-      purchaseEndDate,
-      minPrice,
-      maxPrice,
-    }).filter((item) => item.status === 'active'),
-    [items, keyword, maxPrice, minPrice, purchaseEndDate, purchaseStartDate, statusFilter],
-  );
+  const loadItems = async () => {
+    try {
+      const result = await storageApi.list({
+        page,
+        page_size: PAGE_SIZE,
+        keyword,
+        status: statusFilter,
+        purchaseStartDate,
+        purchaseEndDate,
+        minPrice,
+        maxPrice,
+      });
+      setItems(result.items);
+      setTotal(result.total);
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '物品列表加载失败。'), 'error');
+    }
+  };
+
+  useEffect(() => {
+    void loadItems();
+  }, [page, keyword, statusFilter, purchaseStartDate, purchaseEndDate, minPrice, maxPrice]);
 
   useEffect(() => {
     setPage(1);
   }, [keyword, statusFilter, purchaseStartDate, purchaseEndDate, minPrice, maxPrice]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / STORAGE_PAGE_SIZE));
-  const pageItems = useMemo(() => {
-    const startIndex = (page - 1) * STORAGE_PAGE_SIZE;
-    return filteredItems.slice(startIndex, startIndex + STORAGE_PAGE_SIZE);
-  }, [filteredItems, page]);
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
-
-  const summary = useMemo(() => filteredItems.reduce((result, item) => {
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const summary = useMemo(() => items.reduce((result, item) => {
     result.totalPurchase += item.purchasePrice;
     result.totalDailyCost += calculateStorageDailyCost(item);
     return result;
   }, {
     totalPurchase: 0,
     totalDailyCost: 0,
-  }), [filteredItems]);
+  }), [items]);
 
-  const hasActiveFilters = Boolean(
-    keyword
-    || statusFilter !== 'active'
-    || purchaseStartDate
-    || purchaseEndDate
-    || minPrice
-    || maxPrice,
-  );
-
-  const resetFilters = () => {
-    setKeyword('');
-    setStatusFilter('active');
-    setPurchaseStartDate('');
-    setPurchaseEndDate('');
-    setMinPrice('');
-    setMaxPrice('');
-  };
-
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const draft = parseDraft(form);
 
     if (!draft) {
@@ -157,12 +132,18 @@ export function StorageItemsSection({
       return;
     }
 
-    onChangeItems((current) => createStorageItem(current, draft, settings));
-    setForm(createDefaultFormState());
-    showToast('物品记录已保存。');
+    try {
+      await storageApi.create(draft);
+      setForm(createDefaultFormState());
+      showToast('物品记录已保存。');
+      onChanged();
+      await loadItems();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '创建物品失败。'), 'error');
+    }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingItem) {
       return;
     }
@@ -173,102 +154,49 @@ export function StorageItemsSection({
       return;
     }
 
-    onChangeItems((current) => updateStorageItem(current, editingItem.id, draft, settings));
-    setEditingItem(null);
-    showToast('物品记录已更新。');
+    try {
+      await storageApi.update(editingItem.id, draft);
+      setEditingItem(null);
+      showToast('物品记录已更新。');
+      onChanged();
+      await loadItems();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '更新物品失败。'), 'error');
+    }
   };
 
-  const columns = [
-    {
-      key: 'itemName',
-      title: '物品名称',
-      dataIndex: 'itemName' as const,
-      width: 160,
-      render: (_: unknown, row: StorageItemRecord) => (
-        <div className="storage-item-name">
-          <strong>{row.itemName}</strong>
-          <span>{row.notes || '暂无备注'}</span>
-        </div>
-      ),
-    },
-    {
-      key: 'purchaseDate',
-      title: '购买日期',
-      dataIndex: 'purchaseDate' as const,
-      width: 116,
-    },
-    {
-      key: 'purchasePrice',
-      title: '购买价格',
-      width: 110,
-      render: (_: unknown, row: StorageItemRecord) => formatStorageMoney(row.purchasePrice),
-    },
-    {
-      key: 'endDate',
-      title: '结束使用',
-      width: 116,
-      render: (_: unknown, row: StorageItemRecord) => row.endDate || '使用中',
-    },
-    {
-      key: 'usageDays',
-      title: '使用天数',
-      width: 96,
-      render: (_: unknown, row: StorageItemRecord) => `${calculateStorageUsageDays(row)} 天`,
-    },
-    {
-      key: 'dailyCost',
-      title: '当前日均成本',
-      width: 120,
-      render: (_: unknown, row: StorageItemRecord) => formatStorageMoney(calculateStorageDailyCost(row)),
-    },
-    {
-      key: 'status',
-      title: '状态',
-      width: 92,
-      render: (_: unknown, row: StorageItemRecord) => <Tag tone={getStatusTone(row.status)}>{getStorageStatusLabel(row.status)}</Tag>,
-    },
-    {
-      key: 'actions',
-      title: '操作',
-      width: 190,
-      render: (_: unknown, row: StorageItemRecord) => (
-        <div className="storage-table-actions">
-          <Btn
-            tone="ghost"
-            onClick={() => {
-              setEditingItem(row);
-              setEditingForm(buildFormState(row));
-            }}
-          >
-            编辑
-          </Btn>
-          <Btn
-            tone="secondary"
-            onClick={() => {
-              onChangeItems((current) => archiveStorageItem(current, row.id, dayjs().format('YYYY-MM-DD'), settings));
-              showToast('物品已归档，最终摊销结果已固定。');
-            }}
-          >
-            结束使用
-          </Btn>
-        </div>
-      ),
-    },
-  ];
+  const hasActiveFilters = Boolean(
+    keyword
+    || statusFilter !== 'active'
+    || purchaseStartDate
+    || purchaseEndDate
+    || minPrice
+    || maxPrice,
+  );
 
   return (
     <SectionCard
       title="物品列表"
-      description="把购买时间、购买价格和结束使用日期收进同一条物品记录里，系统会自动按自然日摊销出当前日均成本。"
-      action={<Btn tone="secondary" disabled={!hasActiveFilters} onClick={resetFilters}>重置筛选</Btn>}
+      description="新增、编辑、归档和筛选都直接调用后端接口，页面不再持有本地物品主状态。"
+      action={<Btn tone="secondary" disabled={!hasActiveFilters} onClick={() => {
+        setKeyword('');
+        setStatusFilter('active');
+        setPurchaseStartDate('');
+        setPurchaseEndDate('');
+        setMinPrice('');
+        setMaxPrice('');
+      }}
+      >
+        重置筛选
+      </Btn>}
     >
       <div className="page-stack">
         <StatGrid
           className="storage-list-summary-grid"
           items={[
-            { label: '当前筛选结果', value: `${filteredItems.length} 条` },
-            { label: '累计购入金额', value: formatStorageMoney(summary.totalPurchase) },
-            { label: '日均成本合计', value: formatStorageMoney(summary.totalDailyCost) },
+            { label: '当前页结果', value: `${items.length} 条` },
+            { label: '当前页购入金额', value: formatStorageMoney(summary.totalPurchase) },
+            { label: '当前页日均成本', value: formatStorageMoney(summary.totalDailyCost) },
             { label: '默认排序', value: settings.defaultSort === 'latest' ? '最近更新' : settings.defaultSort === 'purchasePrice' ? '购买价格' : '日均成本' },
           ]}
         />
@@ -309,7 +237,7 @@ export function StorageItemsSection({
             label="备注"
             value={form.notes}
             onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
-            placeholder="可选，记录用途或状态"
+            placeholder="记录用途或状态"
           />
           <div className="storage-inline-action">
             <Btn tone="primary" onClick={handleCreate}>保存物品</Btn>
@@ -354,23 +282,101 @@ export function StorageItemsSection({
           />
         </div>
 
-        {filteredItems.length ? (
+        {items.length ? (
           <>
-            <DataTable columns={columns} data={pageItems} rowKey="id" />
+            <DataTable
+              columns={[
+                {
+                  key: 'itemName',
+                  title: '物品名称',
+                  dataIndex: 'itemName',
+                  width: 160,
+                  render: (_, row) => (
+                    <div className="storage-item-name">
+                      <strong>{row.itemName}</strong>
+                      <span>{row.notes || '暂无备注'}</span>
+                    </div>
+                  ),
+                },
+                { key: 'purchaseDate', title: '购买日期', dataIndex: 'purchaseDate', width: 116 },
+                {
+                  key: 'purchasePrice',
+                  title: '购买价格',
+                  width: 110,
+                  render: (_, row) => formatStorageMoney(row.purchasePrice),
+                },
+                {
+                  key: 'endDate',
+                  title: '结束使用',
+                  width: 116,
+                  render: (_, row) => row.endDate || '使用中',
+                },
+                {
+                  key: 'usageDays',
+                  title: '使用天数',
+                  width: 96,
+                  render: (_, row) => `${calculateStorageUsageDays(row)} 天`,
+                },
+                {
+                  key: 'dailyCost',
+                  title: '当前/最终日均成本',
+                  width: 140,
+                  render: (_, row) => formatStorageMoney(calculateStorageDailyCost(row)),
+                },
+                {
+                  key: 'status',
+                  title: '状态',
+                  width: 92,
+                  render: (_, row) => <Tag tone={getStatusTone(row.status)}>{getStorageStatusLabel(row.status)}</Tag>,
+                },
+                {
+                  key: 'actions',
+                  title: '操作',
+                  width: 190,
+                  render: (_, row) => (
+                    <div className="storage-table-actions">
+                      <Btn
+                        tone="ghost"
+                        onClick={() => {
+                          setEditingItem(row);
+                          setEditingForm(buildFormState(row));
+                        }}
+                      >
+                        编辑
+                      </Btn>
+                      <Btn
+                        tone="secondary"
+                        onClick={async () => {
+                          try {
+                            await storageApi.archive(row.id, dayjs().format('YYYY-MM-DD'));
+                            showToast('物品已归档，最终摊销结果已固定。');
+                            onChanged();
+                            await loadItems();
+                          } catch (error) {
+                            showToast(buildApiErrorMessage(error, '归档物品失败。'), 'error');
+                          }
+                        }}
+                      >
+                        结束使用
+                      </Btn>
+                    </div>
+                  ),
+                },
+              ]}
+              data={items}
+              rowKey="id"
+            />
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         ) : (
-          <EmptyState
-            title="暂无使用中的物品"
-            description="先录入一件正在使用的物品，列表和日均成本就会开始联动。"
-          />
+          <EmptyState title="暂无符合条件的物品" description="可以先录入一件正在使用的物品，或者放宽筛选条件后再查看。" />
         )}
       </div>
 
       <Modal
         open={Boolean(editingItem)}
         onClose={() => setEditingItem(null)}
-        title={editingItem ? `编辑物品 · ${editingItem.itemName}` : '编辑物品'}
+        title={editingItem ? `编辑物品：${editingItem.itemName}` : '编辑物品'}
         width={760}
         footer={(
           <>
@@ -415,11 +421,6 @@ export function StorageItemsSection({
               onChange={(event) => setEditingForm((current) => ({ ...current, notes: event.target.value }))}
               placeholder="记录用途、使用感受或归档原因"
             />
-          </div>
-          <div className="storage-modal-grid-full">
-            <div className="callout callout-info">
-              当前会按 {editingForm.purchaseDate || '购买日期'} 到 {editingForm.endDate || '今天'} 的自然日计算日均成本。
-            </div>
           </div>
         </div>
       </Modal>

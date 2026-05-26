@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import dayjs from 'dayjs';
 import { In } from 'typeorm';
+import { IsNull, Not } from 'typeorm';
 
 import { appDataSource } from '../../db/data-source';
 import { LifeTodoTaskEntity } from './entities/life-todo-task.entity';
@@ -51,6 +52,10 @@ const restoreSchema = z.object({
 
 const triggerReminderSchema = z.object({
   title: z.string().trim().min(1).max(255).optional(),
+});
+
+const toggleCompletedSchema = z.object({
+  completed: z.boolean(),
 });
 
 const settingService = new BaseUserSettingService(LifeTodoSettingEntity);
@@ -121,21 +126,82 @@ export function createTodoRouter() {
   router.get('/tasks', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const { page, pageSize, skip } = parsePagination(request.query as Record<string, unknown>);
+    const keyword = normalizeText(request.query.keyword).toLowerCase();
+    const status = normalizeText(request.query.status, 'all');
+    const priority = normalizeText(request.query.priority, 'all');
+    const tag = normalizeText(request.query.tag);
+    const dueStartDate = normalizeText(request.query.dueStartDate);
+    const dueEndDate = normalizeText(request.query.dueEndDate);
+    const trashed = normalizeText(request.query.trashed, 'false') === 'true';
     const repository = appDataSource.getRepository(LifeTodoTaskEntity);
-    const [items, total] = await repository.findAndCount({
+    const items = await repository.find({
       where: {
         user_id: userId,
+        trashed_at: trashed ? Not(IsNull()) : IsNull(),
       },
       order: {
         completed: 'ASC',
         due_date: 'ASC',
         updated_at: 'DESC',
       },
-      skip,
-      take: pageSize,
     });
 
-    response.json(successResponse(buildListData(items.map(mapTask), page, pageSize, total)));
+    const filtered = items.filter((item) => {
+      if (trashed && !item.trashed_at) {
+        return false;
+      }
+
+      if (keyword) {
+        const haystack = [
+          item.title,
+          item.description_markdown,
+          ...(item.tags_json ?? []),
+        ].join(' ').toLowerCase();
+        if (!haystack.includes(keyword)) {
+          return false;
+        }
+      }
+
+      if (status !== 'all') {
+        if (status === 'daily' && !item.is_daily) {
+          return false;
+        }
+        if (status === 'completed' && !item.completed) {
+          return false;
+        }
+        if (status === 'active' && item.completed) {
+          return false;
+        }
+        if (status === 'overdue' && (item.completed || !item.due_date || !dayjs(item.due_date).isBefore(dayjs(), 'day'))) {
+          return false;
+        }
+      }
+
+      if (priority !== 'all' && item.priority !== priority) {
+        return false;
+      }
+
+      if (tag && !(item.tags_json ?? []).includes(tag)) {
+        return false;
+      }
+
+      if (dueStartDate && (!item.due_date || dayjs(item.due_date).isBefore(dueStartDate, 'day'))) {
+        return false;
+      }
+
+      if (dueEndDate && (!item.due_date || dayjs(item.due_date).isAfter(dueEndDate, 'day'))) {
+        return false;
+      }
+
+      return true;
+    });
+
+    response.json(successResponse(buildListData(
+      filtered.slice(skip, skip + pageSize).map(mapTask),
+      page,
+      pageSize,
+      filtered.length,
+    )));
   }));
 
   router.post('/tasks', asyncHandler(async (request: AuthenticatedRequest, response) => {
@@ -193,9 +259,10 @@ export function createTodoRouter() {
     response.json(successResponse(mapTask(next), 'update_todo_task_success'));
   }));
 
-  router.delete('/tasks/:id', asyncHandler(async (request: AuthenticatedRequest, response) => {
+  router.post('/tasks/:id/toggle-completed', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const taskId = String(request.params.id ?? '');
+    const payload = validateBody(toggleCompletedSchema, request.body);
     const repository = appDataSource.getRepository(LifeTodoTaskEntity);
     const current = await repository.findOne({
       where: {
@@ -206,6 +273,38 @@ export function createTodoRouter() {
 
     if (!current) {
       throw new AppError('todo_task_not_found', 404, 404);
+    }
+
+    const next = await repository.save({
+      ...current,
+      completed: payload.completed,
+      completed_at: payload.completed ? new Date() : null,
+      last_completed_date: payload.completed ? dayjs().format('YYYY-MM-DD') : null,
+    });
+
+    response.json(successResponse(mapTask(next), 'toggle_todo_task_completed_success'));
+  }));
+
+  router.delete('/tasks/:id', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const taskId = String(request.params.id ?? '');
+    const permanent = normalizeText(request.query.mode) === 'permanent';
+    const repository = appDataSource.getRepository(LifeTodoTaskEntity);
+    const current = await repository.findOne({
+      where: {
+        id: taskId,
+        user_id: userId,
+      },
+    });
+
+    if (!current) {
+      throw new AppError('todo_task_not_found', 404, 404);
+    }
+
+    if (permanent) {
+      await repository.remove(current);
+      response.json(successResponse({ ok: true }, 'delete_todo_task_success'));
+      return;
     }
 
     await repository.save({
@@ -321,6 +420,23 @@ export function createTodoRouter() {
     });
 
     response.json(successResponse({ ok: true }, 'restore_todo_task_success'));
+  }));
+
+  router.post('/actions/clear-trash', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const repository = appDataSource.getRepository(LifeTodoTaskEntity);
+    const items = await repository.find({
+      where: {
+        user_id: userId,
+      },
+    });
+    const trashedItems = items.filter((item) => item.trashed_at);
+
+    if (trashedItems.length) {
+      await repository.remove(trashedItems);
+    }
+
+    response.json(successResponse({ ok: true }, 'clear_todo_trash_success'));
   }));
 
   router.post('/actions/trigger-reminder', asyncHandler(async (request: AuthenticatedRequest, response) => {

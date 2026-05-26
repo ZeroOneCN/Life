@@ -2,36 +2,28 @@ import { useMemo, useState } from 'react';
 
 import { EmptyState, SectionCard } from '../page';
 import { Btn, DeleteModal, Field, Modal } from '../ui';
-import {
-  countBillsByPlatform,
-  countRepaymentsByPlatform,
-  createLoanPlatform,
-  deleteLoanPlatform,
-  formatLoanAmount,
-  updateLoanPlatform,
-} from '../../services/loan';
+import { formatLoanAmount } from '../../services/loan';
 import type { LoanBill, LoanPlatform, LoanPlatformDraft, LoanRepayment } from '../../types/loan';
 
 interface LoanPlatformsSectionProps {
-  activeUserId: string;
   bills: LoanBill[];
   platforms: LoanPlatform[];
   repayments: LoanRepayment[];
-  onChangePlatforms: (updater: (platforms: LoanPlatform[]) => LoanPlatform[]) => void;
+  onCreate: (draft: LoanPlatformDraft) => Promise<void>;
+  onUpdate: (platformId: string, draft: LoanPlatformDraft) => Promise<void>;
+  onDelete: (platformId: string) => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
 interface PlatformFormState {
-  userId: string;
   name: string;
   billingDay: string;
   repaymentDay: string;
   creditLimit: string;
 }
 
-function createDefaultFormState(activeUserId: string): PlatformFormState {
+function createDefaultFormState(): PlatformFormState {
   return {
-    userId: activeUserId,
     name: '',
     billingDay: '',
     repaymentDay: '',
@@ -41,7 +33,6 @@ function createDefaultFormState(activeUserId: string): PlatformFormState {
 
 function buildFormState(platform: LoanPlatform): PlatformFormState {
   return {
-    userId: platform.userId,
     name: platform.name,
     billingDay: String(platform.billingDay),
     repaymentDay: String(platform.repaymentDay),
@@ -54,7 +45,7 @@ function parseDraft(form: PlatformFormState): LoanPlatformDraft | null {
   const repaymentDay = Number(form.repaymentDay);
   const creditLimit = form.creditLimit ? Number(form.creditLimit) : 0;
 
-  if (!form.userId.trim() || !form.name.trim()) {
+  if (!form.name.trim()) {
     return null;
   }
 
@@ -71,7 +62,6 @@ function parseDraft(form: PlatformFormState): LoanPlatformDraft | null {
   }
 
   return {
-    userId: form.userId.trim(),
     name: form.name.trim(),
     billingDay,
     repaymentDay,
@@ -80,24 +70,26 @@ function parseDraft(form: PlatformFormState): LoanPlatformDraft | null {
 }
 
 export function LoanPlatformsSection({
-  activeUserId,
   bills,
   platforms,
   repayments,
-  onChangePlatforms,
+  onCreate,
+  onUpdate,
+  onDelete,
   showToast,
 }: LoanPlatformsSectionProps) {
-  const [form, setForm] = useState<PlatformFormState>(() => createDefaultFormState(activeUserId));
+  const [form, setForm] = useState<PlatformFormState>(createDefaultFormState);
   const [editingPlatform, setEditingPlatform] = useState<LoanPlatform | null>(null);
-  const [editingForm, setEditingForm] = useState<PlatformFormState>(() => createDefaultFormState(activeUserId));
+  const [editingForm, setEditingForm] = useState<PlatformFormState>(createDefaultFormState);
   const [pendingDeletePlatform, setPendingDeletePlatform] = useState<LoanPlatform | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const scopedPlatforms = useMemo(
-    () => platforms.filter((platform) => platform.userId === activeUserId),
-    [activeUserId, platforms],
+  const sortedPlatforms = useMemo(
+    () => [...platforms].sort((left, right) => left.name.localeCompare(right.name, 'zh-CN')),
+    [platforms],
   );
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const draft = parseDraft(form);
 
     if (!draft) {
@@ -105,18 +97,25 @@ export function LoanPlatformsSection({
       return;
     }
 
-    const duplicate = scopedPlatforms.some((platform) => platform.name.toLowerCase() === draft.name.toLowerCase());
+    const duplicate = sortedPlatforms.some((platform) => platform.name.toLowerCase() === draft.name.toLowerCase());
     if (duplicate) {
-      showToast('当前用户下已存在同名平台。', 'error');
+      showToast('已存在同名贷款平台。', 'error');
       return;
     }
 
-    onChangePlatforms((previous) => createLoanPlatform(previous, draft));
-    setForm(createDefaultFormState(activeUserId));
-    showToast('借款平台已创建。');
+    setSaving(true);
+    try {
+      await onCreate(draft);
+      setForm(createDefaultFormState());
+      showToast('贷款平台已创建。');
+    } catch {
+      // The page container already surfaces API errors.
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingPlatform) {
       return;
     }
@@ -127,30 +126,37 @@ export function LoanPlatformsSection({
       return;
     }
 
-    const duplicate = platforms.some((platform) => (
+    const duplicate = sortedPlatforms.some((platform) => (
       platform.id !== editingPlatform.id
-      && platform.userId === draft.userId
       && platform.name.toLowerCase() === draft.name.toLowerCase()
     ));
     if (duplicate) {
-      showToast('该用户下已存在同名平台。', 'error');
+      showToast('已存在同名贷款平台。', 'error');
       return;
     }
 
-    onChangePlatforms((previous) => updateLoanPlatform(previous, editingPlatform.id, draft));
-    setEditingPlatform(null);
-    setEditingForm(createDefaultFormState(activeUserId));
-    showToast('借款平台已更新。');
+    setSaving(true);
+    try {
+      await onUpdate(editingPlatform.id, draft);
+      setEditingPlatform(null);
+      setEditingForm(createDefaultFormState());
+      showToast('贷款平台已更新。');
+    } catch {
+      // The page container already surfaces API errors.
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <SectionCard
       title="平台"
-      description="维护每个借款平台的账单日、还款日和额度，后续账单默认到期日会依赖这里的规则自动推导。"
+      description="维护贷款平台的账单日、还款日和额度，后续账单默认到期日会参考这些规则。"
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前新建平台默认归属 <strong>{activeUserId || '未设置用户'}</strong>。若后续账单或还款仍引用某个平台，将不能直接删除它。
+          平台已固定为当前登录用户所有，不再支持手动填写用户 ID。
+          若平台仍被账单或还款记录引用，将不能直接删除。
         </div>
 
         <div className="loan-platform-form-grid">
@@ -185,18 +191,19 @@ export function LoanPlatformsSection({
             step="0.01"
             value={form.creditLimit}
             onChange={(event) => setForm((previous) => ({ ...previous, creditLimit: event.target.value }))}
-            placeholder="例如：12000"
+            placeholder="例如：20000"
           />
           <div className="loan-inline-action">
             <span className="field-label">保存平台</span>
-            <Btn tone="primary" onClick={handleCreate}>新建平台</Btn>
+            <Btn tone="primary" onClick={() => void handleCreate()} disabled={saving}>新建平台</Btn>
           </div>
         </div>
 
-        {scopedPlatforms.length ? (
+        {sortedPlatforms.length ? (
           <div className="loan-platform-grid">
-            {scopedPlatforms.map((platform) => {
+            {sortedPlatforms.map((platform) => {
               const linkedBills = bills.filter((bill) => bill.platformId === platform.id);
+              const linkedRepayments = repayments.filter((repayment) => repayment.platformId === platform.id);
               const totalExposure = linkedBills.reduce((sum, bill) => sum + bill.amount, 0);
 
               return (
@@ -224,10 +231,10 @@ export function LoanPlatformsSection({
                   </div>
                   <div className="loan-summary-card-metrics">
                     <span>额度 {formatLoanAmount(platform.creditLimit)}</span>
-                    <span>账单 {countBillsByPlatform(bills, platform.id)} 笔</span>
+                    <span>账单 {linkedBills.length} 笔</span>
                   </div>
                   <div className="loan-summary-card-metrics">
-                    <span>还款 {countRepaymentsByPlatform(repayments, platform.id)} 笔</span>
+                    <span>还款 {linkedRepayments.length} 笔</span>
                     <span>累计账单 {formatLoanAmount(totalExposure)}</span>
                   </div>
                 </article>
@@ -236,8 +243,8 @@ export function LoanPlatformsSection({
           </div>
         ) : (
           <EmptyState
-            title="暂无借款平台"
-            description="先为当前用户创建一个借款平台，后续账单和还款记录才能完整挂接。"
+            title="暂无贷款平台"
+            description="先创建一个贷款平台，后续账单和还款才能完整挂接。"
           />
         )}
       </div>
@@ -246,7 +253,7 @@ export function LoanPlatformsSection({
         open={Boolean(editingPlatform)}
         onClose={() => {
           setEditingPlatform(null);
-          setEditingForm(createDefaultFormState(activeUserId));
+          setEditingForm(createDefaultFormState());
         }}
         title={editingPlatform ? `编辑平台：${editingPlatform.name}` : '编辑平台'}
         width={760}
@@ -256,22 +263,17 @@ export function LoanPlatformsSection({
               tone="secondary"
               onClick={() => {
                 setEditingPlatform(null);
-                setEditingForm(createDefaultFormState(activeUserId));
+                setEditingForm(createDefaultFormState());
               }}
             >
               取消
             </Btn>
-            <Btn tone="primary" onClick={handleSaveEdit}>保存平台</Btn>
+            <Btn tone="primary" onClick={() => void handleSaveEdit()} disabled={saving}>保存平台</Btn>
           </>
         )}
       >
         <div className="loan-modal-layout">
           <div className="loan-modal-grid loan-modal-grid-platform">
-            <Field
-              label="用户 ID"
-              value={editingForm.userId}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, userId: event.target.value }))}
-            />
             <Field
               label="平台名称"
               value={editingForm.name}
@@ -313,21 +315,28 @@ export function LoanPlatformsSection({
             return;
           }
 
-          const linkedBills = countBillsByPlatform(bills, pendingDeletePlatform.id);
-          const linkedRepayments = countRepaymentsByPlatform(repayments, pendingDeletePlatform.id);
+          const linkedBills = bills.filter((bill) => bill.platformId === pendingDeletePlatform.id).length;
+          const linkedRepayments = repayments.filter((repayment) => repayment.platformId === pendingDeletePlatform.id).length;
 
           if (linkedBills > 0 || linkedRepayments > 0) {
             showToast(`该平台仍关联 ${linkedBills} 笔账单和 ${linkedRepayments} 笔还款，无法直接删除。`, 'error');
             return;
           }
 
-          onChangePlatforms((previous) => deleteLoanPlatform(previous, pendingDeletePlatform.id));
-          setPendingDeletePlatform(null);
-          showToast('借款平台已删除。');
+          setSaving(true);
+          void onDelete(pendingDeletePlatform.id)
+            .then(() => {
+              setPendingDeletePlatform(null);
+              showToast('贷款平台已删除。');
+            })
+            .catch(() => undefined)
+            .finally(() => {
+              setSaving(false);
+            });
         }}
-        title="确认删除这个借款平台？"
+        title="确认删除这个贷款平台？"
       >
-        删除平台后，后续将不能再把新账单挂到它下面，因此已有账单或还款记录未清理前不允许误删。
+        删除后将不能再把新账单挂到该平台下，因此已有账单或还款记录未清理前不允许误删。
       </DeleteModal>
     </SectionCard>
   );

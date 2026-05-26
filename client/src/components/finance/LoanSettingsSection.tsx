@@ -1,18 +1,21 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import dayjs from 'dayjs';
 
 import { NotificationLogTable } from '../NotificationLogTable';
 import { NotificationStatusCard } from '../NotificationStatusCard';
 import { SettingSwitchCard } from '../SettingSwitchCard';
 import { SectionCard } from '../page';
 import { Btn, Field, SelectField } from '../ui';
-import { filterLoanBills, getLoanBillStatus } from '../../services/loan';
-import { enqueueSceneNotification, updateSceneConfig, useNotificationCenterState } from '../../services/notificationCenter';
-import type { LoanBill, LoanPageState } from '../../types/loan';
+import { buildApiErrorMessage } from '../../lib/api';
+import { getNotificationLogs } from '../../services/notificationCenter';
+import { loanApi } from '../../services/loanApi';
+import type { LoanBill, LoanSettings } from '../../types/loan';
+import type { NotificationLogEntry } from '../../types/notifications';
 
 interface LoanSettingsSectionProps {
   bills: LoanBill[];
-  settings: LoanPageState['settings'];
-  onSettingsChange: (patch: Partial<LoanPageState['settings']>) => void;
+  settings: LoanSettings;
+  onSettingsChange: (patch: Partial<LoanSettings>) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
@@ -22,78 +25,80 @@ export function LoanSettingsSection({
   onSettingsChange,
   showToast,
 }: LoanSettingsSectionProps) {
-  const notificationState = useNotificationCenterState();
+  const [logs, setLogs] = useState<NotificationLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const scopedBills = useMemo(
-    () => filterLoanBills(bills, settings.activeUserId),
-    [bills, settings.activeUserId],
-  );
-
-  const upcomingBills = useMemo(
-    () => scopedBills.filter((bill) => getLoanBillStatus(bill) === 'unpaid'),
-    [scopedBills],
-  );
-
+  const upcomingBills = useMemo(() => bills.filter((bill) => !bill.isPaid), [bills]);
   const overdueBills = useMemo(
-    () => scopedBills.filter((bill) => getLoanBillStatus(bill) === 'overdue'),
-    [scopedBills],
+    () => bills.filter((bill) => !bill.isPaid && dayjs(bill.dueDate).isBefore(dayjs(), 'day')),
+    [bills],
   );
 
-  const latestLogs = useMemo(
-    () => notificationState.logs
-      .filter((log) => log.sceneId === 'loan.repayment_upcoming' || log.sceneId === 'loan.repayment_overdue')
-      .slice(0, 6),
-    [notificationState.logs],
-  );
+  useEffect(() => {
+    let cancelled = false;
 
-  const triggerUpcomingReminder = async () => {
-    const result = await enqueueSceneNotification('loan.repayment_upcoming', {
-      message: `当前有 ${upcomingBills.length} 笔待还账单，建议在 ${settings.upcomingDays} 天窗口内优先处理。`,
-    });
+    const load = async () => {
+      setLoading(true);
+      try {
+        const result = await getNotificationLogs({
+          page: 1,
+          pageSize: 8,
+          sceneIds: ['loan.repayment_upcoming', 'loan.repayment_overdue'],
+        });
 
-    const success = result.some((item) => item.status === 'success');
-    showToast(
-      success ? '还款提醒已写入通知中心日志。' : '还款提醒未发送，请检查通知中心渠道配置。',
-      success ? 'success' : 'error',
-    );
-  };
+        if (!cancelled) {
+          setLogs(result.items);
+        }
+      } catch {
+        if (!cancelled) {
+          setLogs([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
 
-  const triggerOverdueReminder = async () => {
-    const result = await enqueueSceneNotification('loan.repayment_overdue', {
-      message: `当前有 ${overdueBills.length} 笔逾期账单，请尽快处理并评估风险。`,
-    });
+    void load();
 
-    const success = result.some((item) => item.status === 'success');
-    showToast(
-      success ? '逾期提醒已写入通知中心日志。' : '逾期提醒未发送，请检查通知中心渠道配置。',
-      success ? 'success' : 'error',
-    );
+    return () => {
+      cancelled = true;
+    };
+  }, [settings]);
+
+  const triggerReminder = async () => {
+    try {
+      await loanApi.triggerReminders();
+      const result = await getNotificationLogs({
+        page: 1,
+        pageSize: 8,
+        sceneIds: ['loan.repayment_upcoming', 'loan.repayment_overdue'],
+      });
+      setLogs(result.items);
+      showToast('贷款提醒已触发。');
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '贷款提醒触发失败。'), 'error');
+    }
   };
 
   return (
     <SectionCard
       title="设置"
-      description="统一维护提醒规则、自动联动开关和通知中心状态，不在页面内单独维护渠道配置。"
-      action={(
-        <div className="inline-row">
-          <Btn tone="secondary" onClick={() => void triggerUpcomingReminder()}>模拟还款提醒</Btn>
-          <Btn tone="primary" onClick={() => void triggerOverdueReminder()}>模拟逾期提醒</Btn>
-        </div>
-      )}
+      description="统一维护提醒规则、自动联动开关和通知中心状态，不再在页面内单独维护场景配置。"
+      action={<Btn tone="secondary" onClick={() => void triggerReminder()}>手动触发提醒</Btn>}
     >
       <div className="page-stack">
         <div className="loan-settings-grid">
           <SettingSwitchCard
             title="还款提醒"
-            description="在账单到期前按设定频率写入通知中心，由通知中心统一选择渠道发送。"
+            description="在账单到期前按设置的提前天数写入提醒日志，并由通知中心统一发送。"
             checked={settings.repaymentReminderEnabled}
             onChange={(checked) => {
               onSettingsChange({ repaymentReminderEnabled: checked });
-              void updateSceneConfig('loan.repayment_upcoming', { enabled: checked });
-              showToast(`还款提醒已${checked ? '启用' : '停用'}。`);
             }}
-            statusText={settings.repaymentReminderEnabled ? '已启用' : '已停用'}
-            impact={`当前用户 ${settings.activeUserId || '未设置'} 下共有 ${upcomingBills.length} 笔待还账单，会按这里的提醒频率和提前天数参与触发。`}
+            statusText={settings.repaymentReminderEnabled ? '已开启' : '已关闭'}
+            impact={`当前共有 ${upcomingBills.length} 笔待还账单会参与提醒判断。`}
           >
             <div className="loan-settings-inline-grid">
               <Field
@@ -110,7 +115,7 @@ export function LoanSettingsSection({
                 onChange={(event) => onSettingsChange({ notificationFrequency: event.target.value as 'daily' | 'always' })}
               >
                 <option value="daily">每天一次</option>
-                <option value="always">每次进入</option>
+                <option value="always">每次进入都提醒</option>
               </SelectField>
             </div>
           </SettingSwitchCard>
@@ -118,47 +123,44 @@ export function LoanSettingsSection({
           <NotificationStatusCard
             sceneId="loan.repayment_upcoming"
             title="还款提醒场景"
-            summary="查看当前已绑定的渠道数、场景开关状态和统一发送入口。"
+            summary="查看场景是否启用，以及当前绑定的通知渠道数量。"
           />
 
           <SettingSwitchCard
             title="逾期提醒"
-            description="用于逾期账单的高优先级提醒，适合和企业微信或 Webhook 联动。"
+            description="用于高优先级风险提醒，适合逾期账单和严重待还风险。"
             checked={settings.overdueReminderEnabled}
             onChange={(checked) => {
               onSettingsChange({ overdueReminderEnabled: checked });
-              void updateSceneConfig('loan.repayment_overdue', { enabled: checked });
-              showToast(`逾期提醒已${checked ? '启用' : '停用'}。`);
             }}
-            statusText={settings.overdueReminderEnabled ? '已启用' : '已停用'}
-            impact={`当前用户下共有 ${overdueBills.length} 笔逾期账单。关闭后页面仍会显示逾期状态，但不会再向通知中心发起逾期提醒请求。`}
+            statusText={settings.overdueReminderEnabled ? '已开启' : '已关闭'}
+            impact={`当前共有 ${overdueBills.length} 笔逾期账单。`}
           />
 
           <NotificationStatusCard
             sceneId="loan.repayment_overdue"
             title="逾期提醒场景"
-            summary="建议至少绑定一个高优先级渠道，便于逾期账单及时被感知。"
+            summary="查看场景是否启用，以及当前绑定的通知渠道数量。"
           />
 
           <SettingSwitchCard
             title="标记已还时自动生成还款记录"
-            description="控制账单页手动标记已还时，是否同步写入一笔还款流水。"
+            description="控制在账单页标记已还后，是否同步创建一笔还款记录。"
             checked={settings.autoRepaymentOnMarkPaid}
             onChange={(checked) => {
               onSettingsChange({ autoRepaymentOnMarkPaid: checked });
-              showToast(`自动生成还款记录已${checked ? '启用' : '停用'}。`);
             }}
-            statusText={settings.autoRepaymentOnMarkPaid ? '账单状态与还款记录联动中' : '仅更新账单状态'}
-            impact="这是业务联动开关，不会直接发送通知，但会影响账单标记后的数据完整性和统计口径。"
+            statusText={settings.autoRepaymentOnMarkPaid ? '已开启' : '仅更新账单'}
+            impact="这是业务联动开关，不会直接发送通知，但会影响账单标记后的数据完整性。"
           />
         </div>
 
         <div className="fitness-chart-card">
           <div className="fitness-chart-header">
-            <strong>最近触发日志</strong>
-            <span>这里只展示贷款场景相关的通知发送和测试记录，便于回到通知中心继续追踪。</span>
+            <strong>最近提醒日志</strong>
+            <span>{loading ? '正在同步贷款提醒日志。' : '这里只展示贷款相关场景的最新提醒记录。'}</span>
           </div>
-          <NotificationLogTable logs={latestLogs} />
+          <NotificationLogTable logs={logs} />
         </div>
       </div>
     </SectionCard>

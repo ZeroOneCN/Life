@@ -4,32 +4,20 @@ import dayjs from 'dayjs';
 import { DatePickerField, MonthPickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
 import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
-import {
-  LOAN_ALL_PLATFORMS,
-  LOAN_BILL_PAGE_SIZE,
-  createLoanBill,
-  deleteLoanBill,
-  filterLoanBills,
-  formatLoanAmount,
-  getLoanBillStatus,
-  suggestLoanDueDate,
-  updateLoanBill,
-} from '../../services/loan';
+import { LOAN_ALL_PLATFORMS, LOAN_BILL_PAGE_SIZE, formatLoanAmount, getLoanBillStatus, suggestLoanDueDate } from '../../services/loan';
 import type { LoanBill, LoanBillDraft, LoanPlatform } from '../../types/loan';
 
 interface LoanBillsSectionProps {
-  activeUserId: string;
-  filterUserId: string;
   bills: LoanBill[];
   platforms: LoanPlatform[];
-  onFilterUserIdChange: (value: string) => void;
-  onChangeBills: (updater: (bills: LoanBill[]) => LoanBill[]) => void;
+  onCreate: (draft: LoanBillDraft) => Promise<void>;
+  onUpdate: (billId: string, draft: LoanBillDraft) => Promise<void>;
+  onDelete: (billId: string) => Promise<void>;
   onMarkPaid: (billId: string) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
 interface BillFormState {
-  userId: string;
   platformId: string;
   amount: string;
   interest: string;
@@ -38,11 +26,10 @@ interface BillFormState {
   notes: string;
 }
 
-function createDefaultFormState(activeUserId: string, platforms: LoanPlatform[]): BillFormState {
-  const firstPlatform = platforms.find((platform) => platform.userId === activeUserId) ?? platforms[0] ?? null;
+function createDefaultFormState(platforms: LoanPlatform[]): BillFormState {
+  const firstPlatform = platforms[0] ?? null;
   const billingMonth = dayjs().format('YYYY-MM');
   return {
-    userId: activeUserId,
     platformId: firstPlatform?.id ?? '',
     amount: '',
     interest: '',
@@ -54,7 +41,6 @@ function createDefaultFormState(activeUserId: string, platforms: LoanPlatform[])
 
 function buildFormState(bill: LoanBill): BillFormState {
   return {
-    userId: bill.userId,
     platformId: bill.platformId,
     amount: String(bill.amount),
     interest: String(bill.interest),
@@ -68,7 +54,7 @@ function parseDraft(form: BillFormState): LoanBillDraft | null {
   const amount = Number(form.amount);
   const interest = form.interest ? Number(form.interest) : 0;
 
-  if (!form.userId.trim() || !form.platformId || !dayjs(`${form.billingMonth}-01`).isValid()) {
+  if (!form.platformId || !dayjs(`${form.billingMonth}-01`).isValid()) {
     return null;
   }
 
@@ -81,7 +67,6 @@ function parseDraft(form: BillFormState): LoanBillDraft | null {
   }
 
   return {
-    userId: form.userId.trim(),
     platformId: form.platformId,
     amount,
     interest,
@@ -92,48 +77,45 @@ function parseDraft(form: BillFormState): LoanBillDraft | null {
 }
 
 export function LoanBillsSection({
-  activeUserId,
-  filterUserId,
   bills,
   platforms,
-  onFilterUserIdChange,
-  onChangeBills,
+  onCreate,
+  onUpdate,
+  onDelete,
   onMarkPaid,
   showToast,
 }: LoanBillsSectionProps) {
-  const [form, setForm] = useState<BillFormState>(() => createDefaultFormState(activeUserId, platforms));
+  const [form, setForm] = useState<BillFormState>(() => createDefaultFormState(platforms));
   const [editingBill, setEditingBill] = useState<LoanBill | null>(null);
-  const [editingForm, setEditingForm] = useState<BillFormState>(() => createDefaultFormState(activeUserId, platforms));
+  const [editingForm, setEditingForm] = useState<BillFormState>(() => createDefaultFormState(platforms));
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [platformFilter, setPlatformFilter] = useState(LOAN_ALL_PLATFORMS);
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'unpaid' | 'overdue'>('all');
   const [monthFilter, setMonthFilter] = useState('');
   const [page, setPage] = useState(1);
-
-  const activePlatforms = useMemo(
-    () => platforms.filter((platform) => platform.userId === activeUserId),
-    [activeUserId, platforms],
-  );
-
-  const filterPlatforms = useMemo(() => {
-    const targetUserId = filterUserId.trim();
-    return targetUserId ? platforms.filter((platform) => platform.userId === targetUserId) : platforms;
-  }, [filterUserId, platforms]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setForm(createDefaultFormState(activeUserId, platforms));
-  }, [activeUserId, platforms]);
+    setForm((previous) => previous.platformId ? previous : createDefaultFormState(platforms));
+    if (editingBill && !editingForm.platformId) {
+      setEditingForm(createDefaultFormState(platforms));
+    }
+  }, [editingBill, editingForm.platformId, platforms]);
 
-  const filteredBills = useMemo(() => filterLoanBills(bills, filterUserId, platformFilter)
-    .filter((bill) => {
-      const status = getLoanBillStatus(bill);
-      return statusFilter === 'all' ? true : status === statusFilter;
-    })
-    .filter((bill) => !monthFilter || bill.billingMonth === monthFilter), [bills, filterUserId, monthFilter, platformFilter, statusFilter]);
+  const filteredBills = useMemo(
+    () => bills
+      .filter((bill) => platformFilter === LOAN_ALL_PLATFORMS || bill.platformId === platformFilter)
+      .filter((bill) => {
+        const status = getLoanBillStatus(bill);
+        return statusFilter === 'all' ? true : status === statusFilter;
+      })
+      .filter((bill) => !monthFilter || bill.billingMonth === monthFilter),
+    [bills, monthFilter, platformFilter, statusFilter],
+  );
 
   useEffect(() => {
     setPage(1);
-  }, [filterUserId, platformFilter, statusFilter, monthFilter]);
+  }, [platformFilter, statusFilter, monthFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredBills.length / LOAN_BILL_PAGE_SIZE));
   const pageBills = useMemo(() => {
@@ -199,7 +181,12 @@ export function LoanBillsSection({
     },
   ], [onMarkPaid]);
 
-  const handleCreate = () => {
+  const resolveSuggestedDueDate = (platformId: string, billingMonth: string) => {
+    const selectedPlatform = platforms.find((platform) => platform.id === platformId) ?? null;
+    return selectedPlatform ? suggestLoanDueDate(selectedPlatform, billingMonth) : '';
+  };
+
+  const handleCreate = async () => {
     const draft = parseDraft(form);
 
     if (!draft) {
@@ -207,12 +194,19 @@ export function LoanBillsSection({
       return;
     }
 
-    onChangeBills((previous) => createLoanBill(platforms, previous, draft));
-    setForm(createDefaultFormState(activeUserId, platforms));
-    showToast('借款账单已创建。');
+    setSaving(true);
+    try {
+      await onCreate(draft);
+      setForm(createDefaultFormState(platforms));
+      showToast('贷款账单已创建。');
+    } catch {
+      // The page container already surfaces API errors.
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingBill) {
       return;
     }
@@ -224,41 +218,45 @@ export function LoanBillsSection({
       return;
     }
 
-    onChangeBills((previous) => updateLoanBill(platforms, previous, editingBill.id, draft));
-    setEditingBill(null);
-    setEditingForm(createDefaultFormState(activeUserId, platforms));
-    showToast('借款账单已更新。');
-  };
-
-  const resolveSuggestedDueDate = (platformId: string, billingMonth: string, list: LoanPlatform[]) => {
-    const selectedPlatform = list.find((platform) => platform.id === platformId) ?? null;
-    return selectedPlatform ? suggestLoanDueDate(selectedPlatform, billingMonth) : '';
+    setSaving(true);
+    try {
+      await onUpdate(editingBill.id, draft);
+      setEditingBill(null);
+      setEditingForm(createDefaultFormState(platforms));
+      showToast('贷款账单已更新。');
+    } catch {
+      // The page container already surfaces API errors.
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <SectionCard
       title="账单"
-      description="统一维护账单月份、到期日、金额和利息，标记已还时可联动自动生成还款记录。"
+      description="统一维护账单月份、到期日、本金和利息；标记已还时由后端决定是否自动生成还款记录。"
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          新建账单默认归属 <strong>{activeUserId || '未设置用户'}</strong>。当你选择平台和账单月份后，会按平台规则自动给出默认到期日。
+          账单固定归属当前登录用户，不再提供用户 ID 输入框。
+          选择平台和账单月份后，会按平台规则自动给出默认到期日。
         </div>
 
         <div className="loan-bill-entry-grid">
           <SelectField
-            label="借款平台"
+            label="贷款平台"
             value={form.platformId}
             onChange={(event) => {
               const nextPlatformId = event.target.value;
               setForm((previous) => ({
                 ...previous,
                 platformId: nextPlatformId,
-                dueDate: resolveSuggestedDueDate(nextPlatformId, previous.billingMonth, activePlatforms) || previous.dueDate,
+                dueDate: resolveSuggestedDueDate(nextPlatformId, previous.billingMonth) || previous.dueDate,
               }));
             }}
           >
-            {activePlatforms.map((platform) => (
+            <option value="">请选择平台</option>
+            {platforms.map((platform) => (
               <option key={platform.id} value={platform.id}>{platform.name}</option>
             ))}
           </SelectField>
@@ -269,7 +267,7 @@ export function LoanBillsSection({
             step="0.01"
             value={form.amount}
             onChange={(event) => setForm((previous) => ({ ...previous, amount: event.target.value }))}
-            placeholder="例如：1680"
+            placeholder="例如：680"
           />
           <Field
             label="利息"
@@ -278,7 +276,7 @@ export function LoanBillsSection({
             step="0.01"
             value={form.interest}
             onChange={(event) => setForm((previous) => ({ ...previous, interest: event.target.value }))}
-            placeholder="例如：42"
+            placeholder="例如：12"
           />
           <div className="loan-modal-date-slot">
             <MonthPickerField
@@ -288,7 +286,7 @@ export function LoanBillsSection({
                 setForm((previous) => ({
                   ...previous,
                   billingMonth: value,
-                  dueDate: resolveSuggestedDueDate(previous.platformId, value, activePlatforms) || previous.dueDate,
+                  dueDate: resolveSuggestedDueDate(previous.platformId, value) || previous.dueDate,
                 }));
               }}
               clearable={false}
@@ -310,20 +308,14 @@ export function LoanBillsSection({
           />
           <div className="loan-inline-action">
             <span className="field-label">保存账单</span>
-            <Btn tone="primary" onClick={handleCreate}>新建账单</Btn>
+            <Btn tone="primary" onClick={() => void handleCreate()} disabled={saving || !platforms.length}>新建账单</Btn>
           </div>
         </div>
 
         <div className="loan-filter-grid loan-filter-grid-bills">
-          <Field
-            label="筛选用户 ID"
-            value={filterUserId}
-            onChange={(event) => onFilterUserIdChange(event.target.value)}
-            placeholder="留空查看全部用户"
-          />
           <SelectField label="平台筛选" value={platformFilter} onChange={(event) => setPlatformFilter(event.target.value)}>
             <option value={LOAN_ALL_PLATFORMS}>全部平台</option>
-            {filterPlatforms.map((platform) => (
+            {platforms.map((platform) => (
               <option key={platform.id} value={platform.id}>{platform.name}</option>
             ))}
           </SelectField>
@@ -360,8 +352,8 @@ export function LoanBillsSection({
           </>
         ) : (
           <EmptyState
-            title="暂无借款账单"
-            description="先新建一笔账单，或调整当前用户、平台、状态和月份筛选条件。"
+            title="暂无贷款账单"
+            description="先新增一笔账单，或调整当前平台、状态和月份筛选条件。"
           />
         )}
       </div>
@@ -370,7 +362,7 @@ export function LoanBillsSection({
         open={Boolean(editingBill)}
         onClose={() => {
           setEditingBill(null);
-          setEditingForm(createDefaultFormState(activeUserId, platforms));
+          setEditingForm(createDefaultFormState(platforms));
         }}
         title={editingBill ? `编辑账单：${editingBill.platformName}` : '编辑账单'}
         width={980}
@@ -380,43 +372,32 @@ export function LoanBillsSection({
               tone="secondary"
               onClick={() => {
                 setEditingBill(null);
-                setEditingForm(createDefaultFormState(activeUserId, platforms));
+                setEditingForm(createDefaultFormState(platforms));
               }}
             >
               取消
             </Btn>
-            <Btn tone="primary" onClick={handleSaveEdit}>保存账单</Btn>
+            <Btn tone="primary" onClick={() => void handleSaveEdit()} disabled={saving}>保存账单</Btn>
           </>
         )}
       >
         <div className="loan-modal-layout">
           <div className="loan-modal-grid loan-modal-grid-bill">
-            <Field
-              label="用户 ID"
-              value={editingForm.userId}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, userId: event.target.value }))}
-            />
             <SelectField
-              label="借款平台"
+              label="贷款平台"
               value={editingForm.platformId}
               onChange={(event) => {
                 const nextPlatformId = event.target.value;
                 setEditingForm((previous) => ({
                   ...previous,
                   platformId: nextPlatformId,
-                  dueDate: resolveSuggestedDueDate(
-                    nextPlatformId,
-                    previous.billingMonth,
-                    platforms.filter((platform) => !previous.userId.trim() || platform.userId === previous.userId.trim()),
-                  ) || previous.dueDate,
+                  dueDate: resolveSuggestedDueDate(nextPlatformId, previous.billingMonth) || previous.dueDate,
                 }));
               }}
             >
-              {platforms
-                .filter((platform) => !editingForm.userId.trim() || platform.userId === editingForm.userId.trim())
-                .map((platform) => (
-                  <option key={platform.id} value={platform.id}>{platform.name}</option>
-                ))}
+              {platforms.map((platform) => (
+                <option key={platform.id} value={platform.id}>{platform.name}</option>
+              ))}
             </SelectField>
             <Field
               label="本金"
@@ -442,11 +423,7 @@ export function LoanBillsSection({
                   setEditingForm((previous) => ({
                     ...previous,
                     billingMonth: value,
-                    dueDate: resolveSuggestedDueDate(
-                      previous.platformId,
-                      value,
-                      platforms.filter((platform) => !previous.userId.trim() || platform.userId === previous.userId.trim()),
-                    ) || previous.dueDate,
+                    dueDate: resolveSuggestedDueDate(previous.platformId, value) || previous.dueDate,
                   }));
                 }}
                 clearable={false}
@@ -465,7 +442,7 @@ export function LoanBillsSection({
             label="备注"
             value={editingForm.notes}
             onChange={(event) => setEditingForm((previous) => ({ ...previous, notes: event.target.value }))}
-            placeholder="补充这个账单的消费背景、分期说明或后续处理备注"
+            placeholder="补充这笔账单的消费背景、分期说明或后续处理备注"
           />
         </div>
       </Modal>
@@ -478,13 +455,20 @@ export function LoanBillsSection({
             return;
           }
 
-          onChangeBills((previous) => deleteLoanBill(previous, pendingDeleteId));
-          setPendingDeleteId(null);
-          showToast('借款账单已删除。');
+          setSaving(true);
+          void onDelete(pendingDeleteId)
+            .then(() => {
+              setPendingDeleteId(null);
+              showToast('贷款账单已删除。');
+            })
+            .catch(() => undefined)
+            .finally(() => {
+              setSaving(false);
+            });
         }}
-        title="确认删除这笔借款账单？"
+        title="确认删除这笔贷款账单？"
       >
-        删除后，这笔账单将不再参与概览、统计、提醒和自动还款联动，请确认是否继续。
+        删除后，这笔账单将不再参与总览、统计、提醒和自动还款联动，请确认是否继续。
       </DeleteModal>
     </SectionCard>
   );

@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.syncNotificationSceneEnabled = syncNotificationSceneEnabled;
+exports.syncNotificationScenesEnabled = syncNotificationScenesEnabled;
 exports.sendNotificationSceneLogs = sendNotificationSceneLogs;
 const data_source_1 = require("../../db/data-source");
 const notification_center_channel_entity_1 = require("../../modules/notifications/entities/notification-center-channel.entity");
@@ -7,6 +9,26 @@ const notification_center_log_entity_1 = require("../../modules/notifications/en
 const notification_center_scene_channel_entity_1 = require("../../modules/notifications/entities/notification-center-scene-channel.entity");
 const notification_center_scene_entity_1 = require("../../modules/notifications/entities/notification-center-scene.entity");
 const notification_center_template_entity_1 = require("../../modules/notifications/entities/notification-center-template.entity");
+async function syncNotificationSceneEnabled(userId, sceneId, enabled) {
+    const sceneRepo = data_source_1.appDataSource.getRepository(notification_center_scene_entity_1.NotificationCenterSceneEntity);
+    const scene = await sceneRepo.findOne({
+        where: {
+            user_id: userId,
+            scene_id: sceneId,
+        },
+    });
+    if (!scene) {
+        return null;
+    }
+    if (scene.enabled === enabled) {
+        return scene;
+    }
+    scene.enabled = enabled;
+    return sceneRepo.save(scene);
+}
+async function syncNotificationScenesEnabled(userId, scenes) {
+    return Promise.all(scenes.map((scene) => syncNotificationSceneEnabled(userId, scene.sceneId, scene.enabled)));
+}
 async function sendNotificationSceneLogs(options) {
     const sceneRepo = data_source_1.appDataSource.getRepository(notification_center_scene_entity_1.NotificationCenterSceneEntity);
     const relationRepo = data_source_1.appDataSource.getRepository(notification_center_scene_channel_entity_1.NotificationCenterSceneChannelEntity);

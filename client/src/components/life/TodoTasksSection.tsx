@@ -3,27 +3,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
 import { Btn, Checkbox, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
-import {
-  TODO_PAGE_SIZE,
-  TODO_PRIORITY_TAG_TONES,
-  batchCompleteTodoTasks,
-  batchTrashTodoTasks,
-  createTodoTask,
-  filterTodoTasks,
-  getTodoPriorityLabel,
-  getTodoStatusLabel,
-  getTodoTaskStatus,
-  renderTodoMarkdownPreview,
-  setTodoTaskCompleted,
-  trashTodoTask,
-  updateTodoTask,
-} from '../../services/todo';
+import { buildApiErrorMessage } from '../../lib/api';
+import { TODO_PRIORITY_TAG_TONES, getTodoPriorityLabel, getTodoStatusLabel, renderTodoMarkdownPreview } from '../../services/todo';
+import { todoApi } from '../../services/todoApi';
 import type { TodoPriority, TodoTaskDraft, TodoTaskRecord } from '../../types/todo';
 
 interface TodoTasksSectionProps {
-  tasks: TodoTaskRecord[];
-  onChangeTasks: (updater: (tasks: TodoTaskRecord[]) => TodoTaskRecord[]) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
+  onChanged: () => void;
 }
 
 interface TaskFormState {
@@ -37,6 +24,8 @@ interface TaskFormState {
 interface TaskEditFormState extends TaskFormState {
   descriptionMarkdown: string;
 }
+
+const PAGE_SIZE = 10;
 
 function parseTags(tagsText: string) {
   return tagsText
@@ -90,13 +79,13 @@ function parseDraft(form: TaskFormState | TaskEditFormState): TodoTaskDraft | nu
 }
 
 function getStatusTone(task: TodoTaskRecord): 'green' | 'orange' | 'red' | 'blue' {
-  const status = getTodoTaskStatus(task);
+  const label = getTodoStatusLabel(task);
 
-  if (status === 'completed') {
+  if (label === '已完成') {
     return 'green';
   }
 
-  if (status === 'overdue') {
+  if (label === '已逾期') {
     return 'red';
   }
 
@@ -104,9 +93,8 @@ function getStatusTone(task: TodoTaskRecord): 'green' | 'orange' | 'red' | 'blue
 }
 
 export function TodoTasksSection({
-  tasks,
-  onChangeTasks,
   showToast,
+  onChanged,
 }: TodoTasksSectionProps) {
   const [form, setForm] = useState<TaskFormState>(createDefaultTaskFormState);
   const [keyword, setKeyword] = useState('');
@@ -117,53 +105,54 @@ export function TodoTasksSection({
   const [dueEndDate, setDueEndDate] = useState('');
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
+  const [items, setItems] = useState<TodoTaskRecord[]>([]);
+  const [total, setTotal] = useState(0);
   const [editingTask, setEditingTask] = useState<TodoTaskRecord | null>(null);
   const [editingForm, setEditingForm] = useState<TaskEditFormState>(createDefaultTaskEditFormState);
   const [pendingDeleteTask, setPendingDeleteTask] = useState<TodoTaskRecord | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const availableTags = useMemo(() => {
     const tagSet = new Set<string>();
-    tasks.forEach((task) => {
-      if (!task.trashedAt) {
-        task.tags.forEach((tag) => tagSet.add(tag));
-      }
+    items.forEach((task) => {
+      task.tags.forEach((tag) => tagSet.add(tag));
     });
     return [...tagSet].sort((left, right) => left.localeCompare(right, 'zh-CN'));
-  }, [tasks]);
+  }, [items]);
 
-  const filteredTasks = useMemo(
-    () => filterTodoTasks(tasks, {
-      keyword,
-      status: statusFilter,
-      priority: priorityFilter,
-      tag: tagFilter === 'all' ? '' : tagFilter,
-      dueStartDate,
-      dueEndDate,
-    }),
-    [tasks, keyword, statusFilter, priorityFilter, tagFilter, dueStartDate, dueEndDate],
-  );
+  const loadTasks = async () => {
+    setLoading(true);
+    try {
+      const result = await todoApi.list({
+        page,
+        page_size: PAGE_SIZE,
+        keyword,
+        status: statusFilter,
+        priority: priorityFilter,
+        tag: tagFilter === 'all' ? '' : tagFilter,
+        dueStartDate,
+        dueEndDate,
+        trashed: false,
+      });
+      setItems(result.items);
+      setTotal(result.total);
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '任务列表加载失败。'), 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadTasks();
+  }, [page, keyword, statusFilter, priorityFilter, tagFilter, dueStartDate, dueEndDate]);
 
   useEffect(() => {
     setPage(1);
   }, [keyword, statusFilter, priorityFilter, tagFilter, dueStartDate, dueEndDate]);
 
-  useEffect(() => {
-    setSelectedTaskIds((current) => current.filter((taskId) => filteredTasks.some((task) => task.id === taskId)));
-  }, [filteredTasks]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredTasks.length / TODO_PAGE_SIZE));
-  const pageTasks = useMemo(() => {
-    const startIndex = (page - 1) * TODO_PAGE_SIZE;
-    return filteredTasks.slice(startIndex, startIndex + TODO_PAGE_SIZE);
-  }, [filteredTasks, page]);
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
-
-  const allPageSelected = pageTasks.length > 0 && pageTasks.every((task) => selectedTaskIds.includes(task.id));
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const allPageSelected = items.length > 0 && items.every((task) => selectedTaskIds.includes(task.id));
   const hasSelection = selectedTaskIds.length > 0;
   const hasActiveFilters = Boolean(
     keyword
@@ -174,7 +163,7 @@ export function TodoTasksSection({
     || dueEndDate,
   );
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const draft = parseDraft(form);
 
     if (!draft) {
@@ -182,9 +171,15 @@ export function TodoTasksSection({
       return;
     }
 
-    onChangeTasks((current) => createTodoTask(current, draft));
-    setForm(createDefaultTaskFormState());
-    showToast('待办任务已保存。');
+    try {
+      await todoApi.create(draft);
+      setForm(createDefaultTaskFormState());
+      showToast('待办任务已保存。');
+      onChanged();
+      await loadTasks();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '创建任务失败。'), 'error');
+    }
   };
 
   const handleToggleSelection = (taskId: string, checked: boolean) => {
@@ -199,15 +194,15 @@ export function TodoTasksSection({
     setSelectedTaskIds((current) => {
       if (checked) {
         const next = new Set(current);
-        pageTasks.forEach((task) => next.add(task.id));
+        items.forEach((task) => next.add(task.id));
         return [...next];
       }
 
-      return current.filter((taskId) => !pageTasks.some((task) => task.id === taskId));
+      return current.filter((taskId) => !items.some((task) => task.id === taskId));
     });
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingTask) {
       return;
     }
@@ -218,20 +213,32 @@ export function TodoTasksSection({
       return;
     }
 
-    onChangeTasks((current) => updateTodoTask(current, editingTask.id, draft));
-    setEditingTask(null);
-    showToast('任务已更新。');
+    try {
+      await todoApi.update(editingTask.id, draft);
+      setEditingTask(null);
+      showToast('任务已更新。');
+      onChanged();
+      await loadTasks();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '更新任务失败。'), 'error');
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!pendingDeleteTask) {
       return;
     }
 
-    onChangeTasks((current) => trashTodoTask(current, pendingDeleteTask.id));
-    setPendingDeleteTask(null);
-    setSelectedTaskIds((current) => current.filter((taskId) => taskId !== pendingDeleteTask.id));
-    showToast('任务已移入回收站。');
+    try {
+      await todoApi.trash(pendingDeleteTask.id);
+      setPendingDeleteTask(null);
+      setSelectedTaskIds((current) => current.filter((taskId) => taskId !== pendingDeleteTask.id));
+      showToast('任务已移入回收站。');
+      onChanged();
+      await loadTasks();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '删除任务失败。'), 'error');
+    }
   };
 
   const resetFilters = () => {
@@ -246,16 +253,16 @@ export function TodoTasksSection({
   return (
     <SectionCard
       title="任务列表"
-      description="把快速录入、筛选和任务表整理成更稳定的单列工作流，避免任务区和表格互相挤压。"
+      description="新增、筛选、完成、批量操作和编辑都直接命中后端，页面不再维护本地任务主状态。"
     >
       <div className="page-stack">
         <div className="todo-surface">
           <div className="todo-surface-head">
             <div>
               <strong>快速录入</strong>
-              <span>常用字段保持紧凑输入，描述内容仍放到编辑弹窗中细化。</span>
+              <span>常用字段保持紧凑输入，描述内容放到编辑弹窗里细化。</span>
             </div>
-            <Tag tone="blue">单行优先</Tag>
+            <Tag tone="blue">后端直写</Tag>
           </div>
 
           <div className="todo-entry-grid">
@@ -306,10 +313,10 @@ export function TodoTasksSection({
           <div className="todo-surface-head">
             <div>
               <strong>筛选工具</strong>
-              <span>按状态、优先级、标签和到期范围聚焦当前任务集。</span>
+              <span>优先使用后端 query 参数过滤，避免全量拉回再本地拼装。</span>
             </div>
             <div className="todo-surface-actions">
-              <Tag>当前 {filteredTasks.length} 项</Tag>
+              <Tag>{loading ? '加载中' : `当前 ${total} 项`}</Tag>
               {selectedTaskIds.length ? <Tag tone="blue">已选 {selectedTaskIds.length} 项</Tag> : null}
               <Btn tone="ghost" disabled={!hasActiveFilters} onClick={resetFilters}>重置筛选</Btn>
             </div>
@@ -364,20 +371,32 @@ export function TodoTasksSection({
             <div className="inline-row">
               <Btn
                 tone="secondary"
-                onClick={() => {
-                  onChangeTasks((current) => batchCompleteTodoTasks(current, selectedTaskIds));
-                  setSelectedTaskIds([]);
-                  showToast('已批量标记完成。');
+                onClick={async () => {
+                  try {
+                    await todoApi.batchComplete(selectedTaskIds);
+                    setSelectedTaskIds([]);
+                    showToast('已批量标记完成。');
+                    onChanged();
+                    await loadTasks();
+                  } catch (error) {
+                    showToast(buildApiErrorMessage(error, '批量完成失败。'), 'error');
+                  }
                 }}
               >
                 批量完成
               </Btn>
               <Btn
                 tone="danger"
-                onClick={() => {
-                  onChangeTasks((current) => batchTrashTodoTasks(current, selectedTaskIds));
-                  setSelectedTaskIds([]);
-                  showToast('已批量移入回收站。');
+                onClick={async () => {
+                  try {
+                    await todoApi.batchTrash(selectedTaskIds);
+                    setSelectedTaskIds([]);
+                    showToast('已批量移入回收站。');
+                    onChanged();
+                    await loadTasks();
+                  } catch (error) {
+                    showToast(buildApiErrorMessage(error, '批量删除失败。'), 'error');
+                  }
                 }}
               >
                 批量移入回收站
@@ -390,18 +409,14 @@ export function TodoTasksSection({
         <div className="todo-list-summary">
           <div>
             <strong>任务结果</strong>
-            <span>当前页 {pageTasks.length} 项，共 {filteredTasks.length} 项匹配结果。</span>
-          </div>
-          <div className="todo-surface-actions">
-            <Tag tone="green">已完成 {tasks.filter((task) => task.completed && !task.trashedAt).length}</Tag>
-            <Tag tone="orange">进行中 {tasks.filter((task) => !task.completed && !task.trashedAt).length}</Tag>
+            <span>当前页 {items.length} 项，共 {total} 项匹配结果。</span>
           </div>
         </div>
 
-        {filteredTasks.length ? (
+        {items.length ? (
           <>
             <DataTable
-              data={pageTasks}
+              data={items}
               rowKey="id"
               columns={[
                 {
@@ -479,9 +494,15 @@ export function TodoTasksSection({
                       </Btn>
                       <Btn
                         tone="ghost"
-                        onClick={() => {
-                          onChangeTasks((current) => setTodoTaskCompleted(current, row.id, !row.completed));
-                          showToast(row.completed ? '任务已恢复为未完成。' : '任务已标记完成。');
+                        onClick={async () => {
+                          try {
+                            await todoApi.toggleCompleted(row.id, !row.completed);
+                            showToast(row.completed ? '任务已恢复为未完成。' : '任务已标记完成。');
+                            onChanged();
+                            await loadTasks();
+                          } catch (error) {
+                            showToast(buildApiErrorMessage(error, '切换任务状态失败。'), 'error');
+                          }
                         }}
                       >
                         {row.completed ? '设为待办' : '完成'}
@@ -495,7 +516,7 @@ export function TodoTasksSection({
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         ) : (
-          <EmptyState title="暂无符合条件的任务" description="可以先新增待办，或者放宽筛选条件后再查看。" />
+          <EmptyState title="暂无符合条件的任务" description="可以先新建待办，或者放宽筛选条件后再查看。" />
         )}
       </div>
 
@@ -573,7 +594,7 @@ export function TodoTasksSection({
       <DeleteModal
         open={Boolean(pendingDeleteTask)}
         onClose={() => setPendingDeleteTask(null)}
-        onConfirm={handleDelete}
+        onConfirm={() => void handleDelete()}
         title={pendingDeleteTask ? `移入回收站：${pendingDeleteTask.title}` : '移入回收站'}
       >
         删除后的任务不会立刻丢失，可以在回收站中恢复或永久删除。

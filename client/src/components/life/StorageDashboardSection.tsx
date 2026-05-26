@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -13,23 +13,30 @@ import {
 } from 'recharts';
 
 import { EmptyState, SectionCard, StatGrid } from '../page';
-import { SelectField, Tag } from '../ui';
-import {
-  buildStorageCostRanking,
-  buildStorageOverview,
-  buildStoragePurchaseTrend,
-  formatStorageMoney,
-  getStorageStatusLabel,
-} from '../../services/storage';
-import type { StorageItemRecord, StoragePageSettings } from '../../types/storage';
+import { SelectField } from '../ui';
+import { buildApiErrorMessage } from '../../lib/api';
+import { formatStorageMoney } from '../../services/storage';
+import { storageApi } from '../../services/storageApi';
+import type { StorageCostRankingPoint, StorageOverviewSummary, StoragePageSettings, StoragePurchaseTrendPoint } from '../../types/storage';
 
 interface StorageDashboardSectionProps {
-  items: StorageItemRecord[];
   settings: StoragePageSettings;
-  onSettingsChange: (patch: Partial<StoragePageSettings>) => void;
+  showToast: (message: string, type?: 'success' | 'error') => void;
+  onChanged: () => void;
 }
 
-const chartColors = ['#5e6ad2', '#1eaedb', '#27a644', '#f59e0b', '#e5484d', '#10b981', '#0ea5e9', '#f97316'];
+const EMPTY_OVERVIEW: StorageOverviewSummary = {
+  totalCount: 0,
+  activeCount: 0,
+  archivedCount: 0,
+  totalPurchaseAmount: 0,
+  currentDailyCostTotal: 0,
+  averageUsageDays: 0,
+  currentMonthNewCount: 0,
+  highestDailyCostItemName: '',
+  highestDailyCost: 0,
+};
+
 const tooltipStyle = {
   background: 'var(--color-surface-1)',
   border: '1px solid var(--color-hairline)',
@@ -37,37 +44,35 @@ const tooltipStyle = {
   boxShadow: 'var(--shadow-soft)',
 };
 
-function ChartCard({
-  title,
-  description,
-  children,
-  className,
-}: {
-  title: string;
-  description: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={`fitness-chart-card ${className ?? ''}`.trim()}>
-      <div className="fitness-chart-header">
-        <strong>{title}</strong>
-        <span>{description}</span>
-      </div>
-      {children}
-    </div>
-  );
-}
-
 export function StorageDashboardSection({
-  items,
   settings,
-  onSettingsChange,
+  showToast,
+  onChanged,
 }: StorageDashboardSectionProps) {
-  const overview = useMemo(() => buildStorageOverview(items, settings), [items, settings]);
-  const trend = useMemo(() => buildStoragePurchaseTrend(items, settings), [items, settings]);
-  const ranking = useMemo(() => buildStorageCostRanking(items, settings), [items, settings]);
+  const [overview, setOverview] = useState<StorageOverviewSummary>(EMPTY_OVERVIEW);
+  const [trend, setTrend] = useState<StoragePurchaseTrendPoint[]>([]);
+  const [ranking, setRanking] = useState<StorageCostRankingPoint[]>([]);
 
+  const loadDashboard = async () => {
+    try {
+      const [nextOverview, nextTrend, nextRanking] = await Promise.all([
+        storageApi.getOverview(),
+        storageApi.getPurchaseTrend(),
+        storageApi.getCostRanking(),
+      ]);
+      setOverview(nextOverview);
+      setTrend(nextTrend);
+      setRanking(nextRanking);
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '成本看板加载失败。'), 'error');
+    }
+  };
+
+  useEffect(() => {
+    void loadDashboard();
+  }, [settings.includeArchivedInDashboard, settings.defaultDashboardRange, settings.defaultSort]);
+
+  const hasData = Boolean(overview.totalCount);
   const activeRanking = ranking.filter((item) => item.status === 'active').slice(0, 6);
   const durationRanking = [...ranking].sort((left, right) => right.usageDays - left.usageDays).slice(0, 6);
   const priceBreakdown = ranking.slice(0, 6).map((item, index) => ({
@@ -77,22 +82,28 @@ export function StorageDashboardSection({
     dailyCost: item.dailyCost,
     usageDays: item.usageDays,
     status: item.status,
-    color: chartColors[index % chartColors.length],
+    color: ['#5e6ad2', '#1eaedb', '#27a644', '#f59e0b', '#e5484d', '#10b981'][index % 6],
   }));
-  const hasData = items.length > 0;
 
   return (
     <SectionCard
       title="成本看板"
-      description="围绕购买金额、日均成本和持有天数三个维度观察物品的摊销节奏，帮助判断哪些东西正在真正消耗预算。"
-      action={<Tag tone="blue">{settings.includeArchivedInDashboard ? '含已归档物品' : '仅统计使用中物品'}</Tag>}
+      description="看板数据全部由后端聚合返回，切换设置后直接刷新 overview、trend 和 ranking。"
     >
       <div className="page-stack">
         <div className="storage-dashboard-toolbar">
           <SelectField
             label="看板时间范围"
             value={settings.defaultDashboardRange}
-            onChange={(event) => onSettingsChange({ defaultDashboardRange: event.target.value as StoragePageSettings['defaultDashboardRange'] })}
+            onChange={async (event) => {
+              try {
+                await storageApi.updateSettings({ defaultDashboardRange: event.target.value as StoragePageSettings['defaultDashboardRange'] });
+                onChanged();
+                await loadDashboard();
+              } catch (error) {
+                showToast(buildApiErrorMessage(error, '更新时间范围失败。'), 'error');
+              }
+            }}
           >
             <option value="30d">近 30 天</option>
             <option value="90d">近 90 天</option>
@@ -113,19 +124,19 @@ export function StorageDashboardSection({
             { label: '本月新增物品数', value: `${overview.currentMonthNewCount} 件` },
             {
               label: '当前最高日均成本物品',
-              value: overview.highestDailyCostItemName,
-              helper: overview.highestDailyCost ? formatStorageMoney(overview.highestDailyCost) : '暂无数据',
+              value: overview.highestDailyCostItemName || '暂无数据',
+              helper: overview.highestDailyCost ? formatStorageMoney(overview.highestDailyCost) : undefined,
             },
           ]}
         />
 
         {hasData ? (
           <div className="storage-dashboard-grid">
-            <ChartCard
-              title="近 12 个月购入金额趋势"
-              description="按月份聚合每个月的购入金额与件数，快速回看你在哪些月份买得最集中。"
-              className="storage-chart-card-wide"
-            >
+            <div className="fitness-chart-card storage-chart-card-wide">
+              <div className="fitness-chart-header">
+                <strong>近 12 个月购入金额趋势</strong>
+                <span>按月份聚合每个月的购入金额与件数。</span>
+              </div>
               <div className="fitness-chart-shell">
                 <ResponsiveContainer width="100%" height={320}>
                   <BarChart data={trend}>
@@ -144,14 +155,15 @@ export function StorageDashboardSection({
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </ChartCard>
+            </div>
 
             <div className="storage-dashboard-columns">
               <div className="storage-dashboard-stack">
-                <ChartCard
-                  title="当前使用中物品日均成本排行"
-                  description="优先识别哪些东西虽然已经买下，但每天仍在高频“消耗”你的预算。"
-                >
+                <div className="fitness-chart-card">
+                  <div className="fitness-chart-header">
+                    <strong>当前使用中物品日均成本排行</strong>
+                    <span>优先识别哪些东西每天仍在持续消耗预算。</span>
+                  </div>
                   {activeRanking.length ? (
                     <div className="storage-ranking-list">
                       {activeRanking.map((item, index) => (
@@ -159,7 +171,7 @@ export function StorageDashboardSection({
                           <span className="storage-ranking-index">{index + 1}</span>
                           <div className="storage-ranking-main">
                             <strong>{item.itemName}</strong>
-                            <span>{item.usageDays} 天 · 买入 {formatStorageMoney(item.purchasePrice)}</span>
+                            <span>{item.usageDays} 天 · 购入 {formatStorageMoney(item.purchasePrice)}</span>
                           </div>
                           <div className="storage-ranking-value">
                             <strong>{formatStorageMoney(item.dailyCost)}</strong>
@@ -171,12 +183,13 @@ export function StorageDashboardSection({
                   ) : (
                     <EmptyState title="暂无使用中的排行数据" description="至少保留一件使用中的物品，日均成本排行才会出现。" />
                   )}
-                </ChartCard>
+                </div>
 
-                <ChartCard
-                  title="持有天数排行"
-                  description="把持有最久的物品列出来，帮助你判断哪些投入已经被充分摊薄。"
-                >
+                <div className="fitness-chart-card">
+                  <div className="fitness-chart-header">
+                    <strong>持有天数排行</strong>
+                    <span>把持有最久的物品列出来，帮助判断哪些投入已经被充分摊薄。</span>
+                  </div>
                   {durationRanking.length ? (
                     <div className="storage-ranking-list">
                       {durationRanking.map((item, index) => (
@@ -184,7 +197,7 @@ export function StorageDashboardSection({
                           <span className="storage-ranking-index">{index + 1}</span>
                           <div className="storage-ranking-main">
                             <strong>{item.itemName}</strong>
-                            <span>{item.purchaseDate}{item.endDate ? ` → ${item.endDate}` : ' → 今天'}</span>
+                            <span>{item.purchaseDate}{item.endDate ? ` -> ${item.endDate}` : ' -> 今天'}</span>
                           </div>
                           <div className="storage-ranking-value">
                             <strong>{item.usageDays} 天</strong>
@@ -194,16 +207,17 @@ export function StorageDashboardSection({
                       ))}
                     </div>
                   ) : (
-                    <EmptyState title="暂无持有天数排行" description="录入更多物品后，这里会自动按使用天数拉开差异。" />
+                    <EmptyState title="暂无持有天数排行" description="录入更多物品后，这里会按使用天数自动拉开差异。" />
                   )}
-                </ChartCard>
+                </div>
               </div>
 
               <div className="storage-dashboard-stack">
-                <ChartCard
-                  title="购入价格分布"
-                  description="按购入价格查看当前最重的预算投入，并配合明细摘要一起回看每件物品的摊销状态。"
-                >
+                <div className="fitness-chart-card">
+                  <div className="fitness-chart-header">
+                    <strong>购入价格分布</strong>
+                    <span>按购入价格查看当前最重的预算投入。</span>
+                  </div>
                   {priceBreakdown.length ? (
                     <div className="storage-price-layout">
                       <div className="storage-price-chart">
@@ -230,50 +244,16 @@ export function StorageDashboardSection({
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
-
-                      <div className="storage-price-legend">
-                        {priceBreakdown.map((item) => (
-                          <article key={item.id} className="storage-price-legend-item">
-                            <div className="storage-price-legend-main">
-                              <span className="storage-price-legend-dot" style={{ background: item.color }} />
-                              <div>
-                                <strong>{item.name}</strong>
-                                <span>{getStorageStatusLabel(item.status)} · {item.usageDays} 天</span>
-                              </div>
-                            </div>
-                            <div className="storage-price-legend-value">
-                              <strong>{formatStorageMoney(item.value)}</strong>
-                              <span>{formatStorageMoney(item.dailyCost)} / 天</span>
-                            </div>
-                          </article>
-                        ))}
-                      </div>
                     </div>
                   ) : (
                     <EmptyState title="暂无购入价格分布" description="物品数量增加后，价格分布图会更有参考价值。" />
                   )}
-                </ChartCard>
-
-                <div className="storage-dashboard-mini-grid">
-                  <div className="callout callout-neutral">
-                    <strong>当前最高日均成本</strong>
-                    <span>{overview.highestDailyCostItemName}</span>
-                    <div>{overview.highestDailyCost ? formatStorageMoney(overview.highestDailyCost) : '暂无数据'}</div>
-                  </div>
-                  <div className="callout callout-neutral">
-                    <strong>平均持有天数</strong>
-                    <span>当前统计样本的平均生命周期</span>
-                    <div>{overview.averageUsageDays} 天</div>
-                  </div>
                 </div>
               </div>
             </div>
           </div>
         ) : (
-          <EmptyState
-            title="暂无可分析的物品数据"
-            description="先录入几件物品，系统就会自动生成购入趋势、日均成本排行和持有天数排行。"
-          />
+          <EmptyState title="暂无可分析的物品数据" description="先录入几件物品，系统就会自动生成购入趋势和成本排行。" />
         )}
       </div>
     </SectionCard>

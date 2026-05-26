@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { LoanBillsSection } from '../../components/finance/LoanBillsSection';
 import { LoanDashboardSection } from '../../components/finance/LoanDashboardSection';
@@ -7,23 +7,24 @@ import { LoanRepaymentsSection } from '../../components/finance/LoanRepaymentsSe
 import { LoanSettingsSection } from '../../components/finance/LoanSettingsSection';
 import { LoanStatisticsSection } from '../../components/finance/LoanStatisticsSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
-import { Field, PillTabs, Toast, useToastState } from '../../components/ui';
-import { useLocalStorageState } from '../../hooks/useLocalStorageState';
+import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
-import {
-  buildInitialLoanState,
-  buildLoanOverview,
-  filterLoanPlatformsByUserId,
-  formatLoanAmount,
-  markLoanBillAsPaid,
-  normalizeLoanPageState,
-} from '../../services/loan';
-import type { LoanPageState, LoanTab } from '../../types/loan';
-
-const STORAGE_KEY = 'lifeos_finance_loan_page';
+import { buildApiErrorMessage } from '../../lib/api';
+import { hydrateNotificationCenterState } from '../../services/notificationCenter';
+import { formatLoanAmount } from '../../services/loan';
+import { loanApi } from '../../services/loanApi';
+import type {
+  LoanBill,
+  LoanOverviewSummary,
+  LoanPlatform,
+  LoanPlatformBreakdownPoint,
+  LoanRepayment,
+  LoanSettings,
+  LoanTab,
+} from '../../types/loan';
 
 const TAB_OPTIONS: Array<{ value: LoanTab; label: string }> = [
-  { value: 'dashboard', label: '概览' },
+  { value: 'dashboard', label: '总览' },
   { value: 'platforms', label: '平台' },
   { value: 'bills', label: '账单' },
   { value: 'repayments', label: '还款' },
@@ -31,129 +32,179 @@ const TAB_OPTIONS: Array<{ value: LoanTab; label: string }> = [
   { value: 'settings', label: '设置' },
 ];
 
+const EMPTY_SETTINGS: LoanSettings = {
+  repaymentReminderEnabled: true,
+  overdueReminderEnabled: true,
+  autoRepaymentOnMarkPaid: true,
+  notificationFrequency: 'daily',
+  upcomingDays: 7,
+};
+
+const EMPTY_OVERVIEW: LoanOverviewSummary = {
+  totalDebt: 0,
+  totalPaid: 0,
+  totalUnpaid: 0,
+  totalInterest: 0,
+  totalBillCount: 0,
+  repaymentCount: 0,
+  upcomingCount: 0,
+  overdueCount: 0,
+};
+
 export default function LoanPage() {
-  const [data, setData] = useLocalStorageState<LoanPageState>(STORAGE_KEY, buildInitialLoanState);
   const [tab, setTab] = usePageTab<LoanTab>('dashboard', TAB_OPTIONS.map((item) => item.value), 'loanTab');
   const { toast, showToast } = useToastState();
-  const normalizedData = useMemo(() => normalizeLoanPageState(data), [data]);
+  const [platforms, setPlatforms] = useState<LoanPlatform[]>([]);
+  const [bills, setBills] = useState<LoanBill[]>([]);
+  const [repayments, setRepayments] = useState<LoanRepayment[]>([]);
+  const [settings, setSettings] = useState<LoanSettings>(EMPTY_SETTINGS);
+  const [overview, setOverview] = useState<LoanOverviewSummary>(EMPTY_OVERVIEW);
+  const [platformBreakdown, setPlatformBreakdown] = useState<LoanPlatformBreakdownPoint[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshToken, setRefreshToken] = useState(0);
+
+  const reload = useCallback(async () => {
+    const [
+      nextPlatforms,
+      nextBills,
+      nextRepayments,
+      nextOverview,
+      nextPlatformBreakdown,
+      nextSettings,
+    ] = await Promise.all([
+      loanApi.listPlatforms({ page: 1, page_size: 1000 }),
+      loanApi.listBills({ page: 1, page_size: 1000 }),
+      loanApi.listRepayments({ page: 1, page_size: 1000 }),
+      loanApi.getOverview(),
+      loanApi.getPlatformBreakdown(),
+      loanApi.getSettings(),
+    ]);
+
+    setPlatforms(nextPlatforms.items);
+    setBills(nextBills.items);
+    setRepayments(nextRepayments.items);
+    setOverview(nextOverview);
+    setPlatformBreakdown(nextPlatformBreakdown);
+    setSettings({
+      ...EMPTY_SETTINGS,
+      ...nextSettings,
+    });
+  }, []);
 
   useEffect(() => {
-    const shouldSync = JSON.stringify(normalizedData) !== JSON.stringify(data);
+    let cancelled = false;
 
-    if (shouldSync) {
-      setData(normalizedData);
+    const load = async () => {
+      setLoading(true);
+      try {
+        await reload();
+        if (!cancelled) {
+          await hydrateNotificationCenterState();
+        }
+      } catch (error) {
+        if (!cancelled) {
+          showToast(buildApiErrorMessage(error, '借贷中心加载失败。'), 'error');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reload, refreshToken, showToast]);
+
+  const runWithRefresh = useCallback(async (action: () => Promise<void>, successMessage?: string) => {
+    try {
+      await action();
+      await reload();
+      if (successMessage) {
+        showToast(successMessage);
+      }
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '借贷数据保存失败。'), 'error');
+      await reload();
+      throw error;
     }
-  }, [data, normalizedData, setData]);
+  }, [reload, showToast]);
 
-  const overview = useMemo(
-    () => buildLoanOverview(normalizedData.bills, normalizedData.repayments, normalizedData.settings.activeUserId),
-    [normalizedData.bills, normalizedData.repayments, normalizedData.settings.activeUserId],
-  );
+  const updateSettings = useCallback(async (patch: Partial<LoanSettings>) => {
+    try {
+      const next = await loanApi.updateSettings(patch);
+      setSettings((current) => ({
+        ...current,
+        ...next,
+      }));
+      await hydrateNotificationCenterState();
+      showToast('借贷提醒设置已更新。');
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '借贷提醒设置更新失败。'), 'error');
+    }
+  }, [showToast]);
 
-  const activePlatforms = useMemo(
-    () => filterLoanPlatformsByUserId(normalizedData.platforms, normalizedData.settings.activeUserId),
-    [normalizedData.platforms, normalizedData.settings.activeUserId],
-  );
+  const handleMarkPaid = useCallback(async (billId: string) => {
+    try {
+      await loanApi.markBillPaid(billId);
+      await reload();
+      await hydrateNotificationCenterState();
+      showToast('账单已标记为已还。');
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '标记已还失败。'), 'error');
+    }
+  }, [reload, showToast]);
 
-  const updateSettings = (patch: Partial<LoanPageState['settings']>) => {
-    setData((previous) => ({
-      ...previous,
-      settings: {
-        ...previous.settings,
-        ...patch,
-      },
-    }));
-  };
-
-  const handleActiveUserChange = (value: string) => {
-    updateSettings({
-      activeUserId: value,
-      billsUserId: value,
-      repaymentsUserId: value,
-      statisticsUserId: value,
-    });
-  };
-
-  const handleMarkPaid = (billId: string) => {
-    const result = markLoanBillAsPaid(
-      normalizedData.bills,
-      normalizedData.repayments,
-      billId,
-      normalizedData.settings.autoRepaymentOnMarkPaid,
-    );
-
-    setData((previous) => ({
-      ...previous,
-      bills: result.bills,
-      repayments: result.repayments,
-    }));
-
-    showToast(
-      result.createdRepayment
-        ? '账单已标记为已还，并自动生成了一笔还款记录。'
-        : '账单已标记为已还。',
-    );
-  };
+  const summaryCards = useMemo(() => ([
+    { label: '总负债', value: formatLoanAmount(overview.totalDebt) },
+    { label: '已还金额', value: formatLoanAmount(overview.totalPaid) },
+    { label: '待还金额', value: formatLoanAmount(overview.totalUnpaid) },
+    { label: '总利息', value: formatLoanAmount(overview.totalInterest) },
+    { label: '当前账单数', value: `${overview.totalBillCount}` },
+    { label: '风险账单', value: `${overview.upcomingCount} 待还 / ${overview.overdueCount} 逾期` },
+  ]), [overview]);
 
   return (
     <div className="page-stack">
       <PageHeader
-        title="借款还款"
-        subtitle="把平台、账单、还款、统计和提醒规则统一收进当前 LifeOS 前端体系，全部数据本地持久化，并保持主题化日期控件和紧凑后台布局一致。"
+        title="借贷还款"
+        subtitle={
+          loading
+            ? '正在从后端加载贷款平台、账单、还款和提醒设置。'
+            : '借贷页面已切换为后端唯一业务数据源。'
+        }
       />
 
       <SectionCard
-        title="当前上下文"
-        description="这里决定当前借款页默认归属的用户维度，新增平台、账单和还款记录都会优先沿用这一组上下文。"
+        title="当前口径"
+        description="页面默认按当前登录用户聚合，不再允许手动填写或切换用户 ID。"
       >
         <div className="loan-context-grid">
-          <Field
-            label="当前用户 ID"
-            value={normalizedData.settings.activeUserId}
-            onChange={(event) => handleActiveUserChange(event.target.value)}
-            placeholder="例如：user-001"
-          />
           <div className="loan-context-summary">
-            <span>当前用户平台 {activePlatforms.length} 个</span>
-            <span>账单 {overview.totalBillCount} 笔</span>
-            <span>还款 {overview.repaymentCount} 笔</span>
+            <span>平台 {platforms.length} 个</span>
+            <span>账单 {bills.length} 笔</span>
+            <span>还款 {repayments.length} 笔</span>
           </div>
         </div>
       </SectionCard>
 
-      <StatGrid
-        items={[
-          {
-            label: '当前用户',
-            value: normalizedData.settings.activeUserId || '未设置',
-            helper: '平台、账单、还款和统计默认都会跟随这里的用户上下文',
-          },
-          { label: '总负债', value: formatLoanAmount(overview.totalDebt) },
-          { label: '已还金额', value: formatLoanAmount(overview.totalPaid) },
-          { label: '待还金额', value: formatLoanAmount(overview.totalUnpaid) },
-          {
-            label: '当前风险',
-            value: `${overview.upcomingCount} 待还 / ${overview.overdueCount} 逾期`,
-            helper: '提醒场景会复用通知中心的统一发送入口',
-          },
-          { label: '总利息', value: formatLoanAmount(overview.totalInterest) },
-        ]}
-      />
+      <StatGrid items={summaryCards} />
 
       <SectionCard
         title="业务视图"
-        description="概览、平台、账单、还款、统计和设置共用一套本地数据模型、通知联动规则和主题化日期交互。"
+        description="总览、平台、账单、还款、统计和设置全部直接读取后端数据。"
       >
         <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as LoanTab)} />
       </SectionCard>
 
       {tab === 'dashboard' ? (
         <LoanDashboardSection
-          activeUserId={normalizedData.settings.activeUserId}
-          bills={normalizedData.bills}
-          platforms={normalizedData.platforms}
-          repayments={normalizedData.repayments}
-          onActiveUserIdChange={handleActiveUserChange}
+          overview={overview}
+          bills={bills}
+          platformBreakdown={platformBreakdown}
           onMarkPaid={handleMarkPaid}
           onOpenTab={(nextTab) => setTab(nextTab)}
         />
@@ -161,33 +212,23 @@ export default function LoanPage() {
 
       {tab === 'platforms' ? (
         <LoanPlatformsSection
-          activeUserId={normalizedData.settings.activeUserId}
-          bills={normalizedData.bills}
-          platforms={normalizedData.platforms}
-          repayments={normalizedData.repayments}
-          onChangePlatforms={(updater) => {
-            setData((previous) => ({
-              ...previous,
-              platforms: updater(previous.platforms),
-            }));
-          }}
+          bills={bills}
+          platforms={platforms}
+          repayments={repayments}
+          onCreate={(draft) => runWithRefresh(() => loanApi.createPlatform(draft).then(() => undefined))}
+          onUpdate={(platformId, draft) => runWithRefresh(() => loanApi.updatePlatform(platformId, draft).then(() => undefined))}
+          onDelete={(platformId) => runWithRefresh(() => loanApi.deletePlatform(platformId).then(() => undefined))}
           showToast={showToast}
         />
       ) : null}
 
       {tab === 'bills' ? (
         <LoanBillsSection
-          activeUserId={normalizedData.settings.activeUserId}
-          filterUserId={normalizedData.settings.billsUserId}
-          bills={normalizedData.bills}
-          platforms={normalizedData.platforms}
-          onFilterUserIdChange={(value) => updateSettings({ billsUserId: value })}
-          onChangeBills={(updater) => {
-            setData((previous) => ({
-              ...previous,
-              bills: updater(previous.bills),
-            }));
-          }}
+          bills={bills}
+          platforms={platforms}
+          onCreate={(draft) => runWithRefresh(() => loanApi.createBill(draft).then(() => undefined))}
+          onUpdate={(billId, draft) => runWithRefresh(() => loanApi.updateBill(billId, draft).then(() => undefined))}
+          onDelete={(billId) => runWithRefresh(() => loanApi.deleteBill(billId).then(() => undefined))}
           onMarkPaid={handleMarkPaid}
           showToast={showToast}
         />
@@ -195,37 +236,30 @@ export default function LoanPage() {
 
       {tab === 'repayments' ? (
         <LoanRepaymentsSection
-          activeUserId={normalizedData.settings.activeUserId}
-          filterUserId={normalizedData.settings.repaymentsUserId}
-          bills={normalizedData.bills}
-          platforms={normalizedData.platforms}
-          repayments={normalizedData.repayments}
-          onFilterUserIdChange={(value) => updateSettings({ repaymentsUserId: value })}
-          onChangeRepayments={(updater) => {
-            setData((previous) => ({
-              ...previous,
-              repayments: updater(previous.repayments),
-            }));
-          }}
+          bills={bills}
+          platforms={platforms}
+          repayments={repayments}
+          onCreate={(draft) => runWithRefresh(() => loanApi.createRepayment(draft).then(() => undefined))}
+          onUpdate={(repaymentId, draft) => runWithRefresh(() => loanApi.updateRepayment(repaymentId, draft).then(() => undefined))}
+          onDelete={(repaymentId) => runWithRefresh(() => loanApi.deleteRepayment(repaymentId).then(() => undefined))}
           showToast={showToast}
         />
       ) : null}
 
       {tab === 'statistics' ? (
         <LoanStatisticsSection
-          userId={normalizedData.settings.statisticsUserId}
-          bills={normalizedData.bills}
-          platforms={normalizedData.platforms}
-          repayments={normalizedData.repayments}
-          onUserIdChange={(value) => updateSettings({ statisticsUserId: value })}
+          platforms={platforms}
+          showToast={showToast}
         />
       ) : null}
 
       {tab === 'settings' ? (
         <LoanSettingsSection
-          bills={normalizedData.bills}
-          settings={normalizedData.settings}
-          onSettingsChange={updateSettings}
+          bills={bills}
+          settings={settings}
+          onSettingsChange={(patch) => {
+            void updateSettings(patch);
+          }}
           showToast={showToast}
         />
       ) : null}

@@ -5,14 +5,28 @@ import { env } from './config/env';
 import { appDataSource } from './db/data-source';
 
 async function bootstrap() {
-  await appDataSource.initialize();
-  const app = createApp();
+  try {
+    await appDataSource.initialize();
 
-  app.listen(env.PORT, () => {
-    // Keep startup logging minimal until a real logger is wired in.
+    if (!appDataSource.entityMetadatas.length) {
+      throw new Error('No entity metadata discovered during startup.');
+    }
+
     // eslint-disable-next-line no-console
-    console.log(`LifeOS server listening on :${env.PORT}`);
-  });
+    console.log(`LifeOS entity metadata loaded: ${appDataSource.entityMetadatas.length}`);
+
+    const app = createApp();
+
+    app.listen(env.PORT, () => {
+      // Keep startup logging minimal until a real logger is wired in.
+      // eslint-disable-next-line no-console
+      console.log(`LifeOS server listening on :${env.PORT}`);
+    });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('LifeOS server failed to start.', error);
+    process.exit(1);
+  }
 }
 
 void bootstrap();

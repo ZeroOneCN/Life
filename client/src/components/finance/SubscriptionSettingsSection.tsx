@@ -1,12 +1,15 @@
-import { useMemo } from 'react';
+import { useEffect, useState } from 'react';
 
 import { NotificationLogTable } from '../NotificationLogTable';
 import { NotificationStatusCard } from '../NotificationStatusCard';
 import { SettingSwitchCard } from '../SettingSwitchCard';
 import { SectionCard } from '../page';
-import { Checkbox, Field } from '../ui';
-import { updateSceneConfig, useNotificationCenterState } from '../../services/notificationCenter';
+import { Btn, Checkbox, Field } from '../ui';
+import { buildApiErrorMessage } from '../../lib/api';
+import { getNotificationLogs } from '../../services/notificationCenter';
+import { subscriptionApi } from '../../services/subscriptionApi';
 import type { SubscriptionPageState } from '../../types/subscription';
+import type { NotificationLogEntry } from '../../types/notifications';
 
 interface SubscriptionSettingsSectionProps {
   settings: SubscriptionPageState['settings'];
@@ -17,19 +20,62 @@ export function SubscriptionSettingsSection({
   settings,
   onSettingsChange,
 }: SubscriptionSettingsSectionProps) {
-  const notificationState = useNotificationCenterState();
+  const [logs, setLogs] = useState<NotificationLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const latestLogs = useMemo(
-    () => (notificationState?.logs ?? [])
-      .filter((log) => log.sceneId === 'subscription.renewal_upcoming' || log.sceneId === 'subscription.expired')
-      .slice(0, 8),
-    [notificationState],
-  );
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const result = await getNotificationLogs({
+          page: 1,
+          pageSize: 8,
+          sceneIds: ['subscription.renewal_upcoming', 'subscription.expired'],
+        });
+
+        if (!cancelled) {
+          setLogs(result.items);
+        }
+      } catch {
+        if (!cancelled) {
+          setLogs([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [settings]);
+
+  const triggerReminder = async () => {
+    try {
+      await subscriptionApi.triggerReminders();
+      const result = await getNotificationLogs({
+        page: 1,
+        pageSize: 8,
+        sceneIds: ['subscription.renewal_upcoming', 'subscription.expired'],
+      });
+      setLogs(result.items);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error(buildApiErrorMessage(error, '订阅提醒触发失败。'));
+    }
+  };
 
   return (
     <SectionCard
       title="提醒设置"
-      description="订阅提醒统一接到通知中心，本页只负责业务开关、提醒窗口和最近触发摘要。"
+      description="订阅提醒统一接入通知中心，本页只维护业务规则、提醒窗口和最近日志摘要。"
+      action={<Btn tone="secondary" onClick={() => void triggerReminder()}>手动触发提醒</Btn>}
     >
       <div className="page-stack">
         <div className="subscription-settings-grid">
@@ -39,10 +85,9 @@ export function SubscriptionSettingsSection({
             checked={settings.reminderEnabled}
             onChange={(checked) => {
               onSettingsChange({ reminderEnabled: checked });
-              updateSceneConfig('subscription.renewal_upcoming', { enabled: checked });
             }}
             statusText={settings.reminderEnabled ? '已开启' : '已关闭'}
-            impact={`当前会在到期前 ${settings.leadDays} 天内扫描订阅，${settings.includeAutoRenewInReminders ? '自动续费项也会纳入提醒。' : '默认跳过自动续费项。'}`}
+            impact={`当前会在到期前 ${settings.leadDays} 天内扫描订阅；${settings.includeAutoRenewInReminders ? '自动续费项目也会纳入提醒。' : '自动续费项目默认跳过。'}`}
           >
             <div className="subscription-settings-inline">
               <Field
@@ -65,29 +110,27 @@ export function SubscriptionSettingsSection({
             </div>
           </SettingSwitchCard>
 
-          <SettingSwitchCard
-            title="到期当天 / 已逾期提醒"
-            description="在订阅到期当天或已过期后记录提醒日志，便于尽快处理。"
-            checked={settings.expiryDayReminderEnabled}
-            onChange={(checked) => {
-              onSettingsChange({ expiryDayReminderEnabled: checked });
-              updateSceneConfig('subscription.expired', { enabled: checked });
-            }}
-            statusText={settings.expiryDayReminderEnabled ? '已开启' : '已关闭'}
-            impact="该提醒更偏向风险兜底，适合关键软件、云服务或容易影响工作流的订阅。"
-          />
-        </div>
-
-        <div className="subscription-notification-grid">
           <NotificationStatusCard
             sceneId="subscription.renewal_upcoming"
             title="续费提醒场景"
-            summary="订阅进入提醒窗口时，通过通知中心统一选择渠道发送。"
+            summary="查看当前场景的启用状态、绑定渠道数和通知中心入口。"
           />
+
+          <SettingSwitchCard
+            title="到期当天 / 已逾期提醒"
+            description="当订阅到期当天或过期后记录提醒日志，方便及时处理。"
+            checked={settings.expiryDayReminderEnabled}
+            onChange={(checked) => {
+              onSettingsChange({ expiryDayReminderEnabled: checked });
+            }}
+            statusText={settings.expiryDayReminderEnabled ? '已开启' : '已关闭'}
+            impact="该提醒更偏向风险兜底，适合关键软件、云服务或长期会员订阅。"
+          />
+
           <NotificationStatusCard
             sceneId="subscription.expired"
             title="到期与逾期场景"
-            summary="订阅到期当天或逾期后，会统一写入通知日志并按场景配置处理。"
+            summary="订阅到期后由通知中心统一记录发送日志。"
           />
         </div>
 
@@ -95,10 +138,10 @@ export function SubscriptionSettingsSection({
           <div>
             <h3 className="section-title">最近提醒日志</h3>
             <p className="section-description">
-              这里会显示服务订阅中心最近触发的提醒记录，完整日志可前往通知中心查看。
+              {loading ? '正在同步最近的提醒日志。' : '这里展示订阅中心最近触发的提醒记录。'}
             </p>
           </div>
-          <NotificationLogTable logs={latestLogs} />
+          <NotificationLogTable logs={logs} />
         </div>
       </div>
     </SectionCard>

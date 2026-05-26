@@ -531,6 +531,10 @@ function createSubscriptionRouter() {
             lead_days: 7,
             include_auto_renew_in_reminders: false,
         });
+        await (0, notification_1.syncNotificationScenesEnabled)(userId, [
+            { sceneId: 'subscription.renewal_upcoming', enabled: settings.reminder_enabled },
+            { sceneId: 'subscription.expired', enabled: settings.expiry_day_reminder_enabled },
+        ]);
         response.json((0, response_1.successResponse)({
             recordsKeyword: settings.records_keyword,
             recordsCategoryId: settings.records_category_id,

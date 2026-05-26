@@ -16,10 +16,12 @@ import { parsePagination } from '../../shared/utils/pagination';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { normalizeDate, normalizeMonth } from '../../shared/utils/date';
 import { AppError } from '../../shared/errors/app-error';
-import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import {
+  sendNotificationSceneLogs,
+  syncNotificationScenesEnabled,
+} from '../../shared/domain/notification';
 
 const platformSchema = z.object({
-  userId: z.string().trim().optional(),
   name: z.string().trim().min(1).max(128),
   billingDay: z.number().int().min(1).max(31),
   repaymentDay: z.number().int().min(1).max(31),
@@ -27,7 +29,6 @@ const platformSchema = z.object({
 });
 
 const billSchema = z.object({
-  userId: z.string().trim().optional(),
   platformId: z.string().trim().min(1),
   platformName: z.string().trim().optional(),
   amount: z.number().min(0),
@@ -39,7 +40,6 @@ const billSchema = z.object({
 });
 
 const repaymentSchema = z.object({
-  userId: z.string().trim().optional(),
   billId: z.string().trim().optional().default(''),
   platformId: z.string().trim().min(1),
   platformName: z.string().trim().optional(),
@@ -50,10 +50,6 @@ const repaymentSchema = z.object({
 });
 
 const settingsSchema = z.object({
-  activeUserId: z.string().optional(),
-  billsUserId: z.string().optional(),
-  repaymentsUserId: z.string().optional(),
-  statisticsUserId: z.string().optional(),
   repaymentReminderEnabled: z.boolean().optional(),
   overdueReminderEnabled: z.boolean().optional(),
   autoRepaymentOnMarkPaid: z.boolean().optional(),
@@ -71,10 +67,29 @@ const triggerReminderSchema = z.object({
 
 const settingService = new BaseUserSettingService(FinanceLoanSettingEntity);
 
+function getDefaultSettings() {
+  return {
+    repayment_reminder_enabled: true,
+    overdue_reminder_enabled: true,
+    auto_repayment_on_mark_paid: true,
+    notification_frequency: 'daily',
+    upcoming_days: 7,
+  } satisfies Partial<FinanceLoanSettingEntity>;
+}
+
+function mapSettings(settings: FinanceLoanSettingEntity) {
+  return {
+    repaymentReminderEnabled: settings.repayment_reminder_enabled,
+    overdueReminderEnabled: settings.overdue_reminder_enabled,
+    autoRepaymentOnMarkPaid: settings.auto_repayment_on_mark_paid,
+    notificationFrequency: settings.notification_frequency as 'daily' | 'always',
+    upcomingDays: settings.upcoming_days,
+  };
+}
+
 function mapPlatform(entity: FinanceLoanPlatformEntity) {
   return {
     id: entity.id,
-    userId: entity.user_id,
     name: entity.name,
     billingDay: entity.billing_day,
     repaymentDay: entity.repayment_day,
@@ -87,7 +102,6 @@ function mapPlatform(entity: FinanceLoanPlatformEntity) {
 function mapBill(entity: FinanceLoanBillEntity) {
   return {
     id: entity.id,
-    userId: entity.user_id,
     platformId: entity.platform_id,
     platformName: entity.platform_name,
     amount: Number(entity.amount),
@@ -105,7 +119,6 @@ function mapBill(entity: FinanceLoanBillEntity) {
 function mapRepayment(entity: FinanceLoanRepaymentEntity) {
   return {
     id: entity.id,
-    userId: entity.user_id,
     billId: entity.bill_id ?? '',
     platformId: entity.platform_id,
     platformName: entity.platform_name,
@@ -122,6 +135,7 @@ function getBillStatus(entity: FinanceLoanBillEntity) {
   if (entity.is_paid) {
     return 'paid';
   }
+
   return dayjs(entity.due_date).isBefore(dayjs(), 'day') ? 'overdue' : 'unpaid';
 }
 
@@ -129,7 +143,9 @@ function buildOverview(bills: FinanceLoanBillEntity[], repayments: FinanceLoanRe
   return {
     totalDebt: Number(bills.reduce((sum, bill) => sum + Number(bill.amount), 0).toFixed(2)),
     totalPaid: Number(repayments.reduce((sum, repayment) => sum + Number(repayment.amount), 0).toFixed(2)),
-    totalUnpaid: Number(bills.filter((bill) => !bill.is_paid).reduce((sum, bill) => sum + Number(bill.amount), 0).toFixed(2)),
+    totalUnpaid: Number(
+      bills.filter((bill) => !bill.is_paid).reduce((sum, bill) => sum + Number(bill.amount), 0).toFixed(2),
+    ),
     totalInterest: Number(bills.reduce((sum, bill) => sum + Number(bill.interest), 0).toFixed(2)),
     totalBillCount: bills.length,
     repaymentCount: repayments.length,
@@ -138,10 +154,7 @@ function buildOverview(bills: FinanceLoanBillEntity[], repayments: FinanceLoanRe
   };
 }
 
-function buildLoanReminderItems(
-  bills: FinanceLoanBillEntity[],
-  settings: FinanceLoanSettingEntity,
-) {
+function buildLoanReminderItems(bills: FinanceLoanBillEntity[], settings: FinanceLoanSettingEntity) {
   const today = dayjs().startOf('day');
 
   return bills
@@ -162,7 +175,7 @@ function buildLoanReminderItems(
           bill,
           sceneId: 'loan.repayment_upcoming',
           title: '贷款还款提醒',
-          message: `${bill.platform_name} 账单将在 ${bill.due_date} 到期，待还金额 ${Number(bill.amount).toFixed(2)}。`,
+          message: `${bill.platform_name} 的账单将于 ${bill.due_date} 到期，待还金额 ¥${Number(bill.amount).toFixed(2)}。`,
           severity: diff === 0 ? 'high' : 'medium',
         });
       }
@@ -172,7 +185,7 @@ function buildLoanReminderItems(
           bill,
           sceneId: 'loan.repayment_overdue',
           title: '贷款逾期提醒',
-          message: `${bill.platform_name} 账单已逾期 ${Math.abs(diff)} 天，待还金额 ${Number(bill.amount).toFixed(2)}。`,
+          message: `${bill.platform_name} 的账单已逾期 ${Math.abs(diff)} 天，待还金额 ¥${Number(bill.amount).toFixed(2)}。`,
           severity: 'high',
         });
       }
@@ -226,7 +239,7 @@ export function createLoanRouter() {
     const payload = validateBody(platformSchema, request.body);
     const repository = appDataSource.getRepository(FinanceLoanPlatformEntity);
     const item = await repository.save(repository.create({
-      user_id: payload.userId ?? userId,
+      user_id: userId,
       name: payload.name,
       billing_day: payload.billingDay,
       repayment_day: payload.repaymentDay,
@@ -307,17 +320,19 @@ export function createLoanRouter() {
     const platformRepo = appDataSource.getRepository(FinanceLoanPlatformEntity);
     const billRepo = appDataSource.getRepository(FinanceLoanBillEntity);
     const platform = await platformRepo.findOne({
-      where: { id: payload.platformId, user_id: payload.userId ?? userId },
+      where: { id: payload.platformId, user_id: userId },
     });
 
     const item = await billRepo.save(billRepo.create({
-      user_id: payload.userId ?? userId,
+      user_id: userId,
       platform_id: payload.platformId,
       platform_name: payload.platformName ?? platform?.name ?? '',
       amount: payload.amount,
       interest: payload.interest,
       billing_month: normalizeMonth(payload.billingMonth),
-      due_date: payload.dueDate ? normalizeDate(payload.dueDate) : dayjs(`${normalizeMonth(payload.billingMonth)}-01`).format('YYYY-MM-DD'),
+      due_date: payload.dueDate
+        ? normalizeDate(payload.dueDate)
+        : dayjs(`${normalizeMonth(payload.billingMonth)}-01`).format('YYYY-MM-DD'),
       notes: payload.notes,
       is_paid: payload.isPaid,
       paid_at: payload.isPaid ? dayjs().format('YYYY-MM-DD') : null,
@@ -403,11 +418,11 @@ export function createLoanRouter() {
     const platformRepo = appDataSource.getRepository(FinanceLoanPlatformEntity);
     const billRepo = appDataSource.getRepository(FinanceLoanBillEntity);
     const repaymentRepo = appDataSource.getRepository(FinanceLoanRepaymentEntity);
-    const bill = payload.billId ? await billRepo.findOne({ where: { id: payload.billId, user_id: payload.userId ?? userId } }) : null;
-    const platform = await platformRepo.findOne({ where: { id: payload.platformId, user_id: payload.userId ?? userId } });
+    const bill = payload.billId ? await billRepo.findOne({ where: { id: payload.billId, user_id: userId } }) : null;
+    const platform = await platformRepo.findOne({ where: { id: payload.platformId, user_id: userId } });
 
     const item = await repaymentRepo.save(repaymentRepo.create({
-      user_id: payload.userId ?? userId,
+      user_id: userId,
       bill_id: payload.billId || null,
       platform_id: payload.platformId,
       platform_name: payload.platformName ?? bill?.platform_name ?? platform?.name ?? '',
@@ -475,9 +490,13 @@ export function createLoanRouter() {
   router.get('/monthly-stats', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const month = String(request.query.month ?? dayjs().format('YYYY-MM'));
+    const platformId = String(request.query.platformId ?? '').trim();
     const billRepo = appDataSource.getRepository(FinanceLoanBillEntity);
     const bills = await billRepo.find({ where: { user_id: userId } });
-    const scoped = bills.filter((bill) => bill.billing_month === normalizeMonth(month));
+    const scoped = bills
+      .filter((bill) => bill.billing_month === normalizeMonth(month))
+      .filter((bill) => !platformId || bill.platform_id === platformId);
+
     response.json(successResponse({
       month: normalizeMonth(month),
       totalBills: scoped.length,
@@ -493,8 +512,10 @@ export function createLoanRouter() {
     const userId = requireAuthUser(request);
     const startDate = String(request.query.startDate ?? dayjs().subtract(29, 'day').format('YYYY-MM-DD'));
     const endDate = String(request.query.endDate ?? dayjs().format('YYYY-MM-DD'));
+    const platformId = String(request.query.platformId ?? '').trim();
     const repaymentRepo = appDataSource.getRepository(FinanceLoanRepaymentEntity);
     const repayments = await repaymentRepo.find({ where: { user_id: userId } });
+    const scopedRepayments = repayments.filter((item) => !platformId || item.platform_id === platformId);
     const start = dayjs(normalizeDate(startDate));
     const end = dayjs(normalizeDate(endDate));
     const rangeStart = start.isAfter(end) ? end : start;
@@ -502,7 +523,7 @@ export function createLoanRouter() {
     const days = Math.max(0, rangeEnd.diff(rangeStart, 'day'));
     const points = Array.from({ length: days + 1 }, (_, index) => {
       const currentDate = rangeStart.add(index, 'day');
-      const matched = repayments.filter((item) => item.repayment_date === currentDate.format('YYYY-MM-DD'));
+      const matched = scopedRepayments.filter((item) => item.repayment_date === currentDate.format('YYYY-MM-DD'));
       return {
         date: currentDate.format('YYYY-MM-DD'),
         label: currentDate.format('MM-DD'),
@@ -537,65 +558,33 @@ export function createLoanRouter() {
 
   router.get('/settings', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
-    const settings = await settingService.getOrCreate(userId, {
-      active_user_id: userId,
-      bills_user_id: userId,
-      repayments_user_id: userId,
-      statistics_user_id: userId,
-      repayment_reminder_enabled: true,
-      overdue_reminder_enabled: true,
-      auto_repayment_on_mark_paid: true,
-      notification_frequency: 'daily',
-      upcoming_days: 7,
-    });
-    response.json(successResponse({
-      activeUserId: settings.active_user_id ?? userId,
-      billsUserId: settings.bills_user_id ?? userId,
-      repaymentsUserId: settings.repayments_user_id ?? userId,
-      statisticsUserId: settings.statistics_user_id ?? userId,
-      repaymentReminderEnabled: settings.repayment_reminder_enabled,
-      overdueReminderEnabled: settings.overdue_reminder_enabled,
-      autoRepaymentOnMarkPaid: settings.auto_repayment_on_mark_paid,
-      notificationFrequency: settings.notification_frequency,
-      upcomingDays: settings.upcoming_days,
-    }));
+    const settings = await settingService.getOrCreate(userId, getDefaultSettings());
+    response.json(successResponse(mapSettings(settings)));
   }));
 
   router.patch('/settings', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const payload = validateBody(settingsSchema, request.body);
     const settings = await settingService.update(userId, {
-      active_user_id: payload.activeUserId,
-      bills_user_id: payload.billsUserId,
-      repayments_user_id: payload.repaymentsUserId,
-      statistics_user_id: payload.statisticsUserId,
       repayment_reminder_enabled: payload.repaymentReminderEnabled,
       overdue_reminder_enabled: payload.overdueReminderEnabled,
       auto_repayment_on_mark_paid: payload.autoRepaymentOnMarkPaid,
       notification_frequency: payload.notificationFrequency,
       upcoming_days: payload.upcomingDays,
-    }, {
-      active_user_id: userId,
-      bills_user_id: userId,
-      repayments_user_id: userId,
-      statistics_user_id: userId,
-      repayment_reminder_enabled: true,
-      overdue_reminder_enabled: true,
-      auto_repayment_on_mark_paid: true,
-      notification_frequency: 'daily',
-      upcoming_days: 7,
-    });
-    response.json(successResponse({
-      activeUserId: settings.active_user_id ?? userId,
-      billsUserId: settings.bills_user_id ?? userId,
-      repaymentsUserId: settings.repayments_user_id ?? userId,
-      statisticsUserId: settings.statistics_user_id ?? userId,
-      repaymentReminderEnabled: settings.repayment_reminder_enabled,
-      overdueReminderEnabled: settings.overdue_reminder_enabled,
-      autoRepaymentOnMarkPaid: settings.auto_repayment_on_mark_paid,
-      notificationFrequency: settings.notification_frequency,
-      upcomingDays: settings.upcoming_days,
-    }, 'update_loan_settings_success'));
+    }, getDefaultSettings());
+
+    await syncNotificationScenesEnabled(userId, [
+      {
+        sceneId: 'loan.repayment_upcoming',
+        enabled: settings.repayment_reminder_enabled,
+      },
+      {
+        sceneId: 'loan.repayment_overdue',
+        enabled: settings.overdue_reminder_enabled,
+      },
+    ]);
+
+    response.json(successResponse(mapSettings(settings), 'update_loan_settings_success'));
   }));
 
   router.post('/actions/mark-bill-paid', asyncHandler(async (request: AuthenticatedRequest, response) => {
@@ -603,17 +592,7 @@ export function createLoanRouter() {
     const payload = validateBody(markPaidSchema, request.body);
     const billRepo = appDataSource.getRepository(FinanceLoanBillEntity);
     const repaymentRepo = appDataSource.getRepository(FinanceLoanRepaymentEntity);
-    const settings = await settingService.getOrCreate(userId, {
-      active_user_id: userId,
-      bills_user_id: userId,
-      repayments_user_id: userId,
-      statistics_user_id: userId,
-      repayment_reminder_enabled: true,
-      overdue_reminder_enabled: true,
-      auto_repayment_on_mark_paid: true,
-      notification_frequency: 'daily',
-      upcoming_days: 7,
-    });
+    const settings = await settingService.getOrCreate(userId, getDefaultSettings());
     const current = await billRepo.findOne({
       where: { id: payload.billId, user_id: userId },
     });
@@ -657,17 +636,7 @@ export function createLoanRouter() {
     const userId = requireAuthUser(request);
     const payload = validateBody(triggerReminderSchema, request.body);
     const billRepo = appDataSource.getRepository(FinanceLoanBillEntity);
-    const settings = await settingService.getOrCreate(userId, {
-      active_user_id: userId,
-      bills_user_id: userId,
-      repayments_user_id: userId,
-      statistics_user_id: userId,
-      repayment_reminder_enabled: true,
-      overdue_reminder_enabled: true,
-      auto_repayment_on_mark_paid: true,
-      notification_frequency: 'daily',
-      upcoming_days: 7,
-    });
+    const settings = await settingService.getOrCreate(userId, getDefaultSettings());
     const bills = await billRepo.find({ where: { user_id: userId } });
     const result = await triggerLoanReminderLogs(userId, bills, settings);
 

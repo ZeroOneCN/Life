@@ -289,6 +289,38 @@ export async function hydrateNotificationCenterState() {
   return notificationCenterCache;
 }
 
+export async function getNotificationLogs(params?: {
+  page?: number;
+  pageSize?: number;
+  sceneId?: string;
+  sceneIds?: string[];
+  status?: string;
+  channel?: string;
+}) {
+  const result = await apiGet<PaginatedResponse<{
+    id: string;
+    created_at: string;
+    channel: NotificationChannelType;
+    scene_id: NotificationSceneId | null;
+    kind: 'test' | 'scene';
+    status: 'success' | 'skipped' | 'error';
+    title: string;
+    message: string;
+  }>>('/notifications/logs', undefined, {
+    page: params?.page ?? 1,
+    page_size: params?.pageSize ?? 10,
+    sceneId: params?.sceneId,
+    sceneIds: params?.sceneIds?.join(','),
+    status: params?.status,
+    channel: params?.channel,
+  });
+
+  return {
+    ...result,
+    items: result.items.map(normalizeLogEntry),
+  };
+}
+
 export async function updateChannelConfig(
   type: NotificationChannelType,
   patch: Partial<NotificationChannelConfig>,

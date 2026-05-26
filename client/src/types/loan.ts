@@ -4,7 +4,6 @@ export type LoanBillStatus = 'paid' | 'unpaid' | 'overdue';
 
 export interface LoanPlatform {
   id: string;
-  userId: string;
   name: string;
   billingDay: number;
   repaymentDay: number;
@@ -14,7 +13,6 @@ export interface LoanPlatform {
 }
 
 export interface LoanPlatformDraft {
-  userId: string;
   name: string;
   billingDay: number;
   repaymentDay: number;
@@ -23,7 +21,6 @@ export interface LoanPlatformDraft {
 
 export interface LoanBill {
   id: string;
-  userId: string;
   platformId: string;
   platformName: string;
   amount: number;
@@ -38,7 +35,6 @@ export interface LoanBill {
 }
 
 export interface LoanBillDraft {
-  userId: string;
   platformId: string;
   amount: number;
   interest?: number;
@@ -50,7 +46,6 @@ export interface LoanBillDraft {
 
 export interface LoanRepayment {
   id: string;
-  userId: string;
   billId: string;
   platformId: string;
   platformName: string;
@@ -63,7 +58,6 @@ export interface LoanRepayment {
 }
 
 export interface LoanRepaymentDraft {
-  userId: string;
   billId?: string;
   platformId: string;
   amount: number;
@@ -109,22 +103,13 @@ export interface LoanPlatformBreakdownPoint {
   unpaidAmount: number;
   totalInterest: number;
   billCount: number;
-  color: string;
+  color?: string;
 }
 
-export interface LoanPageState {
-  platforms: LoanPlatform[];
-  bills: LoanBill[];
-  repayments: LoanRepayment[];
-  settings: {
-    activeUserId: string;
-    billsUserId: string;
-    repaymentsUserId: string;
-    statisticsUserId: string;
-    repaymentReminderEnabled: boolean;
-    overdueReminderEnabled: boolean;
-    autoRepaymentOnMarkPaid: boolean;
-    notificationFrequency: 'daily' | 'always';
-    upcomingDays: number;
-  };
+export interface LoanSettings {
+  repaymentReminderEnabled: boolean;
+  overdueReminderEnabled: boolean;
+  autoRepaymentOnMarkPaid: boolean;
+  notificationFrequency: 'daily' | 'always';
+  upcomingDays: number;
 }

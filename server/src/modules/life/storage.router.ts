@@ -127,19 +127,58 @@ export function createStorageRouter() {
   router.get('/items', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const { page, pageSize, skip } = parsePagination(request.query as Record<string, unknown>);
+    const keyword = String(request.query.keyword ?? '').trim().toLowerCase();
+    const status = String(request.query.status ?? '').trim();
+    const purchaseStartDate = String(request.query.purchaseStartDate ?? '').trim();
+    const purchaseEndDate = String(request.query.purchaseEndDate ?? '').trim();
+    const minPrice = Number(request.query.minPrice ?? '');
+    const maxPrice = Number(request.query.maxPrice ?? '');
     const repository = appDataSource.getRepository(LifeStorageItemEntity);
-    const [items, total] = await repository.findAndCount({
+    const items = await repository.find({
       where: {
         user_id: userId,
       },
       order: {
         updated_at: 'DESC',
       },
-      skip,
-      take: pageSize,
+    });
+    const filtered = items.filter((item) => {
+      if (status && status !== 'all' && item.status !== status) {
+        return false;
+      }
+
+      if (keyword) {
+        const haystack = [item.item_name, item.notes].join(' ').toLowerCase();
+        if (!haystack.includes(keyword)) {
+          return false;
+        }
+      }
+
+      if (purchaseStartDate && dayjs(item.purchase_date).isBefore(purchaseStartDate, 'day')) {
+        return false;
+      }
+
+      if (purchaseEndDate && dayjs(item.purchase_date).isAfter(purchaseEndDate, 'day')) {
+        return false;
+      }
+
+      if (Number.isFinite(minPrice) && Number(item.purchase_price) < minPrice) {
+        return false;
+      }
+
+      if (Number.isFinite(maxPrice) && Number(item.purchase_price) > maxPrice) {
+        return false;
+      }
+
+      return true;
     });
 
-    response.json(successResponse(buildListData(items.map(mapStorageItem), page, pageSize, total)));
+    response.json(successResponse(buildListData(
+      filtered.slice(skip, skip + pageSize).map(mapStorageItem),
+      page,
+      pageSize,
+      filtered.length,
+    )));
   }));
 
   router.post('/items', asyncHandler(async (request: AuthenticatedRequest, response) => {

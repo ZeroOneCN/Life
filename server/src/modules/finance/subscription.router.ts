@@ -15,7 +15,10 @@ import { parsePagination } from '../../shared/utils/pagination';
 import { normalizeDate } from '../../shared/utils/date';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { AppError } from '../../shared/errors/app-error';
-import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import {
+  sendNotificationSceneLogs,
+  syncNotificationScenesEnabled,
+} from '../../shared/domain/notification';
 
 const recordSchema = z.object({
   serviceName: z.string().trim().min(1).max(255),
@@ -585,6 +588,11 @@ export function createSubscriptionRouter() {
       lead_days: 7,
       include_auto_renew_in_reminders: false,
     });
+
+    await syncNotificationScenesEnabled(userId, [
+      { sceneId: 'subscription.renewal_upcoming', enabled: settings.reminder_enabled },
+      { sceneId: 'subscription.expired', enabled: settings.expiry_day_reminder_enabled },
+    ]);
 
     response.json(successResponse({
       recordsKeyword: settings.records_keyword,

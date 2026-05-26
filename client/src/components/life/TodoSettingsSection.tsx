@@ -1,71 +1,68 @@
-import { useMemo } from 'react';
-
 import { NotificationStatusCard } from '../NotificationStatusCard';
 import { SettingSwitchCard } from '../SettingSwitchCard';
 import { SectionCard } from '../page';
 import { Btn, Checkbox, Field } from '../ui';
-import { buildTodoReminderPayload } from '../../services/todo';
-import { enqueueSceneNotification, updateSceneConfig } from '../../services/notificationCenter';
-import type { TodoPageState, TodoTaskRecord } from '../../types/todo';
+import { buildApiErrorMessage } from '../../lib/api';
+import { todoApi } from '../../services/todoApi';
+import type { TodoReminderSettings } from '../../types/todo';
 
 interface TodoSettingsSectionProps {
-  tasks: TodoTaskRecord[];
-  settings: TodoPageState['settings'];
-  onSettingsChange: (patch: Partial<TodoPageState['settings']>) => void;
+  settings: TodoReminderSettings;
   showToast: (message: string, type?: 'success' | 'error') => void;
+  onChanged: () => Promise<void> | void;
 }
 
 export function TodoSettingsSection({
-  tasks,
   settings,
-  onSettingsChange,
   showToast,
+  onChanged,
 }: TodoSettingsSectionProps) {
-  const reminderPayload = useMemo(
-    () => buildTodoReminderPayload(tasks, settings),
-    [tasks, settings],
-  );
+  const savePatch = async (patch: Partial<TodoReminderSettings>, successMessage: string) => {
+    try {
+      await todoApi.updateSettings(patch);
+      await onChanged();
+      showToast(successMessage);
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '提醒设置更新失败。'), 'error');
+    }
+  };
 
   const triggerReminder = async () => {
-    const result = await enqueueSceneNotification('todo.reminder', {
-      message: reminderPayload.message,
-    });
-
-    const success = result.some((item) => item.status === 'success');
-    showToast(
-      success
-        ? '今日待办提醒已写入通知中心日志。'
-        : '今日待办提醒未发送，请检查通知中心渠道状态。',
-      success ? 'success' : 'error',
-    );
+    try {
+      await todoApi.triggerReminder();
+      await onChanged();
+      showToast('今日待办提醒已写入通知中心日志。');
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '手动发送提醒失败。'), 'error');
+    }
   };
 
   return (
     <SectionCard
       title="提醒设置"
-      description="待办页只维护提醒规则和触发条件，渠道、模板与发送日志继续统一交给通知中心。"
+      description="待办页只维护提醒规则和触发入口，渠道、模板和完整日志统一归通知中心。"
       action={<Btn tone="primary" onClick={() => void triggerReminder()}>手动发送今日提醒</Btn>}
     >
       <div className="page-stack">
         <div className="todo-settings-grid">
           <SettingSwitchCard
             title="待办提醒"
-            description="到达设定时间后，每天自动扫描一次有效待办并发起统一提醒。"
+            description="到达设定时间后，按后端规则扫描有效待办并生成统一提醒日志。"
             checked={settings.reminderEnabled}
             onChange={(checked) => {
-              onSettingsChange({ reminderEnabled: checked });
-              void updateSceneConfig('todo.reminder', { enabled: checked });
-              showToast(`待办提醒已${checked ? '启用' : '停用'}。`);
+              void savePatch({ reminderEnabled: checked }, `待办提醒已${checked ? '启用' : '停用'}。`);
             }}
             statusText={settings.reminderEnabled ? '已启用' : '已停用'}
-            impact={`当前会在每天 ${settings.reminderTime} 后扫描提醒，窗口为未来 ${settings.leadDays} 天。`}
+            impact={`当前会在每天 ${settings.reminderTime} 后扫描提醒，提前窗口为 ${settings.leadDays} 天。`}
           >
             <div className="todo-settings-inline-grid">
               <Field
                 label="每日提醒时间"
                 type="time"
                 value={settings.reminderTime}
-                onChange={(event) => onSettingsChange({ reminderTime: event.target.value || '09:00' })}
+                onChange={(event) => {
+                  void savePatch({ reminderTime: event.target.value || '09:00' }, '提醒时间已更新。');
+                }}
               />
               <Field
                 label="提前提醒天数"
@@ -73,13 +70,18 @@ export function TodoSettingsSection({
                 min="0"
                 max="30"
                 value={String(settings.leadDays)}
-                onChange={(event) => onSettingsChange({ leadDays: Math.max(0, Math.min(30, Number(event.target.value) || 0)) })}
+                onChange={(event) => {
+                  const leadDays = Math.max(0, Math.min(30, Number(event.target.value) || 0));
+                  void savePatch({ leadDays }, '提醒窗口已更新。');
+                }}
               />
               <label className="todo-checkbox-field">
                 <span className="field-label">提醒口径</span>
                 <Checkbox
                   checked={settings.includeDailyTasks}
-                  onChange={(checked) => onSettingsChange({ includeDailyTasks: checked })}
+                  onChange={(checked) => {
+                    void savePatch({ includeDailyTasks: checked }, '每日任务提醒范围已更新。');
+                  }}
                 >
                   纳入每日任务
                 </Checkbox>
@@ -88,7 +90,9 @@ export function TodoSettingsSection({
                 <span className="field-label">提醒口径</span>
                 <Checkbox
                   checked={settings.includeOverdueTasks}
-                  onChange={(checked) => onSettingsChange({ includeOverdueTasks: checked })}
+                  onChange={(checked) => {
+                    void savePatch({ includeOverdueTasks: checked }, '逾期任务提醒范围已更新。');
+                  }}
                 >
                   纳入逾期任务
                 </Checkbox>
@@ -101,14 +105,6 @@ export function TodoSettingsSection({
             title="通知中心场景状态"
             summary="查看当前绑定渠道、启用状态和统一发送入口。"
           />
-        </div>
-
-        <div className="todo-reminder-preview callout callout-neutral">
-          <strong>当前提醒摘要预览</strong>
-          <span>
-            共 {reminderPayload.taskCount} 项任务会参与提醒，其中逾期 {reminderPayload.overdueCount} 项，
-            今日到期 {reminderPayload.dueTodayCount} 项，提前窗口内 {reminderPayload.leadWindowCount} 项。
-          </span>
         </div>
       </div>
     </SectionCard>

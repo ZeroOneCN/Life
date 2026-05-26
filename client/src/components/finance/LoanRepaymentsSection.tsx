@@ -4,31 +4,20 @@ import dayjs from 'dayjs';
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
 import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, TextArea } from '../ui';
-import {
-  LOAN_ALL_PLATFORMS,
-  LOAN_REPAYMENT_PAGE_SIZE,
-  createLoanRepayment,
-  deleteLoanRepayment,
-  filterLoanBills,
-  filterLoanRepayments,
-  formatLoanAmount,
-  updateLoanRepayment,
-} from '../../services/loan';
+import { LOAN_ALL_PLATFORMS, LOAN_REPAYMENT_PAGE_SIZE, formatLoanAmount } from '../../services/loan';
 import type { LoanBill, LoanPlatform, LoanRepayment, LoanRepaymentDraft } from '../../types/loan';
 
 interface LoanRepaymentsSectionProps {
-  activeUserId: string;
-  filterUserId: string;
   bills: LoanBill[];
   platforms: LoanPlatform[];
   repayments: LoanRepayment[];
-  onFilterUserIdChange: (value: string) => void;
-  onChangeRepayments: (updater: (repayments: LoanRepayment[]) => LoanRepayment[]) => void;
+  onCreate: (draft: LoanRepaymentDraft) => Promise<void>;
+  onUpdate: (repaymentId: string, draft: LoanRepaymentDraft) => Promise<void>;
+  onDelete: (repaymentId: string) => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
 interface RepaymentFormState {
-  userId: string;
   billId: string;
   platformId: string;
   amount: string;
@@ -37,11 +26,10 @@ interface RepaymentFormState {
   notes: string;
 }
 
-function createDefaultFormState(activeUserId: string, platforms: LoanPlatform[]): RepaymentFormState {
-  const firstPlatform = platforms.find((platform) => platform.userId === activeUserId) ?? platforms[0] ?? null;
+function createDefaultFormState(platforms: LoanPlatform[]): RepaymentFormState {
+  const firstPlatform = platforms[0] ?? null;
 
   return {
-    userId: activeUserId,
     billId: '',
     platformId: firstPlatform?.id ?? '',
     amount: '',
@@ -53,7 +41,6 @@ function createDefaultFormState(activeUserId: string, platforms: LoanPlatform[])
 
 function buildFormState(repayment: LoanRepayment): RepaymentFormState {
   return {
-    userId: repayment.userId,
     billId: repayment.billId,
     platformId: repayment.platformId,
     amount: String(repayment.amount),
@@ -67,7 +54,7 @@ function parseDraft(form: RepaymentFormState): LoanRepaymentDraft | null {
   const amount = Number(form.amount);
   const interest = form.interest ? Number(form.interest) : 0;
 
-  if (!form.userId.trim() || !form.platformId || !dayjs(form.repaymentDate).isValid()) {
+  if (!form.platformId || !dayjs(form.repaymentDate).isValid()) {
     return null;
   }
 
@@ -80,7 +67,6 @@ function parseDraft(form: RepaymentFormState): LoanRepaymentDraft | null {
   }
 
   return {
-    userId: form.userId.trim(),
     billId: form.billId || undefined,
     platformId: form.platformId,
     amount,
@@ -91,48 +77,37 @@ function parseDraft(form: RepaymentFormState): LoanRepaymentDraft | null {
 }
 
 export function LoanRepaymentsSection({
-  activeUserId,
-  filterUserId,
   bills,
   platforms,
   repayments,
-  onFilterUserIdChange,
-  onChangeRepayments,
+  onCreate,
+  onUpdate,
+  onDelete,
   showToast,
 }: LoanRepaymentsSectionProps) {
-  const [form, setForm] = useState<RepaymentFormState>(() => createDefaultFormState(activeUserId, platforms));
+  const [form, setForm] = useState<RepaymentFormState>(() => createDefaultFormState(platforms));
   const [editingRepayment, setEditingRepayment] = useState<LoanRepayment | null>(null);
-  const [editingForm, setEditingForm] = useState<RepaymentFormState>(() => createDefaultFormState(activeUserId, platforms));
+  const [editingForm, setEditingForm] = useState<RepaymentFormState>(() => createDefaultFormState(platforms));
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [platformFilter, setPlatformFilter] = useState(LOAN_ALL_PLATFORMS);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
-
-  const activePlatforms = useMemo(
-    () => platforms.filter((platform) => platform.userId === activeUserId),
-    [activeUserId, platforms],
-  );
-
-  const scopedBills = useMemo(
-    () => filterLoanBills(bills, activeUserId),
-    [activeUserId, bills],
-  );
-
-  const filterPlatforms = useMemo(() => {
-    const targetUserId = filterUserId.trim();
-    return targetUserId ? platforms.filter((platform) => platform.userId === targetUserId) : platforms;
-  }, [filterUserId, platforms]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setForm(createDefaultFormState(activeUserId, platforms));
-  }, [activeUserId, platforms]);
+    setForm((previous) => previous.platformId ? previous : createDefaultFormState(platforms));
+    if (editingRepayment && !editingForm.platformId) {
+      setEditingForm(createDefaultFormState(platforms));
+    }
+  }, [editingForm.platformId, editingRepayment, platforms]);
 
   const filteredRepayments = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
 
-    return filterLoanRepayments(repayments, filterUserId, platformFilter)
+    return repayments
+      .filter((repayment) => platformFilter === LOAN_ALL_PLATFORMS || repayment.platformId === platformFilter)
       .filter((repayment) => (!startDate || !dayjs(repayment.repaymentDate).isBefore(startDate, 'day')))
       .filter((repayment) => (!endDate || !dayjs(repayment.repaymentDate).isAfter(endDate, 'day')))
       .filter((repayment) => {
@@ -143,11 +118,11 @@ export function LoanRepaymentsSection({
         return [repayment.platformName, repayment.notes, repayment.billId]
           .some((value) => value.toLowerCase().includes(normalizedKeyword));
       });
-  }, [repayments, filterUserId, platformFilter, startDate, endDate, keyword]);
+  }, [endDate, keyword, platformFilter, repayments, startDate]);
 
   useEffect(() => {
     setPage(1);
-  }, [filterUserId, platformFilter, startDate, endDate, keyword]);
+  }, [platformFilter, startDate, endDate, keyword]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRepayments.length / LOAN_REPAYMENT_PAGE_SIZE));
   const pageRepayments = useMemo(() => {
@@ -227,7 +202,7 @@ export function LoanRepaymentsSection({
     }));
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const draft = parseDraft(form);
 
     if (!draft) {
@@ -235,12 +210,19 @@ export function LoanRepaymentsSection({
       return;
     }
 
-    onChangeRepayments((previous) => createLoanRepayment(platforms, bills, previous, draft));
-    setForm(createDefaultFormState(activeUserId, platforms));
-    showToast('还款记录已保存。');
+    setSaving(true);
+    try {
+      await onCreate(draft);
+      setForm(createDefaultFormState(platforms));
+      showToast('还款记录已保存。');
+    } catch {
+      // The page container already surfaces API errors.
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingRepayment) {
       return;
     }
@@ -252,37 +234,46 @@ export function LoanRepaymentsSection({
       return;
     }
 
-    onChangeRepayments((previous) => updateLoanRepayment(platforms, bills, previous, editingRepayment.id, draft));
-    setEditingRepayment(null);
-    setEditingForm(createDefaultFormState(activeUserId, platforms));
-    showToast('还款记录已更新。');
+    setSaving(true);
+    try {
+      await onUpdate(editingRepayment.id, draft);
+      setEditingRepayment(null);
+      setEditingForm(createDefaultFormState(platforms));
+      showToast('还款记录已更新。');
+    } catch {
+      // The page container already surfaces API errors.
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <SectionCard
       title="还款"
-      description="记录手动补录或自动联动生成的还款流水，后续趋势统计和通知追踪都会基于这里汇总。"
+      description="记录手动补录或自动联动生成的还款流水，后续趋势统计和提醒追踪都以这里为准。"
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前新建还款记录默认归属 <strong>{activeUserId || '未设置用户'}</strong>。若选择关联账单，会自动带出平台、本金和利息。
+          页面已固定按当前登录用户工作，不再显示用户 ID 输入。
+          若选择关联账单，会自动带出平台、本金和利息。
         </div>
 
         <div className="loan-repayment-entry-grid">
           <SelectField label="关联账单" value={form.billId} onChange={(event) => handleBillSelection(event.target.value)}>
             <option value="">手动录入 / 不关联账单</option>
-            {scopedBills.map((bill) => (
+            {bills.map((bill) => (
               <option key={bill.id} value={bill.id}>
                 {bill.platformName} / {bill.billingMonth} / {formatLoanAmount(bill.amount)}
               </option>
             ))}
           </SelectField>
           <SelectField
-            label="借款平台"
+            label="贷款平台"
             value={form.platformId}
             onChange={(event) => setForm((previous) => ({ ...previous, platformId: event.target.value }))}
           >
-            {activePlatforms.map((platform) => (
+            <option value="">请选择平台</option>
+            {platforms.map((platform) => (
               <option key={platform.id} value={platform.id}>{platform.name}</option>
             ))}
           </SelectField>
@@ -318,28 +309,22 @@ export function LoanRepaymentsSection({
           />
           <div className="loan-inline-action">
             <span className="field-label">保存还款</span>
-            <Btn tone="primary" onClick={handleCreate}>保存还款记录</Btn>
+            <Btn tone="primary" onClick={() => void handleCreate()} disabled={saving || !platforms.length}>保存还款记录</Btn>
           </div>
         </div>
 
         <div className="loan-filter-grid loan-filter-grid-repayments">
-          <Field
-            label="筛选用户 ID"
-            value={filterUserId}
-            onChange={(event) => onFilterUserIdChange(event.target.value)}
-            placeholder="留空查看全部用户"
-          />
           <SelectField label="平台筛选" value={platformFilter} onChange={(event) => setPlatformFilter(event.target.value)}>
             <option value={LOAN_ALL_PLATFORMS}>全部平台</option>
-            {filterPlatforms.map((platform) => (
+            {platforms.map((platform) => (
               <option key={platform.id} value={platform.id}>{platform.name}</option>
             ))}
           </SelectField>
           <div className="loan-modal-date-slot">
-            <DatePickerField label="开始日期" value={startDate} onChange={setStartDate} placeholder="不限开始日" />
+            <DatePickerField label="开始日期" value={startDate} onChange={setStartDate} placeholder="不限开始日期" />
           </div>
           <div className="loan-modal-date-slot loan-modal-date-slot-end">
-            <DatePickerField label="结束日期" value={endDate} onChange={setEndDate} placeholder="不限结束日" />
+            <DatePickerField label="结束日期" value={endDate} onChange={setEndDate} placeholder="不限结束日期" />
           </div>
           <Field
             label="关键词"
@@ -367,7 +352,7 @@ export function LoanRepaymentsSection({
         ) : (
           <EmptyState
             title="暂无还款记录"
-            description="可以先补录一笔还款，或调整用户、平台、日期和关键词筛选条件。"
+            description="可以先补录一笔还款，或调整当前平台、日期和关键词筛选条件。"
           />
         )}
       </div>
@@ -376,7 +361,7 @@ export function LoanRepaymentsSection({
         open={Boolean(editingRepayment)}
         onClose={() => {
           setEditingRepayment(null);
-          setEditingForm(createDefaultFormState(activeUserId, platforms));
+          setEditingForm(createDefaultFormState(platforms));
         }}
         title={editingRepayment ? `编辑还款：${editingRepayment.platformName}` : '编辑还款'}
         width={980}
@@ -386,42 +371,33 @@ export function LoanRepaymentsSection({
               tone="secondary"
               onClick={() => {
                 setEditingRepayment(null);
-                setEditingForm(createDefaultFormState(activeUserId, platforms));
+                setEditingForm(createDefaultFormState(platforms));
               }}
             >
               取消
             </Btn>
-            <Btn tone="primary" onClick={handleSaveEdit}>保存还款</Btn>
+            <Btn tone="primary" onClick={() => void handleSaveEdit()} disabled={saving}>保存还款</Btn>
           </>
         )}
       >
         <div className="loan-modal-layout">
           <div className="loan-modal-grid loan-modal-grid-repayment">
-            <Field
-              label="用户 ID"
-              value={editingForm.userId}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, userId: event.target.value }))}
-            />
             <SelectField label="关联账单" value={editingForm.billId} onChange={(event) => handleBillSelection(event.target.value, true)}>
               <option value="">手动录入 / 不关联账单</option>
-              {bills
-                .filter((bill) => !editingForm.userId.trim() || bill.userId === editingForm.userId.trim())
-                .map((bill) => (
-                  <option key={bill.id} value={bill.id}>
-                    {bill.platformName} / {bill.billingMonth} / {formatLoanAmount(bill.amount)}
-                  </option>
-                ))}
+              {bills.map((bill) => (
+                <option key={bill.id} value={bill.id}>
+                  {bill.platformName} / {bill.billingMonth} / {formatLoanAmount(bill.amount)}
+                </option>
+              ))}
             </SelectField>
             <SelectField
-              label="借款平台"
+              label="贷款平台"
               value={editingForm.platformId}
               onChange={(event) => setEditingForm((previous) => ({ ...previous, platformId: event.target.value }))}
             >
-              {platforms
-                .filter((platform) => !editingForm.userId.trim() || platform.userId === editingForm.userId.trim())
-                .map((platform) => (
-                  <option key={platform.id} value={platform.id}>{platform.name}</option>
-                ))}
+              {platforms.map((platform) => (
+                <option key={platform.id} value={platform.id}>{platform.name}</option>
+              ))}
             </SelectField>
             <Field
               label="还款金额"
@@ -465,9 +441,16 @@ export function LoanRepaymentsSection({
             return;
           }
 
-          onChangeRepayments((previous) => deleteLoanRepayment(previous, pendingDeleteId));
-          setPendingDeleteId(null);
-          showToast('还款记录已删除。');
+          setSaving(true);
+          void onDelete(pendingDeleteId)
+            .then(() => {
+              setPendingDeleteId(null);
+              showToast('还款记录已删除。');
+            })
+            .catch(() => undefined)
+            .finally(() => {
+              setSaving(false);
+            });
         }}
         title="确认删除这笔还款记录？"
       >

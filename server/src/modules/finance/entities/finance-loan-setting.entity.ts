@@ -4,18 +4,6 @@ import { UserSettingEntity } from '../../../shared/persistence/user-setting.enti
 
 @Entity('finance_loan_setting')
 export class FinanceLoanSettingEntity extends UserSettingEntity {
-  @Column({ type: 'varchar', length: 36, nullable: true })
-  active_user_id!: string | null;
-
-  @Column({ type: 'varchar', length: 36, nullable: true })
-  bills_user_id!: string | null;
-
-  @Column({ type: 'varchar', length: 36, nullable: true })
-  repayments_user_id!: string | null;
-
-  @Column({ type: 'varchar', length: 36, nullable: true })
-  statistics_user_id!: string | null;
-
   @Column({ type: 'tinyint', width: 1, default: 1 })
   repayment_reminder_enabled!: boolean;
 

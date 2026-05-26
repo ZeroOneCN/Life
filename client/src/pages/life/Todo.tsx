@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { TodoLogsSection } from '../../components/life/TodoLogsSection';
 import { TodoSettingsSection } from '../../components/life/TodoSettingsSection';
@@ -6,18 +6,11 @@ import { TodoTasksSection } from '../../components/life/TodoTasksSection';
 import { TodoTrashSection } from '../../components/life/TodoTrashSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
-import { useLocalStorageState } from '../../hooks/useLocalStorageState';
 import { usePageTab } from '../../hooks/usePageTab';
-import {
-  buildDueTodoReminder,
-  buildInitialTodoState,
-  buildTodoOverview,
-  normalizeTodoPageState,
-} from '../../services/todo';
-import { enqueueSceneNotification, updateSceneConfig } from '../../services/notificationCenter';
-import type { TodoPageState, TodoTab } from '../../types/todo';
-
-const STORAGE_KEY = 'lifeos_life_todo_page';
+import { buildApiErrorMessage } from '../../lib/api';
+import { hydrateNotificationCenterState } from '../../services/notificationCenter';
+import { todoApi } from '../../services/todoApi';
+import type { TodoOverviewSummary, TodoReminderSettings, TodoTab } from '../../types/todo';
 
 const TAB_OPTIONS: Array<{ value: TodoTab; label: string }> = [
   { value: 'tasks', label: '任务列表' },
@@ -26,65 +19,91 @@ const TAB_OPTIONS: Array<{ value: TodoTab; label: string }> = [
   { value: 'trash', label: '回收站' },
 ];
 
+const EMPTY_OVERVIEW: TodoOverviewSummary = {
+  totalCount: 0,
+  activeCount: 0,
+  completedCount: 0,
+  dailyCount: 0,
+  highPriorityCount: 0,
+  mediumPriorityCount: 0,
+  lowPriorityCount: 0,
+  dueTodayCount: 0,
+};
+
+const EMPTY_SETTINGS: TodoReminderSettings = {
+  reminderEnabled: true,
+  reminderTime: '09:00',
+  leadDays: 3,
+  includeDailyTasks: true,
+  includeOverdueTasks: true,
+  lastAutoReminderDate: '',
+};
+
 export default function TodoPage() {
-  const [data, setData] = useLocalStorageState<TodoPageState>(STORAGE_KEY, buildInitialTodoState);
   const [tab, setTab] = usePageTab<TodoTab>('tasks', TAB_OPTIONS.map((item) => item.value), 'todoTab');
   const { toast, showToast } = useToastState();
-  const normalizedData = useMemo(() => normalizeTodoPageState(data), [data]);
+  const [overview, setOverview] = useState<TodoOverviewSummary>(EMPTY_OVERVIEW);
+  const [settings, setSettings] = useState<TodoReminderSettings>(EMPTY_SETTINGS);
+  const [loading, setLoading] = useState(true);
+  const [refreshToken, setRefreshToken] = useState(0);
+
+  const refreshPage = useCallback(() => {
+    setRefreshToken((current) => current + 1);
+  }, []);
 
   useEffect(() => {
-    const shouldSync = JSON.stringify(normalizedData) !== JSON.stringify(data);
+    let cancelled = false;
 
-    if (shouldSync) {
-      setData(normalizedData);
-    }
-  }, [data, normalizedData, setData]);
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [nextOverview, nextSettings] = await Promise.all([
+          todoApi.getOverview(),
+          todoApi.getSettings(),
+          hydrateNotificationCenterState(),
+        ]);
 
-  useEffect(() => {
-    void updateSceneConfig('todo.reminder', { enabled: normalizedData.settings.reminderEnabled });
-  }, [normalizedData.settings.reminderEnabled]);
+        if (cancelled) {
+          return;
+        }
 
-  useEffect(() => {
-    const payload = buildDueTodoReminder(normalizedData.tasks, normalizedData.settings);
+        setOverview(nextOverview);
+        setSettings(nextSettings);
+      } catch (error) {
+        if (!cancelled) {
+          showToast(buildApiErrorMessage(error, '待办中心加载失败。'), 'error');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
 
-    if (!payload) {
-      return;
-    }
+    void load();
 
-    void enqueueSceneNotification('todo.reminder', { message: payload.message }).then(() => {
-      setData((previous) => ({
-        ...previous,
-        settings: {
-          ...previous.settings,
-          lastAutoReminderDate: payload.date,
-        },
-      }));
-    });
-  }, [normalizedData.settings, normalizedData.tasks, setData]);
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshToken, showToast]);
 
-  const overview = useMemo(() => buildTodoOverview(normalizedData.tasks), [normalizedData.tasks]);
-
-  const updateSettings = (patch: Partial<TodoPageState['settings']>) => {
-    setData((previous) => ({
-      ...previous,
-      settings: {
-        ...previous.settings,
-        ...patch,
-      },
-    }));
-  };
+  const subtitle = useMemo(() => (
+    loading
+      ? '正在从后端加载任务、提醒规则和通知日志。'
+      : '待办中心已经切到后端唯一数据源，页面只保留视图级内存状态。'
+  ), [loading]);
 
   return (
     <div className="page-stack">
       <PageHeader
-        title="待办事项中心"
-        subtitle="把任务录入、提醒规则、通知日志和回收站统一收进当前 LifeOS 的正式前端体系，提醒场景继续复用通知中心。"
+        title="待办中心"
+        subtitle={subtitle}
       />
 
       <StatGrid
         className="todo-overview-grid"
         items={[
-          { label: '总任务', value: `${overview.totalCount}` },
+          { label: '总任务数', value: `${overview.totalCount}` },
           { label: '进行中', value: `${overview.activeCount}` },
           { label: '已完成', value: `${overview.completedCount}` },
           { label: '每日任务', value: `${overview.dailyCount}` },
@@ -97,47 +116,40 @@ export default function TodoPage() {
 
       <SectionCard
         title="业务视图"
-        description="任务列表、提醒设置、通知日志和回收站共用同一套本地状态模型与通知中心联动规则。"
+        description="任务列表、提醒设置、通知日志和回收站全部以后端数据为准，tab 仅负责界面切换。"
       >
         <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as TodoTab)} />
       </SectionCard>
 
       {tab === 'tasks' ? (
         <TodoTasksSection
-          tasks={normalizedData.tasks}
-          onChangeTasks={(updater) => {
-            setData((previous) => ({
-              ...previous,
-              tasks: updater(previous.tasks),
-            }));
-          }}
           showToast={showToast}
+          onChanged={refreshPage}
         />
       ) : null}
 
       {tab === 'settings' ? (
         <TodoSettingsSection
-          tasks={normalizedData.tasks}
-          settings={normalizedData.settings}
-          onSettingsChange={updateSettings}
+          settings={settings}
           showToast={showToast}
+          onChanged={async () => {
+            await hydrateNotificationCenterState();
+            refreshPage();
+          }}
         />
       ) : null}
 
       {tab === 'logs' ? (
-        <TodoLogsSection showToast={showToast} />
+        <TodoLogsSection
+          showToast={showToast}
+          refreshToken={refreshToken}
+        />
       ) : null}
 
       {tab === 'trash' ? (
         <TodoTrashSection
-          tasks={normalizedData.tasks}
-          onChangeTasks={(updater) => {
-            setData((previous) => ({
-              ...previous,
-              tasks: updater(previous.tasks),
-            }));
-          }}
           showToast={showToast}
+          onChanged={refreshPage}
         />
       ) : null}
 

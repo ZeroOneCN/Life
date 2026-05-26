@@ -115,3 +115,11 @@ export async function apiPatch<T, B = unknown>(url: string, body?: B, options?: 
   } as InternalAxiosRequestConfig & { metadata: ApiClientOptions });
   return response.data.data;
 }
+
+export async function apiDelete<T>(url: string, options?: ApiClientOptions, params?: Record<string, unknown>) {
+  const response = await apiClient.delete<ApiSuccessResponse<T>>(url, {
+    params,
+    metadata: options,
+  } as InternalAxiosRequestConfig & { metadata: ApiClientOptions });
+  return response.data.data;
+}

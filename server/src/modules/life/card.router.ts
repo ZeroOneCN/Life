@@ -18,7 +18,10 @@ import { parsePagination } from '../../shared/utils/pagination';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { normalizeDate, normalizeMonth } from '../../shared/utils/date';
 import { AppError } from '../../shared/errors/app-error';
-import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import {
+  sendNotificationSceneLogs,
+  syncNotificationScenesEnabled,
+} from '../../shared/domain/notification';
 
 const cardSchema = z.object({
   phoneNumber: z.string().trim().min(1).max(32),
@@ -292,15 +295,49 @@ export function createCardRouter() {
   router.get('/cards', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const { page, pageSize, skip } = parsePagination(request.query as Record<string, unknown>);
+    const keyword = String(request.query.keyword ?? '').trim().toLowerCase();
+    const carrierId = String(request.query.carrierId ?? '').trim();
+    const location = String(request.query.location ?? '').trim().toLowerCase();
+    const minBalance = Number(request.query.minBalance ?? '');
+    const maxBalance = Number(request.query.maxBalance ?? '');
     const repository = appDataSource.getRepository(LifeCardRecordEntity);
-    const [items, total] = await repository.findAndCount({
+    const items = await repository.find({
       where: { user_id: userId },
       order: { updated_at: 'DESC' },
-      skip,
-      take: pageSize,
+    });
+    const filtered = items.filter((item) => {
+      if (keyword) {
+        const haystack = [item.phone_number, item.carrier_name, item.data_plan, item.notes].join(' ').toLowerCase();
+        if (!haystack.includes(keyword)) {
+          return false;
+        }
+      }
+
+      if (carrierId && item.carrier_id !== carrierId) {
+        return false;
+      }
+
+      if (location && !item.location.toLowerCase().includes(location)) {
+        return false;
+      }
+
+      if (Number.isFinite(minBalance) && Number(item.balance) < minBalance) {
+        return false;
+      }
+
+      if (Number.isFinite(maxBalance) && Number(item.balance) > maxBalance) {
+        return false;
+      }
+
+      return true;
     });
 
-    response.json(successResponse(buildListData(items.map(mapCard), page, pageSize, total)));
+    response.json(successResponse(buildListData(
+      filtered.slice(skip, skip + pageSize).map(mapCard),
+      page,
+      pageSize,
+      filtered.length,
+    )));
   }));
 
   router.post('/cards', asyncHandler(async (request: AuthenticatedRequest, response) => {
@@ -396,15 +433,44 @@ export function createCardRouter() {
   router.get('/bills', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const { page, pageSize, skip } = parsePagination(request.query as Record<string, unknown>);
+    const simId = String(request.query.simId ?? '').trim();
+    const carrierName = String(request.query.carrierName ?? '').trim();
+    const billingMonth = String(request.query.billingMonth ?? '').trim();
+    const keyword = String(request.query.keyword ?? '').trim().toLowerCase();
     const repository = appDataSource.getRepository(LifeCardBillRecordEntity);
-    const [items, total] = await repository.findAndCount({
+    const items = await repository.find({
       where: { user_id: userId },
       order: { billing_month: 'DESC', updated_at: 'DESC' },
-      skip,
-      take: pageSize,
+    });
+    const filtered = items.filter((item) => {
+      if (simId && item.sim_id !== simId) {
+        return false;
+      }
+
+      if (carrierName && item.carrier_name !== carrierName) {
+        return false;
+      }
+
+      if (billingMonth && item.billing_month !== normalizeMonth(billingMonth)) {
+        return false;
+      }
+
+      if (keyword) {
+        const haystack = [item.phone_number, item.carrier_name, item.note, item.billing_month].join(' ').toLowerCase();
+        if (!haystack.includes(keyword)) {
+          return false;
+        }
+      }
+
+      return true;
     });
 
-    response.json(successResponse(buildListData(items.map(mapBill), page, pageSize, total)));
+    response.json(successResponse(buildListData(
+      filtered.slice(skip, skip + pageSize).map(mapBill),
+      page,
+      pageSize,
+      filtered.length,
+    )));
   }));
 
   router.post('/bills', asyncHandler(async (request: AuthenticatedRequest, response) => {
@@ -475,15 +541,34 @@ export function createCardRouter() {
   router.get('/recharges', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const { page, pageSize, skip } = parsePagination(request.query as Record<string, unknown>);
+    const simId = String(request.query.simId ?? '').trim();
+    const keyword = String(request.query.keyword ?? '').trim().toLowerCase();
     const repository = appDataSource.getRepository(LifeCardRechargeRecordEntity);
-    const [items, total] = await repository.findAndCount({
+    const items = await repository.find({
       where: { user_id: userId },
       order: { recharge_date: 'DESC', updated_at: 'DESC' },
-      skip,
-      take: pageSize,
+    });
+    const filtered = items.filter((item) => {
+      if (simId && item.sim_id !== simId) {
+        return false;
+      }
+
+      if (keyword) {
+        const haystack = [item.phone_number, item.note, item.recharge_date].join(' ').toLowerCase();
+        if (!haystack.includes(keyword)) {
+          return false;
+        }
+      }
+
+      return true;
     });
 
-    response.json(successResponse(buildListData(items.map(mapRecharge), page, pageSize, total)));
+    response.json(successResponse(buildListData(
+      filtered.slice(skip, skip + pageSize).map(mapRecharge),
+      page,
+      pageSize,
+      filtered.length,
+    )));
   }));
 
   router.post('/recharges', asyncHandler(async (request: AuthenticatedRequest, response) => {
@@ -676,6 +761,11 @@ export function createCardRouter() {
       balance_threshold: 10,
       notification_days_before: 3,
     });
+
+    await syncNotificationScenesEnabled(userId, [
+      { sceneId: 'card.balance_low', enabled: settings.balance_low_enabled },
+      { sceneId: 'card.billing_upcoming', enabled: settings.billing_upcoming_enabled },
+    ]);
 
     response.json(successResponse({
       balanceLowEnabled: settings.balance_low_enabled,
