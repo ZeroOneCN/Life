@@ -34,6 +34,17 @@ const loginSchema = zod_1.z.object({
 const refreshSchema = zod_1.z.object({
     refreshToken: zod_1.z.string().min(1),
 });
+const profileSchema = zod_1.z.object({
+    email: zod_1.z.string().trim().email().max(128),
+    nickname: zod_1.z.string().trim().min(1).max(64),
+    timezone: zod_1.z.string().trim().min(1).max(64),
+    avatarUrl: zod_1.z.string().trim().max(512).optional().default(''),
+});
+const changePasswordSchema = zod_1.z.object({
+    currentPassword: zod_1.z.string().min(1),
+    newPassword: zod_1.z.string().min(8).max(128),
+    confirmPassword: zod_1.z.string().min(1),
+});
 function createAccessToken(userId, username) {
     return jsonwebtoken_1.default.sign({
         sub: userId,
@@ -52,6 +63,16 @@ function createRefreshToken(userId, username, sessionToken) {
     }, env_1.env.JWT_SECRET, {
         expiresIn: env_1.env.REFRESH_TOKEN_EXPIRES_IN,
     });
+}
+function buildAuthUser(account, profile) {
+    return {
+        id: account.id,
+        username: account.username,
+        email: account.email,
+        nickname: profile?.nickname ?? account.username,
+        avatarUrl: profile?.avatar_url ?? '',
+        timezone: profile?.timezone ?? 'Asia/Shanghai',
+    };
 }
 function createAuthRouter() {
     const router = (0, express_1.Router)();
@@ -145,13 +166,7 @@ function createAuthRouter() {
         response.json((0, response_1.successResponse)({
             accessToken,
             refreshToken,
-            user: {
-                id: account.id,
-                username: account.username,
-                email: account.email,
-                nickname: profile?.nickname ?? account.username,
-                timezone: profile?.timezone ?? 'Asia/Shanghai',
-            },
+            user: buildAuthUser(account, profile),
         }, 'login_success'));
     }));
     router.post('/refresh', (0, async_handler_1.asyncHandler)(async (request, response) => {
@@ -209,14 +224,83 @@ function createAuthRouter() {
                 user_id: userId,
             },
         });
-        response.json((0, response_1.successResponse)({
-            id: account.id,
-            username: account.username,
-            email: account.email,
-            nickname: profile?.nickname ?? account.username,
-            avatarUrl: profile?.avatar_url ?? '',
-            timezone: profile?.timezone ?? 'Asia/Shanghai',
+        response.json((0, response_1.successResponse)(buildAuthUser(account, profile)));
+    }));
+    router.patch('/profile', auth_middleware_1.requireJwtAuth, (0, async_handler_1.asyncHandler)(async (request, response) => {
+        const userId = request.auth?.userId;
+        if (!userId) {
+            throw new app_error_1.AppError('unauthorized', 401, 401);
+        }
+        const payload = (0, validation_1.validateBody)(profileSchema, request.body);
+        const accountRepo = data_source_1.appDataSource.getRepository(system_user_account_entity_1.SystemUserAccountEntity);
+        const profileRepo = data_source_1.appDataSource.getRepository(system_user_profile_entity_1.SystemUserProfileEntity);
+        const account = await accountRepo.findOneByOrFail({
+            id: userId,
+        });
+        const duplicateEmail = await accountRepo.findOne({
+            where: {
+                email: payload.email,
+            },
+        });
+        if (duplicateEmail && duplicateEmail.id !== userId) {
+            throw new app_error_1.AppError('account_already_exists', 409, 409, {
+                fieldErrors: {
+                    email: ['邮箱已被其他账号使用。'],
+                },
+            });
+        }
+        const currentProfile = await profileRepo.findOne({
+            where: {
+                user_id: userId,
+            },
+        });
+        const nextAccount = await accountRepo.save({
+            ...account,
+            email: payload.email,
+        });
+        const nextProfile = await profileRepo.save(profileRepo.create({
+            ...(currentProfile ?? {
+                id: userId,
+                user_id: userId,
+                preferences_json: null,
+            }),
+            nickname: payload.nickname,
+            timezone: payload.timezone,
+            avatar_url: payload.avatarUrl || '',
         }));
+        response.json((0, response_1.successResponse)(buildAuthUser(nextAccount, nextProfile), 'update_profile_success'));
+    }));
+    router.post('/change-password', auth_middleware_1.requireJwtAuth, (0, async_handler_1.asyncHandler)(async (request, response) => {
+        const userId = request.auth?.userId;
+        if (!userId) {
+            throw new app_error_1.AppError('unauthorized', 401, 401);
+        }
+        const payload = (0, validation_1.validateBody)(changePasswordSchema, request.body);
+        if (payload.newPassword !== payload.confirmPassword) {
+            throw new app_error_1.AppError('invalid_request', 400, 400, {
+                fieldErrors: {
+                    confirmPassword: ['两次输入的新密码不一致。'],
+                },
+            });
+        }
+        const accountRepo = data_source_1.appDataSource.getRepository(system_user_account_entity_1.SystemUserAccountEntity);
+        const account = await accountRepo.findOneByOrFail({
+            id: userId,
+        });
+        const passwordMatched = await bcrypt_1.default.compare(payload.currentPassword, account.password_hash);
+        if (!passwordMatched) {
+            throw new app_error_1.AppError('invalid_request', 400, 400, {
+                fieldErrors: {
+                    currentPassword: ['当前密码不正确。'],
+                },
+            });
+        }
+        const passwordHash = await bcrypt_1.default.hash(payload.newPassword, 10);
+        await accountRepo.save({
+            ...account,
+            password_hash: passwordHash,
+        });
+        response.json((0, response_1.successResponse)({ ok: true }, 'change_password_success'));
     }));
     return router;
 }

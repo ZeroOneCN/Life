@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { FitnessDashboardSection } from '../../components/health/FitnessDashboardSection';
 import { FitnessDietSection } from '../../components/health/FitnessDietSection';
@@ -6,20 +6,21 @@ import { FitnessExerciseSection } from '../../components/health/FitnessExerciseS
 import { FitnessShoppingSection } from '../../components/health/FitnessShoppingSection';
 import { FitnessWeightSection } from '../../components/health/FitnessWeightSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
-import { Btn, Field, Modal, PillTabs, Tag, Toast, useToastState } from '../../components/ui';
-import { useLocalStorageState } from '../../hooks/useLocalStorageState';
+import { Btn, Modal, PillTabs, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
-import {
-  buildFitnessInsights,
-  buildFitnessOverviewSummary,
-  buildInitialFitnessState,
-  filterRecordsByUserId,
-  normalizeFitnessPageState,
-  normalizeFitnessUserId,
-} from '../../services/fitness';
-import type { FitnessPageState, FitnessTab } from '../../types/fitness';
+import { buildApiErrorMessage } from '../../lib/api';
+import { fitnessApi } from '../../services/fitnessApi';
+import type {
+  DietRecord,
+  ExerciseRecord,
+  FitnessInsight,
+  FitnessOverviewSummary,
+  FitnessPageState,
+  FitnessShoppingRecord,
+  FitnessTab,
+  WeightRecord,
+} from '../../types/fitness';
 
-const STORAGE_KEY = 'lifeos_health_fitness_page';
 const TAB_OPTIONS: Array<{ value: FitnessTab; label: string }> = [
   { value: 'diet', label: '饮食记录' },
   { value: 'exercise', label: '运动记录' },
@@ -28,171 +29,181 @@ const TAB_OPTIONS: Array<{ value: FitnessTab; label: string }> = [
   { value: 'dashboard', label: '数据看板' },
 ];
 
+const EMPTY_SETTINGS: FitnessPageState['settings'] = {
+  activeUserId: '',
+  dietFilterUserId: '',
+  exerciseFilterUserId: '',
+  shoppingFilterUserId: '',
+  weightFilterUserId: '',
+  dashboardUserId: '',
+  defaultHeightCm: 170,
+};
+
+const EMPTY_OVERVIEW: FitnessOverviewSummary = {
+  todayCaloriesIn: 0,
+  todayCaloriesOut: 0,
+  todayNetCalories: 0,
+  latestWeightKg: null,
+  bmi: null,
+  weekAverageNetCalories: 0,
+  monthShoppingAmount: 0,
+  todayDietCost: 0,
+  trackedDays: 0,
+};
+
+function findCreated<T extends { id: string }>(previous: T[], next: T[]) {
+  return next.filter((item) => !previous.some((record) => record.id === item.id));
+}
+
+function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
+  return previous.filter((item) => !next.some((record) => record.id === item.id)).map((item) => item.id);
+}
+
 export default function FitnessPage() {
-  const [data, setData] = useLocalStorageState<FitnessPageState>(STORAGE_KEY, buildInitialFitnessState);
   const [activeTab, setActiveTab] = usePageTab<FitnessTab>('diet', TAB_OPTIONS.map((item) => item.value), 'fitnessTab');
+  const [dietRecords, setDietRecords] = useState<DietRecord[]>([]);
+  const [exerciseRecords, setExerciseRecords] = useState<ExerciseRecord[]>([]);
+  const [shoppingRecords, setShoppingRecords] = useState<FitnessShoppingRecord[]>([]);
+  const [weightRecords, setWeightRecords] = useState<WeightRecord[]>([]);
+  const [settings, setSettings] = useState<FitnessPageState['settings']>(EMPTY_SETTINGS);
+  const [overview, setOverview] = useState<FitnessOverviewSummary>(EMPTY_OVERVIEW);
+  const [insights, setInsights] = useState<FitnessInsight[]>([]);
   const [insightsOpen, setInsightsOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast, showToast } = useToastState();
-  const normalizedData = useMemo(() => normalizeFitnessPageState(data), [data]);
+
+  const reload = useCallback(async () => {
+    const [nextDiet, nextExercise, nextShopping, nextWeight, nextSummary, nextInsights, nextSettings] = await Promise.all([
+      fitnessApi.listDietRecords({ page: 1, page_size: 1000 }),
+      fitnessApi.listExerciseRecords({ page: 1, page_size: 1000 }),
+      fitnessApi.listShoppingRecords({ page: 1, page_size: 1000 }),
+      fitnessApi.listWeightRecords({ page: 1, page_size: 1000 }),
+      fitnessApi.getSummary(),
+      fitnessApi.getInsights(),
+      fitnessApi.getSettings(),
+    ]);
+
+    setDietRecords(nextDiet.items);
+    setExerciseRecords(nextExercise.items);
+    setShoppingRecords(nextShopping.items);
+    setWeightRecords(nextWeight.items);
+    setOverview(nextSummary);
+    setInsights(nextInsights);
+    setSettings({
+      ...EMPTY_SETTINGS,
+      ...nextSettings,
+    });
+  }, []);
 
   useEffect(() => {
-    const shouldSync = JSON.stringify(normalizedData) !== JSON.stringify(data);
+    let cancelled = false;
 
-    if (shouldSync) {
-      setData(normalizedData);
+    const load = async () => {
+      setLoading(true);
+      try {
+        await reload();
+      } catch (error) {
+        if (!cancelled) {
+          showToast(buildApiErrorMessage(error, '健身页加载失败。'), 'error');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reload, showToast]);
+
+  const updateSettings = useCallback(async (patch: Partial<FitnessPageState['settings']>) => {
+    try {
+      const next = await fitnessApi.updateSettings(patch);
+      setSettings((current) => ({
+        ...current,
+        ...next,
+      }));
+      await reload();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '健身设置保存失败。'), 'error');
     }
-  }, [data, normalizedData, setData]);
+  }, [reload, showToast]);
 
-  const activeDietRecords = useMemo(
-    () => filterRecordsByUserId(normalizedData.dietRecords, normalizedData.settings.activeUserId),
-    [normalizedData.dietRecords, normalizedData.settings.activeUserId],
-  );
-  const activeExerciseRecords = useMemo(
-    () => filterRecordsByUserId(normalizedData.exerciseRecords, normalizedData.settings.activeUserId),
-    [normalizedData.exerciseRecords, normalizedData.settings.activeUserId],
-  );
-  const activeShoppingRecords = useMemo(
-    () => filterRecordsByUserId(normalizedData.shoppingRecords, normalizedData.settings.activeUserId),
-    [normalizedData.settings.activeUserId, normalizedData.shoppingRecords],
-  );
-  const activeWeightRecords = useMemo(
-    () => filterRecordsByUserId(normalizedData.weightRecords, normalizedData.settings.activeUserId),
-    [normalizedData.settings.activeUserId, normalizedData.weightRecords],
-  );
+  const syncCollection = useCallback(async <T extends { id: string }>(
+    previous: T[],
+    next: T[],
+    createItem: (item: T) => Promise<unknown>,
+    updateItem: (item: T) => Promise<unknown>,
+    deleteItem: (id: string) => Promise<unknown>,
+    errorMessage: string,
+  ) => {
+    try {
+      const created = findCreated(previous, next);
+      const deletedIds = findDeletedIds(previous, next);
+      const updated = next.filter((item) => previous.some((record) => record.id === item.id && JSON.stringify(record) !== JSON.stringify(item)));
 
-  const overview = useMemo(
-    () => buildFitnessOverviewSummary(
-      activeDietRecords,
-      activeExerciseRecords,
-      activeShoppingRecords,
-      activeWeightRecords,
-      normalizedData.settings.defaultHeightCm ?? 170,
-    ),
-    [
-      activeDietRecords,
-      activeExerciseRecords,
-      activeShoppingRecords,
-      activeWeightRecords,
-      normalizedData.settings.defaultHeightCm,
-    ],
-  );
+      await Promise.all([
+        ...created.map((item) => createItem(item)),
+        ...updated.map((item) => updateItem(item)),
+        ...deletedIds.map((id) => deleteItem(id)),
+      ]);
+      await reload();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, errorMessage), 'error');
+      await reload();
+    }
+  }, [reload, showToast]);
 
-  const insights = useMemo(
-    () => buildFitnessInsights(
-      activeDietRecords,
-      activeExerciseRecords,
-      activeShoppingRecords,
-      activeWeightRecords,
-    ),
-    [activeDietRecords, activeExerciseRecords, activeShoppingRecords, activeWeightRecords],
-  );
-
-  const updateSettings = (patch: Partial<FitnessPageState['settings']>) => {
-    setData((previous) => ({
-      ...previous,
-      settings: {
-        ...previous.settings,
-        ...patch,
-      },
-    }));
-  };
+  const topSummary = useMemo(() => ([
+    { label: '今日摄入', value: `${overview.todayCaloriesIn.toFixed(0)} kcal` },
+    { label: '今日消耗', value: `${overview.todayCaloriesOut.toFixed(0)} kcal` },
+    { label: '今日净热量', value: `${overview.todayNetCalories.toFixed(0)} kcal` },
+    { label: '最新体重', value: overview.latestWeightKg === null ? '-' : `${overview.latestWeightKg.toFixed(1)} kg`, helper: overview.bmi === null ? '暂无 BMI' : `BMI ${overview.bmi.toFixed(1)}` },
+    { label: '本月采购', value: `¥${overview.monthShoppingAmount.toFixed(2)}` },
+    { label: '跟踪天数', value: `${overview.trackedDays}` },
+  ]), [overview]);
 
   return (
     <div className="page-stack">
       <PageHeader
         title="健身减脂"
-        subtitle="将减脂原型页重构进当前 LifeOS 体系，统一管理饮食、运动、食材采购、体重和趋势看板。"
+        subtitle={loading ? '正在从后端加载饮食、运动、食材采购和体重记录。' : '健身页已切到后端唯一数据源，不再读取浏览器业务本地数据。'}
         actions={<Btn tone="primary" onClick={() => setInsightsOpen(true)}>查看健康建议</Btn>}
       />
 
-      <SectionCard
-        title="当前用户与默认设置"
-        description="这里的当前用户会驱动四类新增记录，列表筛选和看板支持单独切换用户。"
-        action={<Tag tone="blue">本地规则分析</Tag>}
-      >
-        <div className="form-grid">
-          <Field
-            label="当前用户 ID"
-            placeholder="例如 user-001"
-            value={normalizedData.settings.activeUserId}
-            onChange={(event) => updateSettings({ activeUserId: event.target.value })}
-            hint="切换后，新增饮食、运动、采购和体重记录都会使用这个用户。"
-          />
-          <Field
-            label="默认身高（cm）"
-            type="number"
-            min="1"
-            value={String(normalizedData.settings.defaultHeightCm ?? 170)}
-            onChange={(event) => updateSettings({ defaultHeightCm: Number(event.target.value) || 170 })}
-            hint="体重记录新增表单会默认带出这个身高。"
-          />
-        </div>
-      </SectionCard>
-
-      <StatGrid
-        className="fitness-overview-grid"
-        items={[
-          {
-            label: '当前用户',
-            value: normalizeFitnessUserId(normalizedData.settings.activeUserId) || '全部',
-            helper: '顶部当前用户会影响本页四类新增记录',
-          },
-          {
-            label: '今日摄入',
-            value: `${overview.todayCaloriesIn.toFixed(0)} kcal`,
-            helper: '按当前用户今日饮食记录汇总',
-          },
-          {
-            label: '今日消耗',
-            value: `${overview.todayCaloriesOut.toFixed(0)} kcal`,
-            helper: '按当前用户今日运动记录汇总',
-          },
-          {
-            label: '今日净热量',
-            value: `${overview.todayNetCalories.toFixed(0)} kcal`,
-            helper: `${overview.todayNetCalories > 0 ? '摄入大于消耗' : '消耗大于摄入'}`,
-          },
-          {
-            label: '最新体重',
-            value: overview.latestWeightKg === null ? '-' : `${overview.latestWeightKg.toFixed(1)} kg`,
-            helper: overview.bmi === null ? '暂无 BMI' : `BMI ${overview.bmi.toFixed(1)}`,
-          },
-          {
-            label: '本周净热量均值',
-            value: `${overview.weekAverageNetCalories.toFixed(0)} kcal`,
-            helper: '按近 7 天有记录的日期计算',
-          },
-          {
-            label: '本月食材采购',
-            value: `¥${overview.monthShoppingAmount.toFixed(2)}`,
-            helper: '按当前用户本月采购记录汇总',
-          },
-          {
-            label: '今日饮食成本',
-            value: `¥${overview.todayDietCost.toFixed(2)}`,
-            helper: '按饮食记录和采购单价推算',
-          },
-        ]}
-      />
+      <StatGrid className="fitness-overview-grid" items={topSummary} />
 
       <SectionCard
         title="业务视图"
-        description="在饮食、运动、采购、体重和看板之间切换，所有内容都基于当前系统的 TypeScript 与主题组件体系。"
+        description="饮食、运动、采购、体重和看板都直接基于后端记录工作。"
       >
         <PillTabs options={TAB_OPTIONS} value={activeTab} onChange={(value) => setActiveTab(value as FitnessTab)} />
       </SectionCard>
 
       {activeTab === 'diet' ? (
         <FitnessDietSection
-          activeUserId={normalizedData.settings.activeUserId}
-          filterUserId={normalizedData.settings.dietFilterUserId}
-          records={normalizedData.dietRecords}
-          onFilterUserIdChange={(value) => updateSettings({ dietFilterUserId: value })}
+          activeUserId={settings.activeUserId}
+          filterUserId={settings.dietFilterUserId}
+          records={dietRecords}
+          onFilterUserIdChange={(value) => {
+            void updateSettings({ dietFilterUserId: value });
+          }}
           onChangeRecords={(updater) => {
-            setData((previous) => ({
-              ...previous,
-              dietRecords: updater(previous.dietRecords),
-            }));
+            const previous = dietRecords;
+            const next = updater(previous);
+            setDietRecords(next);
+            void syncCollection(
+              previous,
+              next,
+              (item) => fitnessApi.createDietRecord(item),
+              (item) => fitnessApi.updateDietRecord(item.id, item),
+              (id) => fitnessApi.deleteDietRecord(id),
+              '饮食记录保存失败。',
+            );
           }}
           showToast={showToast}
         />
@@ -200,15 +211,24 @@ export default function FitnessPage() {
 
       {activeTab === 'exercise' ? (
         <FitnessExerciseSection
-          activeUserId={normalizedData.settings.activeUserId}
-          filterUserId={normalizedData.settings.exerciseFilterUserId}
-          records={normalizedData.exerciseRecords}
-          onFilterUserIdChange={(value) => updateSettings({ exerciseFilterUserId: value })}
+          activeUserId={settings.activeUserId}
+          filterUserId={settings.exerciseFilterUserId}
+          records={exerciseRecords}
+          onFilterUserIdChange={(value) => {
+            void updateSettings({ exerciseFilterUserId: value });
+          }}
           onChangeRecords={(updater) => {
-            setData((previous) => ({
-              ...previous,
-              exerciseRecords: updater(previous.exerciseRecords),
-            }));
+            const previous = exerciseRecords;
+            const next = updater(previous);
+            setExerciseRecords(next);
+            void syncCollection(
+              previous,
+              next,
+              (item) => fitnessApi.createExerciseRecord(item),
+              (item) => fitnessApi.updateExerciseRecord(item.id, item),
+              (id) => fitnessApi.deleteExerciseRecord(id),
+              '运动记录保存失败。',
+            );
           }}
           showToast={showToast}
         />
@@ -216,15 +236,24 @@ export default function FitnessPage() {
 
       {activeTab === 'shopping' ? (
         <FitnessShoppingSection
-          activeUserId={normalizedData.settings.activeUserId}
-          filterUserId={normalizedData.settings.shoppingFilterUserId}
-          records={normalizedData.shoppingRecords}
-          onFilterUserIdChange={(value) => updateSettings({ shoppingFilterUserId: value })}
+          activeUserId={settings.activeUserId}
+          filterUserId={settings.shoppingFilterUserId}
+          records={shoppingRecords}
+          onFilterUserIdChange={(value) => {
+            void updateSettings({ shoppingFilterUserId: value });
+          }}
           onChangeRecords={(updater) => {
-            setData((previous) => ({
-              ...previous,
-              shoppingRecords: updater(previous.shoppingRecords),
-            }));
+            const previous = shoppingRecords;
+            const next = updater(previous);
+            setShoppingRecords(next);
+            void syncCollection(
+              previous,
+              next,
+              (item) => fitnessApi.createShoppingRecord(item),
+              (item) => fitnessApi.updateShoppingRecord(item.id, item),
+              (id) => fitnessApi.deleteShoppingRecord(id),
+              '食材采购记录保存失败。',
+            );
           }}
           showToast={showToast}
         />
@@ -232,31 +261,44 @@ export default function FitnessPage() {
 
       {activeTab === 'weight' ? (
         <FitnessWeightSection
-          activeUserId={normalizedData.settings.activeUserId}
-          filterUserId={normalizedData.settings.weightFilterUserId}
-          defaultHeightCm={normalizedData.settings.defaultHeightCm ?? 170}
-          records={normalizedData.weightRecords}
-          onFilterUserIdChange={(value) => updateSettings({ weightFilterUserId: value })}
-          onChangeRecords={(updater) => {
-            setData((previous) => ({
-              ...previous,
-              weightRecords: updater(previous.weightRecords),
-            }));
+          activeUserId={settings.activeUserId}
+          filterUserId={settings.weightFilterUserId}
+          defaultHeightCm={settings.defaultHeightCm ?? 170}
+          records={weightRecords}
+          onFilterUserIdChange={(value) => {
+            void updateSettings({ weightFilterUserId: value });
           }}
-          onDefaultHeightChange={(value) => updateSettings({ defaultHeightCm: value })}
+          onChangeRecords={(updater) => {
+            const previous = weightRecords;
+            const next = updater(previous);
+            setWeightRecords(next);
+            void syncCollection(
+              previous,
+              next,
+              (item) => fitnessApi.createWeightRecord(item),
+              (item) => fitnessApi.updateWeightRecord(item.id, item),
+              (id) => fitnessApi.deleteWeightRecord(id),
+              '体重记录保存失败。',
+            );
+          }}
+          onDefaultHeightChange={(value) => {
+            void updateSettings({ defaultHeightCm: value });
+          }}
           showToast={showToast}
         />
       ) : null}
 
       {activeTab === 'dashboard' ? (
         <FitnessDashboardSection
-          userId={normalizedData.settings.dashboardUserId}
-          defaultHeightCm={normalizedData.settings.defaultHeightCm ?? 170}
-          dietRecords={normalizedData.dietRecords}
-          exerciseRecords={normalizedData.exerciseRecords}
-          shoppingRecords={normalizedData.shoppingRecords}
-          weightRecords={normalizedData.weightRecords}
-          onUserIdChange={(value) => updateSettings({ dashboardUserId: value })}
+          userId={settings.dashboardUserId}
+          defaultHeightCm={settings.defaultHeightCm ?? 170}
+          dietRecords={dietRecords}
+          exerciseRecords={exerciseRecords}
+          shoppingRecords={shoppingRecords}
+          weightRecords={weightRecords}
+          onUserIdChange={(value) => {
+            void updateSettings({ dashboardUserId: value });
+          }}
         />
       ) : null}
 
@@ -268,21 +310,14 @@ export default function FitnessPage() {
         footer={<Btn tone="secondary" onClick={() => setInsightsOpen(false)}>关闭</Btn>}
       >
         <div className="page-stack">
-          <div className="callout callout-info">
-            这是基于前端本地规则的结构化建议，不会调用任何后端 AI 接口。分析范围默认为当前用户近 7 天到近 30 天的记录变化。
-          </div>
-
-          <div className="fitness-insight-list">
-            {insights.map((insight) => (
-              <article key={insight.id} className="fitness-insight-card">
-                <div className="fitness-insight-head">
-                  <strong>{insight.title}</strong>
-                  <Tag tone={insight.tone}>{insight.metric ?? '规则命中'}</Tag>
-                </div>
-                <p>{insight.description}</p>
-              </article>
-            ))}
-          </div>
+          {insights.map((insight) => (
+            <article key={insight.id} className="fitness-insight-card">
+              <div className="fitness-insight-head">
+                <strong>{insight.title}</strong>
+              </div>
+              <p>{insight.description}</p>
+            </article>
+          ))}
         </div>
       </Modal>
 

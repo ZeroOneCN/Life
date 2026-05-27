@@ -13,7 +13,6 @@ import {
   getForexOrderTypeLabel,
 } from '../../services/forex';
 import type { ForexCalculationResult, ForexCalculatorPositionDraft, ForexInstrument, ForexOrderType } from '../../types/forex';
-import { readStorage, writeStorage } from '../../utils/storage';
 
 interface ForexCalculatorSectionProps {
   leverage: number;
@@ -37,13 +36,6 @@ interface PositionFormState {
   lotSize: string;
   closePrice: string;
 }
-
-interface ForexCalculatorDraftState {
-  shared: SharedFormState;
-  positions: PositionFormState[];
-}
-
-const STORAGE_KEY = 'lifeos_investment_forex_calculator_draft';
 
 function buildPositionId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -69,44 +61,6 @@ function createSharedState(leverage: number, forcedLiquidationRatio: number, def
     leverage: String(leverage),
     balance: defaultBalance > 0 ? defaultBalance.toFixed(2) : '',
     forcedLiquidationRatio: String(forcedLiquidationRatio || 0.5),
-  };
-}
-
-function readDraftState(
-  leverage: number,
-  forcedLiquidationRatio: number,
-  defaultBalance: number,
-): ForexCalculatorDraftState {
-  const fallback: ForexCalculatorDraftState = {
-    shared: createSharedState(leverage, forcedLiquidationRatio, defaultBalance),
-    positions: [createPosition()],
-  };
-
-  const stored = readStorage<Partial<ForexCalculatorDraftState> | null>(STORAGE_KEY, null);
-
-  if (!stored) {
-    return fallback;
-  }
-
-  const shared = stored.shared ?? fallback.shared;
-  const positions = Array.isArray(stored.positions) && stored.positions.length
-    ? stored.positions.map((position) => ({
-      id: position.id || buildPositionId(),
-      instrument: (position.instrument === 'XAGUSD' ? 'XAGUSD' : 'XAUUSD') as ForexInstrument,
-      orderType: (position.orderType === 'sell' ? 'sell' : 'buy') as ForexOrderType,
-      openPrice: String(position.openPrice ?? ''),
-      lotSize: String(position.lotSize ?? '0.01'),
-      closePrice: String(position.closePrice ?? ''),
-    }))
-    : fallback.positions;
-
-  return {
-    shared: {
-      leverage: shared.leverage || fallback.shared.leverage,
-      balance: shared.balance || fallback.shared.balance,
-      forcedLiquidationRatio: shared.forcedLiquidationRatio || String(forcedLiquidationRatio || 0.5),
-    },
-    positions,
   };
 }
 
@@ -155,12 +109,20 @@ export function ForexCalculatorSection({
   onLeverageChange,
   onForcedLiquidationRatioChange,
 }: ForexCalculatorSectionProps) {
-  const initialDraft = useMemo(
-    () => readDraftState(leverage, forcedLiquidationRatio || 0.5, defaultBalance),
+  const initialShared = useMemo(
+    () => createSharedState(leverage, forcedLiquidationRatio || 0.5, defaultBalance),
     [defaultBalance, forcedLiquidationRatio, leverage],
   );
-  const [shared, setShared] = useState<SharedFormState>(initialDraft.shared);
-  const [positions, setPositions] = useState<PositionFormState[]>(initialDraft.positions);
+  const [shared, setShared] = useState<SharedFormState>(initialShared);
+  const [positions, setPositions] = useState<PositionFormState[]>([createPosition()]);
+
+  useEffect(() => {
+    setShared((current) => ({
+      ...current,
+      leverage: current.leverage || initialShared.leverage,
+      forcedLiquidationRatio: current.forcedLiquidationRatio || initialShared.forcedLiquidationRatio,
+    }));
+  }, [initialShared.forcedLiquidationRatio, initialShared.leverage]);
 
   useEffect(() => {
     if (!shared.balance && defaultBalance > 0) {
@@ -170,13 +132,6 @@ export function ForexCalculatorSection({
       }));
     }
   }, [defaultBalance, shared.balance]);
-
-  useEffect(() => {
-    writeStorage(STORAGE_KEY, {
-      shared,
-      positions,
-    } satisfies ForexCalculatorDraftState);
-  }, [positions, shared]);
 
   const result = useMemo(() => {
     const draftPositions = toDraftPositions(positions);

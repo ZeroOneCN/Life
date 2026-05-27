@@ -7,6 +7,19 @@ export interface AuthUser {
   timezone: string;
 }
 
+export interface AuthProfileUpdatePayload {
+  nickname: string;
+  email: string;
+  timezone: string;
+  avatarUrl?: string;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 export interface AuthSession {
   accessToken: string;
   refreshToken: string;

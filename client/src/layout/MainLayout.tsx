@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
+import { Btn, Modal } from '../components/ui';
 import { menuItems, routes } from '../config/navigation';
 import { useTheme } from '../hooks/useTheme';
 import { logout, useAuthState } from '../services/auth';
@@ -147,25 +148,60 @@ function MenuNode({
 }
 
 export default function MainLayout() {
+  const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
   const authState = useAuthState();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>(() => {
     const parent = findParentKey(location.pathname);
     return parent ? [parent] : [];
   });
   const [activeMenuKey, setActiveMenuKey] = useState(() => getActiveMenuKey(location.pathname));
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
 
   const route = routes.find((item) => item.path === location.pathname);
   const breadcrumb = route?.breadcrumb ?? ['页面'];
   const sidebarWidth = collapsed ? 88 : 260;
+  const currentUser = authState.session?.user ?? null;
+  const userDisplayName = useMemo(
+    () => currentUser?.nickname || currentUser?.username || '当前用户',
+    [currentUser],
+  );
+  const userSummary = useMemo(
+    () => currentUser?.email || currentUser?.timezone || '已登录会话',
+    [currentUser],
+  );
+  const userInitial = useMemo(
+    () => userDisplayName.slice(0, 1).toUpperCase(),
+    [userDisplayName],
+  );
 
   useEffect(() => {
     const parent = findParentKey(location.pathname);
     setOpenGroups(parent ? [parent] : []);
     setActiveMenuKey(getActiveMenuKey(location.pathname));
+    setUserMenuOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!userMenuOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('mousedown', handlePointerDown);
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, [userMenuOpen]);
 
   return (
     <div className={`layout-shell ${collapsed ? 'is-collapsed' : ''}`}>
@@ -173,7 +209,7 @@ export default function MainLayout() {
         <div className="sidebar-brand">
           <div className="sidebar-brand-copy">
             <strong>{collapsed ? 'LO' : 'LifeOS'}</strong>
-            {!collapsed ? <span className="subtle-text brand-subtitle">数据库优先控制台</span> : null}
+            {!collapsed ? <span className="subtle-text brand-subtitle">数据库驱动的个人控制台</span> : null}
           </div>
         </div>
         <nav className="menu">
@@ -214,13 +250,61 @@ export default function MainLayout() {
           </div>
 
           <div className="topbar-right">
-            <div className="topbar-user-meta">
-              <strong>{authState.session?.user.nickname ?? authState.session?.user.username ?? '当前用户'}</strong>
-              <span>{authState.session?.user.email ?? '未登录邮箱'}</span>
+            <div className="topbar-user-menu" ref={userMenuRef}>
+              <button
+                className={`topbar-user-trigger ${userMenuOpen ? 'is-open' : ''}`}
+                type="button"
+                aria-expanded={userMenuOpen}
+                onClick={() => setUserMenuOpen((previous) => !previous)}
+              >
+                {currentUser?.avatarUrl ? (
+                  <img className="topbar-user-avatar" src={currentUser.avatarUrl} alt={userDisplayName} />
+                ) : (
+                  <span className="topbar-user-avatar topbar-user-avatar-fallback">{userInitial}</span>
+                )}
+                <div className="topbar-user-meta">
+                  <strong>{userDisplayName}</strong>
+                  <span>{userSummary}</span>
+                </div>
+                <ChevronIcon open={userMenuOpen} />
+              </button>
+
+              {userMenuOpen ? (
+                <div className="topbar-user-dropdown">
+                  <button
+                    type="button"
+                    className="topbar-user-dropdown-item"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      navigate('/settings/profile');
+                    }}
+                  >
+                    进入个人中心
+                  </button>
+                  <button
+                    type="button"
+                    className="topbar-user-dropdown-item"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      navigate('/settings/profile?tab=security');
+                    }}
+                  >
+                    修改密码
+                  </button>
+                  <button
+                    type="button"
+                    className="topbar-user-dropdown-item is-danger"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      setLogoutConfirmOpen(true);
+                    }}
+                  >
+                    退出登录
+                  </button>
+                </div>
+              ) : null}
             </div>
-            <button className="icon-button" type="button" onClick={() => void logout()}>
-              退出
-            </button>
+
             <button
               className="icon-button theme-toggle"
               type="button"
@@ -235,6 +319,29 @@ export default function MainLayout() {
           <Outlet />
         </main>
       </div>
+
+      <Modal
+        open={logoutConfirmOpen}
+        onClose={() => setLogoutConfirmOpen(false)}
+        title="确认退出登录"
+        width={440}
+        footer={(
+          <>
+            <Btn tone="secondary" onClick={() => setLogoutConfirmOpen(false)}>取消</Btn>
+            <Btn
+              tone="danger-fill"
+              onClick={() => {
+                setLogoutConfirmOpen(false);
+                void logout();
+              }}
+            >
+              确认退出
+            </Btn>
+          </>
+        )}
+      >
+        <p className="subtle-text">退出后需要重新登录，当前会话不会继续保留。</p>
+      </Modal>
     </div>
   );
 }

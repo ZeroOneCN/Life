@@ -30,7 +30,6 @@ export const FOREX_CAPITAL_PAGE_SIZE = 10;
 export const FOREX_INSTRUMENT_OPTIONS: ForexInstrument[] = ['XAUUSD', 'XAGUSD'];
 export const FOREX_ORDER_TYPE_OPTIONS: ForexOrderType[] = ['buy', 'sell'];
 export const FOREX_CAPITAL_TYPE_OPTIONS: ForexCapitalFlowType[] = ['deposit', 'withdrawal'];
-export const FOREX_STORAGE_KEY = 'lifeos_investment_forex_page';
 export const FOREX_CONTRACT_UNITS: Record<ForexInstrument, number> = {
   XAUUSD: 100,
   XAGUSD: 5000,

@@ -3,6 +3,7 @@ import { lazyWithProgress } from '../utils/lazyWithProgress';
 
 const Dashboard = lazyWithProgress(() => import('../pages/Dashboard'));
 const NotificationCenterPage = lazyWithProgress(() => import('../pages/notifications/NotificationCenterPage'));
+const ProfileSettingsPage = lazyWithProgress(() => import('../pages/settings/Profile'));
 const StepPage = lazyWithProgress(() => import('../pages/health/Step'));
 const FitnessPage = lazyWithProgress(() => import('../pages/health/Fitness'));
 const CheckupPage = lazyWithProgress(() => import('../pages/health/Checkup'));
@@ -88,4 +89,5 @@ export const routes: RouteConfig[] = [
   { path: '/investment/hk-stock', label: '港股市场', breadcrumb: ['投资中心', '港股市场'], menuKey: '/investment/hk-stock', component: HKStockPage },
   { path: '/investment/us-stock', label: '美股市场', breadcrumb: ['投资中心', '美股市场'], menuKey: '/investment/us-stock', component: USStockPage },
   { path: '/notifications', label: '通知中心', breadcrumb: ['通知中心'], menuKey: '/notifications', component: NotificationCenterPage },
+  { path: '/settings/profile', label: '个人中心', breadcrumb: ['系统设置', '个人中心'], menuKey: '/settings/profile', component: ProfileSettingsPage },
 ];

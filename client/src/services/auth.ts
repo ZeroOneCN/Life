@@ -1,8 +1,16 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import type { AxiosInstance } from 'axios';
 
-import { apiGet, apiPost, buildApiErrorMessage } from '../lib/api';
-import type { AuthReason, AuthSession, AuthState, AuthUser, SystemHealthSnapshot } from '../types/auth';
+import { apiGet, apiPatch, apiPost, buildApiErrorMessage } from '../lib/api';
+import type {
+  AuthProfileUpdatePayload,
+  AuthReason,
+  AuthSession,
+  AuthState,
+  AuthUser,
+  ChangePasswordPayload,
+  SystemHealthSnapshot,
+} from '../types/auth';
 
 const AUTH_STORAGE_KEY = 'lifeos_auth_session';
 
@@ -74,6 +82,18 @@ function setAuthenticatedSession(session: AuthSession) {
   });
 }
 
+export function updateAuthUser(user: AuthUser) {
+  const current = getAuthSession();
+  if (!current) {
+    return;
+  }
+
+  setAuthenticatedSession({
+    ...current,
+    user,
+  });
+}
+
 export async function refreshAccessToken(client: AxiosInstance) {
   const current = getAuthSession();
   if (!current?.refreshToken) {
@@ -137,6 +157,22 @@ export async function register(payload: {
     username: payload.username,
     password: payload.password,
   });
+}
+
+export async function refreshCurrentUser() {
+  const user = await apiGet<AuthUser>('/auth/me', { skipAuthRefresh: false });
+  updateAuthUser(user);
+  return user;
+}
+
+export async function updateAuthProfile(payload: AuthProfileUpdatePayload) {
+  const user = await apiPatch<AuthUser, AuthProfileUpdatePayload>('/auth/profile', payload);
+  updateAuthUser(user);
+  return user;
+}
+
+export async function changePassword(payload: ChangePasswordPayload) {
+  return apiPost<{ ok: true }, ChangePasswordPayload>('/auth/change-password', payload);
 }
 
 export async function logout() {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ForexCalculatorSection } from '../../components/investment/ForexCalculatorSection';
 import { ForexCapitalSection } from '../../components/investment/ForexCapitalSection';
@@ -6,18 +6,17 @@ import { ForexDashboardSection } from '../../components/investment/ForexDashboar
 import { ForexTradesSection } from '../../components/investment/ForexTradesSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
-import { useLocalStorageState } from '../../hooks/useLocalStorageState';
 import { usePageTab } from '../../hooks/usePageTab';
-import {
-  FOREX_STORAGE_KEY,
-  buildForexDashboardSummary,
-  buildInitialForexState,
-  formatForexAmount,
-  formatForexMoney,
-  formatForexPercent,
-  normalizeForexPageState,
-} from '../../services/forex';
-import type { ForexPageState, ForexTab } from '../../types/forex';
+import { buildApiErrorMessage } from '../../lib/api';
+import { forexApi } from '../../services/forexApi';
+import { formatForexAmount, formatForexMoney, formatForexPercent } from '../../services/forex';
+import type {
+  ForexCapitalFlow,
+  ForexDashboardSummary,
+  ForexPageState,
+  ForexTab,
+  ForexTradeRecord,
+} from '../../types/forex';
 
 const TAB_OPTIONS: Array<{ value: ForexTab; label: string }> = [
   { value: 'dashboard', label: '统计看板' },
@@ -26,105 +25,259 @@ const TAB_OPTIONS: Array<{ value: ForexTab; label: string }> = [
   { value: 'capital', label: '出入金' },
 ];
 
+const EMPTY_SUMMARY: ForexDashboardSummary = {
+  tradeCount: 0,
+  grossPnl: 0,
+  totalCommission: 0,
+  realizedNetPnl: 0,
+  winRate: 0,
+  profitLossRatio: 0,
+  longCount: 0,
+  shortCount: 0,
+  xauCount: 0,
+  xagCount: 0,
+  totalDeposit: 0,
+  totalWithdrawal: 0,
+  netCapital: 0,
+  equity: 0,
+  roi: 0,
+};
+
+const EMPTY_SETTINGS: ForexPageState['settings'] = {
+  leverage: 100,
+  forcedLiquidationRatio: 0.5,
+  dashboardStartDate: '',
+  dashboardEndDate: '',
+};
+
+function findCreated<T extends { id: string }>(previous: T[], next: T[]) {
+  return next.filter((item) => !previous.some((record) => record.id === item.id));
+}
+
+function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
+  return previous.filter((item) => !next.some((record) => record.id === item.id)).map((item) => item.id);
+}
+
 export default function ForexPage() {
-  const [data, setData] = useLocalStorageState<ForexPageState>(FOREX_STORAGE_KEY, buildInitialForexState);
   const [tab, setTab] = usePageTab<ForexTab>('dashboard', TAB_OPTIONS.map((item) => item.value), 'forexTab');
   const { toast, showToast } = useToastState();
-  const normalizedData = useMemo(() => normalizeForexPageState(data), [data]);
+  const [trades, setTrades] = useState<ForexTradeRecord[]>([]);
+  const [capitalFlows, setCapitalFlows] = useState<ForexCapitalFlow[]>([]);
+  const [summary, setSummary] = useState<ForexDashboardSummary>(EMPTY_SUMMARY);
+  const [settings, setSettings] = useState<ForexPageState['settings']>(EMPTY_SETTINGS);
+  const [loading, setLoading] = useState(true);
+
+  const reload = useCallback(async () => {
+    const [nextTrades, nextCapitalFlows, nextSummary, nextSettings] = await Promise.all([
+      forexApi.listTrades({ page: 1, page_size: 1000 }),
+      forexApi.listCapitalFlows({ page: 1, page_size: 1000 }),
+      forexApi.getDashboardSummary(),
+      forexApi.getSettings(),
+    ]);
+
+    setTrades(nextTrades.items);
+    setCapitalFlows(nextCapitalFlows.items);
+    setSummary(nextSummary);
+    setSettings({
+      ...EMPTY_SETTINGS,
+      ...nextSettings,
+    });
+  }, []);
 
   useEffect(() => {
-    const shouldSync = JSON.stringify(normalizedData) !== JSON.stringify(data);
+    let cancelled = false;
 
-    if (shouldSync) {
-      setData(normalizedData);
+    const load = async () => {
+      setLoading(true);
+      try {
+        await reload();
+      } catch (error) {
+        if (!cancelled) {
+          showToast(buildApiErrorMessage(error, '外汇页面加载失败。'), 'error');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reload, showToast]);
+
+  const updateSettings = useCallback(async (patch: Partial<ForexPageState['settings']>) => {
+    try {
+      const next = await forexApi.updateSettings(patch);
+      setSettings((current) => ({
+        ...current,
+        ...next,
+      }));
+      await reload();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '外汇设置保存失败。'), 'error');
     }
-  }, [data, normalizedData, setData]);
+  }, [reload, showToast]);
 
-  const overview = useMemo(
-    () => buildForexDashboardSummary(normalizedData.trades, normalizedData.capitalFlows),
-    [normalizedData.capitalFlows, normalizedData.trades],
-  );
+  const handleTradesChange = useCallback(async (updater: (items: ForexTradeRecord[]) => ForexTradeRecord[]) => {
+    const previous = trades;
+    const next = updater(previous);
+    setTrades(next);
 
-  const updateSettings = (patch: Partial<ForexPageState['settings']>) => {
-    setData((previous) => ({
-      ...previous,
-      settings: {
-        ...previous.settings,
-        ...patch,
-      },
-    }));
-  };
+    try {
+      const created = findCreated(previous, next);
+      const deletedIds = findDeletedIds(previous, next);
+      const updated = next.filter((item) => previous.some((record) => record.id === item.id && JSON.stringify(record) !== JSON.stringify(item)));
+
+      await Promise.all([
+        ...created.map((item) => forexApi.createTrade({
+          tradeDate: item.tradeDate,
+          instrument: item.instrument,
+          orderType: item.orderType,
+          openPrice: item.openPrice,
+          lotSize: item.lotSize,
+          commission: item.commission,
+          closePrice: item.closePrice,
+          pnl: item.pnl,
+          openTime: item.openTime,
+          closeTime: item.closeTime,
+          holdTime: item.holdTime,
+          remark: item.remark,
+        })),
+        ...updated.map((item) => forexApi.updateTrade(item.id, {
+          tradeDate: item.tradeDate,
+          instrument: item.instrument,
+          orderType: item.orderType,
+          openPrice: item.openPrice,
+          lotSize: item.lotSize,
+          commission: item.commission,
+          closePrice: item.closePrice,
+          pnl: item.pnl,
+          openTime: item.openTime,
+          closeTime: item.closeTime,
+          holdTime: item.holdTime,
+          remark: item.remark,
+        })),
+        ...deletedIds.map((id) => forexApi.deleteTrade(id)),
+      ]);
+      await reload();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '交易记录保存失败。'), 'error');
+      await reload();
+    }
+  }, [reload, showToast, trades]);
+
+  const handleCapitalFlowsChange = useCallback(async (updater: (items: ForexCapitalFlow[]) => ForexCapitalFlow[]) => {
+    const previous = capitalFlows;
+    const next = updater(previous);
+    setCapitalFlows(next);
+
+    try {
+      const created = findCreated(previous, next);
+      const deletedIds = findDeletedIds(previous, next);
+      const updated = next.filter((item) => previous.some((record) => record.id === item.id && JSON.stringify(record) !== JSON.stringify(item)));
+
+      await Promise.all([
+        ...created.map((item) => forexApi.createCapitalFlow({
+          flowDate: item.flowDate,
+          flowType: item.flowType,
+          amount: item.amount,
+          remark: item.remark,
+        })),
+        ...updated.map((item) => forexApi.updateCapitalFlow(item.id, {
+          flowDate: item.flowDate,
+          flowType: item.flowType,
+          amount: item.amount,
+          remark: item.remark,
+        })),
+        ...deletedIds.map((id) => forexApi.deleteCapitalFlow(id)),
+      ]);
+      await reload();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '出入金记录保存失败。'), 'error');
+      await reload();
+    }
+  }, [capitalFlows, reload, showToast]);
+
+  const overviewCards = useMemo(() => ([
+    { label: '总交易数', value: `${summary.tradeCount} 笔`, helper: `做多 ${summary.longCount} / 做空 ${summary.shortCount}` },
+    { label: '总毛盈亏', value: formatForexAmount(summary.grossPnl), accent: summary.grossPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
+    { label: '净收益', value: formatForexAmount(summary.realizedNetPnl), accent: summary.realizedNetPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
+    { label: '净入金', value: formatForexMoney(summary.netCapital) },
+    { label: '当前净值', value: formatForexMoney(summary.equity), helper: `ROI ${formatForexPercent(summary.roi)}` },
+    { label: '默认杠杆', value: `${settings.leverage} 倍`, helper: `强平比例 ${settings.forcedLiquidationRatio}` },
+  ]), [settings.forcedLiquidationRatio, settings.leverage, summary]);
 
   return (
     <div className="page-stack">
       <PageHeader
         title="外汇市场"
-        subtitle="把旧原型里的交易、计算、出入金和分析能力统一收进当前 LifeOS 的本地投资工作台里，聚焦 XAUUSD 与 XAGUSD 的单账户复盘。"
+        subtitle={loading ? '正在从后端加载交易、出入金、统计和设置。' : '外汇页面已切到后端唯一数据源，浏览器不再保存整页交易真相。'}
       />
 
+      <StatGrid items={overviewCards} />
+
       <SectionCard
-        title="账户总览"
-        description="当前页面固定为单用户单账户模型，不暴露额外的账户切换。顶部概览会始终按全部本地记录计算。"
+        title="业务视图"
+        description="统计、交易、计算器和出入金都直接以数据库与接口响应为准。"
       >
-        <StatGrid
-          items={[
-            { label: '总交易数', value: `${overview.tradeCount} 笔`, helper: `做多 ${overview.longCount} / 做空 ${overview.shortCount}` },
-            { label: '总毛盈亏', value: formatForexAmount(overview.grossPnl), accent: overview.grossPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
-            { label: '净收益', value: formatForexAmount(overview.realizedNetPnl), accent: overview.realizedNetPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
-            { label: '净入金', value: formatForexMoney(overview.netCapital) },
-            { label: '当前净值', value: formatForexMoney(overview.equity), helper: `ROI ${formatForexPercent(overview.roi)}` },
-            { label: '默认杠杆', value: `${normalizedData.settings.leverage} 倍`, helper: `强平比例 ${normalizedData.settings.forcedLiquidationRatio}` },
-          ]}
+        <PillTabs
+          options={TAB_OPTIONS}
+          value={tab}
+          onChange={(value) => setTab(value as ForexTab)}
         />
       </SectionCard>
 
-      <PillTabs
-        options={TAB_OPTIONS}
-        value={tab}
-        onChange={(value) => setTab(value as ForexTab)}
-      />
-
       {tab === 'dashboard' ? (
         <ForexDashboardSection
-          trades={normalizedData.trades}
-          capitalFlows={normalizedData.capitalFlows}
-          startDate={normalizedData.settings.dashboardStartDate}
-          endDate={normalizedData.settings.dashboardEndDate}
-          onStartDateChange={(value) => updateSettings({ dashboardStartDate: value })}
-          onEndDateChange={(value) => updateSettings({ dashboardEndDate: value })}
+          trades={trades}
+          capitalFlows={capitalFlows}
+          startDate={settings.dashboardStartDate}
+          endDate={settings.dashboardEndDate}
+          onStartDateChange={(value) => {
+            void updateSettings({ dashboardStartDate: value });
+          }}
+          onEndDateChange={(value) => {
+            void updateSettings({ dashboardEndDate: value });
+          }}
         />
       ) : null}
 
       {tab === 'trades' ? (
         <ForexTradesSection
-          trades={normalizedData.trades}
-          onChangeTrades={(updater) => setData((previous) => ({
-            ...previous,
-            trades: updater(previous.trades),
-          }))}
+          trades={trades}
+          onChangeTrades={(updater) => {
+            void handleTradesChange(updater);
+          }}
           showToast={showToast}
         />
       ) : null}
 
       {tab === 'calculator' ? (
         <ForexCalculatorSection
-          leverage={normalizedData.settings.leverage}
-          forcedLiquidationRatio={normalizedData.settings.forcedLiquidationRatio}
-          defaultBalance={overview.equity > 0 ? overview.equity : overview.netCapital}
-          onLeverageChange={(value) => updateSettings({ leverage: Math.max(1, Math.round(value || normalizedData.settings.leverage)) })}
-          onForcedLiquidationRatioChange={(value) => updateSettings({
-            forcedLiquidationRatio: Math.min(1, Math.max(0.1, Number((value || normalizedData.settings.forcedLiquidationRatio).toFixed(2)))),
-          })}
+          leverage={settings.leverage}
+          forcedLiquidationRatio={settings.forcedLiquidationRatio}
+          defaultBalance={summary.equity > 0 ? summary.equity : summary.netCapital}
+          onLeverageChange={(value) => {
+            void updateSettings({ leverage: Math.max(1, Math.round(value || settings.leverage)) });
+          }}
+          onForcedLiquidationRatioChange={(value) => {
+            void updateSettings({
+              forcedLiquidationRatio: Math.min(1, Math.max(0.1, Number((value || settings.forcedLiquidationRatio).toFixed(2)))),
+            });
+          }}
         />
       ) : null}
 
       {tab === 'capital' ? (
         <ForexCapitalSection
-          capitalFlows={normalizedData.capitalFlows}
-          onChangeCapitalFlows={(updater) => setData((previous) => ({
-            ...previous,
-            capitalFlows: updater(previous.capitalFlows),
-          }))}
+          capitalFlows={capitalFlows}
+          onChangeCapitalFlows={(updater) => {
+            void handleCapitalFlowsChange(updater);
+          }}
           showToast={showToast}
         />
       ) : null}
