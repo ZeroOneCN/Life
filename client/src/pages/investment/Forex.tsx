@@ -9,7 +9,12 @@ import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { forexApi } from '../../services/forexApi';
-import { formatForexAmount, formatForexMoney, formatForexPercent } from '../../services/forex';
+import {
+  formatForexAmount,
+  formatForexMoney,
+  formatForexPercent,
+  normalizeForexDashboardRange,
+} from '../../services/forex';
 import type {
   ForexCapitalFlow,
   ForexDashboardSummary,
@@ -121,6 +126,28 @@ export default function ForexPage() {
       showToast(buildApiErrorMessage(error, '外汇设置保存失败。'), 'error');
     }
   }, [reload, showToast]);
+
+  const effectiveDashboardRange = useMemo(
+    () => normalizeForexDashboardRange(trades, settings.dashboardStartDate, settings.dashboardEndDate),
+    [settings.dashboardEndDate, settings.dashboardStartDate, trades],
+  );
+
+  const handleImportApplied = useCallback((nextTrades: ForexTradeRecord[]) => {
+    const nextRange = normalizeForexDashboardRange(nextTrades, settings.dashboardStartDate, settings.dashboardEndDate);
+
+    if (
+      nextRange.shouldReset
+      && (
+        nextRange.startDate !== settings.dashboardStartDate
+        || nextRange.endDate !== settings.dashboardEndDate
+      )
+    ) {
+      void updateSettings({
+        dashboardStartDate: nextRange.startDate,
+        dashboardEndDate: nextRange.endDate,
+      });
+    }
+  }, [settings.dashboardEndDate, settings.dashboardStartDate, updateSettings]);
 
   const handleTradesChange = useCallback(async (updater: (items: ForexTradeRecord[]) => ForexTradeRecord[]) => {
     const previous = trades;
@@ -235,8 +262,8 @@ export default function ForexPage() {
         <ForexDashboardSection
           trades={trades}
           capitalFlows={capitalFlows}
-          startDate={settings.dashboardStartDate}
-          endDate={settings.dashboardEndDate}
+          startDate={effectiveDashboardRange.startDate}
+          endDate={effectiveDashboardRange.endDate}
           onStartDateChange={(value) => {
             void updateSettings({ dashboardStartDate: value });
           }}
@@ -252,6 +279,7 @@ export default function ForexPage() {
           onChangeTrades={(updater) => {
             void handleTradesChange(updater);
           }}
+          onImportApplied={handleImportApplied}
           showToast={showToast}
         />
       ) : null}

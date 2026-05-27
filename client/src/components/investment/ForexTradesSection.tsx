@@ -29,6 +29,7 @@ import type { ForexImportResult, ForexInstrument, ForexOrderType, ForexTradeDraf
 interface ForexTradesSectionProps {
   trades: ForexTradeRecord[];
   onChangeTrades: (updater: (records: ForexTradeRecord[]) => ForexTradeRecord[]) => void;
+  onImportApplied?: (records: ForexTradeRecord[]) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
@@ -152,6 +153,7 @@ function parseDraft(form: TradeFormState): ForexTradeDraft | null {
 export function ForexTradesSection({
   trades,
   onChangeTrades,
+  onImportApplied,
   showToast,
 }: ForexTradesSectionProps) {
   const [form, setForm] = useState<TradeFormState>(() => createDefaultFormState());
@@ -217,7 +219,7 @@ export function ForexTradesSection({
       key: 'orderType',
       title: '订单类型',
       render: (_value: unknown, row: ForexTradeRecord) => (
-        <Tag tone={row.orderType === 'buy' ? 'green' : 'orange'}>
+        <Tag tone={row.orderType === 'buy' ? 'green' : 'red'}>
           {getForexOrderTypeLabel(row.orderType)}
         </Tag>
       ),
@@ -326,6 +328,7 @@ export function ForexTradesSection({
 
       if (result.importedCount > 0) {
         onChangeTrades(() => result.nextTrades);
+        onImportApplied?.(result.nextTrades);
       }
 
       showToast(

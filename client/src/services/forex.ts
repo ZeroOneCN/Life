@@ -704,7 +704,7 @@ function buildConsecutiveLossMetric(trades: ForexTradeRecord[]) {
 
 function parseHoldMinutes(holdTime: string) {
   const hours = Number(holdTime.match(/(\d+)小时/)?.[1] ?? 0);
-  const minutes = Number(holdTime.match(/(\d+)分钟/)?.[1] ?? 0);
+  const minutes = Number(holdTime.match(/(\d+)分(?:钟)?/)?.[1] ?? 0);
   const seconds = Number(holdTime.match(/(\d+)秒/)?.[1] ?? 0);
   return hours * 60 + minutes + seconds / 60;
 }
@@ -953,14 +953,13 @@ async function normalizeImportDateCellAsync(value: unknown) {
     return '';
   }
 
-  const parsed = dayjs(raw.replace(/\./g, '-').replace(/\//g, '-'));
-  if (parsed.isValid()) {
-    return parsed.format(DATE_FORMAT);
-  }
+  const numeric = typeof value === 'number'
+    ? value
+    : (/^-?\d+(\.\d+)?$/.test(raw) ? Number(raw) : Number.NaN);
 
-  const numeric = Number(raw);
-
-  if (Number.isFinite(numeric)) {
+  // Excel serial dates must be handled before generic dayjs parsing; otherwise
+  // values like 46155 can be misread as an invalid year-like string.
+  if (Number.isFinite(numeric) && numeric >= 20_000 && numeric <= 80_000) {
     const XLSX = await import('xlsx');
     const dateCode = XLSX.SSF.parse_date_code(numeric);
 
@@ -969,7 +968,69 @@ async function normalizeImportDateCellAsync(value: unknown) {
     }
   }
 
+  const compactDateMatch = raw.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if (compactDateMatch) {
+    const normalized = `${compactDateMatch[1]}-${compactDateMatch[2]}-${compactDateMatch[3]}`;
+
+    if (dayjs(normalized).isValid()) {
+      return dayjs(normalized).format(DATE_FORMAT);
+    }
+  }
+
+  const parsed = dayjs(raw.replace(/\./g, '-').replace(/\//g, '-'));
+  if (parsed.isValid()) {
+    return parsed.format(DATE_FORMAT);
+  }
+
   return raw;
+}
+
+function isNormalizedForexDate(value: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && dayjs(value).isValid();
+}
+
+function formatNormalizedTime(hours: number, minutes: number, seconds: number) {
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function normalizeForexTimeWithSeconds(value: string, fallback = '') {
+  const parsed = parseTimeValue(value);
+
+  if (!parsed) {
+    return fallback;
+  }
+
+  return formatNormalizedTime(parsed.hours, parsed.minutes, parsed.seconds);
+}
+
+function normalizeImportTimeCell(value: unknown, fallback = '') {
+  const raw = String(value ?? '').trim();
+
+  if (!raw) {
+    return fallback;
+  }
+
+  const numeric = typeof value === 'number'
+    ? value
+    : (/^-?\d+(\.\d+)?$/.test(raw) ? Number(raw) : Number.NaN);
+
+  if (Number.isFinite(numeric)) {
+    const fraction = ((numeric % 1) + 1) % 1;
+
+    if (fraction > 0 || (numeric >= 0 && numeric < 1)) {
+      const totalSeconds = Math.round(fraction * 24 * 60 * 60) % (24 * 60 * 60);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      return formatNormalizedTime(hours, minutes, seconds);
+    }
+  }
+
+  return normalizeForexTimeWithSeconds(raw, fallback);
+}
+
+function isNormalizedForexTime(value: string) {
+  return /^\d{2}:\d{2}:\d{2}$/.test(value);
 }
 
 function buildTradeDedupKey(record: ForexTradeRecord) {
@@ -1006,6 +1067,62 @@ export function dedupeImportedForexTrades(
   });
 
   return { uniqueRecords, duplicateRows };
+}
+
+export function getForexTradeDateRange(records: ForexTradeRecord[]) {
+  const dates = records
+    .map((record) => record.tradeDate)
+    .filter((value) => isNormalizedForexDate(value))
+    .sort();
+
+  if (!dates.length) {
+    return null;
+  }
+
+  return {
+    startDate: dates[0],
+    endDate: dates[dates.length - 1],
+  };
+}
+
+export function normalizeForexDashboardRange(
+  records: ForexTradeRecord[],
+  startDate: string,
+  endDate: string,
+) {
+  const datasetRange = getForexTradeDateRange(records);
+  const currentStart = isNormalizedForexDate(startDate) ? startDate : '';
+  const currentEnd = isNormalizedForexDate(endDate) ? endDate : '';
+
+  if (!datasetRange) {
+    return {
+      startDate: currentStart,
+      endDate: currentEnd,
+      shouldReset: false,
+    };
+  }
+
+  const isOutOfRange = !currentStart
+    || !currentEnd
+    || currentStart > currentEnd
+    || currentStart < datasetRange.startDate
+    || currentStart > datasetRange.endDate
+    || currentEnd < datasetRange.startDate
+    || currentEnd > datasetRange.endDate;
+
+  if (isOutOfRange) {
+    return {
+      startDate: datasetRange.startDate,
+      endDate: datasetRange.endDate,
+      shouldReset: true,
+    };
+  }
+
+  return {
+    startDate: currentStart,
+    endDate: currentEnd,
+    shouldReset: false,
+  };
 }
 
 function buildImportedTrade(
@@ -1126,9 +1243,9 @@ export async function buildForexImportTemplateWorkbook() {
       手续费: -0.6,
       平仓价格: 2346.2,
       盈亏金额: 57,
-      开仓时间: '09:35',
-      平仓时间: '11:10',
-      持仓时间: '1小时 35分钟',
+      开仓时间: '09:35:14',
+      平仓时间: '11:10:22',
+      持仓时间: '1小时35分08秒',
       备注: '示例数据',
     },
   ];
@@ -1214,19 +1331,40 @@ function buildImportedTradeCompatible(
     getForexImportCell(row, ['平仓价格', '平仓价', 'closePrice', 'close_price', 'exitPrice']),
     0,
   );
-  const openTime = normalizeForexTimeInput(
+  const openTime = normalizeForexTimeWithSeconds(
     String(getForexImportCell(row, ['开仓时间', 'openTime', 'open_time']) ?? ''),
-    DEFAULT_START_TIME,
+    '09:00:00',
   );
-  const closeTime = normalizeForexTimeInput(
+  const closeTime = normalizeForexTimeWithSeconds(
     String(getForexImportCell(row, ['平仓时间', 'closeTime', 'close_time']) ?? ''),
-    DEFAULT_END_TIME,
+    '10:00:00',
   );
 
-  if (!tradeDate || openPrice <= 0 || closePrice <= 0 || lotSize <= 0) {
+  if (!tradeDate) {
     return {
       record: null,
-      invalid: { rowNumber, reason: '缺少必填字段，至少需要日期时间、开仓价格、平仓价格和手数。' },
+      invalid: { rowNumber, reason: '缺少必填字段：日期时间。' },
+    };
+  }
+
+  if (openPrice <= 0) {
+    return {
+      record: null,
+      invalid: { rowNumber, reason: '开仓价格缺失或格式非法。' },
+    };
+  }
+
+  if (closePrice <= 0) {
+    return {
+      record: null,
+      invalid: { rowNumber, reason: '平仓价格缺失或格式非法。' },
+    };
+  }
+
+  if (lotSize <= 0) {
+    return {
+      record: null,
+      invalid: { rowNumber, reason: '手数缺失或格式非法。' },
     };
   }
 
@@ -1289,9 +1427,36 @@ export async function importForexWorkbookCompatible(
 
   for (const [index, rawRow] of rows.entries()) {
     const row = { ...rawRow };
+    const rowNumber = index + 2;
     const normalizedDate = await normalizeImportDateCellAsync(
       getForexImportCell(row, ['日期时间', '交易日期', '日期', 'tradeDate', 'trade_date', 'date', 'datetime']),
     );
+    const normalizedOpenTime = normalizeImportTimeCell(
+      getForexImportCell(row, ['开仓时间', 'openTime', 'open_time']),
+      '09:00:00',
+    );
+    const normalizedCloseTime = normalizeImportTimeCell(
+      getForexImportCell(row, ['平仓时间', 'closeTime', 'close_time']),
+      '10:00:00',
+    );
+    const rawDateCell = String(getForexImportCell(row, ['日期时间', '交易日期', '日期', 'tradeDate', 'trade_date', 'date', 'datetime']) ?? '').trim();
+    const rawOpenTimeCell = String(getForexImportCell(row, ['开仓时间', 'openTime', 'open_time']) ?? '').trim();
+    const rawCloseTimeCell = String(getForexImportCell(row, ['平仓时间', 'closeTime', 'close_time']) ?? '').trim();
+
+    if (rawDateCell && !isNormalizedForexDate(normalizedDate)) {
+      invalidRows.push({ rowNumber, reason: '日期时间无法识别，请使用 Excel 日期或 yyyy/m/dd。' });
+      continue;
+    }
+
+    if (rawOpenTimeCell && !isNormalizedForexTime(normalizedOpenTime)) {
+      invalidRows.push({ rowNumber, reason: '开仓时间无法识别，请使用 Excel 时间或 HH:mm:ss。' });
+      continue;
+    }
+
+    if (rawCloseTimeCell && !isNormalizedForexTime(normalizedCloseTime)) {
+      invalidRows.push({ rowNumber, reason: '平仓时间无法识别，请使用 Excel 时间或 HH:mm:ss。' });
+      continue;
+    }
 
     if (normalizedDate) {
       row.日期时间 = normalizedDate;
@@ -1303,7 +1468,19 @@ export async function importForexWorkbookCompatible(
       row.datetime = normalizedDate;
     }
 
-    const { record, invalid } = buildImportedTradeCompatible(row, index + 2);
+    if (normalizedOpenTime) {
+      row.开仓时间 = normalizedOpenTime;
+      row.openTime = normalizedOpenTime;
+      row.open_time = normalizedOpenTime;
+    }
+
+    if (normalizedCloseTime) {
+      row.平仓时间 = normalizedCloseTime;
+      row.closeTime = normalizedCloseTime;
+      row.close_time = normalizedCloseTime;
+    }
+
+    const { record, invalid } = buildImportedTradeCompatible(row, rowNumber);
 
     if (invalid) {
       invalidRows.push(invalid);

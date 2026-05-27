@@ -257,7 +257,7 @@ export function ForexCalculatorSection({
                 <article className="forex-result-card" key={position.id}>
                   <div className="forex-result-card-head">
                     <strong>{`仓位 ${index + 1}`}</strong>
-                    <Tag tone={position.orderType === 'buy' ? 'green' : 'orange'}>
+                    <Tag tone={position.orderType === 'buy' ? 'green' : 'red'}>
                       {`${getForexInstrumentLabel(position.instrument)} · ${getForexOrderTypeLabel(position.orderType)}`}
                     </Tag>
                   </div>
