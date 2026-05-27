@@ -17,7 +17,14 @@ function normalizeDate(value, fallback = (0, dayjs_1.default)().format(exports.D
     }
     const normalized = raw.replace(/\./g, '-').replace(/\//g, '-');
     const parsed = (0, dayjs_1.default)(normalized);
-    return parsed.isValid() ? parsed.format(exports.DATE_FORMAT) : fallback;
+    if (!parsed.isValid()) {
+        return fallback;
+    }
+    const year = parsed.year();
+    if (year < 2000 || year > 2100) {
+        return fallback;
+    }
+    return parsed.format(exports.DATE_FORMAT);
 }
 function normalizeMonth(value, fallback = (0, dayjs_1.default)().format(exports.MONTH_FORMAT)) {
     const raw = String(value ?? '').trim();

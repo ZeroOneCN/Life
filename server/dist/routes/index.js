@@ -18,6 +18,7 @@ const fitness_router_1 = require("../modules/health/fitness.router");
 const medication_router_1 = require("../modules/health/medication.router");
 const checkup_router_1 = require("../modules/health/checkup.router");
 const forex_router_1 = require("../modules/investment/forex.router");
+const analysis_router_1 = require("../modules/system/analysis.router");
 const auth_middleware_1 = require("../shared/http/auth-middleware");
 const async_handler_1 = require("../shared/http/async-handler");
 const response_1 = require("../shared/http/response");
@@ -44,5 +45,6 @@ function createApiRouter() {
     router.use('/health/medication', (0, medication_router_1.createMedicationRouter)());
     router.use('/health/checkup', (0, checkup_router_1.createCheckupRouter)());
     router.use('/investment/forex', (0, forex_router_1.createForexRouter)());
+    router.use('/analysis', (0, analysis_router_1.createAnalysisRouter)());
     return router;
 }

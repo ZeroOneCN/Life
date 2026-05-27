@@ -45,16 +45,23 @@ function calculateMedicationLowStockCount(records, purchases, thresholds, defaul
     }).length;
 }
 function buildForexSummary(trades, capitalFlows) {
-    const grossPnl = trades.reduce((sum, item) => sum + Number(item.pnl), 0);
-    const totalCommission = trades.reduce((sum, item) => sum + Number(item.commission), 0);
+    const validTrades = trades.filter((item) => {
+        if (!item.trade_date) {
+            return false;
+        }
+        const tradeDate = (0, dayjs_1.default)(item.trade_date);
+        return tradeDate.isValid() && tradeDate.year() >= 2000 && tradeDate.year() <= 2100;
+    });
+    const grossPnl = validTrades.reduce((sum, item) => sum + Number(item.pnl), 0);
+    const totalCommission = validTrades.reduce((sum, item) => sum + Number(item.commission), 0);
     const realizedNetPnl = grossPnl + totalCommission;
     const deposits = capitalFlows.filter((item) => item.flow_type === 'deposit').reduce((sum, item) => sum + Number(item.amount), 0);
     const withdrawals = capitalFlows.filter((item) => item.flow_type === 'withdrawal').reduce((sum, item) => sum + Number(item.amount), 0);
-    const winners = trades.filter((item) => Number(item.pnl) > 0).length;
+    const winners = validTrades.filter((item) => Number(item.pnl) > 0).length;
     return {
         netPnl: Number(realizedNetPnl.toFixed(2)),
-        winRate: trades.length ? winners / trades.length : 0,
-        activeTradeCount: trades.length,
+        winRate: validTrades.length ? winners / validTrades.length : 0,
+        activeTradeCount: validTrades.length,
         netCapital: Number((deposits - withdrawals).toFixed(2)),
     };
 }
@@ -292,11 +299,17 @@ function createDashboardRouter() {
                     activeTradeCount: forexSummary.activeTradeCount,
                 },
                 trend: Array.from({ length: 7 }, (_, index) => {
-                    const date = (0, dayjs_1.default)().subtract(6 - index, 'day').format('YYYY-MM-DD');
-                    const scoped = forexTrades.filter((item) => item.trade_date === date);
+                    const date = (0, dayjs_1.default)().subtract(6 - index, 'day');
+                    const scoped = forexTrades.filter((item) => {
+                        if (!item.trade_date) {
+                            return false;
+                        }
+                        const tradeDate = (0, dayjs_1.default)(item.trade_date);
+                        return tradeDate.isValid() && tradeDate.year() >= 2000 && tradeDate.year() <= 2100 && tradeDate.isSame(date, 'day');
+                    });
                     return {
-                        date,
-                        label: (0, dayjs_1.default)(date).format('MM-DD'),
+                        date: date.format('YYYY-MM-DD'),
+                        label: date.format('MM-DD'),
                         netPnl: Number(scoped.reduce((sum, item) => sum + Number(item.pnl) + Number(item.commission), 0).toFixed(2)),
                         tradeCount: scoped.length,
                     };
@@ -409,11 +422,18 @@ function createDashboardRouter() {
             title: '投资中心摘要',
             stats: summary,
             trend: Array.from({ length: 7 }, (_, index) => {
-                const date = (0, dayjs_1.default)().subtract(6 - index, 'day').format('YYYY-MM-DD');
+                const date = (0, dayjs_1.default)().subtract(6 - index, 'day');
+                const scoped = trades.filter((item) => {
+                    if (!item.trade_date) {
+                        return false;
+                    }
+                    const tradeDate = (0, dayjs_1.default)(item.trade_date);
+                    return tradeDate.isValid() && tradeDate.year() >= 2000 && tradeDate.year() <= 2100 && tradeDate.isSame(date, 'day');
+                });
                 return {
-                    date,
-                    label: (0, dayjs_1.default)(date).format('MM-DD'),
-                    netPnl: Number(trades.filter((item) => item.trade_date === date).reduce((sum, item) => sum + Number(item.pnl) + Number(item.commission), 0).toFixed(2)),
+                    date: date.format('YYYY-MM-DD'),
+                    label: date.format('MM-DD'),
+                    netPnl: Number(scoped.reduce((sum, item) => sum + Number(item.pnl) + Number(item.commission), 0).toFixed(2)),
                 };
             }),
         }));
