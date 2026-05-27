@@ -112,7 +112,6 @@ async function ensureNotificationChannels(manager, userId, email) {
     const next = defaultChannels
         .filter((item) => !existingTypes.has(item.type))
         .map((item) => repository.create({
-        id: `${userId}-${item.suffix}`,
         user_id: userId,
         channel_type: item.type,
         label: item.label,
@@ -139,7 +138,6 @@ async function ensureNotificationScenes(manager, userId) {
     const scenesToCreate = defaultScenes
         .filter(([sceneId]) => !existingSceneIds.has(sceneId))
         .map(([sceneId, label, enabled, summary, description]) => sceneRepo.create({
-        id: `${userId}-${sceneId}`,
         user_id: userId,
         scene_id: sceneId,
         label,
@@ -153,7 +151,6 @@ async function ensureNotificationScenes(manager, userId) {
     const templatesToCreate = defaultTemplates
         .filter(([sceneId]) => !existingTemplateSceneIds.has(sceneId))
         .map(([sceneId, title, body]) => templateRepo.create({
-        id: `${userId}-${sceneId}`,
         user_id: userId,
         scene_id: sceneId,
         title,
@@ -165,7 +162,6 @@ async function ensureNotificationScenes(manager, userId) {
     const relationsToCreate = defaultSceneChannels
         .filter(([sceneId, channelType]) => !existingRelationKeys.has(`${sceneId}:${channelType}`))
         .map(([sceneId, channelType]) => relationRepo.create({
-        id: `${userId}-${sceneId}-${channelType}`,
         user_id: userId,
         scene_id: sceneId,
         channel_type: channelType,
@@ -176,11 +172,10 @@ async function ensureNotificationScenes(manager, userId) {
 }
 async function ensureCardCarriers(manager, userId) {
     const repository = manager.getRepository(life_card_carrier_entity_1.LifeCardCarrierEntity);
-    const existingIds = new Set((await repository.find({ where: { user_id: userId } })).map((item) => item.id));
+    const existingNames = new Set((await repository.find({ where: { user_id: userId } })).map((item) => item.name));
     const next = defaultCardCarriers
-        .filter(([id]) => !existingIds.has(`${userId}-${id}`))
-        .map(([id, name, description]) => repository.create({
-        id: `${userId}-${id}`,
+        .filter(([, name]) => !existingNames.has(name))
+        .map(([, name, description]) => repository.create({
         user_id: userId,
         name,
         description,
@@ -191,11 +186,10 @@ async function ensureCardCarriers(manager, userId) {
 }
 async function ensureSubscriptionCategories(manager, userId) {
     const repository = manager.getRepository(finance_subscription_category_entity_1.FinanceSubscriptionCategoryEntity);
-    const existingIds = new Set((await repository.find({ where: { user_id: userId } })).map((item) => item.id));
+    const existingNames = new Set((await repository.find({ where: { user_id: userId } })).map((item) => item.name));
     const next = defaultSubscriptionCategories
-        .filter(([id]) => !existingIds.has(`${userId}-${id}`))
-        .map(([id, name, description]) => repository.create({
-        id: `${userId}-${id}`,
+        .filter(([, name]) => !existingNames.has(name))
+        .map(([, name, description]) => repository.create({
         user_id: userId,
         name,
         description,
