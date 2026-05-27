@@ -9,7 +9,7 @@ import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, SelectField, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
-import { useAuthState } from '../../services/auth';
+import { getAuthUserDisplayName, useAuthState } from '../../services/auth';
 import { formatTravelAmount, TRAVEL_ALL_BOOKS } from '../../services/travel';
 import { travelApi } from '../../services/travelApi';
 import type {
@@ -85,6 +85,7 @@ function hydrateSettings(
 export default function TravelPage() {
   const authState = useAuthState();
   const currentUserId = authState.session?.user.id ?? '';
+  const currentUserLabel = getAuthUserDisplayName(authState.session?.user, '当前登录用户');
   const [tab, setTab] = usePageTab<TravelTab>('books', TAB_OPTIONS.map((item) => item.value), 'travelTab');
   const [books, setBooks] = useState<TravelBook[]>([]);
   const [records, setRecords] = useState<TravelExpenseRecord[]>([]);
@@ -352,7 +353,7 @@ export default function TravelPage() {
         items={[
           {
             label: '当前用户',
-            value: authState.session?.user.nickname || authState.session?.user.username || '当前登录用户',
+            value: currentUserLabel,
             helper: authState.session?.user.email || '所有数据默认按当前登录用户隔离',
           },
           {
@@ -389,6 +390,7 @@ export default function TravelPage() {
 
       {tab === 'books' ? (
         <TravelBooksSection
+          currentUserLabel={currentUserLabel}
           activeUserId={settings.activeUserId}
           activeBookId={activeBook?.id ?? ''}
           books={books}
@@ -410,6 +412,7 @@ export default function TravelPage() {
 
       {tab === 'details' ? (
         <TravelDetailsSection
+          currentUserLabel={currentUserLabel}
           activeUserId={settings.activeUserId}
           activeBookId={activeBook?.id ?? ''}
           detailsBookId={settings.detailsBookId}

@@ -23,6 +23,7 @@ import {
 import type { CheckupRecord, CheckupRecordDraft, CheckupStatus } from '../../types/checkup';
 
 interface CheckupRecordsSectionProps {
+  currentUserLabel: string;
   activeUserId: string;
   filterUserId: string;
   trendUserId: string;
@@ -113,6 +114,7 @@ function parseDraft(form: RecordFormState, userId: string): CheckupRecordDraft |
 }
 
 export function CheckupRecordsSection({
+  currentUserLabel,
   activeUserId,
   filterUserId,
   trendUserId,
@@ -299,7 +301,7 @@ export function CheckupRecordsSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前默认录入用户为 <strong>{normalizeCheckupUserId(activeUserId) || '未设置'}</strong>。如需切换新增对象，请先在页面顶部修改当前用户 ID。
+          当前录入用户为 <strong>{currentUserLabel}</strong>。新的体检指标会默认归属当前登录用户。
         </div>
 
         <div className="checkup-entry-grid">

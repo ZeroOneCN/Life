@@ -94,6 +94,14 @@ export function updateAuthUser(user: AuthUser) {
   });
 }
 
+export function getAuthUserDisplayName(user: AuthUser | null | undefined, fallback = '当前用户') {
+  return user?.nickname || user?.username || fallback;
+}
+
+export function getAuthUserSummary(user: AuthUser | null | undefined, fallback = '已登录会话') {
+  return user?.email || user?.timezone || fallback;
+}
+
 export async function refreshAccessToken(client: AxiosInstance) {
   const current = getAuthSession();
   if (!current?.refreshToken) {

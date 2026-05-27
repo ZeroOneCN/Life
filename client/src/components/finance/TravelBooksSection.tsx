@@ -22,6 +22,7 @@ import {
 import type { TravelBook, TravelBookDraft, TravelExpenseRecord, TravelImportResult, TravelPayChannel } from '../../types/travel';
 
 interface TravelBooksSectionProps {
+  currentUserLabel: string;
   activeUserId: string;
   activeBookId: string;
   books: TravelBook[];
@@ -87,6 +88,7 @@ function parseDraft(form: TravelBookFormState): TravelBookDraft | null {
 }
 
 export function TravelBooksSection({
+  currentUserLabel,
   activeUserId,
   activeBookId,
   books,
@@ -281,16 +283,15 @@ export function TravelBooksSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前默认创建用户为 <strong>{normalizeTravelUserId(activeUserId) || '未设置'}</strong>。
+          当前默认创建用户为 <strong>{currentUserLabel}</strong>。
           切换当前账本后，明细录入、统计看板和报告导出都会联动更新。
         </div>
 
         <div className="travel-book-form-grid">
           <Field
-            label="用户 ID"
-            value={form.userId}
-            onChange={(event) => setForm((previous) => ({ ...previous, userId: event.target.value }))}
-            placeholder="例如：user-001"
+            label="当前创建用户"
+            value={currentUserLabel}
+            disabled
           />
           <Field
             label="行程账本名称"
@@ -361,9 +362,9 @@ export function TravelBooksSection({
         <div className="travel-modal-layout">
           <div className="travel-book-form-grid travel-book-form-grid-modal">
             <Field
-              label="用户 ID"
-              value={editingForm.userId}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, userId: event.target.value }))}
+              label="当前创建用户"
+              value={currentUserLabel}
+              disabled
             />
             <Field
               label="行程账本名称"

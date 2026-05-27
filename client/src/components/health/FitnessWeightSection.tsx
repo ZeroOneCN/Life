@@ -16,6 +16,7 @@ import {
 import type { WeightRecord, WeightRecordDraft } from '../../types/fitness';
 
 interface FitnessWeightSectionProps {
+  currentUserLabel: string;
   activeUserId: string;
   filterUserId: string;
   defaultHeightCm: number;
@@ -64,6 +65,7 @@ function parseDraft(form: WeightFormState, userId: string): WeightRecordDraft | 
 }
 
 export function FitnessWeightSection({
+  currentUserLabel,
   activeUserId,
   filterUserId,
   defaultHeightCm,
@@ -204,7 +206,7 @@ export function FitnessWeightSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前新增用户：<strong>{normalizeFitnessUserId(activeUserId) || '未设置'}</strong>。默认身高会跟随最近一次保存值更新。
+          当前录入用户：<strong>{currentUserLabel}</strong>。默认身高会跟随最近一次保存值更新。
         </div>
 
         <div className="form-grid fitness-entry-grid fitness-entry-grid-weight">

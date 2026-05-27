@@ -7,12 +7,11 @@ import type { StepHour } from '../../types/health';
 import { SectionCard } from '../page';
 
 interface StepEntryFormProps {
-  userId: string;
+  currentUserLabel: string;
   stepsInput: string;
   selectedHour: StepHour;
   recordTime: string;
   stepsInputRef: Ref<HTMLInputElement>;
-  onUserIdChange: (value: string) => void;
   onStepsInputChange: (value: string) => void;
   onSelectHour: (hour: StepHour) => void;
   onRecordTimeChange: (value: string) => void;
@@ -31,12 +30,11 @@ function getEntryDescription(hour: StepHour) {
 }
 
 export function StepEntryForm({
-  userId,
+  currentUserLabel,
   stepsInput,
   selectedHour,
   recordTime,
   stepsInputRef,
-  onUserIdChange,
   onStepsInputChange,
   onSelectHour,
   onRecordTimeChange,
@@ -55,16 +53,9 @@ export function StepEntryForm({
 
         <div className="form-grid">
           <Field
-            label="用户 ID"
-            placeholder="例如 user-001"
-            value={userId}
-            onChange={(event) => onUserIdChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                onSubmit();
-              }
-            }}
+            label="当前录入用户"
+            value={currentUserLabel}
+            disabled
           />
 
           <label className="field">

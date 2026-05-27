@@ -15,6 +15,7 @@ import {
 import type { MedicationRecord, MedicationRecordDraft } from '../../types/medication';
 
 interface MedicationRecordsSectionProps {
+  currentUserLabel: string;
   activeUserId: string;
   filterUserId: string;
   records: MedicationRecord[];
@@ -80,6 +81,7 @@ function parseDraft(form: MedicationRecordFormState, userId: string): Medication
 }
 
 export function MedicationRecordsSection({
+  currentUserLabel,
   activeUserId,
   filterUserId,
   records,
@@ -144,7 +146,7 @@ export function MedicationRecordsSection({
 
   const columns = useMemo(() => [
     { key: 'date', title: '日期', dataIndex: 'date' as const },
-    { key: 'userId', title: '用户 ID', dataIndex: 'userId' as const },
+    { key: 'userId', title: '归属用户', render: () => currentUserLabel },
     { key: 'medicineName', title: '药品名称', dataIndex: 'medicineName' as const },
     { key: 'breakfast', title: '早餐', render: (_value: unknown, row: MedicationRecord) => `${row.breakfast}` },
     { key: 'lunch', title: '午餐', render: (_value: unknown, row: MedicationRecord) => `${row.lunch}` },
@@ -172,7 +174,7 @@ export function MedicationRecordsSection({
         </div>
       ),
     },
-  ], []);
+  ], [currentUserLabel]);
 
   const handleCreate = () => {
     const draft = parseDraft(form, activeUserId);
@@ -211,7 +213,7 @@ export function MedicationRecordsSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前默认录入用户为 <strong>{normalizeMedicationUserId(activeUserId) || '未设置'}</strong>，如果要切换新增对象，请先在页面顶部修改当前用户 ID。
+          当前录入用户为 <strong>{currentUserLabel}</strong>，新的用药记录会默认归属当前登录用户。
         </div>
 
         <div className="medication-entry-grid">
@@ -327,7 +329,7 @@ export function MedicationRecordsSection({
           <div className="medication-modal-summary">
             <div className="medication-modal-summary-card">
               <span className="medication-modal-summary-label">当前用户</span>
-              <strong>{editingRecord?.userId ?? '-'}</strong>
+              <strong>{currentUserLabel}</strong>
             </div>
             <div className="medication-modal-summary-card">
               <span className="medication-modal-summary-label">记录日期</span>

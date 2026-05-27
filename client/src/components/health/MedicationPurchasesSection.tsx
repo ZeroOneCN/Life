@@ -17,6 +17,7 @@ import {
 import type { MedicationPurchaseDraft, MedicationPurchaseRecord } from '../../types/medication';
 
 interface MedicationPurchasesSectionProps {
+  currentUserLabel: string;
   activeUserId: string;
   filterUserId: string;
   purchases: MedicationPurchaseRecord[];
@@ -97,6 +98,7 @@ function inferTotalPrice(quantity: string, unitPrice: string) {
 }
 
 export function MedicationPurchasesSection({
+  currentUserLabel,
   activeUserId,
   filterUserId,
   purchases,
@@ -170,7 +172,7 @@ export function MedicationPurchasesSection({
 
   const columns = useMemo(() => [
     { key: 'purchaseDate', title: '购买日期', dataIndex: 'purchaseDate' as const },
-    { key: 'userId', title: '用户 ID', dataIndex: 'userId' as const },
+    { key: 'userId', title: '归属用户', render: () => currentUserLabel },
     { key: 'medicineName', title: '药品名称', dataIndex: 'medicineName' as const },
     { key: 'quantity', title: '数量', render: (_value: unknown, row: MedicationPurchaseRecord) => `${row.quantity}` },
     { key: 'unit', title: '单位', dataIndex: 'unit' as const },
@@ -195,7 +197,7 @@ export function MedicationPurchasesSection({
         </div>
       ),
     },
-  ], []);
+  ], [currentUserLabel]);
 
   const handleCreate = () => {
     const draft = parseDraft(form, activeUserId);
@@ -234,7 +236,7 @@ export function MedicationPurchasesSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前默认录入用户为 <strong>{normalizeMedicationUserId(activeUserId) || '未设置'}</strong>。若想让库存估算更准确，建议及时同步录入每次购药记录。
+          当前录入用户为 <strong>{currentUserLabel}</strong>。若想让库存估算更准确，建议及时同步录入每次购药记录。
         </div>
 
         <StatGrid
@@ -369,7 +371,7 @@ export function MedicationPurchasesSection({
           <div className="medication-modal-summary">
             <div className="medication-modal-summary-card">
               <span className="medication-modal-summary-label">当前用户</span>
-              <strong>{editingPurchase?.userId ?? '-'}</strong>
+              <strong>{currentUserLabel}</strong>
             </div>
             <div className="medication-modal-summary-card">
               <span className="medication-modal-summary-label">估算总价</span>

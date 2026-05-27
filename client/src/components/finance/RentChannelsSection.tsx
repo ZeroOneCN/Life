@@ -13,6 +13,7 @@ import {
 import type { RentChannel, RentChannelDraft, RentHousingRecord } from '../../types/rent';
 
 interface RentChannelsSectionProps {
+  currentUserLabel: string;
   activeUserId: string;
   records: RentHousingRecord[];
   channels: RentChannel[];
@@ -51,6 +52,7 @@ function parseDraft(form: ChannelFormState): RentChannelDraft | null {
 }
 
 export function RentChannelsSection({
+  currentUserLabel,
   activeUserId,
   records,
   channels,
@@ -81,7 +83,7 @@ export function RentChannelsSection({
 
   const columns = useMemo(() => [
     { key: 'name', title: '渠道名称', dataIndex: 'name' as const },
-    { key: 'userId', title: '用户 ID', dataIndex: 'userId' as const },
+    { key: 'userId', title: '归属用户', render: () => currentUserLabel },
     {
       key: 'usage',
       title: '引用记录',
@@ -110,7 +112,7 @@ export function RentChannelsSection({
         </div>
       ),
     },
-  ], [usageMap]);
+  ], [currentUserLabel, usageMap]);
 
   const handleCreate = () => {
     const draft = parseDraft(form);
@@ -166,16 +168,15 @@ export function RentChannelsSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前新增渠道默认归属 <strong>{activeUserId || '未设置'}</strong>。
+          当前新增渠道默认归属 <strong>{currentUserLabel}</strong>。
           历史住房记录里已经保存了 `channelId + channelName` 快照，所以删除渠道不会改写旧记录。
         </div>
 
         <div className="rent-channel-form-grid">
           <Field
-            label="用户 ID"
-            value={form.userId}
-            onChange={(event) => setForm((previous) => ({ ...previous, userId: event.target.value }))}
-            placeholder="例如：user-001"
+            label="当前归属用户"
+            value={currentUserLabel}
+            disabled
           />
           <Field
             label="渠道名称"
@@ -221,9 +222,9 @@ export function RentChannelsSection({
       >
         <div className="rent-channel-form-grid rent-channel-form-grid-modal">
           <Field
-            label="用户 ID"
-            value={editingForm.userId}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, userId: event.target.value }))}
+            label="当前归属用户"
+            value={currentUserLabel}
+            disabled
           />
           <Field
             label="渠道名称"

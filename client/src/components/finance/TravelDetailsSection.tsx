@@ -23,6 +23,7 @@ import {
 import type { TravelBook, TravelCategory, TravelExpenseDraft, TravelExpenseRecord, TravelPayChannel } from '../../types/travel';
 
 interface TravelDetailsSectionProps {
+  currentUserLabel: string;
   activeUserId: string;
   activeBookId: string;
   detailsBookId: string;
@@ -124,6 +125,7 @@ function parseDraft(form: TravelExpenseFormState): TravelExpenseDraft | null {
 }
 
 export function TravelDetailsSection({
+  currentUserLabel,
   activeUserId,
   activeBookId,
   detailsBookId,
@@ -340,7 +342,7 @@ export function TravelDetailsSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          新增记录默认写入 <strong>{normalizeTravelUserId(activeUserId) || '未设置用户'}</strong> / <strong>{activeBook?.name ?? '未选择账本'}</strong>。
+          新增记录默认写入 <strong>{currentUserLabel}</strong> / <strong>{activeBook?.name ?? '未选择账本'}</strong>。
           明细筛选账本可单独切换，不影响顶部当前账本上下文。
         </div>
 
@@ -534,9 +536,9 @@ export function TravelDetailsSection({
         <div className="travel-modal-layout">
           <div className="travel-record-entry-grid">
             <Field
-              label="用户 ID"
-              value={editingForm.userId}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, userId: event.target.value }))}
+              label="当前录入用户"
+              value={currentUserLabel}
+              disabled
             />
             <SelectField
               label="所属账本"

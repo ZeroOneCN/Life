@@ -16,6 +16,7 @@ interface BatchRowState {
 }
 
 interface CheckupBatchEntrySectionProps {
+  currentUserLabel: string;
   activeUserId: string;
   templates: CheckupTemplate[];
   preferredTemplateId?: string | null;
@@ -35,6 +36,7 @@ function createRow(seed?: Partial<BatchRowState>): BatchRowState {
 }
 
 export function CheckupBatchEntrySection({
+  currentUserLabel,
   activeUserId,
   templates,
   preferredTemplateId,
@@ -141,10 +143,9 @@ export function CheckupBatchEntrySection({
       <div className="page-stack">
         <div className="checkup-filter-grid">
           <Field
-            label="用户 ID"
-            value={userId}
-            onChange={(event) => setUserId(event.target.value)}
-            placeholder="例如：user-001"
+            label="当前录入用户"
+            value={currentUserLabel}
+            disabled
           />
           <DatePickerField label="检查日期" value={testDate} onChange={setTestDate} clearable={false} />
           <Field

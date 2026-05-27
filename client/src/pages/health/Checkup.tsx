@@ -8,6 +8,7 @@ import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Btn, PillTabs, Tag, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
+import { getAuthUserDisplayName, useAuthState } from '../../services/auth';
 import { checkupApi } from '../../services/checkupApi';
 import type {
   CheckupOverviewSummary,
@@ -45,6 +46,8 @@ const EMPTY_OVERVIEW: CheckupOverviewSummary = {
 };
 
 export default function CheckupPage() {
+  const authState = useAuthState();
+  const currentUserLabel = getAuthUserDisplayName(authState.session?.user, '当前登录用户');
   const [tab, setTab] = usePageTab<CheckupTab>('records', TAB_OPTIONS.map((item) => item.value), 'checkupTab');
   const [records, setRecords] = useState<CheckupRecord[]>([]);
   const [templates, setTemplates] = useState<CheckupTemplate[]>([]);
@@ -152,6 +155,7 @@ export default function CheckupPage() {
 
       {tab === 'records' ? (
         <CheckupRecordsSection
+          currentUserLabel={currentUserLabel}
           activeUserId={settings.activeUserId}
           filterUserId={settings.recordsUserId}
           trendUserId={settings.trendUserId}
@@ -177,6 +181,7 @@ export default function CheckupPage() {
 
       {tab === 'batch' ? (
         <CheckupBatchEntrySection
+          currentUserLabel={currentUserLabel}
           activeUserId={settings.activeUserId}
           templates={templates}
           preferredTemplateId={preferredTemplateId}

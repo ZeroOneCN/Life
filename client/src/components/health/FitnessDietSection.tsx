@@ -16,6 +16,7 @@ import {
 import type { DietRecord, DietRecordDraft, MealType } from '../../types/fitness';
 
 interface FitnessDietSectionProps {
+  currentUserLabel: string;
   activeUserId: string;
   filterUserId: string;
   records: DietRecord[];
@@ -76,6 +77,7 @@ function parseDraft(form: DietFormState, userId: string): DietRecordDraft | null
 }
 
 export function FitnessDietSection({
+  currentUserLabel,
   activeUserId,
   filterUserId,
   records,
@@ -226,7 +228,7 @@ export function FitnessDietSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前新增用户：<strong>{normalizeFitnessUserId(activeUserId) || '未设置'}</strong>。如需切换记账对象，请先在页面顶部修改当前用户 ID。
+          当前录入用户：<strong>{currentUserLabel}</strong>。饮食记录默认直接归属当前登录用户。
         </div>
 
         <div className="form-grid fitness-entry-grid fitness-entry-grid-diet">

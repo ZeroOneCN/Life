@@ -17,6 +17,7 @@ import {
 import type { ShoppingCurrencyMode, ShoppingLedger, ShoppingPlatform, ShoppingRecord, ShoppingRecordDraft } from '../../types/shopping';
 
 interface ShoppingRecordsSectionProps {
+  currentUserLabel: string;
   activeUserId: string;
   activeLedgerId: string;
   filterUserId: string;
@@ -107,6 +108,7 @@ function parseDraft(form: ShoppingFormState): ShoppingRecordDraft | null {
 }
 
 export function ShoppingRecordsSection({
+  currentUserLabel,
   activeUserId,
   activeLedgerId,
   filterUserId,
@@ -274,7 +276,7 @@ export function ShoppingRecordsSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前默认录入用户为 <strong>{normalizeShoppingUserId(activeUserId) || '未设置'}</strong>，
+          当前默认录入用户为 <strong>{currentUserLabel}</strong>，
           默认账本为 <strong>{ledgerNameMap[activeLedgerId] ?? '未选择账本'}</strong>。
           如需导入 Excel，请使用页面右上角的导入入口。
         </div>
@@ -420,9 +422,9 @@ export function ShoppingRecordsSection({
         <div className="shopping-modal-layout">
           <div className="shopping-modal-grid">
             <Field
-              label="用户 ID"
-              value={editingForm.userId}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, userId: event.target.value }))}
+              label="当前录入用户"
+              value={currentUserLabel}
+              disabled
             />
             <SelectField
               label="所属账本"

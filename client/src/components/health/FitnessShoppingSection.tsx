@@ -15,6 +15,7 @@ import {
 import type { FitnessShoppingRecord, FitnessShoppingRecordDraft } from '../../types/fitness';
 
 interface FitnessShoppingSectionProps {
+  currentUserLabel: string;
   activeUserId: string;
   filterUserId: string;
   records: FitnessShoppingRecord[];
@@ -67,6 +68,7 @@ function parseDraft(form: ShoppingFormState, userId: string): FitnessShoppingRec
 }
 
 export function FitnessShoppingSection({
+  currentUserLabel,
   activeUserId,
   filterUserId,
   records,
@@ -200,7 +202,7 @@ export function FitnessShoppingSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前新增用户：<strong>{normalizeFitnessUserId(activeUserId) || '未设置'}</strong>。这里的采购记录只服务于健康页食材成本分析，不与财务模块共用。
+          当前录入用户：<strong>{currentUserLabel}</strong>。这些采购记录只服务于健康页食材成本分析，不与财务模块共用。
         </div>
 
         <div className="form-grid fitness-entry-grid fitness-entry-grid-shopping">

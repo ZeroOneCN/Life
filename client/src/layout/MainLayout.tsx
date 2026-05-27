@@ -250,11 +250,22 @@ export default function MainLayout() {
           </div>
 
           <div className="topbar-right">
+            <button
+              className="icon-button theme-toggle"
+              type="button"
+              aria-label={isDark ? '切换到浅色模式' : '切换到深色模式'}
+              title={isDark ? '切换到浅色模式' : '切换到深色模式'}
+              onClick={toggleTheme}
+            >
+              {isDark ? '☀️' : '🌙'}
+            </button>
+
             <div className="topbar-user-menu" ref={userMenuRef}>
               <button
                 className={`topbar-user-trigger ${userMenuOpen ? 'is-open' : ''}`}
                 type="button"
                 aria-expanded={userMenuOpen}
+                aria-label="打开用户菜单"
                 onClick={() => setUserMenuOpen((previous) => !previous)}
               >
                 {currentUser?.avatarUrl ? (
@@ -262,15 +273,14 @@ export default function MainLayout() {
                 ) : (
                   <span className="topbar-user-avatar topbar-user-avatar-fallback">{userInitial}</span>
                 )}
-                <div className="topbar-user-meta">
-                  <strong>{userDisplayName}</strong>
-                  <span>{userSummary}</span>
-                </div>
-                <ChevronIcon open={userMenuOpen} />
               </button>
 
               {userMenuOpen ? (
                 <div className="topbar-user-dropdown">
+                  <div className="topbar-user-dropdown-header">
+                    <strong>{userDisplayName}</strong>
+                    <span>{userSummary}</span>
+                  </div>
                   <button
                     type="button"
                     className="topbar-user-dropdown-item"
@@ -304,15 +314,6 @@ export default function MainLayout() {
                 </div>
               ) : null}
             </div>
-
-            <button
-              className="icon-button theme-toggle"
-              type="button"
-              aria-label={isDark ? '切换到日间模式' : '切换到夜间模式'}
-              onClick={toggleTheme}
-            >
-              {isDark ? 'Light' : 'Dark'}
-            </button>
           </div>
         </header>
         <main className="content">

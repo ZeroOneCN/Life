@@ -14,6 +14,7 @@ import {
 import type { RentChannel, RentHousingRecord, RentHousingRecordDraft } from '../../types/rent';
 
 interface RentEntrySectionProps {
+  currentUserLabel: string;
   activeUserId: string;
   editingRecordId: string;
   records: RentHousingRecord[];
@@ -142,6 +143,7 @@ function parseDraft(form: RentFormState): RentHousingRecordDraft | null {
 }
 
 export function RentEntrySection({
+  currentUserLabel,
   activeUserId,
   editingRecordId,
   records,
@@ -245,7 +247,7 @@ export function RentEntrySection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前保存目标用户为 <strong>{form.userId || activeUserId || '未设置'}</strong>。
+          当前保存目标用户为 <strong>{currentUserLabel}</strong>。
           保存成功后会自动回到住房记录列表，并保留完整的渠道快照与成本统计。
         </div>
 
@@ -261,10 +263,9 @@ export function RentEntrySection({
 
           <div className="rent-entry-cell">
             <Field
-              label="用户 ID"
-              value={form.userId}
-              onChange={(event) => setForm((previous) => ({ ...previous, userId: event.target.value }))}
-              placeholder="例如：user-001"
+              label="当前录入用户"
+              value={currentUserLabel}
+              disabled
             />
           </div>
 

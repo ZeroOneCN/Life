@@ -7,6 +7,7 @@ import { StepTrendSection } from '../../components/health/StepTrendSection';
 import { PageHeader, StatGrid } from '../../components/page';
 import { Btn, Modal, Toast, useToastState } from '../../components/ui';
 import { buildApiErrorMessage } from '../../lib/api';
+import { getAuthUserDisplayName, useAuthState } from '../../services/auth';
 import { stepApi } from '../../services/stepApi';
 import {
   buildStepRecordTime,
@@ -53,6 +54,8 @@ function getQuickRecordTime(hour: StepHour, previousDay = false) {
 }
 
 export default function StepPage() {
+  const authState = useAuthState();
+  const currentUserLabel = getAuthUserDisplayName(authState.session?.user, '当前登录用户');
   const [records, setRecords] = useState<StepRecord[]>([]);
   const [settings, setSettings] = useState<StepPageState['settings']>(EMPTY_SETTINGS);
   const [summary, setSummary] = useState({
@@ -216,7 +219,7 @@ export default function StepPage() {
         items={[
           {
             label: '当前录入用户',
-            value: settings.activeUserId || '未设置',
+            value: currentUserLabel,
             helper: '新增步数记录默认写入当前登录用户的步数档案。',
           },
           {
@@ -240,14 +243,11 @@ export default function StepPage() {
       />
 
       <StepEntryForm
-        userId={settings.activeUserId}
+        currentUserLabel={currentUserLabel}
         stepsInput={stepsInput}
         selectedHour={selectedHour}
         recordTime={recordTime}
         stepsInputRef={stepsInputRef}
-        onUserIdChange={(value) => {
-          void updateSettings({ activeUserId: value });
-        }}
         onStepsInputChange={setStepsInput}
         onSelectHour={handleSelectHour}
         onRecordTimeChange={handleRecordTimeChange}

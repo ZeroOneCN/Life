@@ -8,6 +8,7 @@ import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Btn, Modal, PillTabs, SelectField, Tag, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
+import { getAuthUserDisplayName, useAuthState } from '../../services/auth';
 import { importShoppingWorkbook } from '../../services/shopping';
 import { shoppingApi } from '../../services/shoppingApi';
 import type {
@@ -47,6 +48,8 @@ function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
 }
 
 export default function ShoppingPage() {
+  const authState = useAuthState();
+  const currentUserLabel = getAuthUserDisplayName(authState.session?.user, '当前登录用户');
   const [tab, setTab] = usePageTab<ShoppingTab>('records', TAB_OPTIONS.map((item) => item.value), 'shoppingTab');
   const [records, setRecords] = useState<ShoppingRecord[]>([]);
   const [ledgers, setLedgers] = useState<ShoppingLedger[]>([]);
@@ -254,6 +257,7 @@ export default function ShoppingPage() {
 
       {tab === 'records' ? (
         <ShoppingRecordsSection
+          currentUserLabel={currentUserLabel}
           activeUserId={settings.activeUserId}
           activeLedgerId={settings.activeLedgerId}
           filterUserId={settings.recordsUserId}
