@@ -8,7 +8,7 @@ import {
   FOREX_INSTRUMENT_OPTIONS,
   FOREX_ORDER_TYPE_OPTIONS,
   FOREX_TRADE_PAGE_SIZE,
-  buildForexImportTemplateWorkbook,
+  buildForexImportTemplateWorkbookCompatible,
   calculateForexCommission,
   calculateForexHoldTime,
   calculateForexTradePnl,
@@ -20,7 +20,7 @@ import {
   formatForexMoney,
   getForexInstrumentLabel,
   getForexOrderTypeLabel,
-  importForexWorkbook,
+  importForexWorkbookCompatible,
   normalizeForexTimeInput,
   updateForexTrade,
 } from '../../services/forex';
@@ -321,7 +321,7 @@ export function ForexTradesSection({
     setIsImporting(true);
 
     try {
-      const result = await importForexWorkbook(file, { trades });
+      const result = await importForexWorkbookCompatible(file, { trades });
       setImportResult(result);
 
       if (result.importedCount > 0) {
@@ -343,7 +343,7 @@ export function ForexTradesSection({
   };
 
   const handleDownloadTemplate = async () => {
-    const blob = await buildForexImportTemplateWorkbook();
+    const blob = await buildForexImportTemplateWorkbookCompatible();
     downloadBlob(blob, 'forex-trades-template.xlsx');
     showToast('模板已下载。');
   };

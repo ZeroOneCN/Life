@@ -176,11 +176,23 @@ export function formatForexPercent(value: number) {
 }
 
 function ensureInstrument(value: unknown): ForexInstrument {
-  return String(value ?? '').toUpperCase() === 'XAGUSD' ? 'XAGUSD' : 'XAUUSD';
+  const normalized = String(value ?? '').trim().toUpperCase();
+
+  if (normalized === 'XAGUSD' || normalized === 'XAG' || normalized === 'SILVER' || normalized === '白银') {
+    return 'XAGUSD';
+  }
+
+  return 'XAUUSD';
 }
 
 function ensureOrderType(value: unknown): ForexOrderType {
-  return String(value ?? '').toLowerCase() === 'sell' ? 'sell' : 'buy';
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (['sell', 'short', '卖出', '做空', '空'].includes(normalized)) {
+    return 'sell';
+  }
+
+  return 'buy';
 }
 
 function ensureCapitalType(value: unknown): ForexCapitalFlowType {
@@ -903,6 +915,37 @@ function readAliasValue(row: Record<string, unknown>, aliases: string[]) {
   return '';
 }
 
+function normalizeImportHeaderKey(value: unknown) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\uFEFF/g, '')
+    .replace(/[：:]/g, '')
+    .replace(/[（）()\[\]【】]/g, '')
+    .replace(/[\/\\._\-\s|]/g, '');
+}
+
+function normalizeImportRow(row: Record<string, unknown>) {
+  const normalized = new Map<string, unknown>();
+
+  Object.entries(row).forEach(([key, value]) => {
+    normalized.set(normalizeImportHeaderKey(key), value);
+  });
+
+  return normalized;
+}
+
+function readNormalizedAliasValue(normalizedRow: Map<string, unknown>, aliases: string[]) {
+  for (const alias of aliases) {
+    const normalizedKey = normalizeImportHeaderKey(alias);
+    if (normalizedRow.has(normalizedKey)) {
+      return normalizedRow.get(normalizedKey);
+    }
+  }
+
+  return '';
+}
+
 async function normalizeImportDateCellAsync(value: unknown) {
   const raw = String(value ?? '').trim();
 
@@ -1094,6 +1137,223 @@ export async function buildForexImportTemplateWorkbook() {
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'forex_template');
   const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  return new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+}
+
+function normalizeForexImportHeader(value: unknown) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\uFEFF/g, '')
+    .replace(/[：:]/g, '')
+    .replace(/[（）()\[\]【】]/g, '')
+    .replace(/[\/\\._\-\s|]/g, '');
+}
+
+function getForexImportCell(row: Record<string, unknown>, aliases: string[]) {
+  const normalizedEntries = new Map<string, unknown>();
+
+  Object.entries(row).forEach(([key, value]) => {
+    normalizedEntries.set(normalizeForexImportHeader(key), value);
+  });
+
+  for (const alias of aliases) {
+    const normalizedAlias = normalizeForexImportHeader(alias);
+    if (normalizedEntries.has(normalizedAlias)) {
+      return normalizedEntries.get(normalizedAlias);
+    }
+  }
+
+  return '';
+}
+
+function parseForexImportInstrument(value: unknown): ForexInstrument {
+  const normalized = String(value ?? '').trim().toUpperCase();
+
+  if (normalized === 'XAGUSD' || normalized === 'XAG' || normalized === 'SILVER' || normalized === '白银') {
+    return 'XAGUSD';
+  }
+
+  return 'XAUUSD';
+}
+
+function parseForexImportOrderType(value: unknown): ForexOrderType {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (['sell', 'short', '卖出', '做空', '空'].includes(normalized)) {
+    return 'sell';
+  }
+
+  return 'buy';
+}
+
+function buildImportedTradeCompatible(
+  row: Record<string, unknown>,
+  rowNumber: number,
+): { record: ForexTradeRecord | null; invalid: ForexImportInvalidRow | null } {
+  const tradeDate = normalizeTrimmedValue(
+    getForexImportCell(row, ['日期时间', '交易日期', '日期', 'tradeDate', 'trade_date', 'date', 'datetime']),
+  );
+  const instrument = parseForexImportInstrument(
+    getForexImportCell(row, ['交易品种', '品种', 'instrument', 'symbol']),
+  );
+  const orderType = parseForexImportOrderType(
+    getForexImportCell(row, ['订单类型', '方向', 'orderType', 'order_type', 'type', 'side']),
+  );
+  const openPrice = toNumber(
+    getForexImportCell(row, ['开仓价格', '开仓价', 'openPrice', 'open_price', 'entryPrice']),
+    0,
+  );
+  const lotSize = toNumber(
+    getForexImportCell(row, ['手数', 'lotSize', 'lot_size', 'lots', 'lot', 'volume']),
+    0,
+  );
+  const closePrice = toNumber(
+    getForexImportCell(row, ['平仓价格', '平仓价', 'closePrice', 'close_price', 'exitPrice']),
+    0,
+  );
+  const openTime = normalizeForexTimeInput(
+    String(getForexImportCell(row, ['开仓时间', 'openTime', 'open_time']) ?? ''),
+    DEFAULT_START_TIME,
+  );
+  const closeTime = normalizeForexTimeInput(
+    String(getForexImportCell(row, ['平仓时间', 'closeTime', 'close_time']) ?? ''),
+    DEFAULT_END_TIME,
+  );
+
+  if (!tradeDate || openPrice <= 0 || closePrice <= 0 || lotSize <= 0) {
+    return {
+      record: null,
+      invalid: { rowNumber, reason: '缺少必填字段，至少需要日期时间、开仓价格、平仓价格和手数。' },
+    };
+  }
+
+  return {
+    record: normalizeForexTrade({
+      tradeDate,
+      instrument,
+      orderType,
+      openPrice,
+      lotSize,
+      commission: toNumber(
+        getForexImportCell(row, ['手续费', 'commission']),
+        calculateForexCommission(lotSize),
+      ),
+      closePrice,
+      pnl: toNumber(
+        getForexImportCell(row, ['盈亏金额', '盈亏', 'pnl', 'profitLoss', 'profit_loss']),
+        calculateForexTradePnl(instrument, orderType, openPrice, closePrice, lotSize),
+      ),
+      openTime,
+      closeTime,
+      holdTime: normalizeTrimmedValue(
+        getForexImportCell(row, ['持仓时间', '持仓时长', 'holdTime', 'hold_time']),
+        calculateForexHoldTime(openTime, closeTime),
+      ),
+      remark: normalizeTrimmedValue(
+        getForexImportCell(row, ['备注', 'remark', 'note', 'notes']),
+      ),
+    }),
+    invalid: null,
+  };
+}
+
+export async function importForexWorkbookCompatible(
+  file: File,
+  options: {
+    trades: ForexTradeRecord[];
+  },
+): Promise<ForexImportResult> {
+  const XLSX = await import('xlsx');
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: 'array' });
+  const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+  if (!worksheet) {
+    return {
+      totalRows: 0,
+      importedCount: 0,
+      duplicateCount: 0,
+      invalidCount: 1,
+      importedRecords: [],
+      invalidRows: [{ rowNumber: 0, reason: '没有读取到可用工作表。' }],
+      nextTrades: options.trades,
+    };
+  }
+
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: '' });
+  const invalidRows: ForexImportInvalidRow[] = [];
+  const draftRecords: ForexTradeRecord[] = [];
+
+  for (const [index, rawRow] of rows.entries()) {
+    const row = { ...rawRow };
+    const normalizedDate = await normalizeImportDateCellAsync(
+      getForexImportCell(row, ['日期时间', '交易日期', '日期', 'tradeDate', 'trade_date', 'date', 'datetime']),
+    );
+
+    if (normalizedDate) {
+      row.日期时间 = normalizedDate;
+      row.交易日期 = normalizedDate;
+      row.日期 = normalizedDate;
+      row.tradeDate = normalizedDate;
+      row.trade_date = normalizedDate;
+      row.date = normalizedDate;
+      row.datetime = normalizedDate;
+    }
+
+    const { record, invalid } = buildImportedTradeCompatible(row, index + 2);
+
+    if (invalid) {
+      invalidRows.push(invalid);
+      continue;
+    }
+
+    if (record) {
+      draftRecords.push(record);
+    }
+  }
+
+  const { uniqueRecords, duplicateRows } = dedupeImportedForexTrades(options.trades, draftRecords);
+  const nextTrades = sortTrades([...uniqueRecords, ...options.trades]);
+
+  return {
+    totalRows: rows.length,
+    importedCount: uniqueRecords.length,
+    duplicateCount: duplicateRows.length,
+    invalidCount: invalidRows.length,
+    importedRecords: uniqueRecords,
+    invalidRows,
+    nextTrades,
+  };
+}
+
+export async function buildForexImportTemplateWorkbookCompatible() {
+  const XLSX = await import('xlsx');
+  const rows = [
+    {
+      ID: '示例-1',
+      日期时间: dayjs().format('YYYY/M/DD'),
+      交易品种: 'XAUUSD',
+      订单类型: 'buy',
+      开仓价格: 2340.5,
+      手数: 0.1,
+      手续费: -0.6,
+      平仓价格: 2346.2,
+      盈亏金额: 57,
+      开仓时间: '09:35',
+      平仓时间: '11:10',
+      持仓时间: '1小时 35分钟',
+      备注: '示例数据',
+    },
+  ];
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'forex_template');
+  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
   return new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
