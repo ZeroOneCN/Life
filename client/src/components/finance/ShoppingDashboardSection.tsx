@@ -102,7 +102,7 @@ export function ShoppingDashboardSection({
     <SectionCard
       title="统计看板"
       description="按用户和账本汇总最近 12 个月消费趋势、平台结构和账本沉淀，金额展示会跟随当前货币视图切换。"
-      action={<Tag tone="green">{currencyMode === 'USDT' ? `汇率 1 USDT = ¥${usdtRate.toFixed(2)}` : '本币统计'}</Tag>}
+      action={<Tag tone="green">{currencyMode === 'USDT' ? `汇率 1 USDT = ¥${(usdtRate ?? 7).toFixed(2)}` : '本币统计'}</Tag>}
     >
       <div className="page-stack">
         <div className="shopping-filter-grid shopping-filter-grid-dashboard">

@@ -140,7 +140,7 @@ function calculateHoldTime(openTime: string, closeTime: string) {
 function mapTrade(entity: InvestmentForexTradeRecordEntity) {
   return {
     id: entity.id,
-    tradeDate: entity.trade_date,
+    tradeDate: dayjs(entity.trade_date).format('YYYY-MM-DD'),
     instrument: entity.instrument,
     orderType: entity.order_type,
     openPrice: Number(entity.open_price),
@@ -160,7 +160,7 @@ function mapTrade(entity: InvestmentForexTradeRecordEntity) {
 function mapCapitalFlow(entity: InvestmentForexCapitalFlowEntity) {
   return {
     id: entity.id,
-    flowDate: entity.flow_date,
+    flowDate: dayjs(entity.flow_date).format('YYYY-MM-DD'),
     flowType: entity.flow_type,
     amount: Number(entity.amount),
     remark: entity.remark,
@@ -172,7 +172,17 @@ function mapCapitalFlow(entity: InvestmentForexCapitalFlowEntity) {
 function filterByRange<T extends { trade_date?: string; flow_date?: string }>(items: T[], startDate?: string, endDate?: string) {
   return items.filter((item) => {
     const date = (item as { trade_date?: string; flow_date?: string }).trade_date ?? (item as { flow_date?: string }).flow_date ?? '';
-    return (!startDate || !dayjs(date).isBefore(startDate, 'day')) && (!endDate || !dayjs(date).isAfter(endDate, 'day'));
+
+    if (!date) {
+      return false;
+    }
+
+    const parsed = dayjs(date);
+    if (!parsed.isValid() || parsed.year() < 2000 || parsed.year() > 2100) {
+      return false;
+    }
+
+    return (!startDate || !parsed.isBefore(startDate, 'day')) && (!endDate || !parsed.isAfter(endDate, 'day'));
   });
 }
 
@@ -219,12 +229,14 @@ export function createForexRouter() {
     const userId = requireAuthUser(request);
     const { page, pageSize, skip } = parsePagination(request.query as Record<string, unknown>);
     const repository = appDataSource.getRepository(InvestmentForexTradeRecordEntity);
-    const items = await repository.find({
+    const [items, total] = await repository.findAndCount({
       where: { user_id: userId },
       order: { trade_date: 'DESC', updated_at: 'DESC' },
+      skip,
+      take: pageSize,
     });
 
-    response.json(successResponse(buildListData(items.slice(skip, skip + pageSize).map(mapTrade), page, pageSize, items.length)));
+    response.json(successResponse(buildListData(items.map(mapTrade), page, pageSize, total)));
   }));
 
   router.post('/trades', asyncHandler(async (request: AuthenticatedRequest, response) => {
@@ -310,12 +322,14 @@ export function createForexRouter() {
     const userId = requireAuthUser(request);
     const { page, pageSize, skip } = parsePagination(request.query as Record<string, unknown>);
     const repository = appDataSource.getRepository(InvestmentForexCapitalFlowEntity);
-    const items = await repository.find({
+    const [items, total] = await repository.findAndCount({
       where: { user_id: userId },
       order: { flow_date: 'DESC', updated_at: 'DESC' },
+      skip,
+      take: pageSize,
     });
 
-    response.json(successResponse(buildListData(items.slice(skip, skip + pageSize).map(mapCapitalFlow), page, pageSize, items.length)));
+    response.json(successResponse(buildListData(items.map(mapCapitalFlow), page, pageSize, total)));
   }));
 
   router.post('/capital-flows', asyncHandler(async (request: AuthenticatedRequest, response) => {
@@ -519,8 +533,8 @@ export function createForexRouter() {
     response.json(successResponse({
       leverage: Number(settings.leverage),
       forcedLiquidationRatio: Number(settings.forced_liquidation_ratio),
-      dashboardStartDate: settings.dashboard_start_date ?? '',
-      dashboardEndDate: settings.dashboard_end_date ?? '',
+      dashboardStartDate: settings.dashboard_start_date ? dayjs(settings.dashboard_start_date).format('YYYY-MM-DD') : '',
+      dashboardEndDate: settings.dashboard_end_date ? dayjs(settings.dashboard_end_date).format('YYYY-MM-DD') : '',
     }));
   }));
 
@@ -542,8 +556,8 @@ export function createForexRouter() {
     response.json(successResponse({
       leverage: Number(settings.leverage),
       forcedLiquidationRatio: Number(settings.forced_liquidation_ratio),
-      dashboardStartDate: settings.dashboard_start_date ?? '',
-      dashboardEndDate: settings.dashboard_end_date ?? '',
+      dashboardStartDate: settings.dashboard_start_date ? dayjs(settings.dashboard_start_date).format('YYYY-MM-DD') : '',
+      dashboardEndDate: settings.dashboard_end_date ? dayjs(settings.dashboard_end_date).format('YYYY-MM-DD') : '',
     }, 'update_forex_settings_success'));
   }));
 

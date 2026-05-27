@@ -71,7 +71,30 @@ function normalizeDate(value: unknown, fallback = dayjs().format(DATE_FORMAT)) {
 
   const sanitized = raw.replace(/\./g, '-').replace(/\//g, '-');
   const parsed = dayjs(sanitized);
-  return parsed.isValid() ? parsed.format(DATE_FORMAT) : fallback;
+  if (!parsed.isValid()) {
+    return fallback;
+  }
+
+  const year = parsed.year();
+  if (year < 2000 || year > 2100) {
+    return fallback;
+  }
+
+  return parsed.format(DATE_FORMAT);
+}
+
+function isValidDateYear(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const parsed = dayjs(value);
+  if (!parsed.isValid()) {
+    return false;
+  }
+
+  const year = parsed.year();
+  return year >= 2000 && year <= 2100;
 }
 
 function parseTimeValue(value: string) {
@@ -126,15 +149,26 @@ function normalizeTrimmedValue(value: unknown, fallback = '') {
 
 function normalizeTimestamp(value: unknown, fallbackDate: string) {
   const parsed = dayjs(String(value ?? '').trim());
-  return parsed.isValid()
-    ? parsed.format(DATE_TIME_FORMAT)
-    : dayjs(`${fallbackDate}T12:00`).format(DATE_TIME_FORMAT);
+  if (!parsed.isValid()) {
+    return dayjs(`${fallbackDate}T12:00`).format(DATE_TIME_FORMAT);
+  }
+
+  const year = parsed.year();
+  if (year < 2000 || year > 2100) {
+    return dayjs(`${fallbackDate}T12:00`).format(DATE_TIME_FORMAT);
+  }
+
+  return parsed.format(DATE_TIME_FORMAT);
 }
 
 function sortTrades(records: ForexTradeRecord[]) {
   return [...records].sort((left, right) => {
-    const leftMoment = dayjs(`${left.tradeDate}T${normalizeForexTimeInput(left.openTime, DEFAULT_START_TIME)}`);
-    const rightMoment = dayjs(`${right.tradeDate}T${normalizeForexTimeInput(right.openTime, DEFAULT_START_TIME)}`);
+    const leftMoment = isValidTradeDate(left.tradeDate)
+      ? dayjs(`${left.tradeDate}T${normalizeForexTimeInput(left.openTime, DEFAULT_START_TIME)}`)
+      : dayjs('2000-01-01');
+    const rightMoment = isValidTradeDate(right.tradeDate)
+      ? dayjs(`${right.tradeDate}T${normalizeForexTimeInput(right.openTime, DEFAULT_START_TIME)}`)
+      : dayjs('2000-01-01');
     return rightMoment.valueOf() - leftMoment.valueOf();
   });
 }
@@ -558,14 +592,25 @@ export function filterForexCapitalFlows(
     });
 }
 
+function isValidTradeDate(date: string) {
+  if (!date) {
+    return false;
+  }
+
+  const parsed = dayjs(date);
+  return parsed.isValid() && parsed.year() >= 2000 && parsed.year() <= 2100;
+}
+
 function filterTradesByDateRange(trades: ForexTradeRecord[], startDate?: string, endDate?: string) {
   return trades
+    .filter((record) => isValidTradeDate(record.tradeDate))
     .filter((record) => (!startDate || !dayjs(record.tradeDate).isBefore(startDate, 'day')))
     .filter((record) => (!endDate || !dayjs(record.tradeDate).isAfter(endDate, 'day')));
 }
 
 function filterCapitalByDateRange(capitalFlows: ForexCapitalFlow[], startDate?: string, endDate?: string) {
   return capitalFlows
+    .filter((record) => isValidTradeDate(record.flowDate))
     .filter((record) => (!startDate || !dayjs(record.flowDate).isBefore(startDate, 'day')))
     .filter((record) => (!endDate || !dayjs(record.flowDate).isAfter(endDate, 'day')));
 }
@@ -633,11 +678,24 @@ export function buildForexDailyPnlTrend(
     grouped.set(record.tradeDate, existing);
   });
 
-  const filled: ForexDailyPnlPoint[] = [];
-  const start = startDate ? dayjs(startDate) : null;
-  const end = endDate ? dayjs(endDate) : null;
+  // Auto-derive date range from dataset when not provided
+  const validDates = scopedTrades
+    .map((record) => record.tradeDate)
+    .filter((date) => isValidTradeDate(date))
+    .sort();
 
-  if (start && end && end.diff(start, 'day') <= 60) {
+  const resolvedStart = startDate && isValidTradeDate(startDate)
+    ? startDate
+    : validDates[0] ?? '';
+  const resolvedEnd = endDate && isValidTradeDate(endDate)
+    ? endDate
+    : validDates[validDates.length - 1] ?? '';
+
+  const start = resolvedStart ? dayjs(resolvedStart) : null;
+  const end = resolvedEnd ? dayjs(resolvedEnd) : null;
+
+  if (start && end && end.diff(start, 'day') <= 90) {
+    const filled: ForexDailyPnlPoint[] = [];
     for (let cursor = start.clone(); !cursor.isAfter(end, 'day'); cursor = cursor.add(1, 'day')) {
       const key = cursor.format(DATE_FORMAT);
       filled.push(grouped.get(key) ?? {
@@ -689,6 +747,7 @@ function buildConsecutiveLossMetric(trades: ForexTradeRecord[]) {
   let maxStreak = 0;
 
   [...trades]
+    .filter((trade) => isValidTradeDate(trade.tradeDate))
     .sort((left, right) => dayjs(`${left.tradeDate}T${left.closeTime}`).valueOf() - dayjs(`${right.tradeDate}T${right.closeTime}`).valueOf())
     .forEach((trade) => {
       if (trade.pnl + trade.commission < 0) {
@@ -963,7 +1022,7 @@ async function normalizeImportDateCellAsync(value: unknown) {
     const XLSX = await import('xlsx');
     const dateCode = XLSX.SSF.parse_date_code(numeric);
 
-    if (dateCode) {
+    if (dateCode && dateCode.y >= 2000 && dateCode.y <= 2100) {
       return dayjs(`${dateCode.y}-${String(dateCode.m).padStart(2, '0')}-${String(dateCode.d).padStart(2, '0')}`).format(DATE_FORMAT);
     }
   }
@@ -972,13 +1031,14 @@ async function normalizeImportDateCellAsync(value: unknown) {
   if (compactDateMatch) {
     const normalized = `${compactDateMatch[1]}-${compactDateMatch[2]}-${compactDateMatch[3]}`;
 
-    if (dayjs(normalized).isValid()) {
+    if (isValidDateYear(normalized)) {
       return dayjs(normalized).format(DATE_FORMAT);
     }
   }
 
-  const parsed = dayjs(raw.replace(/\./g, '-').replace(/\//g, '-'));
-  if (parsed.isValid()) {
+  const sanitized = raw.replace(/\./g, '-').replace(/\//g, '-');
+  const parsed = dayjs(sanitized);
+  if (parsed.isValid() && parsed.year() >= 2000 && parsed.year() <= 2100) {
     return parsed.format(DATE_FORMAT);
   }
 
@@ -986,7 +1046,7 @@ async function normalizeImportDateCellAsync(value: unknown) {
 }
 
 function isNormalizedForexDate(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) && dayjs(value).isValid();
+  return isValidDateYear(value);
 }
 
 function formatNormalizedTime(hours: number, minutes: number, seconds: number) {
@@ -1094,33 +1154,47 @@ export function normalizeForexDashboardRange(
   const currentStart = isNormalizedForexDate(startDate) ? startDate : '';
   const currentEnd = isNormalizedForexDate(endDate) ? endDate : '';
 
-  if (!datasetRange) {
+  // When both dates are unset, auto-compute from dataset
+  if (!currentStart && !currentEnd) {
+    if (!datasetRange) {
+      return { startDate: '', endDate: '', shouldReset: false };
+    }
+
     return {
-      startDate: currentStart,
-      endDate: currentEnd,
+      startDate: datasetRange.startDate,
+      endDate: datasetRange.endDate,
       shouldReset: false,
     };
   }
 
-  const isOutOfRange = !currentStart
-    || !currentEnd
-    || currentStart > currentEnd
-    || currentStart < datasetRange.startDate
-    || currentStart > datasetRange.endDate
-    || currentEnd < datasetRange.startDate
-    || currentEnd > datasetRange.endDate;
+  // User has set at least one date — keep their preference, fill missing end
+  const resolvedStart = currentStart || (datasetRange?.startDate ?? '');
+  const resolvedEnd = currentEnd || (datasetRange?.endDate ?? '');
 
-  if (isOutOfRange) {
-    return {
-      startDate: datasetRange.startDate,
-      endDate: datasetRange.endDate,
-      shouldReset: true,
-    };
+  // Guard: if the resolved range covers zero records, fall back to the full
+  // dataset range so charts don't silently disappear.
+  if (datasetRange && records.length > 0) {
+    const hasRecordsInRange = records.some((record) => {
+      if (!isValidTradeDate(record.tradeDate)) {
+        return false;
+      }
+
+      return (!resolvedStart || !dayjs(record.tradeDate).isBefore(resolvedStart, 'day'))
+        && (!resolvedEnd || !dayjs(record.tradeDate).isAfter(resolvedEnd, 'day'));
+    });
+
+    if (!hasRecordsInRange) {
+      return {
+        startDate: datasetRange.startDate,
+        endDate: datasetRange.endDate,
+        shouldReset: true,
+      };
+    }
   }
 
   return {
-    startDate: currentStart,
-    endDate: currentEnd,
+    startDate: resolvedStart,
+    endDate: resolvedEnd,
     shouldReset: false,
   };
 }
@@ -1235,6 +1309,7 @@ export async function buildForexImportTemplateWorkbook() {
   const XLSX = await import('xlsx');
   const rows = [
     {
+      ID: '示例-1',
       日期时间: dayjs().format(DATE_FORMAT),
       交易品种: 'XAUUSD',
       订单类型: 'buy',
@@ -1243,9 +1318,9 @@ export async function buildForexImportTemplateWorkbook() {
       手续费: -0.6,
       平仓价格: 2346.2,
       盈亏金额: 57,
-      开仓时间: '09:35:14',
-      平仓时间: '11:10:22',
-      持仓时间: '1小时35分08秒',
+      开仓时间: '09:35:00',
+      平仓时间: '11:10:00',
+      持仓时间: '1小时 35分钟',
       备注: '示例数据',
     },
   ];
@@ -1511,7 +1586,7 @@ export async function buildForexImportTemplateWorkbookCompatible() {
   const rows = [
     {
       ID: '示例-1',
-      日期时间: dayjs().format('YYYY/M/DD'),
+      日期时间: dayjs().format('YYYY-MM-DD'),
       交易品种: 'XAUUSD',
       订单类型: 'buy',
       开仓价格: 2340.5,
@@ -1519,8 +1594,8 @@ export async function buildForexImportTemplateWorkbookCompatible() {
       手续费: -0.6,
       平仓价格: 2346.2,
       盈亏金额: 57,
-      开仓时间: '09:35',
-      平仓时间: '11:10',
+      开仓时间: '09:35:00',
+      平仓时间: '11:10:00',
       持仓时间: '1小时 35分钟',
       备注: '示例数据',
     },

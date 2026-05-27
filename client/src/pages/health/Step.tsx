@@ -77,7 +77,7 @@ export default function StepPage() {
 
   const reload = useCallback(async () => {
     const [recordsResponse, nextSummary, nextCompare, nextSettings] = await Promise.all([
-      stepApi.listRecords({ page: 1, page_size: 1000 }),
+      stepApi.listRecords({ page: 1, page_size: 100000 }),
       stepApi.getSummary(),
       stepApi.getMonthCompare(),
       stepApi.getSettings(),

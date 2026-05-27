@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import dayjs from 'dayjs';
 
 import { DatePickerField } from '../date';
-import { EmptyState, SectionCard, StatGrid } from '../page';
+import { EmptyState, SectionCard } from '../page';
 import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
 import {
   FOREX_INSTRUMENT_OPTIONS,
@@ -195,19 +195,6 @@ export function ForexTradesSection({
     }
   }, [page, totalPages]);
 
-  const summary = useMemo(() => {
-    const netPnl = filteredTrades.reduce((sum, trade) => sum + trade.pnl + trade.commission, 0);
-    const grossPnl = filteredTrades.reduce((sum, trade) => sum + trade.pnl, 0);
-    const totalCommission = filteredTrades.reduce((sum, trade) => sum + trade.commission, 0);
-
-    return {
-      count: filteredTrades.length,
-      netPnl,
-      grossPnl,
-      totalCommission,
-    };
-  }, [filteredTrades]);
-
   const columns = useMemo(() => [
     { key: 'tradeDate', title: '日期时间', dataIndex: 'tradeDate' as const },
     {
@@ -354,7 +341,7 @@ export function ForexTradesSection({
   return (
     <SectionCard
       title="交易记录"
-      description="字段顺序已统一为：日期时间、交易品种、订单类型、开仓价格、手数、手续费、平仓价格、盈亏金额、开仓时间、平仓时间、持仓时间、备注。"
+      description="所有交易按日期降序排列（最新在前），每页显示 10 条。导入后记录会与已有数据合并排序。"
       action={(
         <div className="forex-action-row">
           <input
@@ -451,15 +438,6 @@ export function ForexTradesSection({
           </div>
         </div>
 
-        <StatGrid
-          items={[
-            { label: '筛选结果', value: `${summary.count} 笔`, helper: '当前列表统计' },
-            { label: '盈亏金额', value: formatForexAmount(summary.grossPnl), accent: summary.grossPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
-            { label: '手续费', value: formatForexMoney(summary.totalCommission), accent: 'var(--color-warning)' },
-            { label: '净收益', value: formatForexAmount(summary.netPnl), accent: summary.netPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
-          ]}
-          className="forex-mini-stat-grid"
-        />
 
         {importResult ? (
           <div className="forex-import-result">

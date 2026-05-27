@@ -212,7 +212,7 @@ export default function ShoppingPage() {
       <SectionCard
         title="当前上下文"
         description="账本上下文与货币模式都以后端 settings 为准。"
-        action={<Tag tone="green">{settings.currencyMode === 'USDT' ? `1 USDT = ¥${settings.usdtRate.toFixed(2)}` : '人民币主视图'}</Tag>}
+        action={<Tag tone="green">{settings.currencyMode === 'USDT' ? `1 USDT = ¥${(settings.usdtRate ?? 7).toFixed(2)}` : '人民币主视图'}</Tag>}
       >
         <div className="shopping-context-grid">
           <SelectField

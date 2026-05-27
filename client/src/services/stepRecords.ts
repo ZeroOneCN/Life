@@ -16,7 +16,7 @@ const DATE_TIME_FORMAT = 'YYYY-MM-DDTHH:mm';
 
 export const DEFAULT_STEP_USER_ID = 'user-001';
 export const DEFAULT_STRIDE_LENGTH = 0.7;
-export const STEP_AGGREGATE_PAGE_SIZE = 8;
+export const STEP_AGGREGATE_PAGE_SIZE = 10;
 export const STEP_RECORD_PAGE_SIZE = 10;
 export const STEP_HOURS: StepConcreteHour[] = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
 
@@ -47,6 +47,17 @@ function matchesHourFilter(record: StepRecord, hourFilter: StepConcreteHour | 'a
   return hourFilter === 'all' ? true : record.hour === hourFilter;
 }
 
+function sumDailyMaxSteps(records: StepRecord[], monthKey: string) {
+  const dailyMax = new Map<string, number>();
+  records
+    .filter((record) => dayjs(record.recordTime).format(MONTH_FORMAT) === monthKey)
+    .forEach((record) => {
+      const date = dayjs(record.recordTime).format(DATE_FORMAT);
+      dailyMax.set(date, Math.max(dailyMax.get(date) ?? 0, record.steps));
+    });
+  return Array.from(dailyMax.values()).reduce((sum, max) => sum + max, 0);
+}
+
 function createAggregatePoint(
   records: StepRecord[],
   strideLength: number,
@@ -60,7 +71,7 @@ function createAggregatePoint(
     const existing = buckets.get(bucket);
 
     if (existing) {
-      existing.totalSteps += record.steps;
+      existing.totalSteps = Math.max(existing.totalSteps, record.steps);
       existing.recordCount += 1;
       existing.distanceKm = calculateStepDistanceKm(existing.totalSteps, strideLength);
       return;
@@ -250,12 +261,47 @@ export function aggregateStepRecordsByMonth(
     dayjs(record.recordTime).format('YYYY') === year && matchesHourFilter(record, hourFilter)
   ));
 
-  return createAggregatePoint(
-    filteredRecords,
-    strideLength,
-    (record) => dayjs(record.recordTime).format('M月'),
-    (record) => dayjs(record.recordTime).format(MONTH_FORMAT),
-  );
+  // Step 1: daily MAX for each date
+  const dailyMax = new Map<string, { maxSteps: number; count: number }>();
+  filteredRecords.forEach((record) => {
+    const dateKey = dayjs(record.recordTime).format(DATE_FORMAT);
+    const entry = dailyMax.get(dateKey);
+    if (entry) {
+      entry.maxSteps = Math.max(entry.maxSteps, record.steps);
+      entry.count += 1;
+    } else {
+      dailyMax.set(dateKey, { maxSteps: record.steps, count: 1 });
+    }
+  });
+
+  // Step 2: SUM daily maxes by month
+  const monthlyData = new Map<string, { totalSteps: number; recordCount: number; distanceKm: number }>();
+  dailyMax.forEach(({ maxSteps, count }, dateKey) => {
+    const monthBucket = dayjs(dateKey).format(MONTH_FORMAT);
+    const monthLabel = dayjs(dateKey).format('M月');
+    const entry = monthlyData.get(monthBucket);
+    if (entry) {
+      entry.totalSteps += maxSteps;
+      entry.recordCount += count;
+      entry.distanceKm = calculateStepDistanceKm(entry.totalSteps, strideLength);
+    } else {
+      monthlyData.set(monthBucket, {
+        totalSteps: maxSteps,
+        recordCount: count,
+        distanceKm: calculateStepDistanceKm(maxSteps, strideLength),
+      });
+    }
+  });
+
+  return Array.from(monthlyData.entries())
+    .map(([bucket, data]) => ({
+      bucket,
+      label: dayjs(`${bucket}-01`).format('M月'),
+      totalSteps: data.totalSteps,
+      recordCount: data.recordCount,
+      distanceKm: data.distanceKm,
+    }))
+    .sort((left, right) => left.bucket.localeCompare(right.bucket));
 }
 
 export function buildStepMonthCompare(
@@ -268,13 +314,8 @@ export function buildStepMonthCompare(
   const currentMonthKey = currentMonth.format(MONTH_FORMAT);
   const previousMonthKey = previousMonth.format(MONTH_FORMAT);
 
-  const currentSteps = records
-    .filter((record) => dayjs(record.recordTime).format(MONTH_FORMAT) === currentMonthKey)
-    .reduce((sum, record) => sum + record.steps, 0);
-
-  const previousSteps = records
-    .filter((record) => dayjs(record.recordTime).format(MONTH_FORMAT) === previousMonthKey)
-    .reduce((sum, record) => sum + record.steps, 0);
+  const currentSteps = sumDailyMaxSteps(records, currentMonthKey);
+  const previousSteps = sumDailyMaxSteps(records, previousMonthKey);
 
   const changePercentage = previousSteps === 0
     ? null

@@ -74,8 +74,8 @@ export default function ForexPage() {
 
   const reload = useCallback(async () => {
     const [nextTrades, nextCapitalFlows, nextSummary, nextSettings] = await Promise.all([
-      forexApi.listTrades({ page: 1, page_size: 1000 }),
-      forexApi.listCapitalFlows({ page: 1, page_size: 1000 }),
+      forexApi.listTrades({ page: 1, page_size: 100000 }),
+      forexApi.listCapitalFlows({ page: 1, page_size: 100000 }),
       forexApi.getDashboardSummary(),
       forexApi.getSettings(),
     ]);
@@ -132,22 +132,19 @@ export default function ForexPage() {
     [settings.dashboardEndDate, settings.dashboardStartDate, trades],
   );
 
-  const handleImportApplied = useCallback((nextTrades: ForexTradeRecord[]) => {
-    const nextRange = normalizeForexDashboardRange(nextTrades, settings.dashboardStartDate, settings.dashboardEndDate);
-
-    if (
-      nextRange.shouldReset
-      && (
-        nextRange.startDate !== settings.dashboardStartDate
-        || nextRange.endDate !== settings.dashboardEndDate
-      )
-    ) {
-      void updateSettings({
-        dashboardStartDate: nextRange.startDate,
-        dashboardEndDate: nextRange.endDate,
-      });
+  useEffect(() => {
+    if (effectiveDashboardRange.shouldReset) {
+      void updateSettings({ dashboardStartDate: '', dashboardEndDate: '' });
     }
-  }, [settings.dashboardEndDate, settings.dashboardStartDate, updateSettings]);
+  }, [effectiveDashboardRange.shouldReset]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleImportApplied = useCallback((_nextTrades: ForexTradeRecord[]) => {
+    // After import, handleTradesChange already saves trades to the backend and
+    // calls reload(). The effective dashboard range is computed from the full
+    // trade dataset when settings dates are empty, so no separate settings
+    // update is needed here. The user can still manually set date ranges via
+    // the date pickers in the dashboard section.
+  }, []);
 
   const handleTradesChange = useCallback(async (updater: (items: ForexTradeRecord[]) => ForexTradeRecord[]) => {
     const previous = trades;

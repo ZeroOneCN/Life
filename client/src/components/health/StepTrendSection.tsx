@@ -234,7 +234,7 @@ export function StepTrendSection({
           </div>
 
           {aggregateData.length ? (
-            <div className="step-chart-canvas">
+            <div className="step-chart-canvas" key={`${granularity}-${chartHourFilter}`}>
               <ResponsiveContainer width="100%" height={320}>
                 <AreaChart data={aggregateData}>
                   <defs>
@@ -244,7 +244,7 @@ export function StepTrendSection({
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                  <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 11 }} interval={0} angle={-45} textAnchor="end" height={70} />
                   <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
