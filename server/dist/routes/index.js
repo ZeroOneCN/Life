@@ -19,18 +19,15 @@ const medication_router_1 = require("../modules/health/medication.router");
 const checkup_router_1 = require("../modules/health/checkup.router");
 const forex_router_1 = require("../modules/investment/forex.router");
 const auth_middleware_1 = require("../shared/http/auth-middleware");
+const async_handler_1 = require("../shared/http/async-handler");
+const response_1 = require("../shared/http/response");
+const system_health_1 = require("../modules/system/system-health");
 function createApiRouter() {
     const router = (0, express_1.Router)();
     router.use('/auth', (0, auth_router_1.createAuthRouter)());
-    router.get('/system/health', (_request, response) => {
-        response.json({
-            code: 0,
-            message: 'ok',
-            data: {
-                status: 'ok',
-            },
-        });
-    });
+    router.get('/system/health', (0, async_handler_1.asyncHandler)(async (_request, response) => {
+        response.json((0, response_1.successResponse)(await (0, system_health_1.getSystemHealthSnapshot)()));
+    }));
     router.use(auth_middleware_1.requireJwtAuth);
     router.use('/notifications', (0, notification_center_router_1.createNotificationCenterRouter)());
     router.use('/dashboard', (0, dashboard_router_1.createDashboardRouter)());

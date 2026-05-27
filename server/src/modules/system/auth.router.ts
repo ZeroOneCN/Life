@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { v4 as uuidv4 } from 'uuid';
 
 import { env } from '../../config/env';
 import { appDataSource } from '../../db/data-source';
@@ -14,6 +14,8 @@ import { AppError } from '../../shared/errors/app-error';
 import { SystemUserAccountEntity } from './entities/system-user-account.entity';
 import { SystemUserProfileEntity } from './entities/system-user-profile.entity';
 import { SystemAuthSessionEntity } from './entities/system-auth-session.entity';
+import { getSystemHealthSnapshot } from './system-health';
+import { provisionUserDefaults } from './provision-user-defaults';
 
 const registerSchema = z.object({
   username: z.string().trim().min(3).max(64),
@@ -64,6 +66,15 @@ export function createAuthRouter() {
   const router = Router();
 
   router.post('/register', asyncHandler(async (request, response) => {
+    const systemHealth = await getSystemHealthSnapshot();
+    if (!systemHealth.databaseReady) {
+      throw new AppError('database_not_ready', 503, 503, systemHealth);
+    }
+
+    if (systemHealth.hasUsers) {
+      throw new AppError('registration_closed', 403, 403, systemHealth);
+    }
+
     const payload = validateBody(registerSchema, request.body);
     const accountRepo = appDataSource.getRepository(SystemUserAccountEntity);
     const profileRepo = appDataSource.getRepository(SystemUserProfileEntity);
@@ -96,6 +107,11 @@ export function createAuthRouter() {
       preferences_json: null,
     }));
 
+    await provisionUserDefaults({
+      userId: account.id,
+      email: account.email,
+    });
+
     response.json(successResponse({
       id: account.id,
       username: account.username,
@@ -104,6 +120,15 @@ export function createAuthRouter() {
   }));
 
   router.post('/login', asyncHandler(async (request, response) => {
+    const systemHealth = await getSystemHealthSnapshot();
+    if (!systemHealth.databaseReady) {
+      throw new AppError('database_not_ready', 503, 503, systemHealth);
+    }
+
+    if (!systemHealth.hasUsers) {
+      throw new AppError('bootstrap_required', 409, 409, systemHealth);
+    }
+
     const payload = validateBody(loginSchema, request.body);
     const accountRepo = appDataSource.getRepository(SystemUserAccountEntity);
     const profileRepo = appDataSource.getRepository(SystemUserProfileEntity);
@@ -124,7 +149,7 @@ export function createAuthRouter() {
       throw new AppError('invalid_credentials', 401, 401);
     }
 
-    const sessionToken = uuidv4();
+    const sessionToken = randomUUID();
     const accessToken = createAccessToken(account.id, account.username);
     const refreshToken = createRefreshToken(account.id, account.username, sessionToken);
     const refreshTokenHash = await bcrypt.hash(refreshToken, 10);

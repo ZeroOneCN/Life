@@ -23,11 +23,22 @@ export const apiClient = axios.create({
 
 let refreshPromise: Promise<string | null> | null = null;
 
+const API_ERROR_MESSAGES: Record<string, string> = {
+  invalid_request: '提交内容校验未通过，请检查表单后重试。',
+  invalid_credentials: '账号或密码错误。',
+  account_already_exists: '用户名或邮箱已存在，请更换后重试。',
+  registration_closed: '系统已完成首个管理员初始化，当前不开放新用户注册。',
+  invalid_refresh_token: '登录状态已失效，请重新登录。',
+  unauthorized: '登录状态已失效，请重新登录。',
+  bootstrap_required: '系统还没有管理员账号，请先完成首个管理员初始化。',
+  database_not_ready: '数据库尚未完成初始化，请先检查系统状态。',
+};
+
 async function ensureFreshAccessToken() {
   if (!refreshPromise) {
     refreshPromise = refreshAccessToken(refreshClient)
       .catch(() => {
-        clearAuthSession();
+        clearAuthSession('session_expired');
         return null;
       })
       .finally(() => {
@@ -82,9 +93,53 @@ apiClient.interceptors.response.use(
   },
 );
 
+export function getApiErrorShape(error: unknown) {
+  if (!axios.isAxiosError<ApiErrorShape>(error)) {
+    return null;
+  }
+
+  return error.response?.data ?? null;
+}
+
+export function getApiErrorCode(error: unknown) {
+  return getApiErrorShape(error)?.message ?? null;
+}
+
+export function getApiErrorData<T = unknown>(error: unknown) {
+  return (getApiErrorShape(error)?.data ?? null) as T | null;
+}
+
+export function getApiFieldErrors(error: unknown) {
+  const data = getApiErrorData<{
+    fieldErrors?: Record<string, string[] | undefined>;
+  }>(error);
+
+  if (!data?.fieldErrors) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(data.fieldErrors)
+      .map(([key, value]) => [key, value?.[0] ?? ''])
+      .filter(([, value]) => Boolean(value)),
+  ) as Record<string, string>;
+}
+
+export function getApiFormErrors(error: unknown) {
+  const data = getApiErrorData<{
+    formErrors?: string[];
+  }>(error);
+
+  return data?.formErrors?.filter(Boolean) ?? [];
+}
+
 export function buildApiErrorMessage(error: unknown, fallback = '请求失败，请稍后重试。') {
   if (axios.isAxiosError<ApiErrorShape>(error)) {
-    return error.response?.data?.message || fallback;
+    const message = error.response?.data?.message;
+    if (message) {
+      return API_ERROR_MESSAGES[message] ?? message;
+    }
+    return fallback;
   }
 
   if (error instanceof Error && error.message) {

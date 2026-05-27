@@ -7,8 +7,8 @@ exports.createAuthRouter = createAuthRouter;
 const express_1 = require("express");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const node_crypto_1 = require("node:crypto");
 const zod_1 = require("zod");
-const uuid_1 = require("uuid");
 const env_1 = require("../../config/env");
 const data_source_1 = require("../../db/data-source");
 const response_1 = require("../../shared/http/response");
@@ -19,6 +19,8 @@ const app_error_1 = require("../../shared/errors/app-error");
 const system_user_account_entity_1 = require("./entities/system-user-account.entity");
 const system_user_profile_entity_1 = require("./entities/system-user-profile.entity");
 const system_auth_session_entity_1 = require("./entities/system-auth-session.entity");
+const system_health_1 = require("./system-health");
+const provision_user_defaults_1 = require("./provision-user-defaults");
 const registerSchema = zod_1.z.object({
     username: zod_1.z.string().trim().min(3).max(64),
     email: zod_1.z.string().trim().email().max(128),
@@ -54,6 +56,13 @@ function createRefreshToken(userId, username, sessionToken) {
 function createAuthRouter() {
     const router = (0, express_1.Router)();
     router.post('/register', (0, async_handler_1.asyncHandler)(async (request, response) => {
+        const systemHealth = await (0, system_health_1.getSystemHealthSnapshot)();
+        if (!systemHealth.databaseReady) {
+            throw new app_error_1.AppError('database_not_ready', 503, 503, systemHealth);
+        }
+        if (systemHealth.hasUsers) {
+            throw new app_error_1.AppError('registration_closed', 403, 403, systemHealth);
+        }
         const payload = (0, validation_1.validateBody)(registerSchema, request.body);
         const accountRepo = data_source_1.appDataSource.getRepository(system_user_account_entity_1.SystemUserAccountEntity);
         const profileRepo = data_source_1.appDataSource.getRepository(system_user_profile_entity_1.SystemUserProfileEntity);
@@ -81,6 +90,10 @@ function createAuthRouter() {
             timezone: 'Asia/Shanghai',
             preferences_json: null,
         }));
+        await (0, provision_user_defaults_1.provisionUserDefaults)({
+            userId: account.id,
+            email: account.email,
+        });
         response.json((0, response_1.successResponse)({
             id: account.id,
             username: account.username,
@@ -88,6 +101,13 @@ function createAuthRouter() {
         }, 'register_success'));
     }));
     router.post('/login', (0, async_handler_1.asyncHandler)(async (request, response) => {
+        const systemHealth = await (0, system_health_1.getSystemHealthSnapshot)();
+        if (!systemHealth.databaseReady) {
+            throw new app_error_1.AppError('database_not_ready', 503, 503, systemHealth);
+        }
+        if (!systemHealth.hasUsers) {
+            throw new app_error_1.AppError('bootstrap_required', 409, 409, systemHealth);
+        }
         const payload = (0, validation_1.validateBody)(loginSchema, request.body);
         const accountRepo = data_source_1.appDataSource.getRepository(system_user_account_entity_1.SystemUserAccountEntity);
         const profileRepo = data_source_1.appDataSource.getRepository(system_user_profile_entity_1.SystemUserProfileEntity);
@@ -104,7 +124,7 @@ function createAuthRouter() {
         if (!matched) {
             throw new app_error_1.AppError('invalid_credentials', 401, 401);
         }
-        const sessionToken = (0, uuid_1.v4)();
+        const sessionToken = (0, node_crypto_1.randomUUID)();
         const accessToken = createAccessToken(account.id, account.username);
         const refreshToken = createRefreshToken(account.id, account.username, sessionToken);
         const refreshTokenHash = await bcrypt_1.default.hash(refreshToken, 10);

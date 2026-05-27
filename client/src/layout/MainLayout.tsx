@@ -173,7 +173,7 @@ export default function MainLayout() {
         <div className="sidebar-brand">
           <div className="sidebar-brand-copy">
             <strong>{collapsed ? 'LO' : 'LifeOS'}</strong>
-            {!collapsed ? <span className="subtle-text brand-subtitle">Database-first console</span> : null}
+            {!collapsed ? <span className="subtle-text brand-subtitle">数据库优先控制台</span> : null}
           </div>
         </div>
         <nav className="menu">

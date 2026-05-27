@@ -17,20 +17,17 @@ import { createMedicationRouter } from '../modules/health/medication.router';
 import { createCheckupRouter } from '../modules/health/checkup.router';
 import { createForexRouter } from '../modules/investment/forex.router';
 import { requireJwtAuth } from '../shared/http/auth-middleware';
+import { asyncHandler } from '../shared/http/async-handler';
+import { successResponse } from '../shared/http/response';
+import { getSystemHealthSnapshot } from '../modules/system/system-health';
 
 export function createApiRouter() {
   const router = Router();
 
   router.use('/auth', createAuthRouter());
-  router.get('/system/health', (_request, response) => {
-    response.json({
-      code: 0,
-      message: 'ok',
-      data: {
-        status: 'ok',
-      },
-    });
-  });
+  router.get('/system/health', asyncHandler(async (_request, response) => {
+    response.json(successResponse(await getSystemHealthSnapshot()));
+  }));
 
   router.use(requireJwtAuth);
 

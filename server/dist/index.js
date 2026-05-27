@@ -18,6 +18,11 @@ async function bootstrap() {
             // eslint-disable-next-line no-console
             console.log('LifeOS database schema synchronized automatically on startup.');
         }
+        if (!schemaState.databaseReady) {
+            // eslint-disable-next-line no-console
+            console.warn(`LifeOS database schema is not ready. Missing core table "${schemaState.coreTable}". ` +
+                'The server will stay online so /api/system/health can report bootstrap status.');
+        }
         const app = (0, app_1.createApp)();
         app.listen(env_1.env.PORT, () => {
             // Keep startup logging minimal until a real logger is wired in.

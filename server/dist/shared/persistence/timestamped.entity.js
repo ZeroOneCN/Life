@@ -11,10 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TimestampedEntity = void 0;
 const typeorm_1 = require("typeorm");
-const uuid_1 = require("uuid");
+const node_crypto_1 = require("node:crypto");
 class TimestampedEntity {
     constructor() {
-        this.id = (0, uuid_1.v4)();
+        this.id = (0, node_crypto_1.randomUUID)();
     }
 }
 exports.TimestampedEntity = TimestampedEntity;

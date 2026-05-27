@@ -1,9 +1,9 @@
 import { CreateDateColumn, DeleteDateColumn, PrimaryColumn, UpdateDateColumn } from 'typeorm';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 
 export abstract class TimestampedEntity {
   @PrimaryColumn({ type: 'varchar', length: 36 })
-  id: string = uuidv4();
+  id: string = randomUUID();
 
   @CreateDateColumn({ type: 'datetime' })
   created_at!: Date;

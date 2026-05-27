@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import type { AxiosInstance } from 'axios';
 
 import { apiGet, apiPost, buildApiErrorMessage } from '../lib/api';
-import type { AuthSession, AuthState, AuthUser } from '../types/auth';
+import type { AuthReason, AuthSession, AuthState, AuthUser, SystemHealthSnapshot } from '../types/auth';
 
 const AUTH_STORAGE_KEY = 'lifeos_auth_session';
 
@@ -28,6 +28,7 @@ function readStoredSession() {
 let authState: AuthState = {
   status: 'booting',
   session: readStoredSession(),
+  reason: null,
 };
 
 function emitChange() {
@@ -57,10 +58,11 @@ export function getAuthSession() {
   return authState.session;
 }
 
-export function clearAuthSession() {
+export function clearAuthSession(reason: AuthReason = null) {
   setAuthState({
     status: 'anonymous',
     session: null,
+    reason,
   });
 }
 
@@ -68,6 +70,7 @@ function setAuthenticatedSession(session: AuthSession) {
   setAuthState({
     status: 'authenticated',
     session,
+    reason: null,
   });
 }
 
@@ -101,6 +104,7 @@ export async function bootstrapAuthSession() {
     setAuthState({
       status: 'anonymous',
       session: null,
+      reason: null,
     });
     return;
   }
@@ -112,7 +116,7 @@ export async function bootstrapAuthSession() {
       user,
     });
   } catch {
-    clearAuthSession();
+    clearAuthSession('session_expired');
   }
 }
 
@@ -141,8 +145,12 @@ export async function logout() {
   } catch {
     // Ignore logout transport failures and clear local session anyway.
   } finally {
-    clearAuthSession();
+    clearAuthSession('signed_out');
   }
+}
+
+export async function getSystemHealth() {
+  return apiGet<SystemHealthSnapshot>('/system/health', { skipAuthRefresh: true });
 }
 
 function subscribe(listener: () => void) {
@@ -164,7 +172,7 @@ export function useAuthState() {
 export function useAuthBootstrap() {
   useEffect(() => {
     void bootstrapAuthSession().catch((error) => {
-      clearAuthSession();
+      clearAuthSession('session_expired');
       // eslint-disable-next-line no-console
       console.error(buildApiErrorMessage(error, '会话恢复失败。'));
     });

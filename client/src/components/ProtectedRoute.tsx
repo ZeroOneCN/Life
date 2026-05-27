@@ -12,7 +12,16 @@ export function ProtectedRoute() {
   }
 
   if (authState.status !== 'authenticated' || !authState.session) {
-    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{
+          from: location.pathname + location.search,
+          reason: authState.reason,
+        }}
+      />
+    );
   }
 
   return <Outlet />;

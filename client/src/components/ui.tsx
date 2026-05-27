@@ -70,7 +70,7 @@ export function Toast({ toast }: { toast: ToastState | null }) {
 
   return (
     <div className={`toast ${toast.type === 'error' ? 'is-error' : 'is-success'}`}>
-      <strong>{toast.type === 'error' ? '操作提示' : '保存成功'}</strong>
+      <strong>{toast.type === 'error' ? '操作提示' : '操作成功'}</strong>
       <span>{toast.message}</span>
     </div>
   );

@@ -14,7 +14,7 @@ export interface PaginatedResponse<T> {
 export interface ApiErrorShape {
   code: number;
   message: string;
-  details?: unknown;
+  data?: unknown;
 }
 
 export interface ApiClientOptions {
