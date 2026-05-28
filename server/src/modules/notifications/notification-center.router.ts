@@ -105,6 +105,8 @@ export function createNotificationCenterRouter() {
   router.patch('/channels/:id', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const channelId = String(request.params.id ?? '');
+    // eslint-disable-next-line no-console
+    console.log('[PATCH /channels/:id] body:', JSON.stringify(request.body));
     const payload = validateBody(channelSchema.partial().omit({ type: true }), request.body);
     const repository = appDataSource.getRepository(NotificationCenterChannelEntity);
     const current = await repository.findOne({
