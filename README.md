@@ -177,7 +177,7 @@ LifeOS2/
 
 ```bash
 git clone <repository-url>
-cd LifeOS2
+cd Life
 ```
 
 ### 2. 安装依赖
@@ -209,7 +209,7 @@ JWT_SECRET=your_random_secret_here
 
 # 数据库连接
 DB_HOST=127.0.0.1
-DB_PORT=3307
+DB_PORT=3306
 DB_USERNAME=root
 DB_PASSWORD=your_password
 DB_DATABASE=lifeos
@@ -311,7 +311,3 @@ cd server && npm start
 - **四级表面层级**：canvas → surface-1 → surface-2 → surface-3 → surface-4
 - **细线边框**：1px hairline 分隔，不使用阴影
 - **响应式断点**：960px 以下网格回退为单列
-
-## 许可证
-
-MIT License
