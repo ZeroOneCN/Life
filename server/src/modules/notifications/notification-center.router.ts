@@ -66,10 +66,21 @@ export function createNotificationCenterRouter() {
   router.get('/channels', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const repository = appDataSource.getRepository(NotificationCenterChannelEntity);
-    const items = await repository.find({
+    let items = await repository.find({
       where: { user_id: userId },
       order: { channel_type: 'ASC' },
     });
+
+    if (items.length === 0) {
+      const defaults = [
+        { channel_type: 'email', label: '邮件通知', enabled: false, status: 'disabled', config_json: null },
+        { channel_type: 'wechatWork', label: '企业微信', enabled: false, status: 'disabled', config_json: null },
+        { channel_type: 'webhook', label: 'Webhook', enabled: false, status: 'disabled', config_json: null },
+      ];
+      items = await repository.save(
+        defaults.map((d) => repository.create({ user_id: userId, ...d })),
+      );
+    }
 
     response.json(successResponse(buildListData(items)));
   }));
@@ -121,7 +132,7 @@ export function createNotificationCenterRouter() {
     const userId = requireAuthUser(request);
     const sceneRepo = appDataSource.getRepository(NotificationCenterSceneEntity);
     const relationRepo = appDataSource.getRepository(NotificationCenterSceneChannelEntity);
-    const [scenes, relations] = await Promise.all([
+    let [scenes, relations] = await Promise.all([
       sceneRepo.find({
         where: { user_id: userId },
         order: { scene_id: 'ASC' },
@@ -130,6 +141,26 @@ export function createNotificationCenterRouter() {
         where: { user_id: userId },
       }),
     ]);
+
+    if (scenes.length === 0) {
+      const defaults = [
+        { scene_id: 'todo.reminder', label: '待办提醒', enabled: false, summary: '', description: '' },
+        { scene_id: 'card.balance_low', label: '号卡低余额提醒', enabled: false, summary: '', description: '' },
+        { scene_id: 'card.billing_upcoming', label: '号卡账单日前提醒', enabled: false, summary: '', description: '' },
+        { scene_id: 'loan.repayment_upcoming', label: '贷款还款提醒', enabled: false, summary: '', description: '' },
+        { scene_id: 'loan.repayment_overdue', label: '贷款逾期提醒', enabled: false, summary: '', description: '' },
+        { scene_id: 'checkup.followup_reminder', label: '体检复查提醒', enabled: false, summary: '', description: '' },
+        { scene_id: 'checkup.abnormal_alert', label: '体检异常提醒', enabled: false, summary: '', description: '' },
+        { scene_id: 'medication.dose_reminder', label: '服药提醒', enabled: false, summary: '', description: '' },
+        { scene_id: 'medication.stock_low', label: '低库存提醒', enabled: false, summary: '', description: '' },
+        { scene_id: 'subscription.renewal_upcoming', label: '订阅即将到期', enabled: false, summary: '', description: '' },
+        { scene_id: 'subscription.expired', label: '订阅到期或逾期', enabled: false, summary: '', description: '' },
+      ];
+      scenes = await sceneRepo.save(
+        defaults.map((d) => sceneRepo.create({ user_id: userId, ...d })),
+      );
+      relations = [];
+    }
 
     const items = scenes.map((scene) => ({
       ...scene,
@@ -189,10 +220,29 @@ export function createNotificationCenterRouter() {
   router.get('/templates', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const repository = appDataSource.getRepository(NotificationCenterTemplateEntity);
-    const items = await repository.find({
+    let items = await repository.find({
       where: { user_id: userId },
       order: { scene_id: 'ASC' },
     });
+
+    if (items.length === 0) {
+      const defaults = [
+        { scene_id: 'todo.reminder', title: '', body: '' },
+        { scene_id: 'card.balance_low', title: '', body: '' },
+        { scene_id: 'card.billing_upcoming', title: '', body: '' },
+        { scene_id: 'loan.repayment_upcoming', title: '', body: '' },
+        { scene_id: 'loan.repayment_overdue', title: '', body: '' },
+        { scene_id: 'checkup.followup_reminder', title: '', body: '' },
+        { scene_id: 'checkup.abnormal_alert', title: '', body: '' },
+        { scene_id: 'medication.dose_reminder', title: '', body: '' },
+        { scene_id: 'medication.stock_low', title: '', body: '' },
+        { scene_id: 'subscription.renewal_upcoming', title: '', body: '' },
+        { scene_id: 'subscription.expired', title: '', body: '' },
+      ];
+      items = await repository.save(
+        defaults.map((d) => repository.create({ user_id: userId, ...d })),
+      );
+    }
 
     response.json(successResponse(buildListData(items)));
   }));
