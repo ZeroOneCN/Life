@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { NotificationChannelCard } from '../../components/NotificationChannelCard';
 import { NotificationLogTable } from '../../components/NotificationLogTable';
@@ -33,17 +33,19 @@ export default function NotificationCenterPage() {
   const [tab, setTab] = usePageTab('overview', tabOptions.map((item) => item.value));
   const [loading, setLoading] = useState(true);
   const { toast, showToast } = useToastState();
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
 
   useEffect(() => {
     setLoading(true);
     void hydrateNotificationCenterState()
       .catch((error) => {
-        showToast(buildApiErrorMessage(error, '通知中心加载失败。'), 'error');
+        showToastRef.current(buildApiErrorMessage(error, '通知中心加载失败。'), 'error');
       })
       .finally(() => {
         setLoading(false);
       });
-  }, [showToast]);
+  }, []);
 
   const metrics = useMemo(() => {
     const channels = Object.values(notificationState.channels);
