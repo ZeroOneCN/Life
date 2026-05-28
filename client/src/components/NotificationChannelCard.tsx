@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react';
+
 import type { NotificationChannelConfig, NotificationChannelType } from '../types/notifications';
 import { Btn, Field, Switch } from './ui';
 
@@ -12,6 +14,37 @@ export function NotificationChannelCard({
   onUpdate: (patch: Partial<NotificationChannelConfig>) => void;
   onTest: (channel: NotificationChannelType) => void;
 }) {
+  const [recipient, setRecipient] = useState(config.recipient ?? '');
+  const [senderName, setSenderName] = useState(config.senderName ?? '');
+  const [webhookUrl, setWebhookUrl] = useState(config.webhookUrl ?? '');
+  const [secret, setSecret] = useState(config.secret ?? '');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setRecipient(config.recipient ?? '');
+    setSenderName(config.senderName ?? '');
+    setWebhookUrl(config.webhookUrl ?? '');
+    setSecret(config.secret ?? '');
+  }, [config.recipient, config.senderName, config.webhookUrl, config.secret]);
+
+  const scheduleUpdate = (patch: Partial<NotificationChannelConfig>) => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    timerRef.current = setTimeout(() => {
+      onUpdate(patch);
+      timerRef.current = null;
+    }, 500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="card channel-card">
       <Switch
@@ -25,14 +58,20 @@ export function NotificationChannelCard({
         <div className="form-grid">
           <Field
             label="收件人"
-            value={config.recipient ?? ''}
-            onChange={(event) => onUpdate({ recipient: event.target.value })}
+            value={recipient}
+            onChange={(event) => {
+              setRecipient(event.target.value);
+              scheduleUpdate({ recipient: event.target.value });
+            }}
             placeholder="owner@lifeos.local"
           />
           <Field
             label="发送者名称"
-            value={config.senderName ?? ''}
-            onChange={(event) => onUpdate({ senderName: event.target.value })}
+            value={senderName}
+            onChange={(event) => {
+              setSenderName(event.target.value);
+              scheduleUpdate({ senderName: event.target.value });
+            }}
             placeholder="LifeOS"
           />
         </div>
@@ -40,14 +79,20 @@ export function NotificationChannelCard({
         <div className="form-grid">
           <Field
             label="Webhook 地址"
-            value={config.webhookUrl ?? ''}
-            onChange={(event) => onUpdate({ webhookUrl: event.target.value })}
+            value={webhookUrl}
+            onChange={(event) => {
+              setWebhookUrl(event.target.value);
+              scheduleUpdate({ webhookUrl: event.target.value });
+            }}
             placeholder="https://example.com/hook"
           />
           <Field
             label="密钥 / 签名"
-            value={config.secret ?? ''}
-            onChange={(event) => onUpdate({ secret: event.target.value })}
+            value={secret}
+            onChange={(event) => {
+              setSecret(event.target.value);
+              scheduleUpdate({ secret: event.target.value });
+            }}
             placeholder="可选"
           />
         </div>

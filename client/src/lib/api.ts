@@ -136,8 +136,13 @@ export function getApiFormErrors(error: unknown) {
 export function buildApiErrorMessage(error: unknown, fallback = '请求失败，请稍后重试。') {
   if (axios.isAxiosError<ApiErrorShape>(error)) {
     const message = error.response?.data?.message;
+    const details = error.response?.data?.details;
     if (message) {
-      return API_ERROR_MESSAGES[message] ?? message;
+      const mapped = API_ERROR_MESSAGES[message];
+      if (mapped && details) {
+        return `${mapped}（${JSON.stringify(details)}）`;
+      }
+      return mapped ?? message;
     }
     return fallback;
   }
