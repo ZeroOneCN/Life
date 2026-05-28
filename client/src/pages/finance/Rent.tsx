@@ -76,6 +76,8 @@ export default function RentPage() {
   const [loading, setLoading] = useState(true);
   const { toast, showToast } = useToastState();
   const tempChannelIdsRef = useRef(new Map<string, Promise<string>>());
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
 
   const reload = useCallback(async () => {
     const [recordsResponse, channelsResponse, overviewResponse, settingsResponse] = await Promise.all([
@@ -115,7 +117,7 @@ export default function RentPage() {
         await reload();
       } catch (error) {
         if (!cancelled) {
-          showToast(buildApiErrorMessage(error, '租房页面加载失败。'), 'error');
+          showToastRef.current(buildApiErrorMessage(error, '租房页面加载失败。'), 'error');
         }
       } finally {
         if (!cancelled) {
@@ -129,7 +131,7 @@ export default function RentPage() {
     return () => {
       cancelled = true;
     };
-  }, [reload, showToast]);
+  }, [reload]);
 
   const updateSettings = useCallback(async (patch: Partial<RentPageState['settings']>) => {
     try {
