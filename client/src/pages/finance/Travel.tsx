@@ -95,6 +95,8 @@ export default function TravelPage() {
   const [loading, setLoading] = useState(true);
   const { toast, showToast } = useToastState();
   const tempBookIdsRef = useRef(new Map<string, Promise<string>>());
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
 
   const reload = useCallback(async () => {
     const [booksResponse, recordsResponse, payChannelsResponse, settingsResponse] = await Promise.all([
@@ -139,7 +141,7 @@ export default function TravelPage() {
         await reload();
       } catch (error) {
         if (!cancelled) {
-          showToast(buildApiErrorMessage(error, '旅行页面加载失败。'), 'error');
+          showToastRef.current(buildApiErrorMessage(error, '旅行页面加载失败。'), 'error');
         }
       } finally {
         if (!cancelled) {
@@ -153,7 +155,7 @@ export default function TravelPage() {
     return () => {
       cancelled = true;
     };
-  }, [reload, showToast]);
+  }, [reload]);
 
   const updateSettings = useCallback(async (patch: Partial<TravelPageState['settings']>) => {
     try {
