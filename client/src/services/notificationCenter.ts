@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-import { apiGet, apiPatch, apiPost } from '../lib/api';
+import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api';
 import type { PaginatedResponse } from '../types/api';
 import type {
   NotificationCenterState,
@@ -437,6 +437,11 @@ export async function enqueueSceneNotification(
 
   await hydrateNotificationCenterState();
   return results.map(normalizeLogEntry);
+}
+
+export async function clearNotificationLogs() {
+  await apiDelete('/notifications/logs');
+  await hydrateNotificationCenterState();
 }
 
 function subscribe(listener: () => void) {

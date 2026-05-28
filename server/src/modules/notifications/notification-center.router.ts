@@ -10,6 +10,7 @@ import { buildListData, successResponse } from '../../shared/http/response';
 import { validateBody } from '../../shared/http/validation';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
 import { parsePagination } from '../../shared/utils/pagination';
+import { sendEmail, sendWebhook, sendWechatWorkWebhook } from '../../shared/services/notification-sender';
 import { NotificationCenterChannelEntity } from './entities/notification-center-channel.entity';
 import { NotificationCenterLogEntity } from './entities/notification-center-log.entity';
 import { NotificationCenterSceneChannelEntity } from './entities/notification-center-scene-channel.entity';
@@ -19,17 +20,17 @@ import { NotificationCenterTemplateEntity } from './entities/notification-center
 const channelSchema = z.object({
   type: z.enum(['email', 'wechatWork', 'webhook']),
   label: z.string().trim().min(1).max(64).optional(),
-  enabled: z.boolean().optional(),
+  enabled: z.coerce.boolean().optional(),
   status: z.enum(['ready', 'incomplete', 'disabled']).optional(),
   config: z.record(z.any()).optional(),
 });
 
 const sceneSchema = z.object({
-  enabled: z.boolean().optional(),
+  enabled: z.coerce.boolean().optional(),
   channels: z.array(z.enum(['email', 'wechatWork', 'webhook'])).optional(),
-  label: z.string().trim().min(1).max(128).optional(),
-  summary: z.string().trim().min(1).max(255).optional(),
-  description: z.string().trim().min(1).optional(),
+  label: z.string().trim().max(128).optional(),
+  summary: z.string().trim().max(255).optional(),
+  description: z.string().trim().optional(),
 });
 
 const templateSchema = z.object({
@@ -105,8 +106,6 @@ export function createNotificationCenterRouter() {
   router.patch('/channels/:id', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const channelId = String(request.params.id ?? '');
-    // eslint-disable-next-line no-console
-    console.log('[PATCH /channels/:id] body:', JSON.stringify(request.body));
     const payload = validateBody(channelSchema.partial().omit({ type: true }), request.body);
     const repository = appDataSource.getRepository(NotificationCenterChannelEntity);
     const current = await repository.findOne({
@@ -310,6 +309,13 @@ export function createNotificationCenterRouter() {
     )));
   }));
 
+  router.delete('/logs', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const logRepo = appDataSource.getRepository(NotificationCenterLogEntity);
+    await logRepo.delete({ user_id: userId });
+    response.json(successResponse(null, 'notification_logs_cleared'));
+  }));
+
   router.post('/actions/test-channel', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const payload = validateBody(testChannelSchema, request.body);
@@ -320,25 +326,149 @@ export function createNotificationCenterRouter() {
       where: { user_id: userId, channel_type: payload.channel },
     });
 
-    const success = Boolean(channel?.enabled);
     const channelLabel = channel?.label ?? payload.channel;
-    const message = success
-      ? `${channelLabel} 测试发送已记录。`
-      : `${channelLabel} 未启用或配置不完整，测试发送已跳过。`;
+    const title = payload.title ?? '通知中心测试发送';
+    const config = channel?.config_json as Record<string, unknown> | null;
+
+    if (!channel?.enabled) {
+      const logEntry = await logRepo.save(logRepo.create({
+        user_id: userId,
+        channel: payload.channel,
+        scene_id: null,
+        kind: 'test',
+        status: 'error',
+        title,
+        message: `${channelLabel} 未启用或配置不完整，测试发送已跳过。`,
+      }));
+
+      response.json(successResponse({
+        success: false,
+        message: `${channelLabel} 未启用或配置不完整，测试发送已跳过。`,
+        logEntry,
+      }, 'test_notification_channel_success'));
+      return;
+    }
+
+    let sendResult: { success: boolean; error?: string };
+
+    if (payload.channel === 'email') {
+      const recipient = config?.recipient as string | undefined;
+      if (!recipient) {
+        const logEntry = await logRepo.save(logRepo.create({
+          user_id: userId,
+          channel: payload.channel,
+          scene_id: null,
+          kind: 'test',
+          status: 'error',
+          title,
+          message: '邮件地址未配置',
+        }));
+
+        response.json(successResponse({
+          success: false,
+          message: '邮件地址未配置',
+          logEntry,
+        }, 'test_notification_channel_success'));
+        return;
+      }
+
+      sendResult = await sendEmail({
+        to: recipient,
+        subject: title,
+        text: '这是一封来自 LifeOS 通知中心的测试邮件。',
+      });
+    } else if (payload.channel === 'wechatWork') {
+      const webhookUrl = config?.webhookUrl as string | undefined;
+      if (!webhookUrl) {
+        const logEntry = await logRepo.save(logRepo.create({
+          user_id: userId,
+          channel: payload.channel,
+          scene_id: null,
+          kind: 'test',
+          status: 'error',
+          title,
+          message: '企业微信 Webhook 地址未配置',
+        }));
+
+        response.json(successResponse({
+          success: false,
+          message: '企业微信 Webhook 地址未配置',
+          logEntry,
+        }, 'test_notification_channel_success'));
+        return;
+      }
+
+      sendResult = await sendWechatWorkWebhook({
+        webhookUrl,
+        content: `${title}\n这是一条来自 LifeOS 通知中心的测试消息。`,
+      });
+    } else if (payload.channel === 'webhook') {
+      const webhookUrl = config?.webhookUrl as string | undefined;
+      const secret = config?.secret as string | undefined;
+      if (!webhookUrl) {
+        const logEntry = await logRepo.save(logRepo.create({
+          user_id: userId,
+          channel: payload.channel,
+          scene_id: null,
+          kind: 'test',
+          status: 'error',
+          title,
+          message: 'Webhook URL 未配置',
+        }));
+
+        response.json(successResponse({
+          success: false,
+          message: 'Webhook URL 未配置',
+          logEntry,
+        }, 'test_notification_channel_success'));
+        return;
+      }
+
+      sendResult = await sendWebhook({
+        url: webhookUrl,
+        secret,
+        payload: {
+          title,
+          message: '这是一条来自 LifeOS 通知中心的测试消息。',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } else {
+      const logEntry = await logRepo.save(logRepo.create({
+        user_id: userId,
+        channel: payload.channel,
+        scene_id: null,
+        kind: 'test',
+        status: 'error',
+        title,
+        message: '不支持的通知渠道类型',
+      }));
+
+      response.json(successResponse({
+        success: false,
+        message: '不支持的通知渠道类型',
+        logEntry,
+      }, 'test_notification_channel_success'));
+      return;
+    }
 
     const logEntry = await logRepo.save(logRepo.create({
       user_id: userId,
       channel: payload.channel,
       scene_id: null,
       kind: 'test',
-      status: success ? 'success' : 'error',
-      title: payload.title ?? '通知中心测试发送',
-      message,
+      status: sendResult.success ? 'success' : 'error',
+      title,
+      message: sendResult.success
+        ? `${channelLabel} 测试发送成功`
+        : `${channelLabel} 测试发送失败: ${sendResult.error}`,
     }));
 
     response.json(successResponse({
-      success,
-      message,
+      success: sendResult.success,
+      message: sendResult.success
+        ? `${channelLabel} 测试发送成功`
+        : `${channelLabel} 测试发送失败: ${sendResult.error}`,
       logEntry,
     }, 'test_notification_channel_success'));
   }));

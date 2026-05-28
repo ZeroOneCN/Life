@@ -16,6 +16,12 @@ const envSchema = z.object({
   DB_DATABASE: z.string().min(1).default('lifeos'),
   DB_SYNCHRONIZE: z.string().optional(),
   DB_AUTO_BOOTSTRAP: z.string().optional(),
+  SMTP_HOST: z.string().min(1).default('smtp.example.com'),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_SECURE: z.string().optional(),
+  SMTP_USER: z.string().min(1).default(''),
+  SMTP_PASS: z.string().default(''),
+  SMTP_FROM: z.string().min(1).default('noreply@example.com'),
 });
 
 const parsedEnv = envSchema.parse(process.env);
@@ -29,4 +35,5 @@ export const env = {
   DB_AUTO_BOOTSTRAP: parsedEnv.DB_AUTO_BOOTSTRAP === undefined
     ? !isProduction
     : parsedEnv.DB_AUTO_BOOTSTRAP === 'true',
+  SMTP_SECURE: parsedEnv.SMTP_SECURE === 'true',
 };

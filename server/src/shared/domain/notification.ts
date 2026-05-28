@@ -4,6 +4,7 @@ import { NotificationCenterLogEntity } from '../../modules/notifications/entitie
 import { NotificationCenterSceneChannelEntity } from '../../modules/notifications/entities/notification-center-scene-channel.entity';
 import { NotificationCenterSceneEntity } from '../../modules/notifications/entities/notification-center-scene.entity';
 import { NotificationCenterTemplateEntity } from '../../modules/notifications/entities/notification-center-template.entity';
+import { sendEmail, sendWebhook, sendWechatWorkWebhook } from '../services/notification-sender';
 
 export interface SendNotificationSceneOptions {
   userId: string;
@@ -89,14 +90,72 @@ export async function sendNotificationSceneLogs(options: SendNotificationSceneOp
 
   const logs = await Promise.all(targetChannelTypes.map(async (channelType) => {
     const channel = channels.find((item) => item.channel_type === channelType);
+    const config = channel?.config_json as Record<string, unknown> | null;
+
+    if (!scene.enabled || !channel?.enabled) {
+      return logRepo.save(logRepo.create({
+        user_id: options.userId,
+        channel: channelType,
+        scene_id: scene.scene_id,
+        kind: 'scene',
+        status: 'skipped',
+        title,
+        message: message ?? '',
+      }));
+    }
+
+    let sendResult: { success: boolean; error?: string } = { success: false, error: '未知渠道类型' };
+
+    if (channelType === 'email') {
+      const recipient = config?.recipient as string | undefined;
+      if (recipient) {
+        sendResult = await sendEmail({
+          to: recipient,
+          subject: title ?? '',
+          text: message ?? '',
+        });
+      } else {
+        sendResult = { success: false, error: '邮件地址未配置' };
+      }
+    } else if (channelType === 'wechatWork') {
+      const webhookUrl = config?.webhookUrl as string | undefined;
+      if (webhookUrl) {
+        sendResult = await sendWechatWorkWebhook({
+          webhookUrl,
+          content: `${title}\n${message ?? ''}`,
+        });
+      } else {
+        sendResult = { success: false, error: '企业微信 Webhook 地址未配置' };
+      }
+    } else if (channelType === 'webhook') {
+      const webhookUrl = config?.webhookUrl as string | undefined;
+      const secret = config?.secret as string | undefined;
+      if (webhookUrl) {
+        sendResult = await sendWebhook({
+          url: webhookUrl,
+          secret,
+          payload: {
+            sceneId: options.sceneId,
+            title,
+            message,
+            timestamp: new Date().toISOString(),
+          },
+        });
+      } else {
+        sendResult = { success: false, error: 'Webhook URL 未配置' };
+      }
+    }
+
     return logRepo.save(logRepo.create({
       user_id: options.userId,
       channel: channelType,
       scene_id: scene.scene_id,
       kind: 'scene',
-      status: scene.enabled && channel?.enabled ? 'success' : 'skipped',
+      status: sendResult.success ? 'success' : 'error',
       title,
-      message,
+      message: sendResult.success
+        ? message ?? ''
+        : `发送失败: ${sendResult.error}`,
     }));
   }));
 

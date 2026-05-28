@@ -99,7 +99,7 @@ function buildAgendaItems(input: {
     .filter((task) => !task.completed && !task.trashed_at)
     .forEach((task) => {
       const targetDate = task.due_date ?? '';
-      const due = targetDate ? dayjs(targetDate).startOf('day') : null;
+      const due = targetDate && dayjs(targetDate).isValid() ? dayjs(targetDate).startOf('day') : null;
       let severity: 'high' | 'medium' | 'low' = task.priority === 'high' ? 'high' : task.priority === 'medium' ? 'medium' : 'low';
       if (due && due.isBefore(today)) {
         severity = 'high';
@@ -117,6 +117,7 @@ function buildAgendaItems(input: {
     });
 
   input.subscriptions.forEach((record) => {
+    if (!record.end_date || !dayjs(record.end_date).isValid()) return;
     const diff = dayjs(record.end_date).startOf('day').diff(today, 'day');
     if (diff <= 7) {
       agenda.push({
@@ -134,6 +135,7 @@ function buildAgendaItems(input: {
   input.loans
     .filter((bill) => !bill.is_paid)
     .forEach((bill) => {
+      if (!bill.due_date || !dayjs(bill.due_date).isValid()) return;
       const diff = dayjs(bill.due_date).startOf('day').diff(today, 'day');
       if (diff <= 7) {
         agenda.push({
@@ -165,6 +167,7 @@ function buildAgendaItems(input: {
   input.checkups
     .filter((record) => record.follow_up_date && (record.status === 'abnormal' || record.status === 'attention'))
     .forEach((record) => {
+      if (!record.follow_up_date || !dayjs(record.follow_up_date).isValid()) return;
       const diff = dayjs(record.follow_up_date).startOf('day').diff(today, 'day');
       if (diff <= 7) {
         agenda.push({
@@ -258,17 +261,18 @@ export function createDashboardRouter() {
     ]);
 
     const pendingTodos = todos.filter((task) => !task.completed && !task.trashed_at).length;
-    const dueTodayTodos = todos.filter((task) => !task.completed && !task.trashed_at && task.due_date && dayjs(task.due_date).isSame(dayjs(), 'day')).length;
+    const dueTodayTodos = todos.filter((task) => !task.completed && !task.trashed_at && task.due_date && dayjs(task.due_date).isValid() && dayjs(task.due_date).isSame(dayjs(), 'day')).length;
     const activeStorageCount = storageItems.filter((item) => item.status === 'active').length;
     const lowBalanceCards = cards.filter((card) => Number(card.balance) <= 10).length;
-    const overdueLoans = loans.filter((bill) => !bill.is_paid && dayjs(bill.due_date).isBefore(dayjs(), 'day')).length;
+    const overdueLoans = loans.filter((bill) => !bill.is_paid && bill.due_date && dayjs(bill.due_date).isValid() && dayjs(bill.due_date).isBefore(dayjs(), 'day')).length;
     const upcomingSubscriptions = subscriptions.filter((record) => {
+      if (!record.end_date || !dayjs(record.end_date).isValid()) return false;
       const diff = dayjs(record.end_date).startOf('day').diff(dayjs().startOf('day'), 'day');
       return diff >= 0 && diff <= 7;
     }).length;
-    const stepToday = stepRecords.filter((item) => dayjs(item.record_time).isSame(dayjs(), 'day')).reduce((sum, item) => sum + item.steps, 0);
+    const stepToday = stepRecords.filter((item) => item.record_time && dayjs(item.record_time).isValid() && dayjs(item.record_time).isSame(dayjs(), 'day')).reduce((sum, item) => sum + item.steps, 0);
     const lowMedicationCount = calculateMedicationLowStockCount(medicationRecords, medicationPurchases, medicationThresholds);
-    const dueCheckups = checkups.filter((record) => record.follow_up_date && dayjs(record.follow_up_date).diff(dayjs(), 'day') <= 7).length;
+    const dueCheckups = checkups.filter((record) => record.follow_up_date && dayjs(record.follow_up_date).isValid() && dayjs(record.follow_up_date).diff(dayjs(), 'day') <= 7).length;
     const forexSummary = buildForexSummary(forexTrades, forexCapitalFlows);
     const agenda = buildAgendaItems({
       todos,
@@ -304,10 +308,10 @@ export function createDashboardRouter() {
         title: '健康中心摘要',
         stats: {
           todayStepCount: stepToday,
-          latestWeight: fitnessWeightRecords.sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())[0]?.weight ?? null,
+          latestWeight: fitnessWeightRecords.filter((item) => item.date && dayjs(item.date).isValid()).sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())[0]?.weight ?? null,
           todayCalorieNet: Number((
-            fitnessDietRecords.filter((item) => item.date === dayjs().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories), 0)
-            - fitnessExerciseRecords.filter((item) => item.date === dayjs().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories), 0)
+            fitnessDietRecords.filter((item) => item.date === dayjs().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories || 0), 0)
+            - fitnessExerciseRecords.filter((item) => item.date === dayjs().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories || 0), 0)
           ).toFixed(1)),
           checkupPendingCount: dueCheckups,
           medicationLowStockCount: lowMedicationCount,
@@ -317,7 +321,7 @@ export function createDashboardRouter() {
           return {
             date: date.format('YYYY-MM-DD'),
             label: date.format('MM-DD'),
-            steps: stepRecords.filter((item) => dayjs(item.record_time).isSame(date, 'day')).reduce((sum, item) => sum + item.steps, 0),
+            steps: stepRecords.filter((item) => item.record_time && dayjs(item.record_time).isValid() && dayjs(item.record_time).isSame(date, 'day')).reduce((sum, item) => sum + item.steps, 0),
           };
         }),
       },
@@ -327,15 +331,15 @@ export function createDashboardRouter() {
           upcomingSubscriptionCount: upcomingSubscriptions,
           overdueLoanCount: overdueLoans,
           activeSubscriptionCount: subscriptions.length,
-          totalUnpaidLoanAmount: Number(loans.filter((bill) => !bill.is_paid).reduce((sum, item) => sum + Number(item.amount), 0).toFixed(2)),
+          totalUnpaidLoanAmount: Number(loans.filter((bill) => !bill.is_paid).reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)),
         },
         trend: Array.from({ length: 6 }, (_, index) => {
           const month = dayjs().subtract(5 - index, 'month').format('YYYY-MM');
           return {
             month,
             label: dayjs(`${month}-01`).format('MM月'),
-            subscriptionCount: subscriptions.filter((item) => dayjs(item.end_date).format('YYYY-MM') === month).length,
-            loanAmount: Number(loans.filter((item) => item.billing_month === month).reduce((sum, bill) => sum + Number(bill.amount), 0).toFixed(2)),
+            subscriptionCount: subscriptions.filter((item) => item.end_date && dayjs(item.end_date).isValid() && dayjs(item.end_date).format('YYYY-MM') === month).length,
+            loanAmount: Number(loans.filter((item) => item.billing_month === month).reduce((sum, bill) => sum + Number(bill.amount || 0), 0).toFixed(2)),
           };
         }),
       },
@@ -374,7 +378,7 @@ export function createDashboardRouter() {
           return {
             date: date.format('YYYY-MM-DD'),
             label: date.format('MM-DD'),
-            netPnl: Number(scoped.reduce((sum, item) => sum + Number(item.pnl) + Number(item.commission), 0).toFixed(2)),
+            netPnl: Number(scoped.reduce((sum, item) => sum + Number(item.pnl || 0) + Number(item.commission || 0), 0).toFixed(2)),
             tradeCount: scoped.length,
           };
         }),

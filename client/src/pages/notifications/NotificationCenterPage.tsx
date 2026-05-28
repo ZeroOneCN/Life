@@ -12,6 +12,7 @@ import {
   updateChannelConfig,
   updateSceneConfig,
   useNotificationCenterState,
+  clearNotificationLogs,
 } from '../../services/notificationCenter';
 import type { NotificationChannelType, NotificationSceneId } from '../../types/notifications';
 
@@ -193,7 +194,29 @@ export default function NotificationCenterPage() {
       ) : null}
 
       {tab === 'logs' ? (
-        <SectionCard title="通知日志" description="查看所有测试发送和业务场景发送记录。">
+        <SectionCard
+          title="通知日志"
+          description="查看所有测试发送和业务场景发送记录。"
+          actions={notificationState.logs.length > 0 ? (
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={() => {
+                if (window.confirm('确定要清空所有通知日志吗？此操作不可撤销。')) {
+                  void clearNotificationLogs()
+                    .then(() => {
+                      showToast('通知日志已清空。');
+                    })
+                    .catch((error) => {
+                      showToast(buildApiErrorMessage(error, '清空日志失败。'), 'error');
+                    });
+                }
+              }}
+            >
+              清空日志
+            </button>
+          ) : undefined}
+        >
           <NotificationLogTable logs={notificationState.logs} />
         </SectionCard>
       ) : null}
