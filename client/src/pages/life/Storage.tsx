@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { StorageArchiveSection } from '../../components/life/StorageArchiveSection';
 import { StorageDashboardSection } from '../../components/life/StorageDashboardSection';
@@ -39,6 +39,8 @@ const EMPTY_SETTINGS: StoragePageSettings = {
 export default function StoragePage() {
   const [tab, setTab] = usePageTab<StorageTab>('items', TAB_OPTIONS.map((item) => item.value), 'storageTab');
   const { toast, showToast } = useToastState();
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
   const [overview, setOverview] = useState<StorageOverviewSummary>(EMPTY_OVERVIEW);
   const [settings, setSettings] = useState<StoragePageSettings>(EMPTY_SETTINGS);
   const [loading, setLoading] = useState(true);
@@ -81,7 +83,7 @@ export default function StoragePage() {
     return () => {
       cancelled = true;
     };
-  }, [refreshToken, showToast]);
+  }, [refreshToken]);
 
   const subtitle = useMemo(() => (
     loading

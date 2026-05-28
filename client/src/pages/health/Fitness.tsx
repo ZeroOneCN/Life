@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { FitnessDashboardSection } from '../../components/health/FitnessDashboardSection';
 import { FitnessDietSection } from '../../components/health/FitnessDietSection';
@@ -74,6 +74,8 @@ export default function FitnessPage() {
   const [insightsOpen, setInsightsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast, showToast } = useToastState();
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
 
   const reload = useCallback(async () => {
     const [nextDiet, nextExercise, nextShopping, nextWeight, nextSummary, nextInsights, nextSettings] = await Promise.all([
@@ -121,7 +123,7 @@ export default function FitnessPage() {
     return () => {
       cancelled = true;
     };
-  }, [reload, showToast]);
+  }, [reload]);
 
   const updateSettings = useCallback(async (patch: Partial<FitnessPageState['settings']>) => {
     try {

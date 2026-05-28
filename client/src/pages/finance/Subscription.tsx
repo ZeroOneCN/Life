@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { SubscriptionCategoriesSection } from '../../components/finance/SubscriptionCategoriesSection';
 import { SubscriptionDashboardSection } from '../../components/finance/SubscriptionDashboardSection';
@@ -61,6 +61,8 @@ function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
 export default function SubscriptionPage() {
   const [tab, setTab] = usePageTab<SubscriptionTab>('records', TAB_OPTIONS.map((item) => item.value), 'subscriptionTab');
   const { toast, showToast } = useToastState();
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
   const [records, setRecords] = useState<SubscriptionRecord[]>([]);
   const [categories, setCategories] = useState<SubscriptionCategory[]>([]);
   const [overview, setOverview] = useState<SubscriptionOverviewSummary>(EMPTY_OVERVIEW);
@@ -115,7 +117,7 @@ export default function SubscriptionPage() {
     return () => {
       cancelled = true;
     };
-  }, [reload, refreshToken, showToast]);
+  }, [reload, refreshToken]);
 
   const updateSettings = useCallback(async (patch: Partial<SubscriptionPageState['settings']>) => {
     try {
