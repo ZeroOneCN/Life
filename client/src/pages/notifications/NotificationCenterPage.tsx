@@ -103,7 +103,7 @@ export default function NotificationCenterPage() {
             ]}
           />
           <div className="two-column-layout">
-            <SectionCard title="统一发送说明" description="当前已经切到后端通知中心，日志、模板、场景和渠道都以数据库为准。">
+              <SectionCard title="统一发送说明" description="当前已经切到后端通知中心，日志、模板、场景和渠道都以数据库为准。">
               <div className="bullet-list">
                 <div className="bullet-item"><span className="bullet-dot" />所有测试发送和业务提醒都会写入统一日志。</div>
                 <div className="bullet-item"><span className="bullet-dot" />业务页面只维护触发规则，不再各自保存通知状态。</div>
@@ -156,7 +156,7 @@ export default function NotificationCenterPage() {
       ) : null}
 
       {tab === 'scenes' ? (
-        <div className="page-stack">
+        <div className="scene-grid">
           {sceneList.map((scene) => (
             <SectionCard key={scene.id} title={scene.label} description={scene.description}>
               <div className="page-stack">

@@ -209,7 +209,7 @@ export default function MainLayout() {
         <div className="sidebar-brand">
           <div className="sidebar-brand-copy">
             <strong>{collapsed ? 'LO' : 'LifeOS'}</strong>
-            {!collapsed ? <span className="subtle-text brand-subtitle">数据库驱动的个人控制台</span> : null}
+            {!collapsed ? <span className="subtle-text brand-subtitle">个人生活数字化管理平台</span> : null}
           </div>
         </div>
         <nav className="menu">

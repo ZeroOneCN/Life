@@ -535,6 +535,12 @@ textarea {
   gap: 20px;
 }
 
+.scene-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
 .bullet-list,
 .stack-list {
   display: flex;
@@ -3074,12 +3080,16 @@ textarea {
   min-width: 44px;
 }
 
-.layout-shell.is-collapsed .sidebar-brand strong,
 .layout-shell.is-collapsed .brand-subtitle,
 .layout-shell.is-collapsed .menu-label,
 .layout-shell.is-collapsed .menu-chevron {
   opacity: 0;
   transform: translateX(-8px);
+}
+
+.layout-shell.is-collapsed .sidebar-brand strong {
+  font-size: 16px;
+  text-align: center;
 }
 
 .layout-shell.is-collapsed .sidebar-brand {
@@ -3258,6 +3268,7 @@ textarea {
 
 @media (max-width: 960px) {
   .two-column-layout,
+  .scene-grid,
   .form-grid,
   .route-loading-grid,
   .step-filter-grid,

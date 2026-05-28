@@ -20,9 +20,9 @@ function buildAuthTags(snapshot: SystemHealthSnapshot | null, canRegister: boole
       <Tag tone={snapshot?.databaseReady ? 'green' : 'red'}>
         {snapshot?.databaseReady ? '数据库已就绪' : '数据库待初始化'}
       </Tag>
-      <Tag tone="blue">JWT 会话</Tag>
+      <Tag tone="blue">安全登录</Tag>
       <Tag tone={canRegister ? 'orange' : 'default'}>
-        {canRegister ? '首个管理员注册开放' : '首个管理员注册关闭'}
+        {canRegister ? '注册开放' : '注册已关闭'}
       </Tag>
     </div>
   );
@@ -70,7 +70,7 @@ export default function LoginPage() {
         setMode('login');
       }
     } catch (error) {
-      setHealthError(buildApiErrorMessage(error, '系统状态读取失败，请确认后端和数据库已经正常启动。'));
+      setHealthError(buildApiErrorMessage(error, '无法连接到服务器，请检查网络后重试。'));
     } finally {
       setHealthLoading(false);
     }
@@ -86,30 +86,30 @@ export default function LoginPage() {
 
   const title = useMemo(() => {
     if (showBootstrapBlocked) {
-      return '初始化 LifeOS';
+      return '系统初始化';
     }
 
-    return mode === 'login' ? '登录 LifeOS' : '创建首个管理员';
+    return mode === 'login' ? '登录 LifeOS' : '创建管理员账号';
   }, [mode, showBootstrapBlocked]);
 
   const subtitle = useMemo(() => {
     if (healthLoading) {
-      return '正在检查数据库状态、管理员初始化进度和当前登录入口可用性。';
+      return '正在连接服务器，请稍候…';
     }
 
     if (healthError) {
-      return '暂时无法确认系统状态，请先检查后端服务、数据库连接和初始化配置。';
+      return '暂时无法连接到服务，请检查网络后重试。';
     }
 
     if (showBootstrapBlocked) {
-      return '数据库核心表尚未就绪。系统会保持在线并通过健康探针反馈状态，便于先排查初始化配置。';
+      return '系统数据库尚未完成初始化，请稍后再试。';
     }
 
     if (canRegister) {
-      return '系统还没有管理员账号。完成首个管理员创建后，前台注册入口会自动关闭。';
+      return '欢迎使用 LifeOS，请先创建管理员账号以开始使用系统。';
     }
 
-    return '数据库已经成为正式业务数据源，登录后即可进入统一控制台与各业务中心。';
+    return '请输入账号密码登录系统。';
   }, [canRegister, healthError, healthLoading, showBootstrapBlocked]);
 
   const validateForm = () => {
@@ -168,7 +168,7 @@ export default function LoginPage() {
           password: form.password,
           nickname: form.nickname.trim() || form.username.trim(),
         });
-        showToast('首个管理员创建成功，已自动登录。');
+        showToast('管理员账号创建成功，已自动登录。');
       } else {
         await login({
           username: form.username.trim(),
@@ -225,10 +225,9 @@ export default function LoginPage() {
           <section className="card auth-hero-panel">
             <div className="auth-hero-copy">
               <span className="auth-eyebrow">LifeOS Control Console</span>
-              <h2>把登录入口、数据库状态和首启初始化收敛到一个正式入口。</h2>
+              <h2>全生命周期管理系统的统一入口</h2>
               <p>
-                这一轮不再依赖浏览器示例数据。认证通过后，你看到的 dashboard、通知中心和首批核心业务页
-                都以后端数据库为唯一来源。
+                登录后即可使用仪表盘、通知中心和各业务管理模块，所有数据安全存储于后端数据库。
               </p>
             </div>
 
@@ -236,38 +235,38 @@ export default function LoginPage() {
               <div className="auth-status-card">
                 <span>数据库状态</span>
                 <strong>{healthSnapshot?.databaseReady ? '已就绪' : '待初始化'}</strong>
-                <p>{healthSnapshot ? `核心表：${healthSnapshot.coreTable}` : '正在检测核心表状态'}</p>
+                <p>{healthSnapshot ? `状态：${healthSnapshot.databaseReady ? '正常运行' : '需要初始化'}` : '正在检测'}</p>
               </div>
               <div className="auth-status-card">
                 <span>注册策略</span>
                 <strong>仅首个管理员</strong>
-                <p>{canRegister ? '当前允许创建首个管理员' : '已有管理员后将关闭前台注册'}</p>
+                <p>{canRegister ? '当前允许创建管理员账号' : '已有管理员，注册入口已关闭'}</p>
               </div>
               <div className="auth-status-card">
-                <span>实体发现</span>
+                <span>业务模块</span>
                 <strong>{healthSnapshot?.entityCount ?? 0} 个</strong>
-                <p>后端启动时自动发现实体模型，避免漏配数据源。</p>
+                <p>系统已加载的业务模块数量。</p>
               </div>
               <div className="auth-status-card">
-                <span>Schema 模式</span>
+                <span>系统模式</span>
                 <strong>{healthSnapshot?.schemaMode ?? '检测中'}</strong>
-                <p>健康探针会同步反馈当前建表策略和初始化状态。</p>
+                <p>当前系统运行模式。</p>
               </div>
             </div>
 
             <div className="auth-page-note">
-              <strong>本轮已正式接管：</strong>
-              <span>dashboard、通知中心、待办、物品追踪、号卡、订阅和贷款页面都将跟随当前登录用户读取后端数据。</span>
+              <strong>系统已就绪：</strong>
+              <span>登录后即可使用仪表盘、通知中心、待办事项、物品追踪及各业务管理功能。</span>
             </div>
           </section>
 
           <SectionCard
-            title={showBootstrapBlocked ? '数据库初始化引导' : mode === 'login' ? '账号登录' : '创建首个管理员'}
+            title={showBootstrapBlocked ? '系统初始化' : mode === 'login' ? '账号登录' : '创建管理员账号'}
             description={showBootstrapBlocked
-              ? '先让核心表和数据源进入可用状态，再进行首个管理员注册。'
+              ? '请等待数据库初始化完成后再进行操作。'
               : mode === 'login'
-                ? '输入现有管理员账号后进入 LifeOS 控制台。'
-                : '这个入口只在系统还没有任何用户时开放，用于创建首个管理员。'}
+                ? '输入管理员账号和密码登录系统。'
+                : '创建系统管理员账号，创建完成后即可正常使用。'}
           >
             <div className="page-stack">
               <div className="auth-mode-switch">
@@ -288,7 +287,7 @@ export default function LoginPage() {
                   }}
                   disabled={!canRegister}
                 >
-                  注册首个管理员
+                  注册
                 </button>
               </div>
 
@@ -299,17 +298,15 @@ export default function LoginPage() {
               {showBootstrapBlocked ? (
                 <div className="auth-bootstrap-panel">
                   <div className="auth-bootstrap-card">
-                    <strong>数据库核心表尚未就绪</strong>
+                    <strong>系统尚未就绪</strong>
                     <p>
-                      当前健康探针返回 `databaseReady=false`。请先确认 MySQL 连接、`DB_SYNCHRONIZE` /
-                      `DB_AUTO_BOOTSTRAP` 配置，或执行正式 migration 后再刷新本页。
+                      数据库正在初始化中，请稍后再试。如问题持续存在，请联系系统管理员。
                     </p>
                     <div className="auth-bootstrap-meta">
-                      <span>原因：{healthSnapshot?.reason ?? 'unknown'}</span>
-                      <span>核心表：{healthSnapshot?.coreTable ?? 'system_user_account'}</span>
+                      <span>原因：{healthSnapshot?.reason ?? '未知'}</span>
                     </div>
                     <Btn tone="secondary" onClick={() => void loadSystemHealth()} disabled={healthLoading}>
-                      {healthLoading ? '重新检测中...' : '重新检测系统状态'}
+                      {healthLoading ? '检测中…' : '重新检测'}
                     </Btn>
                   </div>
                 </div>
@@ -317,7 +314,7 @@ export default function LoginPage() {
                 <form className="auth-form-stack" onSubmit={handleSubmit}>
                   {canRegister ? (
                     <div className="auth-banner is-info">
-                      系统尚未创建管理员账号。完成这次注册后，前台注册入口会自动关闭，后续请直接登录。
+                      首次使用请先创建管理员账号，创建完成后注册入口将自动关闭。
                     </div>
                   ) : null}
 
@@ -395,15 +392,15 @@ export default function LoginPage() {
                       type="submit"
                       disabled={submitting || healthLoading || (mode === 'login' ? !canLogin : !canRegister)}
                     >
-                      {submitting ? '提交中...' : mode === 'login' ? '登录并进入系统' : '创建首个管理员并进入系统'}
+                      {submitting ? '提交中…' : mode === 'login' ? '登录' : '创建账号'}
                     </Btn>
 
                     <span className="auth-submit-note">
                       {mode === 'login'
                         ? (canRegister
-                          ? '系统尚未初始化完成，请先切换到注册首个管理员。'
-                          : '登录成功后将直接跳转到 dashboard 首页。')
-                        : '注册成功后会自动登录，并为当前用户创建通知场景、号卡运营商和订阅分类等默认资源。'}
+                          ? '请先创建管理员账号后再登录。'
+                          : '登录成功后进入系统首页。')
+                        : '注册成功后将自动登录并进入系统。'}
                     </span>
                   </div>
                 </form>

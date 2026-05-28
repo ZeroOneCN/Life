@@ -118,34 +118,21 @@ function buildStockSummary(
   thresholds: HealthMedicationThresholdEntity[],
   defaultThreshold: number,
 ) {
-  const usedMap = new Map<string, number>();
-  const purchasedMap = new Map<string, { quantity: number; unit: string | null; mixedUnit: boolean }>();
   const thresholdMap = new Map(thresholds.map((item) => [item.medicine_name, Number(item.threshold)]));
+  const medicineNames = new Set([...records.map((r) => r.medicine_name), ...purchases.map((p) => p.medicine_name)]);
 
-  records.forEach((record) => {
-    usedMap.set(record.medicine_name, (usedMap.get(record.medicine_name) ?? 0) + Number(record.breakfast) + Number(record.lunch) + Number(record.dinner));
-  });
-
-  purchases.forEach((purchase) => {
-    const current = purchasedMap.get(purchase.medicine_name) ?? { quantity: 0, unit: purchase.unit, mixedUnit: false };
-    current.quantity += Number(purchase.quantity);
-    current.mixedUnit = current.unit !== null && current.unit !== purchase.unit;
-    current.unit = current.mixedUnit ? null : purchase.unit;
-    purchasedMap.set(purchase.medicine_name, current);
-  });
-
-  const medicineNames = new Set([...usedMap.keys(), ...purchasedMap.keys()]);
   return Array.from(medicineNames).map((medicineName) => {
-    const usedQuantity = Number((usedMap.get(medicineName) ?? 0).toFixed(1));
-    const purchased = purchasedMap.get(medicineName);
+    const medicineRecords = records.filter((r) => r.medicine_name === medicineName);
+    const medicinePurchases = purchases.filter((p) => p.medicine_name === medicineName);
     const threshold = thresholdMap.get(medicineName) ?? defaultThreshold;
 
-    if (!purchased) {
+    if (medicinePurchases.length === 0) {
+      const totalUsed = medicineRecords.reduce((sum, r) => sum + Number(r.breakfast) + Number(r.lunch) + Number(r.dinner), 0);
       return {
         medicineName,
         unit: null,
         purchasedQuantity: 0,
-        usedQuantity,
+        usedQuantity: Number(totalUsed.toFixed(1)),
         remainingQuantity: null,
         threshold,
         status: 'no_purchase',
@@ -153,12 +140,15 @@ function buildStockSummary(
       };
     }
 
-    if (purchased.mixedUnit) {
+    const units = new Set(medicinePurchases.map((p) => p.unit));
+    if (units.size > 1) {
+      const totalPurchased = medicinePurchases.reduce((sum, p) => sum + Number(p.quantity), 0);
+      const totalUsed = medicineRecords.reduce((sum, r) => sum + Number(r.breakfast) + Number(r.lunch) + Number(r.dinner), 0);
       return {
         medicineName,
         unit: null,
-        purchasedQuantity: Number(purchased.quantity.toFixed(1)),
-        usedQuantity,
+        purchasedQuantity: Number(totalPurchased.toFixed(1)),
+        usedQuantity: Number(totalUsed.toFixed(1)),
         remainingQuantity: null,
         threshold,
         status: 'mixed_unit',
@@ -166,12 +156,48 @@ function buildStockSummary(
       };
     }
 
-    const remaining = Number((purchased.quantity - usedQuantity).toFixed(1));
+    const sortedPurchases = [...medicinePurchases].sort((a, b) => dayjs(a.purchase_date).valueOf() - dayjs(b.purchase_date).valueOf());
+    const sortedRecords = [...medicineRecords].sort((a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf());
+    const unit = sortedPurchases[0]?.unit ?? null;
+    let totalPurchased = 0;
+    let totalUsed = 0;
+    let recordIndex = 0;
+
+    for (let pi = 0; pi < sortedPurchases.length; pi += 1) {
+      totalPurchased += Number(sortedPurchases[pi].quantity);
+
+      while (recordIndex < sortedRecords.length && dayjs(sortedRecords[recordIndex].date).format('YYYY-MM-DD') <= dayjs(sortedPurchases[pi].purchase_date).format('YYYY-MM-DD')) {
+        totalUsed += Number(sortedRecords[recordIndex].breakfast) + Number(sortedRecords[recordIndex].lunch) + Number(sortedRecords[recordIndex].dinner);
+        recordIndex += 1;
+      }
+    }
+
+    while (recordIndex < sortedRecords.length) {
+      totalUsed += Number(sortedRecords[recordIndex].breakfast) + Number(sortedRecords[recordIndex].lunch) + Number(sortedRecords[recordIndex].dinner);
+      recordIndex += 1;
+    }
+
+    const rawRemaining = totalPurchased - totalUsed;
+
+    if (rawRemaining < 0) {
+      return {
+        medicineName,
+        unit,
+        purchasedQuantity: Number(totalPurchased.toFixed(1)),
+        usedQuantity: Number(totalUsed.toFixed(1)),
+        remainingQuantity: 0,
+        threshold,
+        status: 'low',
+        note: '累计使用量已超过购买总量，库存可能已耗尽，请及时补货。',
+      };
+    }
+
+    const remaining = Number(rawRemaining.toFixed(1));
     return {
       medicineName,
-      unit: purchased.unit,
-      purchasedQuantity: Number(purchased.quantity.toFixed(1)),
-      usedQuantity,
+      unit,
+      purchasedQuantity: Number(totalPurchased.toFixed(1)),
+      usedQuantity: Number(totalUsed.toFixed(1)),
       remainingQuantity: remaining,
       threshold,
       status: remaining <= threshold ? 'low' : 'ok',
