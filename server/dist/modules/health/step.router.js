@@ -30,6 +30,12 @@ const settingsSchema = zod_1.z.object({
     statsUserId: zod_1.z.string().optional(),
     recordsUserId: zod_1.z.string().optional(),
 });
+/** 从请求中获取用户 ID，空字符串回退到认证用户 */
+function resolveUserId(request) {
+    const authUserId = (0, request_1.requireAuthUser)(request);
+    const raw = String(request.query.userId ?? '');
+    return raw || authUserId;
+}
 const settingService = new base_user_setting_service_1.BaseUserSettingService(health_step_setting_entity_1.HealthStepSettingEntity);
 function mapRecord(entity) {
     return {
@@ -49,8 +55,7 @@ function createStepRouter() {
     const router = (0, express_1.Router)();
     // GET /records — paginated list
     router.get('/records', (0, async_handler_1.asyncHandler)(async (request, response) => {
-        const authUserId = (0, request_1.requireAuthUser)(request);
-        const userId = String(request.query.userId ?? authUserId);
+        const userId = resolveUserId(request);
         const hour = request.query.hour !== undefined ? Number(request.query.hour) : 'all';
         const month = String(request.query.month ?? '');
         const { page, pageSize, skip } = (0, pagination_1.parsePagination)(request.query);
@@ -139,7 +144,7 @@ function createStepRouter() {
     // GET /summary — daily totals use MAX(steps) for cumulative data model
     router.get('/summary', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const authUserId = (0, request_1.requireAuthUser)(request);
-        const userId = String(request.query.userId ?? authUserId);
+        const userId = resolveUserId(request);
         const settings = await settingService.getOrCreate(authUserId, {
             stride_length: 0.7,
             active_user_id: authUserId,
@@ -149,35 +154,15 @@ function createStepRouter() {
         const repository = data_source_1.appDataSource.getRepository(health_step_record_entity_1.HealthStepRecordEntity);
         const today = (0, dayjs_1.default)().format('YYYY-MM-DD');
         const currentMonth = (0, dayjs_1.default)().format('YYYY-MM');
+        const monthStart = (0, dayjs_1.default)(`${currentMonth}-01`).startOf('month').format('YYYY-MM-DD HH:mm:ss');
+        const monthEnd = (0, dayjs_1.default)(`${currentMonth}-01`).endOf('month').format('YYYY-MM-DD HH:mm:ss');
         const [todayResult, monthResult, totalCount] = await Promise.all([
-            // Today: MAX(steps) from today's records
-            repository
-                .createQueryBuilder('r')
-                .select('MAX(r.steps)', 'maxSteps')
-                .where('r.user_id = :userId', { userId })
-                .andWhere('r.record_time BETWEEN :start AND :end', {
-                start: (0, dayjs_1.default)(`${today}T00:00:00`).toDate(),
-                end: (0, dayjs_1.default)(`${today}T23:59:59`).toDate(),
-            })
-                .getRawOne(),
-            // Month: SUM of daily MAX(steps)
-            repository
-                .createQueryBuilder('r')
-                .select('SUM(daily.maxSteps)', 'totalSteps')
-                .from((qb) => qb
-                .select('MAX(r2.steps)', 'maxSteps')
-                .from(health_step_record_entity_1.HealthStepRecordEntity, 'r2')
-                .where('r2.user_id = :userId', { userId })
-                .andWhere('r2.record_time BETWEEN :start AND :end', {
-                start: (0, dayjs_1.default)(`${currentMonth}-01`).startOf('month').toDate(),
-                end: (0, dayjs_1.default)(`${currentMonth}-01`).endOf('month').toDate(),
-            })
-                .groupBy('DATE(r2.record_time)'), 'daily')
-                .getRawOne(),
+            repository.query('SELECT MAX(steps) as maxSteps FROM health_step_record WHERE user_id = ? AND record_time BETWEEN ? AND ?', [userId, `${today} 00:00:00`, `${today} 23:59:59`]),
+            repository.query('SELECT SUM(daily.maxSteps) as totalSteps FROM (SELECT MAX(r2.steps) as maxSteps FROM health_step_record r2 WHERE r2.user_id = ? AND r2.record_time BETWEEN ? AND ? GROUP BY DATE(r2.record_time)) daily', [userId, monthStart, monthEnd]),
             repository.count({ where: { user_id: userId } }),
         ]);
-        const todaySteps = Number(todayResult?.maxSteps) || 0;
-        const monthSteps = Number(monthResult?.totalSteps) || 0;
+        const todaySteps = Number(todayResult?.[0]?.maxSteps) || 0;
+        const monthSteps = Number(monthResult?.[0]?.totalSteps) || 0;
         response.json((0, response_1.successResponse)({
             totalRecords: totalCount,
             todaySteps,
@@ -187,11 +172,12 @@ function createStepRouter() {
             strideLength: Number(settings.stride_length),
         }));
     }));
-    // GET /trend — date buckets with MAX(steps) per day
+    // GET /trend — date buckets with MAX(steps) per day, ordered ASC for chart
     router.get('/trend', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const authUserId = (0, request_1.requireAuthUser)(request);
-        const userId = String(request.query.userId ?? authUserId);
+        const userId = resolveUserId(request);
         const month = String(request.query.month ?? (0, dayjs_1.default)().format('YYYY-MM'));
+        const hour = request.query.hour !== undefined ? Number(request.query.hour) : 'all';
         const settings = await settingService.getOrCreate(authUserId, {
             stride_length: 0.7,
             active_user_id: authUserId,
@@ -201,16 +187,14 @@ function createStepRouter() {
         const monthStart = (0, dayjs_1.default)(`${month}-01`).startOf('month').toDate();
         const monthEnd = (0, dayjs_1.default)(`${month}-01`).endOf('month').toDate();
         const repository = data_source_1.appDataSource.getRepository(health_step_record_entity_1.HealthStepRecordEntity);
-        const rows = await repository
-            .createQueryBuilder('r')
-            .select("DATE_FORMAT(r.record_time, '%Y-%m-%d')", 'date')
-            .addSelect('MAX(r.steps)', 'totalSteps')
-            .addSelect('COUNT(*)', 'recordCount')
-            .where('r.user_id = :userId', { userId })
-            .andWhere('r.record_time BETWEEN :start AND :end', { start: monthStart, end: monthEnd })
-            .groupBy("DATE_FORMAT(r.record_time, '%Y-%m-%d')")
-            .orderBy('date', 'DESC')
-            .getRawMany();
+        let sql = 'SELECT DATE_FORMAT(record_time, \'%Y-%m-%d\') as date, MAX(steps) as totalSteps, COUNT(*) as recordCount FROM health_step_record WHERE user_id = ? AND record_time BETWEEN ? AND ?';
+        const params = [userId, monthStart, monthEnd];
+        if (hour !== 'all') {
+            sql += ' AND hour = ?';
+            params.push(hour);
+        }
+        sql += ' GROUP BY DATE_FORMAT(record_time, \'%Y-%m-%d\') ORDER BY date ASC';
+        const rows = await repository.query(sql, params);
         const stride = Number(settings.stride_length);
         const result = rows.map((row) => ({
             bucket: row.date,
@@ -224,7 +208,7 @@ function createStepRouter() {
     // GET /month-compare — sum of daily MAX(steps) for each month
     router.get('/month-compare', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const authUserId = (0, request_1.requireAuthUser)(request);
-        const userId = String(request.query.userId ?? authUserId);
+        const userId = resolveUserId(request);
         const month = String(request.query.month ?? (0, dayjs_1.default)().format('YYYY-MM'));
         const currentMonth = (0, dayjs_1.default)(`${month}-01`);
         const previousMonth = currentMonth.subtract(1, 'month');
@@ -236,19 +220,10 @@ function createStepRouter() {
         });
         const repository = data_source_1.appDataSource.getRepository(health_step_record_entity_1.HealthStepRecordEntity);
         async function getMonthSteps(m) {
-            const start = m.startOf('month').toDate();
-            const end = m.endOf('month').toDate();
-            const row = await repository
-                .createQueryBuilder('r')
-                .select('SUM(daily.maxSteps)', 'totalSteps')
-                .from((qb) => qb
-                .select('MAX(r2.steps)', 'maxSteps')
-                .from(health_step_record_entity_1.HealthStepRecordEntity, 'r2')
-                .where('r2.user_id = :userId', { userId })
-                .andWhere('r2.record_time BETWEEN :start AND :end', { start, end })
-                .groupBy("DATE_FORMAT(r2.record_time, '%Y-%m-%d')"), 'daily')
-                .getRawOne();
-            return Number(row?.totalSteps) || 0;
+            const start = m.startOf('month').format('YYYY-MM-DD HH:mm:ss');
+            const end = m.endOf('month').format('YYYY-MM-DD HH:mm:ss');
+            const rows = await repository.query('SELECT SUM(daily.maxSteps) as totalSteps FROM (SELECT MAX(r2.steps) as maxSteps FROM health_step_record r2 WHERE r2.user_id = ? AND r2.record_time BETWEEN ? AND ? GROUP BY DATE(r2.record_time)) daily', [userId, start, end]);
+            return Number(rows?.[0]?.totalSteps) || 0;
         }
         const [currentSteps, previousSteps] = await Promise.all([
             getMonthSteps(currentMonth),

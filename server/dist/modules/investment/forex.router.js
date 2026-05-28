@@ -109,8 +109,8 @@ function calculatePnl(instrument, orderType, openPrice, closePrice, lotSize) {
     return Number((diff * lotSize * CONTRACT_UNITS[instrument]).toFixed(2));
 }
 function calculateHoldTime(openTime, closeTime) {
-    const start = (0, dayjs_1.default)(`2020-01-01T${normalizeTime(openTime, '09:00')}`);
-    let end = (0, dayjs_1.default)(`2020-01-01T${normalizeTime(closeTime, '10:00')}`);
+    const start = (0, dayjs_1.default)(`2020-01-01T${normalizeTime(openTime, '')}`);
+    let end = (0, dayjs_1.default)(`2020-01-01T${normalizeTime(closeTime, '')}`);
     if (end.isBefore(start)) {
         end = end.add(1, 'day');
     }

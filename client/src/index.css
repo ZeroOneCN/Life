@@ -497,7 +497,7 @@ textarea {
 }
 
 .fitness-overview-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .stat-card {
@@ -3545,9 +3545,14 @@ textarea {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.forex-capital-table .data-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
 .forex-dashboard-stat-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .forex-calculator-stat-grid {
@@ -3637,6 +3642,55 @@ textarea {
   font-size: 15px;
 }
 
+.forex-instrument-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.forex-instrument-summary-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.forex-ai-controls {
+  display: grid;
+  grid-template-columns: 180px 180px auto;
+  gap: 16px;
+  align-items: end;
+}
+
+.forex-ai-error {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface-2));
+  color: var(--color-danger);
+  font-size: 14px;
+}
+
+.forex-ai-result {
+  margin-top: 16px;
+}
+
+.forex-ai-stat-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.forex-ai-conclusion {
+  margin-top: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  background: var(--color-surface-2);
+  line-height: 1.7;
+  font-size: 14px;
+  color: var(--color-ink-muted);
+}
+
 .forex-chart-card-distribution,
 .forex-chart-card-instrument {
   min-height: 100%;
@@ -3688,7 +3742,7 @@ textarea {
 
 @media (max-width: 1280px) {
   .fitness-overview-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .fitness-entry-grid-diet,
@@ -3809,7 +3863,7 @@ textarea {
   }
 
   .forex-dashboard-stat-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .forex-calculator-stat-grid {
@@ -4204,6 +4258,11 @@ textarea {
 .card-statistics-grid {
   display: grid;
   gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.card-chart-card-wide {
+  grid-column: 1 / -1;
 }
 
 .card-entry-grid {
@@ -4252,13 +4311,28 @@ textarea {
     minmax(180px, 1.1fr)
     minmax(150px, 0.9fr)
     minmax(120px, 0.8fr)
-    minmax(120px, 0.8fr)
-    minmax(120px, 0.8fr)
-    minmax(96px, 0.7fr)
-    minmax(150px, 1fr)
-    minmax(140px, 0.95fr)
-    minmax(140px, 0.95fr)
     minmax(170px, 1fr);
+}
+
+.card-modal-grid-financial {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.card-modal-grid-plan {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.card-edit-section {
+  margin-bottom: 18px;
+}
+
+.card-edit-section-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-subtle);
+  margin-bottom: 10px;
+  padding-left: 2px;
+  letter-spacing: 0.02em;
 }
 
 .card-recharge-grid,
@@ -4289,16 +4363,24 @@ textarea {
   width: 100%;
 }
 
+.card-entry-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.card-entry-grid-compact > *:first-child {
+  grid-column: span 2;
+  min-width: 160px;
+}
+
+.card-entry-grid-compact .btn {
+  white-space: nowrap;
+}
+
 .card-settings-grid {
   grid-template-columns: 1.08fr 0.92fr;
-}
-
-.card-statistics-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.card-chart-card-wide {
-  grid-column: 1 / -1;
 }
 
 .card-chart-card-tall-compact {
@@ -4364,6 +4446,70 @@ textarea {
   height: 12px;
   border-radius: 999px;
   display: inline-flex;
+}
+
+.card-legend-item-enhanced {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 10px 1fr auto auto;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 13px;
+}
+
+.card-legend-name {
+  color: var(--color-ink);
+  font-weight: 500;
+}
+
+.card-legend-stats {
+  color: var(--color-ink-subtle);
+  font-size: 12px;
+}
+
+.card-ranking-list-enhanced {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.card-ranking-item-enhanced {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 28px 1fr auto auto auto;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--color-surface-2);
+  font-size: 13px;
+}
+
+.card-ranking-item-enhanced .card-ranking-index.is-top {
+  background: #5e6ad2;
+  color: #fff;
+}
+
+.card-ranking-phone {
+  color: var(--color-ink);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.card-ranking-carrier {
+  color: var(--color-ink-subtle);
+  font-size: 12px;
+}
+
+.card-ranking-bills {
+  color: var(--color-ink-subtle);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.card-ranking-amount {
+  color: var(--color-danger);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .card-import-actions,

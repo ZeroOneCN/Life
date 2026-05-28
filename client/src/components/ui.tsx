@@ -232,18 +232,20 @@ export function DataTable<T extends object>({
   data,
   rowKey,
   emptyText = '暂无数据',
+  className,
 }: {
   columns: TableColumn<T>[];
   data: T[];
   rowKey: keyof T;
   emptyText?: ReactNode;
+  className?: string;
 }) {
   if (!data.length) {
     return <div className="empty-state">{emptyText}</div>;
   }
 
   return (
-    <div className="table-wrap">
+    <div className={`table-wrap${className ? ` ${className}` : ''}`}>
       <table className="data-table">
         <thead>
           <tr>

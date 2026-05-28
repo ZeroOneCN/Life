@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import {
   Bar,
   BarChart,
-  CartesianGrid,
   Cell,
   Pie,
   PieChart,
@@ -67,39 +66,19 @@ export function CardStatisticsSection({
 
         {hasData ? (
           <div className="card-statistics-grid">
-            <div className="card chart-card card-chart-card-wide">
-              <div className="fitness-chart-header">
-                <strong>近 12 个月账单趋势</strong>
-                <span>按月份汇总总费用和账单条数，方便快速识别账单波动。</span>
-              </div>
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={monthlyTrend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-hairline)" />
-                  <XAxis dataKey="label" stroke="var(--color-ink-subtle)" />
-                  <YAxis stroke="var(--color-ink-subtle)" />
-                  <Tooltip
-                    formatter={(value, key) => (
-                      key === 'amount' ? formatLifeCardMoney(Number(value ?? 0)) : `${Number(value ?? 0)} 条`
-                    )}
-                  />
-                  <Bar dataKey="amount" fill="var(--color-primary)" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
             <div className="card chart-card">
               <div className="fitness-chart-header">
                 <strong>运营商分布</strong>
-                <span>按号卡数量与累计账单金额聚合，便于看清使用集中度。</span>
+                <span>按号卡数量排序，累计账单金额辅助参考。</span>
               </div>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
                   <Pie
                     data={carrierBreakdown}
                     dataKey="totalBillAmount"
                     nameKey="carrierName"
-                    innerRadius={60}
-                    outerRadius={98}
+                    innerRadius={50}
+                    outerRadius={85}
                     paddingAngle={3}
                   >
                     {carrierBreakdown.map((item, index) => (
@@ -111,29 +90,48 @@ export function CardStatisticsSection({
               </ResponsiveContainer>
               <div className="card-legend-list">
                 {carrierBreakdown.map((item) => (
-                  <div key={item.carrierName} className="card-legend-item">
+                  <div key={item.carrierName} className="card-legend-item-enhanced">
                     <span className="card-legend-dot" style={{ background: item.color }} />
-                    <span>{item.carrierName}</span>
+                    <span className="card-legend-name">{item.carrierName}</span>
+                    <span className="card-legend-stats">{item.cardCount} 张卡</span>
                     <strong>{formatLifeCardMoney(item.totalBillAmount)}</strong>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="card chart-card card-chart-card-tall-compact">
+            <div className="card chart-card">
+              <div className="fitness-chart-header">
+                <strong>近 12 个月账单趋势</strong>
+                <span>按月份汇总总费用和账单条数。</span>
+              </div>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={monthlyTrend}>
+                  <XAxis dataKey="label" stroke="var(--color-ink-subtle)" fontSize={12} />
+                  <YAxis stroke="var(--color-ink-subtle)" fontSize={12} />
+                  <Tooltip
+                    formatter={(value, key) => (
+                      key === 'amount' ? formatLifeCardMoney(Number(value ?? 0)) : `${Number(value ?? 0)} 条`
+                    )}
+                  />
+                  <Bar dataKey="amount" fill="#5e6ad2" radius={[6, 6, 0, 0]} maxBarSize={32} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="card chart-card card-chart-card-wide">
               <div className="fitness-chart-header">
                 <strong>号卡累计支出排行</strong>
-                <span>按累计账单金额排序，帮助判断哪些号卡最值得重点优化，替代原来的余额区间模块。</span>
+                <span>按账单数量排序（越多越靠前），帮助判断哪些号卡支出最多。</span>
               </div>
-              <div className="card-ranking-list">
+              <div className="card-ranking-list-enhanced">
                 {ranking.map((item, index) => (
-                  <div key={item.simId} className="card-ranking-item">
-                    <span className="card-ranking-index">{index + 1}</span>
-                    <div>
-                      <strong>{item.phoneNumber}</strong>
-                      <span>{item.carrierName} · {item.billCount} 条账单</span>
-                    </div>
-                    <strong>{formatLifeCardMoney(item.totalBillAmount)}</strong>
+                  <div key={item.simId} className="card-ranking-item-enhanced">
+                    <span className={`card-ranking-index ${index < 3 ? 'is-top' : ''}`}>{index + 1}</span>
+                    <span className="card-ranking-phone">{item.phoneNumber}</span>
+                    <span className="card-ranking-carrier">{item.carrierName}</span>
+                    <span className="card-ranking-bills">{item.billCount} 笔</span>
+                    <strong className="card-ranking-amount">{formatLifeCardMoney(item.totalBillAmount)}</strong>
                   </div>
                 ))}
               </div>

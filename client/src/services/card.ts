@@ -893,7 +893,7 @@ export function buildLifeCardCarrierBreakdown(
     }
   });
 
-  return [...grouped.values()].sort((left, right) => right.totalBillAmount - left.totalBillAmount);
+  return [...grouped.values()].sort((left, right) => right.cardCount - left.cardCount || right.totalBillAmount - left.totalBillAmount);
 }
 
 export function buildLifeCardBalanceDistribution(cards: LifeCardRecord[]): LifeCardBalanceRangePoint[] {
@@ -929,7 +929,7 @@ export function buildLifeCardRanking(
         totalRechargeAmount: Number(cardRecharges.reduce((sum, record) => sum + record.amount, 0).toFixed(2)),
       };
     })
-    .sort((left, right) => right.totalBillAmount - left.totalBillAmount);
+    .sort((left, right) => right.billCount - left.billCount || right.totalBillAmount - left.totalBillAmount);
 }
 
 export function buildLifeCardDueNotifications(

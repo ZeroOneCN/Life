@@ -270,7 +270,7 @@ export function ForexCapitalSection({
 
         {pageRecords.length ? (
           <>
-            <DataTable columns={columns} data={pageRecords} rowKey="id" />
+            <DataTable columns={columns} data={pageRecords} rowKey="id" className="forex-capital-table" />
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         ) : (

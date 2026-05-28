@@ -3,8 +3,11 @@ node_modules/
 .pnp
 .pnp.js
 package-lock.json
+.trae
+
 
 # Build output
+server/dist/
 client/dist/
 build/
 

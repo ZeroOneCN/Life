@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import dayjs from 'dayjs';
 
 import { MedicationAnalysisSection } from '../../components/health/MedicationAnalysisSection';
 import { MedicationPurchasesSection } from '../../components/health/MedicationPurchasesSection';
@@ -83,9 +84,11 @@ export default function MedicationPage() {
       medicationApi.getSettings(),
     ]);
 
-    setRecords(nextRecords.items);
-    setPurchases(nextPurchases.items);
-    setSummaries(nextSummaries.items);
+    const normalizeDate = (d: string) => (dayjs(d).isValid() ? dayjs(d).format('YYYY-MM-DD') : d);
+
+    setRecords(nextRecords.items.map((r) => ({ ...r, date: normalizeDate(r.date) })));
+    setPurchases(nextPurchases.items.map((p) => ({ ...p, purchaseDate: normalizeDate(p.purchaseDate) })));
+    setSummaries(nextSummaries.items.map((s) => ({ ...s, date: normalizeDate(s.date) })));
     setOverview(nextOverview);
     setSettings({
       ...EMPTY_SETTINGS,

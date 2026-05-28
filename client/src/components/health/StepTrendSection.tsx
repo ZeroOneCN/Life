@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import {
   Area,
@@ -11,23 +11,17 @@ import {
 } from 'recharts';
 
 import { MonthPickerField } from '../date';
-import {
-  STEP_AGGREGATE_PAGE_SIZE,
-  STEP_HOURS,
-  aggregateStepRecordsByDay,
-  aggregateStepRecordsByMonth,
-  buildStepMonthCompare,
-  filterStepRecordsByUserId,
-} from '../../services/stepRecords';
-import type { StepConcreteHour, StepRecord, StepStatsGranularity } from '../../types/health';
+import { STEP_HOURS } from '../../services/stepRecords';
+import { stepApi } from '../../services/stepApi';
+import type { StepAggregatePoint, StepConcreteHour, StepStatsGranularity } from '../../types/health';
 import { usePageTab } from '../../hooks/usePageTab';
-import { Btn, Field, Pagination, Tag } from '../ui';
+import { Btn, Field, Pagination, Tag } from '../../components/ui';
 import { EmptyState, SectionCard } from '../page';
 
 type ChartHourFilter = 'all' | StepConcreteHour;
 
 interface StepTrendSectionProps {
-  records: StepRecord[];
+  reloadKey?: number;
   userId: string;
   strideLength: number;
   onUserIdChange: (value: string) => void;
@@ -36,6 +30,7 @@ interface StepTrendSectionProps {
 }
 
 const granularityOptions: StepStatsGranularity[] = ['daily', 'monthly'];
+const STEP_AGGREGATE_PAGE_SIZE = 10;
 
 function formatCompareLabel(changePercentage: number | null, trend: 'up' | 'down' | 'flat' | 'none') {
   if (changePercentage === null) {
@@ -70,7 +65,7 @@ function getCompareTone(trend: 'up' | 'down' | 'flat' | 'none') {
 }
 
 export function StepTrendSection({
-  records,
+  reloadKey,
   userId,
   strideLength,
   onUserIdChange,
@@ -84,6 +79,20 @@ export function StepTrendSection({
   const [aggregatePage, setAggregatePage] = useState(1);
   const [strideDraft, setStrideDraft] = useState(String(strideLength));
 
+  // 后端数据状态
+  const [trendData, setTrendData] = useState<StepAggregatePoint[]>([]);
+  const [compareSummary, setCompareSummary] = useState<{
+    currentLabel: string;
+    previousLabel: string;
+    currentSteps: number;
+    previousSteps: number;
+    currentDistanceKm: number;
+    previousDistanceKm: number;
+    changePercentage: number | null;
+    trend: 'up' | 'down' | 'flat' | 'none';
+  } | null>(null);
+  const [trendLoading, setTrendLoading] = useState(false);
+
   useEffect(() => {
     setStrideDraft(String(strideLength));
   }, [strideLength]);
@@ -92,33 +101,75 @@ export function StepTrendSection({
     setAggregatePage(1);
   }, [chartHourFilter, granularity, selectedMonth, selectedYear, userId]);
 
-  const filteredRecords = useMemo(
-    () => filterStepRecordsByUserId(records, userId),
-    [records, userId],
-  );
+  /**
+   * 从后端加载趋势数据，替代前端全量 records 计算。
+   * daily 模式使用 /trend API，monthly 模式使用 /month-compare API。
+   */
+  const loadTrendData = useCallback(async () => {
+    setTrendLoading(true);
+    try {
+      if (granularity === 'daily') {
+        const data = await stepApi.getTrend({
+          userId: userId || undefined,
+          month: selectedMonth,
+          hour: chartHourFilter === 'all' ? undefined : chartHourFilter,
+        });
+        setTrendData(data);
+        setCompareSummary(null);
+      } else {
+        const isCurrentYear = Number(selectedYear) === dayjs().year();
+        const compareMonth = isCurrentYear
+          ? `${selectedYear}-${String(dayjs().month() + 1).padStart(2, '0')}`
+          : `${selectedYear}-12`;
+        const compare = await stepApi.getMonthCompare({
+          userId: userId || undefined,
+          month: compareMonth,
+        });
+        setCompareSummary(compare);
+        const monthlyPoints: StepAggregatePoint[] = [];
+        for (let m = 1; m <= 12; m++) {
+          const monthKey = `${selectedYear}-${String(m).padStart(2, '0')}`;
+          try {
+            const monthData = await stepApi.getTrend({
+              userId: userId || undefined,
+              month: monthKey,
+            });
+            const totalSteps = monthData.reduce((sum, d) => sum + d.totalSteps, 0);
+            const recordCount = monthData.reduce((sum, d) => sum + d.recordCount, 0);
+            if (totalSteps > 0) {
+              monthlyPoints.push({
+                bucket: monthKey,
+                label: `${m}月`,
+                totalSteps,
+                recordCount,
+                distanceKm: Number(((totalSteps * strideLength) / 1000).toFixed(2)),
+              });
+            }
+          } catch {
+          }
+        }
+        setTrendData(monthlyPoints);
+      }
+    } catch {
+      setTrendData([]);
+      setCompareSummary(null);
+    } finally {
+      setTrendLoading(false);
+    }
+  }, [granularity, userId, selectedMonth, selectedYear, chartHourFilter, strideLength, reloadKey]);
 
-  const aggregateData = useMemo(
-    () => (
-      granularity === 'daily'
-        ? aggregateStepRecordsByDay(filteredRecords, selectedMonth, strideLength, chartHourFilter)
-        : aggregateStepRecordsByMonth(filteredRecords, selectedYear, strideLength, chartHourFilter)
-    ),
-    [chartHourFilter, filteredRecords, granularity, selectedMonth, selectedYear, strideLength],
-  );
+  useEffect(() => {
+    void loadTrendData();
+  }, [loadTrendData]);
 
   const pagedAggregateData = useMemo(() => {
-    const latestFirst = [...aggregateData].sort((left, right) => right.bucket.localeCompare(left.bucket));
+    const latestFirst = [...trendData].sort((left, right) => right.bucket.localeCompare(left.bucket));
     const startIndex = (aggregatePage - 1) * STEP_AGGREGATE_PAGE_SIZE;
 
     return latestFirst.slice(startIndex, startIndex + STEP_AGGREGATE_PAGE_SIZE);
-  }, [aggregateData, aggregatePage]);
+  }, [trendData, aggregatePage]);
 
-  const totalPages = Math.max(1, Math.ceil(aggregateData.length / STEP_AGGREGATE_PAGE_SIZE));
-
-  const compareSummary = useMemo(
-    () => buildStepMonthCompare(filteredRecords, strideLength),
-    [filteredRecords, strideLength],
-  );
+  const totalPages = Math.max(1, Math.ceil(trendData.length / STEP_AGGREGATE_PAGE_SIZE));
 
   return (
     <SectionCard
@@ -233,10 +284,19 @@ export function StepTrendSection({
             </div>
           </div>
 
-          {aggregateData.length ? (
-            <div className="step-chart-canvas" key={`${granularity}-${chartHourFilter}`}>
+          {trendLoading && trendData.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--color-ink-subtle)' }}>
+              正在加载趋势数据…
+            </div>
+          ) : trendData.length ? (
+            <div className="step-chart-canvas" key={`${granularity}-${chartHourFilter}`} style={{ position: 'relative' }}>
+              {trendLoading && (
+                <div style={{ position: 'absolute', top: 8, right: 8, fontSize: 12, color: 'var(--color-ink-subtle)', zIndex: 1 }}>
+                  加载中…
+                </div>
+              )}
               <ResponsiveContainer width="100%" height={320}>
-                <AreaChart data={aggregateData}>
+                <AreaChart data={trendData}>
                   <defs>
                     <linearGradient id="stepArea" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.35} />
@@ -244,7 +304,14 @@ export function StepTrendSection({
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 11 }} interval={0} angle={-45} textAnchor="end" height={70} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fill: 'var(--color-ink-subtle)', fontSize: 11 }}
+                    interval="preserveStartEnd"
+                    angle={-45}
+                    textAnchor="end"
+                    height={70}
+                  />
                   <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
@@ -262,6 +329,7 @@ export function StepTrendSection({
                     fill="url(#stepArea)"
                     strokeWidth={3}
                     activeDot={{ r: 5 }}
+                    isAnimationActive={false}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -274,7 +342,7 @@ export function StepTrendSection({
           )}
         </div>
 
-        {granularity === 'monthly' ? (
+        {granularity === 'monthly' && compareSummary ? (
           <div className="step-compare-grid">
             <div className="step-compare-card is-primary">
               <span className="step-compare-label">本月</span>

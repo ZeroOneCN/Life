@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
-  CartesianGrid,
   Cell,
   Line,
   LineChart,
@@ -130,7 +129,6 @@ export function ForexDashboardSection({
     [endDate, startDate, trades],
   );
 
-  // AI analysis state
   const savedAi = loadAiCache();
   const [aiStartDate, setAiStartDate] = useState(savedAi?.startDate || startDate);
   const [aiEndDate, setAiEndDate] = useState(savedAi?.endDate || endDate);
@@ -138,7 +136,6 @@ export function ForexDashboardSection({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
 
-  // Sync AI dates with dashboard filter when they change
   useEffect(() => {
     if (startDate && !aiStartDate) setAiStartDate(startDate);
     if (endDate && !aiEndDate) setAiEndDate(endDate);
@@ -170,6 +167,7 @@ export function ForexDashboardSection({
 
   const hasTrendData = trend.some((item) => item.tradeCount > 0 || item.netPnl !== 0);
   const hasInstrumentData = instrumentSummary.some((item) => item.tradeCount > 0);
+  const isDataReady = trades.length > 0;
   const winCount = trades.filter((t) => {
     if (startDate && t.tradeDate < startDate) return false;
     if (endDate && t.tradeDate > endDate) return false;
@@ -202,69 +200,71 @@ export function ForexDashboardSection({
         <StatGrid
           className="forex-dashboard-stat-grid"
           items={[
-            { label: '总交易数', value: `${summary.tradeCount} 笔`, helper: `做多 ${summary.longCount} / 做空 ${summary.shortCount}` },
-            { label: '净收益', value: formatForexAmount(summary.realizedNetPnl), accent: summary.realizedNetPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
+            { label: '净收益', value: formatForexAmount(summary.realizedNetPnl), accent: summary.realizedNetPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)', helper: `总交易 ${summary.tradeCount} 笔 · 做多 ${summary.longCount} / 做空 ${summary.shortCount}` },
             { label: '胜率', value: formatForexPercent(summary.winRate), helper: `盈亏比 ${summary.profitLossRatio.toFixed(2)}` },
-            { label: '总手续费', value: formatForexMoney(summary.totalCommission), accent: 'var(--color-warning)' },
+            { label: '手续费', value: formatForexMoney(summary.totalCommission), accent: 'var(--color-danger)', helper: `${summary.tradeCount} 笔交易累计` },
             { label: '净入金', value: formatForexMoney(summary.netCapital), helper: `入金 ${formatForexMoney(summary.totalDeposit)} / 出金 ${formatForexMoney(summary.totalWithdrawal)}` },
-            { label: '当前净值', value: formatForexMoney(summary.equity), helper: '净入金 + 已实现净收益' },
+            { label: '账户净值', value: formatForexMoney(summary.equity), helper: `净入金 + 净收益` },
             { label: 'ROI', value: formatForexPercent(summary.roi), helper: `XAU ${summary.xauCount} / XAG ${summary.xagCount}` },
           ]}
         />
 
-        {/* Two-column: P&L Curve (left) + Win/Loss Distribution (right) */}
-        <div className="grid grid-cols-2 gap-5">
-          <div style={{ backgroundColor: 'var(--color-surface-2)', border: '1px solid var(--color-hairline)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
+        <div className="forex-dashboard-grid">
+          <div className="forex-chart-card">
             <div className="forex-chart-header">
               <strong>每日盈亏曲线</strong>
               <span>按交易日观察净盈亏变化趋势。</span>
             </div>
-            {hasTrendData ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={trend}>
-                  <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fill: 'var(--color-ink-subtle)', fontSize: 11 }}
-                    tickFormatter={(value) => String(value ?? '').slice(5)}
-                    interval="preserveStartEnd"
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                  />
-                  <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    formatter={(value) => [formatForexMoney(Number(value ?? 0)), '净盈亏']}
-                    labelFormatter={(label) => `日期 ${String(label ?? '')}`}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="netPnl"
-                    stroke="var(--color-primary)"
-                    strokeWidth={2.5}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            {isDataReady && hasTrendData ? (
+              <div className="forex-chart-shell">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={trend}>
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fill: 'var(--color-ink-subtle)', fontSize: 11 }}
+                      tickFormatter={(value) => String(value ?? '').slice(5)}
+                      interval="preserveStartEnd"
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      formatter={(value) => [formatForexMoney(Number(value ?? 0)), '净盈亏']}
+                      labelFormatter={(label) => `日期 ${String(label ?? '')}`}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="netPnl"
+                      stroke="#5e6ad2"
+                      strokeWidth={2.5}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             ) : (
-              <EmptyState title="暂无盈亏曲线" description="先录入几笔交易记录，趋势线才会形成。" />
+              <EmptyState
+                title={isDataReady ? '暂无盈亏曲线' : '正在加载数据...'}
+                description={isDataReady ? '先录入几笔交易记录，趋势线才会形成。' : '正在从后端获取交易数据，请稍候。'}
+              />
             )}
           </div>
 
-          <div style={{ backgroundColor: 'var(--color-surface-2)', border: '1px solid var(--color-hairline)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
+          <div className="forex-chart-card">
             <div className="forex-chart-header">
               <strong>盈亏分布</strong>
               <span>盈利与亏损笔数占比，配合盈亏比判断执行质量。</span>
             </div>
-            {summary.tradeCount > 0 ? (
-              <>
+            {isDataReady && summary.tradeCount > 0 ? (
+              <div className="forex-chart-shell">
                 <ResponsiveContainer width="100%" height={240}>
                   <PieChart>
                     <Pie
                       data={[
-                        { name: '盈利', value: Math.max(0, winCount), color: 'var(--color-success)' },
-                        { name: '亏损', value: Math.max(0, lossCount), color: 'var(--color-danger)' },
+                        { name: '盈利', value: Math.max(0, winCount), color: '#27a644' },
+                        { name: '亏损', value: Math.max(0, lossCount), color: '#e5484d' },
                       ]}
                       cx="50%"
                       cy="50%"
@@ -272,12 +272,11 @@ export function ForexDashboardSection({
                       outerRadius={92}
                       paddingAngle={4}
                       dataKey="value"
-                      stroke="var(--color-surface-2)"
-                      strokeWidth={2}
+                      stroke="none"
                     >
                       {[
-                        { name: '盈利', value: Math.max(0, winCount), color: 'var(--color-success)' },
-                        { name: '亏损', value: Math.max(0, lossCount), color: 'var(--color-danger)' },
+                        { name: '盈利', value: Math.max(0, winCount), color: '#27a644' },
+                        { name: '亏损', value: Math.max(0, lossCount), color: '#e5484d' },
                       ].map((entry, index) => (
                         <Cell key={index} fill={entry.color} />
                       ))}
@@ -309,83 +308,80 @@ export function ForexDashboardSection({
                     </span>
                   </div>
                 </div>
-              </>
+              </div>
             ) : (
-              <EmptyState title="暂无盈亏分布" description="当前区间形成有效盈亏样本后，这里会自动拆分结构。" />
+              <EmptyState
+                title={isDataReady ? '暂无盈亏分布' : '正在加载数据...'}
+                description={isDataReady ? '当前区间形成有效盈亏样本后，这里会自动拆分结构。' : '正在从后端获取交易数据，请稍候。'}
+              />
             )}
           </div>
         </div>
 
-        {/* Instrument Analysis Table (full width) */}
         <ChartCard
           title="品种分析"
           description="按交易品种拆分笔数、盈亏、均盈和胜率。"
         >
           {hasInstrumentData ? (
-            <table className="forex-instrument-table">
-              <thead>
-                <tr>
-                  <th>品种</th>
-                  <th className="text-right">笔数</th>
-                  <th className="text-right">总盈亏</th>
-                  <th className="text-right">均盈</th>
-                  <th className="text-right">胜率</th>
-                </tr>
-              </thead>
-              <tbody>
-                {instrumentSummary.map((item) => (
-                  <tr key={item.instrument}>
-                    <td className="font-medium" style={{ color: 'var(--color-ink)' }}>
-                      {getForexInstrumentLabel(item.instrument)}
-                    </td>
-                    <td className="text-right" style={{ color: 'var(--color-ink-muted)' }}>
-                      {item.tradeCount}
-                    </td>
-                    <td
-                      className="text-right font-mono font-medium"
-                      style={{ color: item.netPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}
-                    >
+            <div className="forex-instrument-cards">
+              {instrumentSummary.map((item) => (
+                <div key={item.instrument} className="forex-instrument-summary-card">
+                  <div className="forex-instrument-summary-card-head">
+                    <strong>{getForexInstrumentLabel(item.instrument)}</strong>
+                    <span style={{ color: item.netPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)', fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 15 }}>
                       {formatForexAmount(item.netPnl)}
-                    </td>
-                    <td className="text-right font-mono" style={{ color: 'var(--color-ink-muted)' }}>
-                      {item.tradeCount > 0 ? formatForexMoney(item.grossPnl / item.tradeCount) : '--'}
-                    </td>
-                    <td className="text-right" style={{ color: 'var(--color-ink-muted)' }}>
-                      {formatForexPercent(item.winRate)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 10 }}>
+                    <div>
+                      <span style={{ display: 'block', fontSize: 12, color: 'var(--color-ink-subtle)' }}>笔数</span>
+                      <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--color-ink)' }}>{item.tradeCount}</span>
+                    </div>
+                    <div>
+                      <span style={{ display: 'block', fontSize: 12, color: 'var(--color-ink-subtle)' }}>均盈</span>
+                      <span style={{ fontSize: 15, fontFamily: 'var(--font-mono)', color: 'var(--color-ink-muted)' }}>
+                        {item.tradeCount > 0 ? formatForexMoney(item.grossPnl / item.tradeCount) : '--'}
+                      </span>
+                    </div>
+                    <div>
+                      <span style={{ display: 'block', fontSize: 12, color: 'var(--color-ink-subtle)' }}>胜率</span>
+                      <span style={{ fontSize: 15, color: 'var(--color-ink-muted)' }}>{formatForexPercent(item.winRate)}</span>
+                    </div>
+                    <div>
+                      <span style={{ display: 'block', fontSize: 12, color: 'var(--color-ink-subtle)' }}>方向</span>
+                      <span style={{ fontSize: 14, color: 'var(--color-ink-muted)' }}>{item.longCount}多 / {item.shortCount}空</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <EmptyState title="暂无品种分析" description="先录入 XAUUSD 或 XAGUSD 交易后，这里会形成对比。" />
           )}
         </ChartCard>
 
-        {/* DeepSeek AI Analysis */}
         <ChartCard
           title="AI 智能分析"
           description="选择日期范围，由 DeepSeek AI 根据交易记录进行多维度分析，仅在你手动点击后触发。"
         >
           <div className="forex-ai-controls">
-            <input
-              type="text"
+            <DatePickerField
+              label="起始日期"
               value={aiStartDate}
-              onChange={(e) => setAiStartDate(e.target.value)}
-              placeholder="起始日期"
-              className="forex-ai-date-input"
+              onChange={setAiStartDate}
+              placeholder="选择起始日期"
             />
-            <span style={{ color: 'var(--color-ink-subtle)' }}>—</span>
-            <input
-              type="text"
+            <DatePickerField
+              label="结束日期"
               value={aiEndDate}
-              onChange={(e) => setAiEndDate(e.target.value)}
-              placeholder="结束日期"
-              className="forex-ai-date-input"
+              onChange={setAiEndDate}
+              placeholder="选择结束日期"
             />
-            <Btn tone="primary" onClick={handleAiAnalyze} disabled={aiLoading}>
-              {aiLoading ? '分析中...' : '开始分析'}
-            </Btn>
+            <div className="forex-submit-cell">
+              <Btn tone="primary" onClick={handleAiAnalyze} disabled={aiLoading}>
+                {aiLoading ? '分析中...' : '开始分析'}
+              </Btn>
+            </div>
           </div>
 
           {aiError && (

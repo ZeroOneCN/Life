@@ -1408,11 +1408,11 @@ function buildImportedTradeCompatible(
   );
   const openTime = normalizeForexTimeWithSeconds(
     String(getForexImportCell(row, ['开仓时间', 'openTime', 'open_time']) ?? ''),
-    '09:00:00',
+    '',
   );
   const closeTime = normalizeForexTimeWithSeconds(
     String(getForexImportCell(row, ['平仓时间', 'closeTime', 'close_time']) ?? ''),
-    '10:00:00',
+    '',
   );
 
   if (!tradeDate) {

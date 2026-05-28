@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { StepEntryForm } from '../../components/health/StepEntryForm';
@@ -11,7 +11,6 @@ import { getAuthUserDisplayName, useAuthState } from '../../services/auth';
 import { stepApi } from '../../services/stepApi';
 import {
   buildStepRecordTime,
-  findDuplicateStepRecord,
   getNextStepHour,
   getTodayEndDateTime,
   inferStepHourFromRecordTime,
@@ -42,6 +41,7 @@ const EMPTY_COMPARE: StepMonthCompareSummary = {
   trend: 'none',
 };
 
+/** 获取快速录入的记录时间 */
 function getQuickRecordTime(hour: StepHour, previousDay = false) {
   const base = previousDay ? dayjs().subtract(1, 'day') : dayjs();
   const seed = base.format('YYYY-MM-DDTHH:mm');
@@ -56,7 +56,6 @@ function getQuickRecordTime(hour: StepHour, previousDay = false) {
 export default function StepPage() {
   const authState = useAuthState();
   const currentUserLabel = getAuthUserDisplayName(authState.session?.user, '当前登录用户');
-  const [records, setRecords] = useState<StepRecord[]>([]);
   const [settings, setSettings] = useState<StepPageState['settings']>(EMPTY_SETTINGS);
   const [summary, setSummary] = useState({
     totalRecords: 0,
@@ -72,24 +71,37 @@ export default function StepPage() {
   const [recordTime, setRecordTime] = useState(getTodayEndDateTime());
   const [pendingDuplicate, setPendingDuplicate] = useState<{ existing: StepRecord; draft: StepRecordDraft } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
   const stepsInputRef = useRef<HTMLInputElement>(null);
-  const { toast, showToast } = useToastState();
+  const { toast, showToast: showToastUnstable } = useToastState();
 
+  /** 用 ref 稳定 showToast 引用，避免因引用变化导致 useEffect 无限循环 */
+  const showToastRef = useRef(showToastUnstable);
+  showToastRef.current = showToastUnstable;
+  const showToast = useCallback((...args: Parameters<typeof showToastUnstable>) => {
+    showToastRef.current(...args);
+  }, []);
+
+  /**
+   * 加载页面核心数据（设置、摘要、环比）。
+   * 不再一次性加载全部 records，改为各子组件按需请求后端分页 API。
+   */
   const reload = useCallback(async () => {
-    const [recordsResponse, nextSummary, nextCompare, nextSettings] = await Promise.all([
-      stepApi.listRecords({ page: 1, page_size: 100000 }),
-      stepApi.getSummary(),
-      stepApi.getMonthCompare(),
-      stepApi.getSettings(),
+    const nextSettings = await stepApi.getSettings();
+    const statsUserId = nextSettings.statsUserId || nextSettings.activeUserId || '';
+
+    const [nextSummary, nextCompare] = await Promise.all([
+      stepApi.getSummary({ userId: statsUserId }),
+      stepApi.getMonthCompare({ userId: statsUserId }),
     ]);
 
-    setRecords(recordsResponse.items);
     setSummary(nextSummary);
     setCompareSummary(nextCompare);
     setSettings({
       ...EMPTY_SETTINGS,
       ...nextSettings,
     });
+    setReloadKey((k) => k + 1);
   }, []);
 
   useEffect(() => {
@@ -199,12 +211,7 @@ export default function StepPage() {
       recordTime,
     };
 
-    const duplicate = findDuplicateStepRecord(records, draft);
-    if (duplicate) {
-      setPendingDuplicate({ existing: duplicate, draft });
-      return;
-    }
-
+    // 直接提交，后端已有重复检测（409），无需前端全量加载来做重复判断
     void persistCreate(draft);
   };
 
@@ -260,7 +267,7 @@ export default function StepPage() {
       />
 
       <StepTrendSection
-        records={records}
+        reloadKey={reloadKey}
         userId={settings.statsUserId}
         strideLength={settings.strideLength}
         onUserIdChange={(value) => {
@@ -273,7 +280,7 @@ export default function StepPage() {
       />
 
       <StepRecordsSection
-        records={records}
+        reloadKey={reloadKey}
         filterUserId={settings.recordsUserId}
         strideLength={settings.strideLength}
         onFilterUserIdChange={(value) => {

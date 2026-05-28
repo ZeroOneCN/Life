@@ -75,7 +75,7 @@ function mapRecord(entity: HealthMedicationRecordEntity) {
   return {
     id: entity.id,
     userId: entity.user_id,
-    date: entity.date,
+    date: dayjs(entity.date).format('YYYY-MM-DD'),
     medicineName: entity.medicine_name,
     breakfast: Number(entity.breakfast),
     lunch: Number(entity.lunch),
@@ -89,7 +89,7 @@ function mapPurchase(entity: HealthMedicationPurchaseEntity) {
   return {
     id: entity.id,
     userId: entity.user_id,
-    purchaseDate: entity.purchase_date,
+    purchaseDate: dayjs(entity.purchase_date).format('YYYY-MM-DD'),
     medicineName: entity.medicine_name,
     quantity: Number(entity.quantity),
     unit: entity.unit,
@@ -105,7 +105,7 @@ function mapSummary(entity: HealthMedicationSummaryEntity) {
   return {
     id: entity.id,
     userId: entity.user_id,
-    date: entity.date,
+    date: dayjs(entity.date).format('YYYY-MM-DD'),
     content: entity.content,
     createdAt: entity.created_at.toISOString(),
     updatedAt: entity.updated_at.toISOString(),
@@ -408,7 +408,7 @@ export function createMedicationRouter() {
     ]);
     const today = dayjs().format('YYYY-MM-DD');
     const totalDosage = records.reduce((sum, item) => sum + Number(item.breakfast) + Number(item.lunch) + Number(item.dinner), 0);
-    const trackedDays = new Set(records.map((item) => item.date)).size;
+    const trackedDays = new Set(records.map((item) => dayjs(item.date).format('YYYY-MM-DD'))).size;
 
     response.json(successResponse({
       totalRecords: records.length,
@@ -418,8 +418,8 @@ export function createMedicationRouter() {
       activeMedicineCount: new Set(records.map((item) => item.medicine_name)).size,
       purchaseCount: purchases.length,
       totalPurchaseAmount: Number(purchases.reduce((sum, item) => sum + Number(item.total_price), 0).toFixed(2)),
-      latestRecordDate: records[0]?.date ?? null,
-      todayDosage: records.filter((item) => item.date === today).reduce((sum, item) => sum + Number(item.breakfast) + Number(item.lunch) + Number(item.dinner), 0),
+      latestRecordDate: records[0] ? dayjs(records[0].date).format('YYYY-MM-DD') : null,
+      todayDosage: records.filter((item) => dayjs(item.date).format('YYYY-MM-DD') === today).reduce((sum, item) => sum + Number(item.breakfast) + Number(item.lunch) + Number(item.dinner), 0),
     }));
   }));
 

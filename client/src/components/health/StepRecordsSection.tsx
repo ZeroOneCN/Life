@@ -1,26 +1,24 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { DateTimePickerField } from '../date';
 import { DeleteModal, Modal, Pagination, Btn, Field, SelectField } from '../ui';
 import {
   STEP_HOURS,
-  STEP_RECORD_PAGE_SIZE,
   buildStepRecordTime,
   calculateStepDistanceKm,
-  filterStepRecordsByUserId,
-  findDuplicateStepRecord,
   formatStepRecordTime,
   getStepHourLabel,
   inferStepHourFromRecordTime,
 } from '../../services/stepRecords';
+import { stepApi } from '../../services/stepApi';
 import type { StepHour, StepRecord, StepRecordDraft, StepRecordSortField } from '../../types/health';
 import { SectionCard } from '../page';
 
 type SortDirection = 'asc' | 'desc';
 
 interface StepRecordsSectionProps {
-  records: StepRecord[];
+  reloadKey?: number;
   filterUserId: string;
   strideLength: number;
   onFilterUserIdChange: (value: string) => void;
@@ -38,8 +36,10 @@ function getSortIndicator(active: boolean, direction: SortDirection) {
   return direction === 'asc' ? '↑' : '↓';
 }
 
+const PAGE_SIZE = 10;
+
 export function StepRecordsSection({
-  records,
+  reloadKey,
   filterUserId,
   strideLength,
   onFilterUserIdChange,
@@ -60,13 +60,58 @@ export function StepRecordsSection({
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [showBatchDeleteModal, setShowBatchDeleteModal] = useState(false);
 
-  const filteredRecords = useMemo(
-    () => filterStepRecordsByUserId(records, filterUserId),
-    [filterUserId, records],
-  );
+  // 后端分页数据
+  const [records, setRecords] = useState<StepRecord[]>([]);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [loading, setLoading] = useState(true);
 
+  /**
+   * 从后端分页加载记录，替代前端全量加载。
+   */
+  const loadRecords = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await stepApi.listRecords({
+        page,
+        page_size: PAGE_SIZE,
+        userId: filterUserId || undefined,
+      });
+      setRecords(response.items);
+      setTotalRecords(response.total);
+    } catch {
+      setRecords([]);
+      setTotalRecords(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, filterUserId, reloadKey]);
+
+  useEffect(() => {
+    void loadRecords();
+  }, [loadRecords]);
+
+  // 筛选条件变化时重置页码
+  useEffect(() => {
+    setPage(1);
+    setSelectedIds([]);
+  }, [filterUserId]);
+
+  // 当删除导致当前页超出范围时，回退到最后一页
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(totalRecords / PAGE_SIZE));
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [totalRecords, page]);
+
+  // 前端排序（仅对当前页数据排序，后端已按 recordTime DESC 排序）
   const sortedRecords = useMemo(() => {
-    const nextRecords = [...filteredRecords];
+    if (sortField === 'recordTime' && sortDirection === 'desc') {
+      // 默认排序，无需额外处理
+      return records;
+    }
+
+    const nextRecords = [...records];
 
     nextRecords.sort((left, right) => {
       if (sortField === 'steps') {
@@ -85,28 +130,11 @@ export function StepRecordsSection({
     });
 
     return nextRecords;
-  }, [filteredRecords, sortDirection, sortField]);
+  }, [records, sortDirection, sortField]);
 
-  const totalPages = Math.max(1, Math.ceil(sortedRecords.length / STEP_RECORD_PAGE_SIZE));
-  const pageRecords = useMemo(() => {
-    const startIndex = (page - 1) * STEP_RECORD_PAGE_SIZE;
-    return sortedRecords.slice(startIndex, startIndex + STEP_RECORD_PAGE_SIZE);
-  }, [page, sortedRecords]);
+  const totalPages = Math.max(1, Math.ceil(totalRecords / PAGE_SIZE));
 
-  useEffect(() => {
-    setPage(1);
-    setSelectedIds([]);
-  }, [filterUserId]);
-
-  useEffect(() => {
-    setSelectedIds((previous) => previous.filter((id) => filteredRecords.some((record) => record.id === id)));
-
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [filteredRecords, page, totalPages]);
-
-  const allPageSelected = pageRecords.length > 0 && pageRecords.every((record) => selectedIds.includes(record.id));
+  const allPageSelected = sortedRecords.length > 0 && sortedRecords.every((record) => selectedIds.includes(record.id));
 
   const toggleSort = (field: StepRecordSortField) => {
     if (sortField === field) {
@@ -156,22 +184,6 @@ export function StepRecordsSection({
       return;
     }
 
-    const duplicate = findDuplicateStepRecord(
-      records,
-      {
-        userId: editingUserId,
-        steps,
-        hour: editingHour,
-        recordTime: editingRecordTime,
-      },
-      editingRecord.id,
-    );
-
-    if (duplicate) {
-      showToast('该用户在同一天的同一时间段已经有记录，请调整后再保存。', 'error');
-      return;
-    }
-
     onUpdateRecord(editingRecord.id, {
       userId: editingUserId,
       steps,
@@ -203,11 +215,11 @@ export function StepRecordsSection({
                 checked={allPageSelected}
                 onChange={(event) => {
                   if (event.target.checked) {
-                    setSelectedIds((previous) => [...new Set([...previous, ...pageRecords.map((record) => record.id)])]);
+                    setSelectedIds((previous) => [...new Set([...previous, ...sortedRecords.map((record) => record.id)])]);
                     return;
                   }
 
-                  setSelectedIds((previous) => previous.filter((id) => !pageRecords.some((record) => record.id === id)));
+                  setSelectedIds((previous) => previous.filter((id) => !sortedRecords.some((record) => record.id === id)));
                 }}
               />
               <span>全选当前页</span>
@@ -221,13 +233,17 @@ export function StepRecordsSection({
             </Btn>
           </div>
           <span className="subtle-text">
-            共 {filteredRecords.length} 条记录
+            共 {totalRecords} 条记录
             {filterUserId.trim() ? `（用户 ${filterUserId.trim()}）` : '（全部用户）'}
             {selectedIds.length ? `，已选择 ${selectedIds.length} 条` : ''}
           </span>
         </div>
 
-        {filteredRecords.length ? (
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-ink-subtle)' }}>
+            正在加载记录…
+          </div>
+        ) : sortedRecords.length ? (
           <>
             <div className="table-wrap">
               <table className="data-table">
@@ -258,7 +274,7 @@ export function StepRecordsSection({
                   </tr>
                 </thead>
                 <tbody>
-                  {pageRecords.map((record) => (
+                  {sortedRecords.map((record) => (
                     <tr key={record.id}>
                       <td>
                         <input

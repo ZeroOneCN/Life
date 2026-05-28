@@ -266,7 +266,7 @@ export function CardCardsSection({
           低余额阈值当前为 {formatLifeCardMoney(settings.balanceThreshold)}，账单日前提醒窗口为 {settings.notificationDaysBefore} 天。
         </div>
 
-        <div className="card-entry-grid">
+        <div className="card-entry-grid-compact">
           <Field
             label="电话号码"
             value={form.phoneNumber}
@@ -286,10 +286,10 @@ export function CardCardsSection({
             label="归属地"
             value={form.location}
             onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))}
-            placeholder="例如 上海"
+            placeholder="上海"
           />
           <Field
-            label="当前余额"
+            label="余额"
             type="number"
             min="0"
             step="0.01"
@@ -318,19 +318,21 @@ export function CardCardsSection({
             label="流量套餐"
             value={form.dataPlan}
             onChange={(event) => setForm((current) => ({ ...current, dataPlan: event.target.value }))}
-            placeholder="例如 30GB/月"
+            placeholder="30GB/月"
           />
           <Field
-            label="通话分钟"
-            value={form.callMinutes}
-            onChange={(event) => setForm((current) => ({ ...current, callMinutes: event.target.value }))}
-            placeholder="例如 100 分钟/月"
-          />
-          <Field
-            label="短信条数"
-            value={form.smsCount}
-            onChange={(event) => setForm((current) => ({ ...current, smsCount: event.target.value }))}
-            placeholder="例如 100 条/月"
+            label="通话/短信"
+            value={`${form.callMinutes || ''}${form.callMinutes && form.smsCount ? '/' : ''}${form.smsCount || ''}`}
+            onChange={(event) => {
+              const val = event.target.value;
+              const [call, sms] = val.split('/').map((s) => s.trim());
+              setForm((current) => ({
+                ...current,
+                callMinutes: call ?? '',
+                smsCount: sms ?? '',
+              }));
+            }}
+            placeholder="100分钟/100条"
           />
           <DatePickerField
             label="开卡时间"
@@ -338,17 +340,14 @@ export function CardCardsSection({
             onChange={(value) => setForm((current) => ({ ...current, activationDate: value }))}
             clearable={false}
           />
-          <div className="card-entry-action">
-            <Btn tone="primary" onClick={handleCreate}>保存号卡记录</Btn>
-          </div>
+          <Field
+            label="备注"
+            value={form.notes}
+            onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
+            placeholder="主力号等"
+          />
+          <Btn tone="primary" onClick={handleCreate}>保存</Btn>
         </div>
-
-        <TextArea
-          label="备注"
-          value={form.notes}
-          onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
-          placeholder="例如 主力号卡、副卡用途、套餐变更说明等"
-        />
 
         <div className="card-filter-grid">
           <Field
@@ -411,37 +410,58 @@ export function CardCardsSection({
               columns={[
                 { key: 'phoneNumber', title: '电话号码', dataIndex: 'phoneNumber', width: 128 },
                 { key: 'carrierName', title: '运营商', dataIndex: 'carrierName', width: 88 },
-                { key: 'location', title: '归属地', dataIndex: 'location', width: 78, render: (value) => String(value || '-') },
-                { key: 'dataPlan', title: '流量套餐', dataIndex: 'dataPlan', width: 108, render: (value) => String(value || '-') },
+                { key: 'location', title: '归属地', dataIndex: 'location', width: 72, render: (value) => String(value || '-') },
+                { key: 'dataPlan', title: '流量套餐', dataIndex: 'dataPlan', width: 100, render: (value) => String(value || '-') },
                 {
                   key: 'balance',
                   title: '余额',
-                  width: 88,
+                  width: 80,
                   align: 'right',
                   render: (_, row) => formatLifeCardMoney(row.balance),
                 },
                 {
                   key: 'monthlyFee',
                   title: '月租',
-                  width: 84,
+                  width: 76,
                   align: 'right',
                   render: (_, row) => formatLifeCardMoney(row.monthlyFee),
                 },
                 {
                   key: 'billingDay',
                   title: '账单日',
-                  width: 70,
+                  width: 64,
                   render: (_, row) => `${row.billingDay} 日`,
+                },
+                {
+                  key: 'callMinutes',
+                  title: '通话',
+                  width: 80,
+                  render: (value) => String(value || '-'),
+                },
+                {
+                  key: 'smsCount',
+                  title: '短信',
+                  width: 76,
+                  render: (value) => String(value || '-'),
                 },
                 {
                   key: 'activationDate',
                   title: '开卡时间',
-                  width: 104,
-                  render: (_, row) => dayjs(row.activationDate).isValid()
-                    ? dayjs(row.activationDate).format('YYYY/MM/DD')
-                    : '-',
+                  width: 150,
+                  render: (_, row) => {
+                    if (!dayjs(row.activationDate).isValid()) return '-';
+                    const d = dayjs(row.activationDate);
+                    const now = dayjs();
+                    const years = now.diff(d, 'year');
+                    const months = now.diff(d.add(years, 'year'), 'month');
+                    return (
+                      <span style={{ whiteSpace: 'nowrap' }}>
+                        {`${d.format('YYYY/MM/DD')} (${years}年${months}月)`}
+                      </span>
+                    );
+                  },
                 },
-                { key: 'notes', title: '备注', render: (_, row) => row.notes || '-', width: 136 },
+                { key: 'notes', title: '备注', render: (_, row) => row.notes || '-', width: 100 },
                 {
                   key: 'actions',
                   title: '操作',
@@ -484,7 +504,7 @@ export function CardCardsSection({
         open={Boolean(editingRecord)}
         onClose={() => setEditingRecord(null)}
         title={editingRecord ? `编辑号卡：${editingRecord.phoneNumber}` : '编辑号卡'}
-        width={900}
+        width={920}
         footer={(
           <>
             <Btn tone="secondary" onClick={() => setEditingRecord(null)}>取消</Btn>
@@ -492,72 +512,91 @@ export function CardCardsSection({
           </>
         )}
       >
-        <div className="card-modal-grid card-modal-grid-date-friendly">
-          <Field
-            label="电话号码"
-            value={editingForm.phoneNumber}
-            onChange={(event) => setEditingForm((current) => ({ ...current, phoneNumber: event.target.value }))}
-          />
-          <SelectField
-            label="运营商"
-            value={editingForm.carrierId}
-            onChange={(event) => setEditingForm((current) => ({ ...current, carrierId: event.target.value }))}
-          >
-            {carriers.map((carrier) => (
-              <option key={carrier.id} value={carrier.id}>{carrier.name}</option>
-            ))}
-          </SelectField>
-          <Field
-            label="归属地"
-            value={editingForm.location}
-            onChange={(event) => setEditingForm((current) => ({ ...current, location: event.target.value }))}
-          />
-          <Field
-            label="当前余额"
-            type="number"
-            min="0"
-            step="0.01"
-            value={editingForm.balance}
-            onChange={(event) => setEditingForm((current) => ({ ...current, balance: event.target.value }))}
-          />
-          <Field
-            label="月租"
-            type="number"
-            min="0"
-            step="0.01"
-            value={editingForm.monthlyFee}
-            onChange={(event) => setEditingForm((current) => ({ ...current, monthlyFee: event.target.value }))}
-          />
-          <Field
-            label="账单日"
-            type="number"
-            min="1"
-            max="31"
-            value={editingForm.billingDay}
-            onChange={(event) => setEditingForm((current) => ({ ...current, billingDay: event.target.value }))}
-          />
-          <Field
-            label="流量套餐"
-            value={editingForm.dataPlan}
-            onChange={(event) => setEditingForm((current) => ({ ...current, dataPlan: event.target.value }))}
-          />
-          <Field
-            label="通话分钟"
-            value={editingForm.callMinutes}
-            onChange={(event) => setEditingForm((current) => ({ ...current, callMinutes: event.target.value }))}
-          />
-          <Field
-            label="短信条数"
-            value={editingForm.smsCount}
-            onChange={(event) => setEditingForm((current) => ({ ...current, smsCount: event.target.value }))}
-          />
-          <DatePickerField
-            label="开卡时间"
-            value={editingForm.activationDate}
-            onChange={(value) => setEditingForm((current) => ({ ...current, activationDate: value }))}
-            clearable={false}
-          />
+        <div className="card-edit-section">
+          <div className="card-edit-section-label">基本信息</div>
+          <div className="card-modal-grid card-modal-grid-date-friendly">
+            <Field
+              label="电话号码"
+              value={editingForm.phoneNumber}
+              onChange={(event) => setEditingForm((current) => ({ ...current, phoneNumber: event.target.value }))}
+            />
+            <SelectField
+              label="运营商"
+              value={editingForm.carrierId}
+              onChange={(event) => setEditingForm((current) => ({ ...current, carrierId: event.target.value }))}
+            >
+              {carriers.map((carrier) => (
+                <option key={carrier.id} value={carrier.id}>{carrier.name}</option>
+              ))}
+            </SelectField>
+            <Field
+              label="归属地"
+              value={editingForm.location}
+              onChange={(event) => setEditingForm((current) => ({ ...current, location: event.target.value }))}
+            />
+            <DatePickerField
+              label="开卡时间"
+              value={editingForm.activationDate}
+              onChange={(value) => setEditingForm((current) => ({ ...current, activationDate: value }))}
+              clearable={false}
+            />
+          </div>
         </div>
+
+        <div className="card-edit-section">
+          <div className="card-edit-section-label">费用信息</div>
+          <div className="card-modal-grid card-modal-grid-financial">
+            <Field
+              label="当前余额（元）"
+              type="number"
+              min="0"
+              step="0.01"
+              value={editingForm.balance}
+              onChange={(event) => setEditingForm((current) => ({ ...current, balance: event.target.value }))}
+            />
+            <Field
+              label="月租（元）"
+              type="number"
+              min="0"
+              step="0.01"
+              value={editingForm.monthlyFee}
+              onChange={(event) => setEditingForm((current) => ({ ...current, monthlyFee: event.target.value }))}
+            />
+            <Field
+              label="账单日（每月几号）"
+              type="number"
+              min="1"
+              max="31"
+              value={editingForm.billingDay}
+              onChange={(event) => setEditingForm((current) => ({ ...current, billingDay: event.target.value }))}
+            />
+          </div>
+        </div>
+
+        <div className="card-edit-section">
+          <div className="card-edit-section-label">套餐详情</div>
+          <div className="card-modal-grid card-modal-grid-plan">
+            <Field
+              label="流量套餐"
+              value={editingForm.dataPlan}
+              onChange={(event) => setEditingForm((current) => ({ ...current, dataPlan: event.target.value }))}
+              placeholder="如 70GB/月"
+            />
+            <Field
+              label="通话分钟"
+              value={editingForm.callMinutes}
+              onChange={(event) => setEditingForm((current) => ({ ...current, callMinutes: event.target.value }))}
+              placeholder="如 100分钟/月"
+            />
+            <Field
+              label="短信条数"
+              value={editingForm.smsCount}
+              onChange={(event) => setEditingForm((current) => ({ ...current, smsCount: event.target.value }))}
+              placeholder="如 50条/月"
+            />
+          </div>
+        </div>
+
         <TextArea
           label="备注"
           value={editingForm.notes}

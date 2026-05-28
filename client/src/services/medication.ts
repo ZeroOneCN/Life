@@ -255,7 +255,7 @@ export function saveMedicationDailySummary(
   input: Pick<MedicationDailySummary, 'userId' | 'date' | 'content'>,
 ) {
   const existing = summaries.find((item) => (
-    normalizeMedicationUserId(item.userId) === normalizeMedicationUserId(input.userId) && item.date === input.date
+    normalizeMedicationUserId(item.userId) === normalizeMedicationUserId(input.userId) && dayjs(item.date).format(DATE_FORMAT) === dayjs(input.date).format(DATE_FORMAT)
   ));
 
   if (!input.content.trim()) {
@@ -279,7 +279,7 @@ export function buildMedicationOverview(
   const filteredRecords = filterMedicationRecordsByUserId(records, userId);
   const filteredPurchases = filterMedicationPurchasesByUserId(purchases, userId);
   const totalDosage = filteredRecords.reduce((sum, record) => sum + getRecordTotalDose(record), 0);
-  const trackedDays = new Set(filteredRecords.map((record) => record.date)).size;
+  const trackedDays = new Set(filteredRecords.map((record) => dayjs(record.date).format(DATE_FORMAT))).size;
   const activeMedicineCount = new Set(filteredRecords.map((record) => record.medicineName)).size;
   const totalPurchaseAmount = Number(filteredPurchases.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2));
   const todayKey = dayjs().format(DATE_FORMAT);
@@ -292,9 +292,9 @@ export function buildMedicationOverview(
     activeMedicineCount,
     purchaseCount: filteredPurchases.length,
     totalPurchaseAmount,
-    latestRecordDate: filteredRecords.length ? filteredRecords[0].date : null,
+    latestRecordDate: filteredRecords.length ? dayjs(filteredRecords[0].date).format(DATE_FORMAT) : null,
     todayDosage: filteredRecords
-      .filter((record) => record.date === todayKey)
+      .filter((record) => dayjs(record.date).format(DATE_FORMAT) === todayKey)
       .reduce((sum, record) => sum + getRecordTotalDose(record), 0),
   };
 }
@@ -316,7 +316,8 @@ export function buildMedicationTrend(records: MedicationRecord[], userId: string
   });
 
   filteredRecords.forEach((record) => {
-    const point = dateMap.get(record.date);
+    const normalizedDate = dayjs(record.date).format(DATE_FORMAT);
+    const point = dateMap.get(normalizedDate);
     if (!point) {
       return;
     }

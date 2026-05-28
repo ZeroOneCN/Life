@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { CardBillsSection } from '../../components/life/CardBillsSection';
 import { CardCardsSection } from '../../components/life/CardCardsSection';
@@ -58,6 +58,8 @@ function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
 export default function CardPage() {
   const [tab, setTab] = usePageTab<CardTab>('cards', TAB_OPTIONS.map((item) => item.value), 'cardTab');
   const { toast, showToast } = useToastState();
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
   const [cards, setCards] = useState<LifeCardRecord[]>([]);
   const [bills, setBills] = useState<LifeCardBillRecord[]>([]);
   const [recharges, setRecharges] = useState<LifeCardRechargeRecord[]>([]);
@@ -98,6 +100,7 @@ export default function CardPage() {
 
   useEffect(() => {
     let cancelled = false;
+    const mounted = { current: true };
 
     const load = async () => {
       setLoading(true);
@@ -105,11 +108,11 @@ export default function CardPage() {
         await reload();
         await hydrateNotificationCenterState();
       } catch (error) {
-        if (!cancelled) {
-          showToast(buildApiErrorMessage(error, '号卡中心加载失败。'), 'error');
+        if (mounted.current && !cancelled) {
+          showToastRef.current(buildApiErrorMessage(error, '号卡中心加载失败。'), 'error');
         }
       } finally {
-        if (!cancelled) {
+        if (mounted.current && !cancelled) {
           setLoading(false);
         }
       }
@@ -119,8 +122,9 @@ export default function CardPage() {
 
     return () => {
       cancelled = true;
+      mounted.current = false;
     };
-  }, [reload, refreshToken, showToast]);
+  }, [reload, refreshToken]);
 
   const updateSettings = useCallback(async (patch: Partial<LifeCardPageState['settings']>) => {
     try {

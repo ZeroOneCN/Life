@@ -58,9 +58,9 @@ function createDefaultFormState(): TradeFormState {
     commission: '-0.06',
     closePrice: '',
     pnl: '',
-    openTime: '09:00',
-    closeTime: '10:00',
-    holdTime: '1小时',
+    openTime: '',
+    closeTime: '',
+    holdTime: '',
     remark: '',
   };
 }
@@ -97,8 +97,8 @@ function hydrateDerivedFields(form: TradeFormState): TradeFormState {
   )
     ? calculateForexTradePnl(form.instrument, form.orderType, openPrice, closePrice, lotSize)
     : 0;
-  const openTime = normalizeForexTimeInput(form.openTime, '09:00');
-  const closeTime = normalizeForexTimeInput(form.closeTime, '10:00');
+  const openTime = normalizeForexTimeInput(form.openTime);
+  const closeTime = normalizeForexTimeInput(form.closeTime);
 
   return {
     ...form,

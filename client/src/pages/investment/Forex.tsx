@@ -1,20 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ForexCalculatorSection } from '../../components/investment/ForexCalculatorSection';
 import { ForexCapitalSection } from '../../components/investment/ForexCapitalSection';
 import { ForexDashboardSection } from '../../components/investment/ForexDashboardSection';
 import { ForexTradesSection } from '../../components/investment/ForexTradesSection';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { PageHeader, SectionCard } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { forexApi } from '../../services/forexApi';
-import {
-  formatForexAmount,
-  formatForexMoney,
-  formatForexPercent,
-  normalizeForexDashboardRange,
-} from '../../services/forex';
+import { normalizeForexDashboardRange } from '../../services/forex';
 import type {
   ForexCapitalFlow,
   ForexDashboardSummary,
@@ -66,42 +61,53 @@ function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
 export default function ForexPage() {
   const [tab, setTab] = usePageTab<ForexTab>('dashboard', TAB_OPTIONS.map((item) => item.value), 'forexTab');
   const { toast, showToast } = useToastState();
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
   const [trades, setTrades] = useState<ForexTradeRecord[]>([]);
   const [capitalFlows, setCapitalFlows] = useState<ForexCapitalFlow[]>([]);
   const [summary, setSummary] = useState<ForexDashboardSummary>(EMPTY_SUMMARY);
   const [settings, setSettings] = useState<ForexPageState['settings']>(EMPTY_SETTINGS);
   const [loading, setLoading] = useState(true);
+  const reloading = useRef(false);
+  const mounted = useRef(true);
 
   const reload = useCallback(async () => {
-    const [nextTrades, nextCapitalFlows, nextSummary, nextSettings] = await Promise.all([
-      forexApi.listTrades({ page: 1, page_size: 100000 }),
-      forexApi.listCapitalFlows({ page: 1, page_size: 100000 }),
-      forexApi.getDashboardSummary(),
-      forexApi.getSettings(),
-    ]);
+    if (reloading.current) return;
+    reloading.current = true;
+    try {
+      const [nextTrades, nextCapitalFlows, nextSummary, nextSettings] = await Promise.all([
+        forexApi.listTrades({ page: 1, page_size: 500 }),
+        forexApi.listCapitalFlows({ page: 1, page_size: 500 }),
+        forexApi.getDashboardSummary(),
+        forexApi.getSettings(),
+      ]);
 
-    setTrades(nextTrades.items);
-    setCapitalFlows(nextCapitalFlows.items);
-    setSummary(nextSummary);
-    setSettings({
-      ...EMPTY_SETTINGS,
-      ...nextSettings,
-    });
+      if (!mounted.current) return;
+      setTrades(nextTrades.items);
+      setCapitalFlows(nextCapitalFlows.items);
+      setSummary(nextSummary);
+      setSettings({
+        ...EMPTY_SETTINGS,
+        ...nextSettings,
+      });
+    } finally {
+      reloading.current = false;
+    }
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    mounted.current = true;
 
     const load = async () => {
       setLoading(true);
       try {
         await reload();
       } catch (error) {
-        if (!cancelled) {
-          showToast(buildApiErrorMessage(error, '外汇页面加载失败。'), 'error');
+        if (mounted.current) {
+          showToastRef.current(buildApiErrorMessage(error, '外汇页面加载失败。'), 'error');
         }
       } finally {
-        if (!cancelled) {
+        if (mounted.current) {
           setLoading(false);
         }
       }
@@ -110,9 +116,9 @@ export default function ForexPage() {
     void load();
 
     return () => {
-      cancelled = true;
+      mounted.current = false;
     };
-  }, [reload, showToast]);
+  }, [reload]);
 
   const updateSettings = useCallback(async (patch: Partial<ForexPageState['settings']>) => {
     try {
@@ -226,23 +232,12 @@ export default function ForexPage() {
     }
   }, [capitalFlows, reload, showToast]);
 
-  const overviewCards = useMemo(() => ([
-    { label: '总交易数', value: `${summary.tradeCount} 笔`, helper: `做多 ${summary.longCount} / 做空 ${summary.shortCount}` },
-    { label: '总毛盈亏', value: formatForexAmount(summary.grossPnl), accent: summary.grossPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
-    { label: '净收益', value: formatForexAmount(summary.realizedNetPnl), accent: summary.realizedNetPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
-    { label: '净入金', value: formatForexMoney(summary.netCapital) },
-    { label: '当前净值', value: formatForexMoney(summary.equity), helper: `ROI ${formatForexPercent(summary.roi)}` },
-    { label: '默认杠杆', value: `${settings.leverage} 倍`, helper: `强平比例 ${settings.forcedLiquidationRatio}` },
-  ]), [settings.forcedLiquidationRatio, settings.leverage, summary]);
-
   return (
     <div className="page-stack">
       <PageHeader
         title="外汇市场"
         subtitle={loading ? '正在从后端加载交易、出入金、统计和设置。' : '外汇页面已切到后端唯一数据源，浏览器不再保存整页交易真相。'}
       />
-
-      <StatGrid items={overviewCards} />
 
       <SectionCard
         title="业务视图"
