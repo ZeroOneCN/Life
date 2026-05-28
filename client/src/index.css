@@ -4638,8 +4638,8 @@ textarea {
 
 .todo-table-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 4px;
 }
 
 .notification-log-message {

@@ -140,9 +140,8 @@ export function createTodoRouter() {
         trashed_at: trashed ? Not(IsNull()) : IsNull(),
       },
       order: {
-        completed: 'ASC',
-        due_date: 'ASC',
         updated_at: 'DESC',
+        due_date: 'DESC',
       },
     });
 
