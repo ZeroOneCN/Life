@@ -55,43 +55,120 @@ function extractDateFromName(name) {
     return m ? m[1] : '';
 }
 
+function parseTimeRange(tr) {
+    if (!tr || tr === '??') return { start: '00:00', end: '00:01' };
+    const m = tr.match(/^(\d{1,2}:\d{2})-(\d{1,2}:\d{2})$/);
+    if (m) return { start: m[1], end: m[2] };
+    return { start: '00:00', end: '00:01' };
+}
+
+function calcDuration(start, end) {
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    let d = eh * 60 + em - (sh * 60 + sm);
+    if (d < 0) d += 24 * 60;
+    return d;
+}
+
 async function main() {
     console.log('Connecting to MySQL...');
     const conn = await mysql.createConnection({ host: '127.0.0.1', port: 3307, user: 'root', password: '123456', database: 'lifeos', charset: 'utf8mb4' });
     await conn.execute('SET NAMES utf8mb4');
     await conn.execute('SET FOREIGN_KEY_CHECKS = 0');
 
-    console.log('\n=== Travel Books Migration ===');
-    const csvContent = fs.readFileSync(path.join(DATA_DIR, 'travel_books_202605281633.csv'), 'utf-8');
-    const { headers, rows } = parseCSV(csvContent);
-    console.log(`Found ${rows.length} travel books`);
+    // Build book ID map: old CSV id -> new UUID
+    const booksCsv = parseCSV(fs.readFileSync(path.join(DATA_DIR, 'travel_books_202605281633.csv'), 'utf-8'));
+    const bookIdMap = new Map();
+    for (const r of booksCsv.rows) {
+        bookIdMap.set(r.id, genUuid(`travel_book_${r.id}`));
+    }
 
+    // === 1. Travel Books ===
+    console.log('\n=== 1. Travel Books ===');
+    console.log(`Found ${booksCsv.rows.length} travel books`);
     await conn.execute(`DELETE FROM finance_travel_book WHERE user_id = ?`, [USER_ID]);
-
-    let count = 0;
-    for (const r of rows) {
-        const id = genUuid(`travel_book_${r.id}`);
+    let bookCount = 0;
+    for (const r of booksCsv.rows) {
+        const id = bookIdMap.get(r.id);
         const name = r.name || '';
         const startDate = r.start_date || extractDateFromName(name) || r.created_at || null;
-        const endDate = r.end_date || null;
-
         await conn.execute(
             `INSERT INTO finance_travel_book (id, user_id, name, description, start_date, end_date, summary, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-            [id, USER_ID, name, r.description || '', startDate || null, endDate, r.summary || '']
+            [id, USER_ID, name, r.description || '', startDate || null, r.end_date || null, r.summary || '']
         );
-        count++;
-        console.log(`  [${count}] ${name} | date=${startDate || '(empty)'}`);
+        bookCount++;
     }
+    console.log(`✓ Inserted ${bookCount} travel books`);
+
+    // === 2. Pay Channels ===
+    console.log('\n=== 2. Pay Channels ===');
+    const pcCsv = parseCSV(fs.readFileSync(path.join(DATA_DIR, 'payment_channels_202605281633.csv'), 'utf-8'));
+    console.log(`Found ${pcCsv.rows.length} payment channels`);
+    await conn.execute(`DELETE FROM finance_travel_pay_channel WHERE 1=1`);
+    let pcCount = 0;
+    for (const r of pcCsv.rows) {
+        const id = genUuid(`travel_pc_${r.id}`);
+        await conn.execute(
+            `INSERT INTO finance_travel_pay_channel (id, value, label, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())`,
+            [id, r.value || '', r.label || '']
+        );
+        pcCount++;
+        console.log(`  [${pcCount}] ${r.value} / ${r.label}`);
+    }
+    console.log(`✓ Inserted ${pcCount} pay channels`);
+
+    // === 3. Expense Records ===
+    console.log('\n=== 3. Expense Records ===');
+    const expCsv = parseCSV(fs.readFileSync(path.join(DATA_DIR, 'expense_items_202605281633.csv'), 'utf-8'));
+    console.log(`Found ${expCsv.rows.length} expense records`);
+    await conn.execute(`DELETE FROM finance_travel_expense_record WHERE user_id = ?`, [USER_ID]);
+    let expCount = 0;
+    for (const r of expCsv.rows) {
+        const id = genUuid(`travel_exp_${r.id}_${r.date}`);
+        const bookId = bookIdMap.get(r.book_id) || '';
+        const { start: timeStart, end: timeEnd } = parseTimeRange(r.time_range);
+        const dur = r.duration_minutes ? parseInt(r.duration_minutes, 10) || 0 : calcDuration(timeStart, timeEnd);
+
+        await conn.execute(
+            `INSERT INTO finance_travel_expense_record (id, user_id, book_id, date, time_start, time_end, duration_minutes, category, title, amount, discount_amount, discount_note, vehicle_info, pay_channel, remark, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+            [
+                id, USER_ID, bookId,
+                r.date || '',
+                timeStart, timeEnd,
+                dur,
+                r.category || '',
+                r.title || '',
+                Number(r.amount) || 0,
+                Number(r.discount_amount) || 0,
+                r.discount_note || '',
+                r.vehicle_no || '',
+                r.pay_channel || '',
+                r.remark || ''
+            ]
+        );
+        expCount++;
+    }
+    console.log(`✓ Inserted ${expCount} expense records`);
 
     await conn.execute('SET FOREIGN_KEY_CHECKS = 1');
 
-    const [result] = await conn.query('SELECT COUNT(*) AS c FROM finance_travel_book WHERE user_id = ?', [USER_ID]);
-    console.log(`\n✓ Migrated ${result[0].c} travel books`);
+    // Verify
+    const [rows] = await conn.query(`
+        SELECT 'books' AS t, COUNT(*) AS c FROM finance_travel_book WHERE user_id = ?
+        UNION ALL SELECT 'expenses', COUNT(*) FROM finance_travel_expense_record WHERE user_id = ?
+        UNION ALL SELECT 'channels', COUNT(*) FROM finance_travel_pay_channel
+    `, [USER_ID, USER_ID]);
 
-    const [dates] = await conn.query('SELECT MIN(start_date) as min_d, MAX(start_date) as max_d FROM finance_travel_book WHERE user_id = ? AND start_date IS NOT NULL', [USER_ID]);
-    if (dates[0].min_d) {
-        console.log(`Date range: ${dates[0].min_d} ~ ${dates[0].max_d}`);
-    }
+    console.log('\n=== Migration Result ===');
+    rows.forEach(r => console.log(`  ${r.t}: ${r.c}`));
+
+    const [dates] = await conn.query(`
+        SELECT MIN(date) as min_d, MAX(date) as max_d,
+               SUM(amount) as total_amt
+        FROM finance_travel_expense_record WHERE user_id = ?
+    `, [USER_ID]);
+    console.log(`Expense date range: ${dates[0].min_d} ~ ${dates[0].max_d}`);
+    console.log(`Total expense amount: ¥${Number(dates[0].total_amt).toFixed(2)}`);
 
     await conn.end();
     console.log('\nDone!');
