@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { TodoLogsSection } from '../../components/life/TodoLogsSection';
 import { TodoSettingsSection } from '../../components/life/TodoSettingsSection';
@@ -42,6 +42,8 @@ const EMPTY_SETTINGS: TodoReminderSettings = {
 export default function TodoPage() {
   const [tab, setTab] = usePageTab<TodoTab>('tasks', TAB_OPTIONS.map((item) => item.value), 'todoTab');
   const { toast, showToast } = useToastState();
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
   const [overview, setOverview] = useState<TodoOverviewSummary>(EMPTY_OVERVIEW);
   const [settings, setSettings] = useState<TodoReminderSettings>(EMPTY_SETTINGS);
   const [loading, setLoading] = useState(true);
@@ -71,7 +73,7 @@ export default function TodoPage() {
         setSettings(nextSettings);
       } catch (error) {
         if (!cancelled) {
-          showToast(buildApiErrorMessage(error, '待办中心加载失败。'), 'error');
+          showToastRef.current(buildApiErrorMessage(error, '待办中心加载失败。'), 'error');
         }
       } finally {
         if (!cancelled) {
@@ -85,7 +87,7 @@ export default function TodoPage() {
     return () => {
       cancelled = true;
     };
-  }, [refreshToken, showToast]);
+  }, [refreshToken]);
 
   const subtitle = useMemo(() => (
     loading
