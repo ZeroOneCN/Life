@@ -438,51 +438,45 @@ export function TodoTasksSection({
                   key: 'title',
                   title: '任务',
                   render: (_, row) => (
-                    <div className="todo-task-title-cell" style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      <strong className={row.completed ? 'completed-text' : ''} title={row.title}>{row.title}</strong>
+                    <div className="todo-task-title-cell">
+                      <strong className={row.completed ? 'completed-text' : ''}>{row.title}</strong>
                     </div>
                   ),
                 },
                 {
                   key: 'priority',
                   title: '优先级',
-                  width: 80,
                   align: 'center' as const,
                   render: (_, row) => <Tag tone={TODO_PRIORITY_TAG_TONES[row.priority]}>{getTodoPriorityLabel(row.priority)}</Tag>,
                 },
                 {
                   key: 'tags',
                   title: '标签',
-                  width: 100,
                   render: (_, row) => (
-                    <div className="todo-tag-list" style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                      {row.tags.length ? row.tags.slice(0, 2).map((tag) => <Tag key={tag} style={{ fontSize: 11 }}>{tag}</Tag>) : <span className="subtle-text">-</span>}
-                      {row.tags.length > 2 ? <span style={{ fontSize: 11, color: 'var(--color-ink-muted)' }}>+{row.tags.length - 2}</span> : null}
+                    <div className="todo-tag-list">
+                      {row.tags.length ? row.tags.map((tag) => <Tag key={tag}>{tag}</Tag>) : <span className="subtle-text">-</span>}
                     </div>
                   ),
                 },
                 {
                   key: 'dueDate',
                   title: '截止日期',
-                  width: 100,
                   align: 'center' as const,
                   render: (_, row) => row.dueDate || '-',
                 },
                 {
                   key: 'status',
                   title: '状态',
-                  width: 80,
                   align: 'center' as const,
                   render: (_, row) => <Tag tone={getStatusTone(row)}>{getTodoStatusLabel(row)}</Tag>,
                 },
                 {
                   key: 'actions',
                   title: '操作',
-                  width: 180,
+                  width: 200,
                   render: (_, row) => (
                     <div className="todo-table-actions">
                       <Btn
-                        size="sm"
                         tone="ghost"
                         onClick={() => {
                           setEditingTask(row);
@@ -492,7 +486,6 @@ export function TodoTasksSection({
                         编辑
                       </Btn>
                       <Btn
-                        size="sm"
                         tone="ghost"
                         onClick={async () => {
                           try {
@@ -507,7 +500,7 @@ export function TodoTasksSection({
                       >
                         {row.completed ? '设为待办' : '完成'}
                       </Btn>
-                      <Btn size="sm" tone="ghost" onClick={() => setPendingDeleteTask(row)}>删除</Btn>
+                      <Btn tone="ghost" onClick={() => setPendingDeleteTask(row)}>删除</Btn>
                     </div>
                   ),
                 },
