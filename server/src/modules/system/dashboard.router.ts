@@ -270,7 +270,11 @@ export function createDashboardRouter() {
       const diff = dayjs(record.end_date).startOf('day').diff(dayjs().startOf('day'), 'day');
       return diff >= 0 && diff <= 7;
     }).length;
-    const stepToday = stepRecords.filter((item) => item.record_time && dayjs(item.record_time).isValid() && dayjs(item.record_time).isSame(dayjs(), 'day')).reduce((sum, item) => sum + item.steps, 0);
+    const stepToday = stepRecords.filter((item) => {
+      if (!item.record_time) return false;
+      const recordDate = dayjs(item.record_time);
+      return recordDate.isValid() && recordDate.isSame(dayjs(), 'day');
+    }).reduce((sum, item) => sum + (item.steps || 0), 0);
     const lowMedicationCount = calculateMedicationLowStockCount(medicationRecords, medicationPurchases, medicationThresholds);
     const dueCheckups = checkups.filter((record) => record.follow_up_date && dayjs(record.follow_up_date).isValid() && dayjs(record.follow_up_date).diff(dayjs(), 'day') <= 7).length;
     const forexSummary = buildForexSummary(forexTrades, forexCapitalFlows);
@@ -318,10 +322,16 @@ export function createDashboardRouter() {
         },
         trend: Array.from({ length: 7 }, (_, index) => {
           const date = dayjs().subtract(6 - index, 'day');
+          const dateStr = date.format('YYYY-MM-DD');
+          const steps = stepRecords.filter((item) => {
+            if (!item.record_time) return false;
+            const recordDate = dayjs(item.record_time);
+            return recordDate.isValid() && recordDate.format('YYYY-MM-DD') === dateStr;
+          }).reduce((sum, item) => sum + (item.steps || 0), 0);
           return {
-            date: date.format('YYYY-MM-DD'),
+            date: dateStr,
             label: date.format('MM-DD'),
-            steps: stepRecords.filter((item) => item.record_time && dayjs(item.record_time).isValid() && dayjs(item.record_time).isSame(date, 'day')).reduce((sum, item) => sum + item.steps, 0),
+            steps,
           };
         }),
       },
@@ -367,16 +377,14 @@ export function createDashboardRouter() {
         },
         trend: Array.from({ length: 7 }, (_, index) => {
           const date = dayjs().subtract(6 - index, 'day');
+          const dateStr = date.format('YYYY-MM-DD');
           const scoped = forexTrades.filter((item) => {
-            if (!item.trade_date) {
-              return false;
-            }
-
+            if (!item.trade_date) return false;
             const tradeDate = dayjs(item.trade_date);
-            return tradeDate.isValid() && tradeDate.year() >= 2000 && tradeDate.year() <= 2100 && tradeDate.isSame(date, 'day');
+            return tradeDate.isValid() && tradeDate.year() >= 2000 && tradeDate.year() <= 2100 && tradeDate.format('YYYY-MM-DD') === dateStr;
           });
           return {
-            date: date.format('YYYY-MM-DD'),
+            date: dateStr,
             label: date.format('MM-DD'),
             netPnl: Number(scoped.reduce((sum, item) => sum + Number(item.pnl || 0) + Number(item.commission || 0), 0).toFixed(2)),
             tradeCount: scoped.length,

@@ -197,7 +197,7 @@ export default function NotificationCenterPage() {
         <SectionCard
           title="通知日志"
           description="查看所有测试发送和业务场景发送记录。"
-          actions={notificationState.logs.length > 0 ? (
+          action={notificationState.logs.length > 0 ? (
             <button
               type="button"
               className="button button-secondary"
