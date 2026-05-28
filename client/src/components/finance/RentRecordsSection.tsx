@@ -111,21 +111,24 @@ export function RentRecordsSection({
 
   const columns = useMemo(() => [
     { key: 'address', title: '住房地址', dataIndex: 'address' as const },
-    { key: 'channelName', title: '渠道', dataIndex: 'channelName' as const },
-    { key: 'moveInDate', title: '入住日期', dataIndex: 'moveInDate' as const },
+    { key: 'channelName', title: '渠道', dataIndex: 'channelName' as const, align: 'center' as const },
+    { key: 'moveInDate', title: '入住日期', dataIndex: 'moveInDate' as const, align: 'center' as const },
     {
       key: 'moveOutDate',
       title: '退租日期',
+      align: 'center' as const,
       render: (_value: unknown, row: RentHousingRecord) => row.moveOutDate || '仍在住',
     },
     {
       key: 'totalCost',
       title: '总成本',
+      align: 'right' as const,
       render: (_value: unknown, row: RentHousingRecord) => formatRentAmount(buildRentRecordSnapshot(row).totalCost),
     },
     {
       key: 'stayDays',
       title: '居住天数',
+      align: 'center' as const,
       render: (_value: unknown, row: RentHousingRecord) => `${buildRentRecordSnapshot(row).stayDays} 天`,
     },
     {
