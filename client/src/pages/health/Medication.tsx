@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { MedicationAnalysisSection } from '../../components/health/MedicationAnalysisSection';
@@ -74,6 +74,8 @@ export default function MedicationPage() {
   const [overview, setOverview] = useState<MedicationOverviewSummary>(EMPTY_OVERVIEW);
   const [loading, setLoading] = useState(true);
   const { toast, showToast } = useToastState();
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
 
   const reload = useCallback(async () => {
     const [nextRecords, nextPurchases, nextSummaries, nextOverview, nextSettings] = await Promise.all([
@@ -105,7 +107,7 @@ export default function MedicationPage() {
         await reload();
       } catch (error) {
         if (!cancelled) {
-          showToast(buildApiErrorMessage(error, '用药页加载失败。'), 'error');
+          showToastRef.current(buildApiErrorMessage(error, '用药页加载失败。'), 'error');
         }
       } finally {
         if (!cancelled) {
@@ -119,7 +121,7 @@ export default function MedicationPage() {
     return () => {
       cancelled = true;
     };
-  }, [reload, showToast]);
+  }, [reload]);
 
   const updateSettings = useCallback(async (patch: Partial<MedicationPageState['settings']>) => {
     try {
