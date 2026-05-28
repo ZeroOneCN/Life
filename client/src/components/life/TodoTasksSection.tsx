@@ -498,7 +498,7 @@ export function TodoTasksSection({
                           }
                         }}
                       >
-                        {row.completed ? '设为待办' : '完成'}
+                        {row.completed ? '恢复' : '完成'}
                       </Btn>
                       <Btn tone="ghost" onClick={() => setPendingDeleteTask(row)}>删除</Btn>
                     </div>

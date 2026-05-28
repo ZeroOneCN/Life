@@ -4643,6 +4643,12 @@ textarea {
   align-items: center;
 }
 
+.todo-table-actions .btn {
+  white-space: nowrap;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
 .notification-log-message {
   max-width: 320px;
   white-space: normal;
