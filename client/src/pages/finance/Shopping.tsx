@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ShoppingDashboardSection } from '../../components/finance/ShoppingDashboardSection';
 import { ShoppingLedgersSection } from '../../components/finance/ShoppingLedgersSection';
@@ -68,6 +68,8 @@ export default function ShoppingPage() {
   const [importResult, setImportResult] = useState<ShoppingImportResult | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast, showToast } = useToastState();
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
 
   const reload = useCallback(async () => {
     const [recordsResponse, ledgersResponse, platformsResponse, nextOverview, nextSettings] = await Promise.all([
@@ -97,7 +99,7 @@ export default function ShoppingPage() {
         await reload();
       } catch (error) {
         if (!cancelled) {
-          showToast(buildApiErrorMessage(error, '购物页加载失败。'), 'error');
+          showToastRef.current(buildApiErrorMessage(error, '购物页加载失败。'), 'error');
         }
       } finally {
         if (!cancelled) {
@@ -111,7 +113,7 @@ export default function ShoppingPage() {
     return () => {
       cancelled = true;
     };
-  }, [reload, showToast]);
+  }, [reload]);
 
   const updateSettings = useCallback(async (patch: Partial<ShoppingPageState['settings']>) => {
     try {

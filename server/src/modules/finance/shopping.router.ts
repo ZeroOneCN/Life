@@ -86,7 +86,7 @@ function mapRecord(entity: FinanceShoppingRecordEntity) {
     id: entity.id,
     userId: entity.user_id,
     ledgerId: entity.ledger_id,
-    date: entity.date,
+    date: dayjs(entity.date).format('YYYY-MM-DD'),
     platform: entity.platform,
     itemName: entity.item_name,
     spec: entity.spec,
