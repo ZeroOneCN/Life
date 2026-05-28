@@ -91,7 +91,7 @@ export function LoanBillsSection({
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [platformFilter, setPlatformFilter] = useState(LOAN_ALL_PLATFORMS);
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'unpaid' | 'overdue'>('all');
-  const [monthFilter, setMonthFilter] = useState('');
+  const [monthFilter, setMonthFilter] = useState(dayjs().format('YYYY-MM'));
   const [page, setPage] = useState(1);
   const [saving, setSaving] = useState(false);
 

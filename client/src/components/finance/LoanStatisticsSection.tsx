@@ -270,8 +270,10 @@ export function LoanStatisticsSection({
                       cx="50%"
                       cy="50%"
                       outerRadius={92}
-                      label={({ name, percent }) => `${name} ${(Number(percent ?? 0) * 100).toFixed(0)}%`}
-                      labelLine={false}
+                      innerRadius={36}
+                      paddingAngle={2}
+                      label={({ name, percent }) => `${(Number(percent ?? 0) * 100).toFixed(0)}%`}
+                      labelLine={{ stroke: 'var(--color-hairline)', strokeWidth: 1 }}
                     >
                       {scopedBreakdown.map((item) => (
                         <Cell key={item.platformId} fill={item.color} />
@@ -280,6 +282,13 @@ export function LoanStatisticsSection({
                     <Tooltip
                       contentStyle={tooltipStyle}
                       formatter={(value) => [formatLoanAmount(Number(value ?? 0)), '累计账单']}
+                    />
+                    <Legend
+                      layout="horizontal"
+                      align="center"
+                      verticalAlign="bottom"
+                      iconType="circle"
+                      wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
