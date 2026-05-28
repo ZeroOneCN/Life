@@ -124,7 +124,7 @@ function mapRepayment(entity: FinanceLoanRepaymentEntity) {
     platformName: entity.platform_name,
     amount: Number(entity.amount),
     interest: Number(entity.interest),
-    repaymentDate: entity.repayment_date,
+    repaymentDate: dayjs(entity.repayment_date).format('YYYY-MM-DD'),
     notes: entity.notes,
     createdAt: entity.created_at.toISOString(),
     updatedAt: entity.updated_at.toISOString(),

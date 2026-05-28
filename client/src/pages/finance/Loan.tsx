@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { LoanBillsSection } from '../../components/finance/LoanBillsSection';
 import { LoanDashboardSection } from '../../components/finance/LoanDashboardSection';
@@ -62,6 +62,8 @@ export default function LoanPage() {
   const [platformBreakdown, setPlatformBreakdown] = useState<LoanPlatformBreakdownPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshToken, setRefreshToken] = useState(0);
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
 
   const reload = useCallback(async () => {
     const [
@@ -103,7 +105,7 @@ export default function LoanPage() {
         }
       } catch (error) {
         if (!cancelled) {
-          showToast(buildApiErrorMessage(error, '借贷中心加载失败。'), 'error');
+          showToastRef.current(buildApiErrorMessage(error, '借贷中心加载失败。'), 'error');
         }
       } finally {
         if (!cancelled) {
@@ -117,7 +119,7 @@ export default function LoanPage() {
     return () => {
       cancelled = true;
     };
-  }, [reload, refreshToken, showToast]);
+  }, [reload, refreshToken]);
 
   const runWithRefresh = useCallback(async (action: () => Promise<void>, successMessage?: string) => {
     try {
