@@ -39,17 +39,17 @@ const categorySchema = z.object({
 });
 
 const settingsSchema = z.object({
-  recordsKeyword: z.string().optional(),
-  recordsCategoryId: z.string().optional(),
-  recordsStatus: z.enum(['all', 'active', 'upcoming', 'expired']).optional(),
-  recordsAutoRenewFilter: z.enum(['all', 'auto', 'manual']).optional(),
+  recordsKeyword: z.string().optional().default(''),
+  recordsCategoryId: z.string().optional().default('all'),
+  recordsStatus: z.enum(['all', 'active', 'upcoming', 'expired']).optional().default('all'),
+  recordsAutoRenewFilter: z.enum(['all', 'auto', 'manual']).optional().default('all'),
   recordsExpiryStartDate: z.string().optional(),
   recordsExpiryEndDate: z.string().optional(),
-  dashboardRangeDays: z.union([z.literal(90), z.literal(180), z.literal(365)]).optional(),
-  reminderEnabled: z.boolean().optional(),
-  expiryDayReminderEnabled: z.boolean().optional(),
-  leadDays: z.number().int().min(0).max(90).optional(),
-  includeAutoRenewInReminders: z.boolean().optional(),
+  dashboardRangeDays: z.union([z.literal(90), z.literal(180), z.literal(365)]).optional().default(90),
+  reminderEnabled: z.boolean().optional().default(true),
+  expiryDayReminderEnabled: z.boolean().optional().default(true),
+  leadDays: z.number().int().min(0).max(90).optional().default(7),
+  includeAutoRenewInReminders: z.boolean().optional().default(false),
 });
 
 const triggerReminderSchema = z.object({

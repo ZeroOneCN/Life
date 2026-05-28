@@ -50,11 +50,11 @@ const repaymentSchema = z.object({
 });
 
 const settingsSchema = z.object({
-  repaymentReminderEnabled: z.boolean().optional(),
-  overdueReminderEnabled: z.boolean().optional(),
-  autoRepaymentOnMarkPaid: z.boolean().optional(),
-  notificationFrequency: z.enum(['daily', 'always']).optional(),
-  upcomingDays: z.number().int().min(0).max(30).optional(),
+  repaymentReminderEnabled: z.boolean().optional().default(true),
+  overdueReminderEnabled: z.boolean().optional().default(true),
+  autoRepaymentOnMarkPaid: z.boolean().optional().default(true),
+  notificationFrequency: z.enum(['daily', 'always']).optional().default('daily'),
+  upcomingDays: z.number().int().min(0).max(30).optional().default(7),
 });
 
 const markPaidSchema = z.object({

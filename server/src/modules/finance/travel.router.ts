@@ -49,13 +49,13 @@ const payChannelSchema = z.object({
 });
 
 const settingsSchema = z.object({
-  activeUserId: z.string().optional(),
-  activeBookId: z.string().optional(),
-  detailsBookId: z.string().optional(),
-  statsBookId: z.string().optional(),
-  reportBookId: z.string().optional(),
-  leaderboardUserId: z.string().optional(),
-  reportColumns: z.array(z.string()).optional(),
+  activeUserId: z.string().optional().default(''),
+  activeBookId: z.string().optional().default(''),
+  detailsBookId: z.string().optional().default(''),
+  statsBookId: z.string().optional().default(''),
+  reportBookId: z.string().optional().default(''),
+  leaderboardUserId: z.string().optional().default(''),
+  reportColumns: z.array(z.string()).optional().default([]),
 });
 
 const importRowSchema = z.object({

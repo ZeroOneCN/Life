@@ -24,11 +24,11 @@ const dietSchema = z.object({
   date: z.string().min(1),
   mealType: z.string().trim().min(1).max(32),
   foodName: z.string().trim().min(1).max(255),
-  grams: z.number().min(0),
-  calories: z.number().min(0),
-  protein: z.number().min(0),
-  carbs: z.number().min(0),
-  fat: z.number().min(0),
+  grams: z.number().min(0).max(100000),
+  calories: z.number().min(0).max(50000),
+  protein: z.number().min(0).max(10000),
+  carbs: z.number().min(0).max(10000),
+  fat: z.number().min(0).max(10000),
 });
 
 const exerciseSchema = z.object({
@@ -36,27 +36,27 @@ const exerciseSchema = z.object({
   date: z.string().min(1),
   exerciseType: z.string().trim().min(1).max(32),
   exerciseName: z.string().trim().min(1).max(255),
-  duration: z.number().min(0),
-  calories: z.number().min(0),
-  intensity: z.string().trim().min(1).max(16),
+  duration: z.number().min(0).max(86400),
+  calories: z.number().min(0).max(50000),
+  intensity: z.enum(['low', 'medium', 'high']).default('medium'),
 });
 
 const shoppingSchema = z.object({
   userId: z.string().trim().optional(),
   date: z.string().min(1),
   itemName: z.string().trim().min(1).max(255),
-  specGrams: z.number().min(0),
-  quantity: z.number().min(0),
-  unitPrice: z.number().min(0),
+  specGrams: z.number().min(0).max(100000),
+  quantity: z.number().min(0).int().max(10000),
+  unitPrice: z.number().min(0).max(100000),
   location: z.string().trim().optional().default(''),
 });
 
 const weightSchema = z.object({
   userId: z.string().trim().optional(),
   date: z.string().min(1),
-  weight: z.number().min(0),
-  height: z.number().min(0),
-  bodyFat: z.number().min(0),
+  weight: z.number().min(1).max(1000),
+  height: z.number().min(50).max(300).optional(),
+  bodyFat: z.number().min(0).max(100).optional(),
 });
 
 const settingsSchema = z.object({

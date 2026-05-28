@@ -41,10 +41,10 @@ const channelSchema = z.object({
 });
 
 const settingsSchema = z.object({
-  activeUserId: z.string().optional(),
-  recordsUserId: z.string().optional(),
-  statisticsUserId: z.string().optional(),
-  editingRecordId: z.string().optional(),
+  activeUserId: z.string().optional().default(''),
+  recordsUserId: z.string().optional().default(''),
+  statisticsUserId: z.string().optional().default(''),
+  editingRecordId: z.string().optional().default(''),
 });
 
 const settingService = new BaseUserSettingService(FinanceRentSettingEntity);

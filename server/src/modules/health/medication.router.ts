@@ -23,19 +23,19 @@ const recordSchema = z.object({
   userId: z.string().trim().optional(),
   date: z.string().min(1),
   medicineName: z.string().trim().min(1).max(128),
-  breakfast: z.number().min(0).optional().default(0),
-  lunch: z.number().min(0).optional().default(0),
-  dinner: z.number().min(0).optional().default(0),
+  breakfast: z.number().min(0).max(100).optional().default(0),
+  lunch: z.number().min(0).max(100).optional().default(0),
+  dinner: z.number().min(0).max(100).optional().default(0),
 });
 
 const purchaseSchema = z.object({
   userId: z.string().trim().optional(),
   purchaseDate: z.string().min(1),
   medicineName: z.string().trim().min(1).max(128),
-  quantity: z.number().min(0),
+  quantity: z.number().min(0).int().max(10000),
   unit: z.string().trim().min(1).max(32),
-  unitPrice: z.number().min(0),
-  totalPrice: z.number().min(0).optional(),
+  unitPrice: z.number().min(0).max(100000),
+  totalPrice: z.number().min(0).max(1000000).optional(),
   channel: z.string().trim().min(1).max(128),
 });
 
@@ -61,7 +61,7 @@ const settingsSchema = z.object({
 
 const thresholdSchema = z.object({
   medicineName: z.string().trim().min(1).max(128),
-  threshold: z.number().min(0),
+  threshold: z.number().min(0).int().max(1000),
 });
 
 const triggerSchema = z.object({

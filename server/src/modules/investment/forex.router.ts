@@ -17,25 +17,31 @@ import { InvestmentForexImportBatchEntity } from './entities/investment-forex-im
 import { InvestmentForexSettingEntity } from './entities/investment-forex-setting.entity';
 import { InvestmentForexTradeRecordEntity } from './entities/investment-forex-trade-record.entity';
 
-const tradeSchema = z.object({
+const tradeSchemaBase = z.object({
   tradeDate: z.string().min(1),
   instrument: z.enum(['XAUUSD', 'XAGUSD']),
   orderType: z.enum(['buy', 'sell']),
-  openPrice: z.number().positive(),
-  lotSize: z.number().positive(),
-  commission: z.number().optional(),
-  closePrice: z.number().positive(),
-  pnl: z.number().optional(),
+  openPrice: z.number().positive().max(100000),
+  lotSize: z.number().positive().max(1000),
+  commission: z.number().min(-1e6).max(1e6).optional(),
+  closePrice: z.number().positive().max(100000),
+  pnl: z.number().min(-1e10).max(1e10).optional(),
   openTime: z.string().trim().min(1),
   closeTime: z.string().trim().min(1),
   holdTime: z.string().optional().default(''),
   remark: z.string().optional().default(''),
 });
 
+const tradeSchema = tradeSchemaBase.transform((data) => ({
+  ...data,
+  commission: data.commission ?? 0,
+  pnl: data.pnl ?? 0,
+}));
+
 const capitalFlowSchema = z.object({
   flowDate: z.string().min(1),
   flowType: z.enum(['deposit', 'withdrawal']),
-  amount: z.number().min(0),
+  amount: z.number().min(0).max(1e10),
   remark: z.string().optional().default(''),
 });
 
@@ -47,17 +53,17 @@ const settingsSchema = z.object({
 });
 
 const calculatorSchema = z.object({
-  leverage: z.number().min(1),
-  balance: z.number().min(0),
+  leverage: z.number().min(1).max(10000),
+  balance: z.number().min(0).max(1e12),
   forcedLiquidationRatio: z.number().min(0.1).max(1),
   positions: z.array(z.object({
     id: z.string(),
     instrument: z.enum(['XAUUSD', 'XAGUSD']),
     orderType: z.enum(['buy', 'sell']),
-    openPrice: z.number().positive(),
-    lotSize: z.number().positive(),
-    closePrice: z.number().positive().optional(),
-  })).default([]),
+    openPrice: z.number().positive().max(100000),
+    lotSize: z.number().positive().max(1000),
+    closePrice: z.number().positive().max(100000).optional(),
+  })).max(100).default([]),
 });
 
 const importTradeSchema = z.object({
@@ -111,12 +117,29 @@ function toMoney(value: unknown, fallback = 0) {
 }
 
 function calculateCommission(lotSize: number) {
+  if (!Number.isFinite(lotSize) || lotSize <= 0 || lotSize > 1000) {
+    return 0;
+  }
   return Number((-6 * lotSize).toFixed(2));
 }
 
 function calculatePnl(instrument: 'XAUUSD' | 'XAGUSD', orderType: 'buy' | 'sell', openPrice: number, closePrice: number, lotSize: number) {
+  if (!Number.isFinite(openPrice) || !Number.isFinite(closePrice) || !Number.isFinite(lotSize)) {
+    return 0;
+  }
+  if (openPrice <= 0 || closePrice <= 0 || lotSize <= 0) {
+    return 0;
+  }
+  if (openPrice > 100000 || closePrice > 100000 || lotSize > 1000) {
+    return 0;
+  }
   const diff = orderType === 'buy' ? closePrice - openPrice : openPrice - closePrice;
-  return Number((diff * lotSize * CONTRACT_UNITS[instrument]).toFixed(2));
+  const rawPnl = diff * lotSize * CONTRACT_UNITS[instrument];
+  if (!Number.isFinite(rawPnl)) {
+    return 0;
+  }
+  const clampedPnl = Math.max(-1e10, Math.min(1e10, rawPnl));
+  return Number(clampedPnl.toFixed(2));
 }
 
 function calculateHoldTime(openTime: string, closeTime: string) {
@@ -265,7 +288,7 @@ export function createForexRouter() {
   router.patch('/trades/:id', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const tradeId = String(request.params.id ?? '');
-    const payload = validateBody(tradeSchema.partial(), request.body);
+    const payload = validateBody(tradeSchemaBase.partial(), request.body);
     const repository = appDataSource.getRepository(InvestmentForexTradeRecordEntity);
     const current = await repository.findOne({
       where: { id: tradeId, user_id: userId },
@@ -562,7 +585,6 @@ export function createForexRouter() {
   }));
 
   router.post('/calculator', asyncHandler(async (request: AuthenticatedRequest, response) => {
-    validateBody(z.object({}), {});
     const payload = validateBody(calculatorSchema, request.body);
     const positionsInput = payload.positions ?? [];
     const positions = positionsInput.map((position) => {

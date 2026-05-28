@@ -19,15 +19,25 @@ import { normalizeText } from '../../shared/utils/text';
 import { normalizeDate } from '../../shared/utils/date';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 
-const taskSchema = z.object({
+const taskSchemaBase = z.object({
   title: z.string().trim().min(1).max(255),
   descriptionMarkdown: z.string().optional().default(''),
-  dueDate: z.string().optional().default(''),
+  dueDate: z.string().refine((val) => {
+    if (!val || val.trim() === '') return true;
+    return dayjs(val, 'YYYY-MM-DD', true).isValid() || dayjs(val, 'YYYY/MM/DD', true).isValid();
+  }, { message: 'dueDate 格式无效，应为 YYYY-MM-DD 或 YYYY/MM/DD' }).optional().default(''),
   priority: z.enum(['high', 'medium', 'low']).optional().default('medium'),
   tags: z.array(z.string().trim().min(1)).optional().default([]),
   isDaily: z.boolean().optional().default(false),
   completed: z.boolean().optional(),
 });
+
+const taskSchema = taskSchemaBase.refine((data) => {
+  if (data.completed === true && !data.dueDate && data.isDaily) {
+    return false;
+  }
+  return true;
+}, { message: '每日任务必须设置到期日期' });
 
 const settingsSchema = z.object({
   reminderEnabled: z.boolean().optional(),
@@ -228,7 +238,7 @@ export function createTodoRouter() {
   router.patch('/tasks/:id', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const taskId = String(request.params.id ?? '');
-    const payload = validateBody(taskSchema.partial(), request.body);
+    const payload = validateBody(taskSchemaBase.partial(), request.body);
     const repository = appDataSource.getRepository(LifeTodoTaskEntity);
     const current = await repository.findOne({
       where: {
@@ -242,6 +252,9 @@ export function createTodoRouter() {
     }
 
     const completed = payload.completed ?? current.completed;
+    const wasCompleted = current.completed;
+    const isNowCompleted = completed;
+
     const next = await repository.save({
       ...current,
       title: payload.title ?? current.title,
@@ -250,9 +263,13 @@ export function createTodoRouter() {
       priority: payload.priority ?? current.priority,
       tags_json: payload.tags ?? current.tags_json,
       is_daily: payload.isDaily ?? current.is_daily,
-      completed,
-      completed_at: completed ? (current.completed_at ?? new Date()) : null,
-      last_completed_date: completed ? dayjs().format('YYYY-MM-DD') : current.last_completed_date,
+      completed: isNowCompleted,
+      completed_at: isNowCompleted
+        ? (!wasCompleted ? new Date() : (current.completed_at ?? new Date()))
+        : null,
+      last_completed_date: isNowCompleted
+        ? (!wasCompleted ? dayjs().format('YYYY-MM-DD') : (current.last_completed_date ?? dayjs().format('YYYY-MM-DD')))
+        : current.last_completed_date,
     });
 
     response.json(successResponse(mapTask(next), 'update_todo_task_success'));

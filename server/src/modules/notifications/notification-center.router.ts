@@ -17,6 +17,36 @@ import { NotificationCenterSceneChannelEntity } from './entities/notification-ce
 import { NotificationCenterSceneEntity } from './entities/notification-center-scene.entity';
 import { NotificationCenterTemplateEntity } from './entities/notification-center-template.entity';
 
+const emailConfigSchema = z.object({
+  recipient: z.string().email('请输入有效的邮箱地址').optional(),
+  senderName: z.string().trim().max(64).optional(),
+  webhookUrl: z.string().optional(),
+  secret: z.string().max(128).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+const webhookConfigSchema = z.object({
+  recipient: z.string().optional(),
+  senderName: z.string().optional(),
+  webhookUrl: z.string().url('请输入有效的 Webhook URL').optional(),
+  secret: z.string().max(128).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+const wechatWorkConfigSchema = z.object({
+  recipient: z.string().optional(),
+  senderName: z.string().optional(),
+  webhookUrl: z.string().url('请输入有效的企业微信 Webhook URL').optional(),
+  secret: z.string().max(128).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+function validateChannelConfig(type: string, config: unknown) {
+  if (type === 'email') return emailConfigSchema.parse(config ?? {});
+  if (type === 'wechatWork') return wechatWorkConfigSchema.parse(config ?? {});
+  return webhookConfigSchema.parse(config ?? {});
+}
+
 const channelSchema = z.object({
   type: z.enum(['email', 'wechatWork', 'webhook']),
   label: z.string().trim().min(1).max(64).optional(),

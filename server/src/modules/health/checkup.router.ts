@@ -28,7 +28,7 @@ const recordSchema = z.object({
   referenceRange: z.string().trim().min(1).max(255),
   notes: z.string().optional().default(''),
   followUpDate: z.string().optional().default(''),
-  status: z.string().trim().optional(),
+  status: z.enum(['normal', 'abnormal', 'attention', 'unknown']).optional(),
 });
 
 const templateItemSchema = z.object({
@@ -50,8 +50,7 @@ const batchCreateSchema = z.object({
   templateId: z.string().trim().min(1),
   testDate: z.string().min(1),
   followUpDate: z.string().optional().default(''),
-  status: z.string().trim().optional(),
-});
+  status: z.enum(['normal', 'abnormal', 'attention', 'unknown']).optional(),});
 
 const settingsSchema = z.object({
   activeUserId: z.string().optional(),

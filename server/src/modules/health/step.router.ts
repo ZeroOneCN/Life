@@ -23,7 +23,7 @@ const recordSchema = z.object({
 });
 
 const settingsSchema = z.object({
-  strideLength: z.number().min(0.1).optional(),
+  strideLength: z.number().min(0.3).max(2.0).optional(),
   activeUserId: z.string().optional(),
   statsUserId: z.string().optional(),
   recordsUserId: z.string().optional(),

@@ -88,7 +88,19 @@ const importBillRowSchema = z.object({
   extraCharges: z.union([z.number(), z.string()]).optional(),
   totalFee: z.union([z.number(), z.string()]).optional(),
   note: z.string().optional(),
-});
+}).refine((data) => {
+  const fields = ['monthlyFee', 'actualFee', 'extraCharges', 'totalFee'] as const;
+  for (const field of fields) {
+    const val = data[field];
+    if (val !== undefined && val !== null && val !== '') {
+      const num = Number(val);
+      if (Number.isFinite(num) && num < 0) {
+        return false;
+      }
+    }
+  }
+  return true;
+}, { message: '数值字段不能为负数' });
 
 const importBillsSchema = z.object({
   fileName: z.string().trim().optional().default('card-bills-import.json'),

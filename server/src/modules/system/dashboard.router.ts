@@ -25,6 +25,28 @@ import { NotificationCenterChannelEntity } from '../notifications/entities/notif
 import { NotificationCenterLogEntity } from '../notifications/entities/notification-center-log.entity';
 import { NotificationCenterSceneEntity } from '../notifications/entities/notification-center-scene.entity';
 
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const dashboardCache = new Map<string, CacheEntry<unknown>>();
+const CACHE_TTL_MS = 30000;
+
+function getCachedData<T>(key: string): T | null {
+  const entry = dashboardCache.get(key) as CacheEntry<T> | undefined;
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+    dashboardCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedData<T>(key: string, data: T): void {
+  dashboardCache.set(key, { data, timestamp: Date.now() });
+}
+
 function calculateMedicationLowStockCount(
   records: HealthMedicationRecordEntity[],
   purchases: HealthMedicationPurchaseEntity[],
@@ -220,6 +242,14 @@ export function createDashboardRouter() {
 
   router.get('/summary', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
+    const cacheKey = `dashboard-summary-${userId}`;
+    const cached = getCachedData<Record<string, unknown>>(cacheKey);
+
+    if (cached) {
+      response.json(successResponse(cached, 'dashboard_summary'));
+      return;
+    }
+
     const [
       todos,
       subscriptions,
@@ -296,7 +326,7 @@ export function createDashboardRouter() {
       return sum;
     }, 0);
 
-    response.json(successResponse({
+    const result = {
       overviewCards: [
         { key: 'modules', label: '已接入模块数', value: 17 },
         { key: 'scenes', label: '启用通知场景数', value: scenes.filter((scene) => scene.enabled).length },
@@ -397,7 +427,10 @@ export function createDashboardRouter() {
         recentLogs: logs,
         hottestSceneId: logs[0]?.scene_id ?? '',
       },
-    }));
+    };
+
+    setCachedData(cacheKey, result);
+    response.json(successResponse(result, 'dashboard_summary'));
   }));
 
   router.get('/agenda', asyncHandler(async (request: AuthenticatedRequest, response) => {

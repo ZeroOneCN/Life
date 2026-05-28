@@ -19,7 +19,10 @@ const itemSchema = z.object({
   itemName: z.string().trim().min(1).max(255),
   purchasePrice: z.number().positive(),
   purchaseDate: z.string().min(1),
-  endDate: z.string().optional().default(''),
+  endDate: z.string().refine((val) => {
+    if (!val || val.trim() === '') return true;
+    return dayjs(val, 'YYYY-MM-DD', true).isValid() || dayjs(val, 'YYYY/MM/DD', true).isValid();
+  }, { message: 'endDate 格式无效，应为 YYYY-MM-DD 或 YYYY/MM/DD' }).optional().default(''),
   notes: z.string().optional().default(''),
 });
 
@@ -31,7 +34,10 @@ const settingsSchema = z.object({
 
 const archiveSchema = z.object({
   itemId: z.string().min(1),
-  endDate: z.string().optional(),
+  endDate: z.string().refine((val) => {
+    if (!val || val.trim() === '') return true;
+    return dayjs(val, 'YYYY-MM-DD', true).isValid() || dayjs(val, 'YYYY/MM/DD', true).isValid();
+  }, { message: 'endDate 格式无效，应为 YYYY-MM-DD 或 YYYY/MM/DD' }).optional(),
 });
 
 const restoreSchema = z.object({

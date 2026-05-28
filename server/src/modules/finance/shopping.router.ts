@@ -46,14 +46,14 @@ const platformSchema = z.object({
 });
 
 const settingsSchema = z.object({
-  activeUserId: z.string().optional(),
-  recordsUserId: z.string().optional(),
-  dashboardUserId: z.string().optional(),
-  activeLedgerId: z.string().optional(),
-  recordsLedgerId: z.string().optional(),
-  dashboardLedgerId: z.string().optional(),
-  currencyMode: z.string().optional(),
-  usdtRate: z.number().optional(),
+  activeUserId: z.string().optional().default(''),
+  recordsUserId: z.string().optional().default(''),
+  dashboardUserId: z.string().optional().default(''),
+  activeLedgerId: z.string().optional().default(''),
+  recordsLedgerId: z.string().optional().default('all'),
+  dashboardLedgerId: z.string().optional().default('all'),
+  currencyMode: z.enum(['CNY', 'USD', 'USDT']).optional().default('CNY'),
+  usdtRate: z.number().min(0).optional().default(7.2),
 });
 
 const importRowSchema = z.object({

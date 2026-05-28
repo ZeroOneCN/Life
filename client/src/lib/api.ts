@@ -34,6 +34,19 @@ const API_ERROR_MESSAGES: Record<string, string> = {
   database_not_ready: '数据库尚未完成初始化，请先检查系统状态。',
 };
 
+const HTTP_STATUS_MESSAGES: Record<number, string> = {
+  400: '请求参数有误，请检查后重试。',
+  401: '登录状态已失效，请重新登录。',
+  403: '没有权限执行此操作。',
+  404: '请求的资源不存在。',
+  409: '数据冲突，请刷新后重试。',
+  422: '提交的数据格式不正确。',
+  429: '请求过于频繁，请稍后再试。',
+  500: '服务器内部错误，请稍后重试。',
+  502: '服务暂时不可用，请稍后重试。',
+  503: '系统维护中，请稍后重试。',
+};
+
 async function ensureFreshAccessToken() {
   if (!refreshPromise) {
     refreshPromise = refreshAccessToken(refreshClient)
@@ -135,8 +148,10 @@ export function getApiFormErrors(error: unknown) {
 
 export function buildApiErrorMessage(error: unknown, fallback = '请求失败，请稍后重试。') {
   if (axios.isAxiosError<ApiErrorShape>(error)) {
+    const status = error.response?.status;
     const message = error.response?.data?.message;
     const details = error.response?.data?.details;
+
     if (message) {
       const mapped = API_ERROR_MESSAGES[message];
       if (mapped && details) {
@@ -144,6 +159,19 @@ export function buildApiErrorMessage(error: unknown, fallback = '请求失败，
       }
       return mapped ?? message;
     }
+
+    if (status && HTTP_STATUS_MESSAGES[status]) {
+      return HTTP_STATUS_MESSAGES[status];
+    }
+
+    if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+      return '请求超时，请检查网络连接后重试。';
+    }
+
+    if (error.code === 'ERR_NETWORK' || !error.response) {
+      return '网络连接失败，请检查网络后重试。';
+    }
+
     return fallback;
   }
 
