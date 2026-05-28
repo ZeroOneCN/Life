@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { NotificationChannelCard } from '../../components/NotificationChannelCard';
 import { NotificationLogTable } from '../../components/NotificationLogTable';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
-import { Checkbox, PillTabs, Switch, Tag, Toast, useToastState } from '../../components/ui';
+import { Btn, Checkbox, DeleteModal, PillTabs, Switch, Tag, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import {
@@ -33,6 +33,7 @@ export default function NotificationCenterPage() {
   const notificationState = useNotificationCenterState();
   const [tab, setTab] = usePageTab('overview', tabOptions.map((item) => item.value));
   const [loading, setLoading] = useState(true);
+  const [showClearModal, setShowClearModal] = useState(false);
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
@@ -198,28 +199,34 @@ export default function NotificationCenterPage() {
           title="通知日志"
           description="查看所有测试发送和业务场景发送记录。"
           action={notificationState.logs.length > 0 ? (
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={() => {
-                if (window.confirm('确定要清空所有通知日志吗？此操作不可撤销。')) {
-                  void clearNotificationLogs()
-                    .then(() => {
-                      showToast('通知日志已清空。');
-                    })
-                    .catch((error) => {
-                      showToast(buildApiErrorMessage(error, '清空日志失败。'), 'error');
-                    });
-                }
-              }}
-            >
+            <Btn tone="secondary" onClick={() => setShowClearModal(true)}>
               清空日志
-            </button>
+            </Btn>
           ) : undefined}
         >
           <NotificationLogTable logs={notificationState.logs} />
         </SectionCard>
       ) : null}
+
+      <DeleteModal
+        open={showClearModal}
+        onClose={() => setShowClearModal(false)}
+        onConfirm={() => {
+          void clearNotificationLogs()
+            .then(() => {
+              showToast('通知日志已清空。');
+            })
+            .catch((error) => {
+              showToast(buildApiErrorMessage(error, '清空日志失败。'), 'error');
+            })
+            .finally(() => {
+              setShowClearModal(false);
+            });
+        }}
+        title="清空通知日志"
+      >
+        确定要清空所有通知日志吗？此操作不可撤销。
+      </DeleteModal>
 
       <Toast toast={toast} />
     </div>
