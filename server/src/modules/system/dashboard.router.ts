@@ -274,7 +274,7 @@ export function createDashboardRouter() {
       if (!item.record_time) return false;
       const recordDate = dayjs(item.record_time);
       return recordDate.isValid() && recordDate.isSame(dayjs(), 'day');
-    }).reduce((sum, item) => sum + (item.steps || 0), 0);
+    }).reduce((max, item) => Math.max(max, item.steps || 0), 0);
     const lowMedicationCount = calculateMedicationLowStockCount(medicationRecords, medicationPurchases, medicationThresholds);
     const dueCheckups = checkups.filter((record) => record.follow_up_date && dayjs(record.follow_up_date).isValid() && dayjs(record.follow_up_date).diff(dayjs(), 'day') <= 7).length;
     const forexSummary = buildForexSummary(forexTrades, forexCapitalFlows);
@@ -327,7 +327,7 @@ export function createDashboardRouter() {
             if (!item.record_time) return false;
             const recordDate = dayjs(item.record_time);
             return recordDate.isValid() && recordDate.format('YYYY-MM-DD') === dateStr;
-          }).reduce((sum, item) => sum + (item.steps || 0), 0);
+          }).reduce((max, item) => Math.max(max, item.steps || 0), 0);
           return {
             date: dateStr,
             label: date.format('MM-DD'),

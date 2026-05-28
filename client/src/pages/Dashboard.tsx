@@ -281,14 +281,22 @@ function SnapshotChart({
     return <EmptyState title="暂无趋势" description="当前模块还没有足够数据形成首页图表。" />;
   }
 
+  const axisTickStyle = {
+    fill: 'var(--color-ink-subtle)',
+    fontSize: 11,
+    angle: -35,
+    textAnchor: 'end' as const,
+    dy: 8,
+  };
+
   if (kind === 'line') {
     return (
       <div className="dashboard-chart-shell">
-        <ResponsiveContainer width="100%" height={240}>
-          <LineChart data={data}>
+        <ResponsiveContainer width="100%" height={260}>
+          <LineChart data={data} margin={{ bottom: 20, left: -10 }}>
             <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-            <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+            <XAxis dataKey="label" tick={axisTickStyle} interval={0} />
+            <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} width={50} />
             <Tooltip contentStyle={TOOLTIP_STYLE} />
             <Line type="monotone" dataKey="value" name="主指标" stroke="var(--color-primary)" strokeWidth={2.4} dot={false} />
             <Line type="monotone" dataKey="secondaryValue" name="辅助指标" stroke="#10b981" strokeWidth={1.8} strokeDasharray="4 4" dot={false} />
@@ -300,11 +308,11 @@ function SnapshotChart({
 
   return (
     <div className="dashboard-chart-shell">
-      <ResponsiveContainer width="100%" height={240}>
-        <BarChart data={data}>
+      <ResponsiveContainer width="100%" height={260}>
+        <BarChart data={data} margin={{ bottom: 20, left: -10 }}>
           <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-          <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+          <XAxis dataKey="label" tick={axisTickStyle} interval={0} />
+          <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} width={50} />
           <Tooltip contentStyle={TOOLTIP_STYLE} />
           <Bar dataKey="value" name="主指标" radius={[10, 10, 0, 0]} fill="var(--color-primary)" />
         </BarChart>
