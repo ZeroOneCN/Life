@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { CheckupBatchEntrySection } from '../../components/health/CheckupBatchEntrySection';
 import { CheckupInsightsSection } from '../../components/health/CheckupInsightsSection';
@@ -56,6 +56,8 @@ export default function CheckupPage() {
   const [preferredTemplateId, setPreferredTemplateId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast, showToast } = useToastState();
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
 
   const reload = useCallback(async () => {
     const [nextRecords, nextTemplates, nextOverview, nextSettings] = await Promise.all([
@@ -83,7 +85,7 @@ export default function CheckupPage() {
         await reload();
       } catch (error) {
         if (!cancelled) {
-          showToast(buildApiErrorMessage(error, '体检页加载失败。'), 'error');
+          showToastRef.current(buildApiErrorMessage(error, '体检页加载失败。'), 'error');
         }
       } finally {
         if (!cancelled) {
@@ -97,7 +99,7 @@ export default function CheckupPage() {
     return () => {
       cancelled = true;
     };
-  }, [reload, showToast]);
+  }, [reload]);
 
   const updateSettings = useCallback(async (patch: Partial<CheckupPageState['settings']>) => {
     try {
