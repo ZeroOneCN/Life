@@ -4376,24 +4376,15 @@ textarea {
 }
 
 .card-entry-grid-compact {
-  display: grid;
-  grid-template-columns: repeat(24, 1fr);
+  display: flex;
+  flex-wrap: nowrap;
   gap: 10px;
   align-items: end;
 }
 
 .card-entry-grid-compact > * {
-  grid-column: span 2;
-}
-
-.card-entry-grid-compact > *:nth-child(4),
-.card-entry-grid-compact > *:nth-child(5),
-.card-entry-grid-compact > *:nth-child(6) {
-  grid-column: span 1;
-}
-
-.card-entry-grid-compact > *:nth-child(9) {
-  grid-column: span 4;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .card-entry-grid-compact .btn {
