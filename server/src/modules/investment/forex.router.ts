@@ -737,6 +737,11 @@ export function createForexRouter() {
     response.json(successResponse({
       fileName: 'forex-import-template.json',
       headers: ['tradeDate', 'instrument', 'orderType', 'openPrice', 'lotSize', 'commission', 'closePrice', 'pnl', 'openTime', 'closeTime', 'holdTime', 'remark'],
+      formulas: {
+        G: '=-F2/0.01*0.06',
+        I: '=IF(OR(B2="XAUUSD",B2="XAGUSD"),IF(D2="buy",(H2-E2)*IF(B2="XAUUSD",100,5000)*F2,(E2-H2)*IF(B2="XAUUSD",100,5000)*F2),"")',
+        L: '=IF(K2-J2>=TIME(1,0,0),INT((K2-J2)*24)&"时"&MINUTE(K2-J2)&"分"&SECOND(K2-J2)&"秒",MINUTE(K2-J2)&"分"&SECOND(K2-J2)&"秒")',
+      },
       sample: {
         tradeDate: dayjs().format('YYYY-MM-DD'),
         instrument: 'XAUUSD',
@@ -748,7 +753,7 @@ export function createForexRouter() {
         pnl: 57,
         openTime: '09:35',
         closeTime: '11:10',
-        holdTime: '1小时 35分钟',
+        holdTime: '1时35分',
         remark: '示例数据',
       },
     }));
