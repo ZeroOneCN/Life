@@ -351,7 +351,7 @@ export function ForexTradesSection({
             className="visually-hidden"
             onChange={handleImportSelect}
           />
-          <Btn tone="secondary" onClick={() => fileInputRef.current?.click()} disabled={isImporting}>
+          <Btn tone="primary" onClick={() => fileInputRef.current?.click()} disabled={isImporting}>
             {isImporting ? '导入中...' : '导入 Excel / CSV'}
           </Btn>
           <Btn tone="secondary" onClick={handleDownloadTemplate}>下载模板</Btn>
