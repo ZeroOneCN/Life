@@ -265,7 +265,7 @@ export function calculateForexTradePnl(
 
 function formatHoldTime(seconds: number) {
   if (!Number.isFinite(seconds) || seconds <= 0) {
-    return '0分钟';
+    return '0分';
   }
 
   const hours = Math.floor(seconds / 3600);
@@ -273,12 +273,12 @@ function formatHoldTime(seconds: number) {
   const remainingSeconds = seconds % 60;
 
   const segments = [
-    hours > 0 ? `${hours}小时` : '',
-    minutes > 0 ? `${minutes}分钟` : '',
+    hours > 0 ? `${hours}时` : '',
+    minutes > 0 ? `${minutes}分` : '',
     remainingSeconds > 0 && hours === 0 ? `${remainingSeconds}秒` : '',
   ].filter(Boolean);
 
-  return segments.join(' ') || '0分钟';
+  return segments.join('') || '0分';
 }
 
 export function calculateForexHoldTime(openTime: string, closeTime: string) {
@@ -762,8 +762,8 @@ function buildConsecutiveLossMetric(trades: ForexTradeRecord[]) {
 }
 
 function parseHoldMinutes(holdTime: string) {
-  const hours = Number(holdTime.match(/(\d+)小时/)?.[1] ?? 0);
-  const minutes = Number(holdTime.match(/(\d+)分(?:钟)?/)?.[1] ?? 0);
+  const hours = Number(holdTime.match(/(\d+)时/)?.[1] ?? 0);
+  const minutes = Number(holdTime.match(/(\d+)分/)?.[1] ?? 0);
   const seconds = Number(holdTime.match(/(\d+)秒/)?.[1] ?? 0);
   return hours * 60 + minutes + seconds / 60;
 }
