@@ -9,6 +9,7 @@ export interface PaginatedResponse<T> {
   page: number;
   page_size: number;
   total: number;
+  totalPages: number;
 }
 
 export interface ApiErrorShape {

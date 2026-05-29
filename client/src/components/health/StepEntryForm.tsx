@@ -63,7 +63,7 @@ export function StepEntryForm({
             <input
               ref={stepsInputRef}
               type="number"
-              min="1"
+              min="0"
               placeholder="输入本次步数"
               value={stepsInput}
               onChange={(event) => onStepsInputChange(event.target.value)}

@@ -194,7 +194,7 @@ export default function StepPage() {
       return;
     }
 
-    if (!Number.isFinite(steps) || steps <= 0) {
+    if (!Number.isFinite(steps) || steps < 0) {
       showToast('请输入有效的步数。', 'error');
       return;
     }

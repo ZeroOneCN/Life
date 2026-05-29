@@ -72,10 +72,14 @@ function createDefaultCardForm(carriers: LifeCardCarrier[]): CardFormState {
   };
 }
 
-function buildCardForm(record: LifeCardRecord): CardFormState {
+function buildCardForm(record: LifeCardRecord, carriers: LifeCardCarrier[]): CardFormState {
+  const matchedById = carriers.find((c) => c.id === record.carrierId);
+  const matchedByName = carriers.find((c) => c.name === record.carrierName);
+  const resolvedCarrier = matchedById ?? matchedByName;
+
   return {
     phoneNumber: record.phoneNumber,
-    carrierId: record.carrierId,
+    carrierId: resolvedCarrier?.id ?? record.carrierId,
     location: record.location,
     balance: String(record.balance),
     monthlyFee: String(record.monthlyFee),
@@ -271,7 +275,7 @@ export function CardCardsSection({
             label="电话号码"
             value={form.phoneNumber}
             onChange={(event) => setForm((current) => ({ ...current, phoneNumber: event.target.value }))}
-            placeholder="例如 18316426417"
+            placeholder="例如 13800138000"
           />
           <SelectField
             label="运营商"
@@ -408,46 +412,45 @@ export function CardCardsSection({
               rowKey="id"
               data={pageRecords}
               columns={[
-                { key: 'phoneNumber', title: '电话号码', dataIndex: 'phoneNumber', width: 128 },
-                { key: 'carrierName', title: '运营商', dataIndex: 'carrierName', width: 88 },
-                { key: 'location', title: '归属地', dataIndex: 'location', width: 72, render: (value) => String(value || '-') },
-                { key: 'dataPlan', title: '流量套餐', dataIndex: 'dataPlan', width: 100, render: (value) => String(value || '-') },
+                { key: 'phoneNumber', title: '电话号码', dataIndex: 'phoneNumber', width: 120 },
+                { key: 'carrierName', title: '运营商', dataIndex: 'carrierName', width: 84 },
+                { key: 'location', title: '归属地', dataIndex: 'location', width: 68, render: (value) => String(value || '-') },
                 {
                   key: 'balance',
                   title: '余额',
-                  width: 80,
+                  width: 70,
                   align: 'right',
                   render: (_, row) => formatLifeCardMoney(row.balance),
                 },
                 {
                   key: 'monthlyFee',
                   title: '月租',
-                  width: 76,
+                  width: 66,
                   align: 'right',
                   render: (_, row) => formatLifeCardMoney(row.monthlyFee),
                 },
                 {
                   key: 'billingDay',
                   title: '账单日',
-                  width: 64,
+                  width: 58,
                   render: (_, row) => `${row.billingDay} 日`,
                 },
+                { key: 'dataPlan', title: '流量套餐', dataIndex: 'dataPlan', width: 86, render: (value) => String(value || '-') },
                 {
-                  key: 'callMinutes',
-                  title: '通话',
-                  width: 80,
-                  render: (value) => String(value || '-'),
-                },
-                {
-                  key: 'smsCount',
-                  title: '短信',
-                  width: 76,
-                  render: (value) => String(value || '-'),
+                  key: 'callSms',
+                  title: '通话/短信',
+                  width: 108,
+                  render: (_, row) => {
+                    const call = row.callMinutes || '';
+                    const sms = row.smsCount || '';
+                    if (!call && !sms) return '-';
+                    return [call, sms].filter(Boolean).join(' / ');
+                  },
                 },
                 {
                   key: 'activationDate',
                   title: '开卡时间',
-                  width: 150,
+                  width: 120,
                   render: (_, row) => {
                     if (!dayjs(row.activationDate).isValid()) return '-';
                     const d = dayjs(row.activationDate);
@@ -456,12 +459,12 @@ export function CardCardsSection({
                     const months = now.diff(d.add(years, 'year'), 'month');
                     return (
                       <span style={{ whiteSpace: 'nowrap' }}>
-                        {`${d.format('YYYY/MM/DD')} (${years}年${months}月)`}
+                        {`${d.format('YYYY-MM-DD')} (${years}年${months}月)`}
                       </span>
                     );
                   },
                 },
-                { key: 'notes', title: '备注', render: (_, row) => row.notes || '-', width: 100 },
+                { key: 'notes', title: '备注', render: (_, row) => row.notes || '-', width: 80 },
                 {
                   key: 'actions',
                   title: '操作',
@@ -470,7 +473,7 @@ export function CardCardsSection({
                     <div className="table-actions">
                       <Btn tone="ghost" onClick={() => {
                         setEditingRecord(row);
-                        setEditingForm(buildCardForm(row));
+                        setEditingForm(buildCardForm(row, carriers));
                       }}
                       >
                         编辑

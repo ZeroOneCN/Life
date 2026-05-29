@@ -192,7 +192,7 @@ function createInitialCards(carriers: LifeCardCarrier[]) {
   return sortCards([
     {
       id: 'life-card-sim-1',
-      phoneNumber: '18316426417',
+      phoneNumber: '13800138000',
       carrierId: carrierMap.get('中国移动')?.id ?? '',
       carrierName: '中国移动',
       location: '上海',
@@ -211,7 +211,7 @@ function createInitialCards(carriers: LifeCardCarrier[]) {
     },
     {
       id: 'life-card-sim-2',
-      phoneNumber: '13377632105',
+      phoneNumber: '13800138000',
       carrierId: carrierMap.get('中国电信')?.id ?? '',
       carrierName: '中国电信',
       location: '北京',
@@ -230,7 +230,7 @@ function createInitialCards(carriers: LifeCardCarrier[]) {
     },
     {
       id: 'life-card-sim-3',
-      phoneNumber: '15912345678',
+      phoneNumber: '13800138000',
       carrierId: carrierMap.get('中国联通')?.id ?? '',
       carrierName: '中国联通',
       location: '深圳',
@@ -257,7 +257,7 @@ function createInitialBills(cards: LifeCardRecord[]) {
     {
       id: 'life-card-bill-1',
       simId: cards[0]?.id ?? '',
-      phoneNumber: cards[0]?.phoneNumber ?? '18316426417',
+      phoneNumber: cards[0]?.phoneNumber ?? '13800138000',
       carrierName: cards[0]?.carrierName ?? '中国移动',
       billingMonth: dayjs().subtract(1, 'month').format(MONTH_FORMAT),
       monthlyFee: 29,
@@ -271,7 +271,7 @@ function createInitialBills(cards: LifeCardRecord[]) {
     {
       id: 'life-card-bill-2',
       simId: cards[1]?.id ?? '',
-      phoneNumber: cards[1]?.phoneNumber ?? '13377632105',
+      phoneNumber: cards[1]?.phoneNumber ?? '13800138000',
       carrierName: cards[1]?.carrierName ?? '中国电信',
       billingMonth: dayjs().subtract(1, 'month').format(MONTH_FORMAT),
       monthlyFee: 19,
@@ -285,7 +285,7 @@ function createInitialBills(cards: LifeCardRecord[]) {
     {
       id: 'life-card-bill-3',
       simId: cards[2]?.id ?? '',
-      phoneNumber: cards[2]?.phoneNumber ?? '15912345678',
+      phoneNumber: cards[2]?.phoneNumber ?? '13800138000',
       carrierName: cards[2]?.carrierName ?? '中国联通',
       billingMonth: dayjs().format(MONTH_FORMAT),
       monthlyFee: 39,
@@ -306,7 +306,7 @@ function createInitialRecharges(cards: LifeCardRecord[]) {
     {
       id: 'life-card-recharge-1',
       simId: cards[0]?.id ?? '',
-      phoneNumber: cards[0]?.phoneNumber ?? '18316426417',
+      phoneNumber: cards[0]?.phoneNumber ?? '13800138000',
       amount: 50,
       rechargeDate: dayjs().subtract(18, 'day').format(DATE_FORMAT),
       note: '月度充值',
@@ -316,7 +316,7 @@ function createInitialRecharges(cards: LifeCardRecord[]) {
     {
       id: 'life-card-recharge-2',
       simId: cards[2]?.id ?? '',
-      phoneNumber: cards[2]?.phoneNumber ?? '15912345678',
+      phoneNumber: cards[2]?.phoneNumber ?? '13800138000',
       amount: 100,
       rechargeDate: dayjs().subtract(35, 'day').format(DATE_FORMAT),
       note: '活动赠送前补充话费',

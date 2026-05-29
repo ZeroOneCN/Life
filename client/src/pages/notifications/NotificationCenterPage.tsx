@@ -13,8 +13,9 @@ import {
   updateSceneConfig,
   useNotificationCenterState,
   clearNotificationLogs,
+  getNotificationLogs,
 } from '../../services/notificationCenter';
-import type { NotificationChannelType, NotificationSceneId } from '../../types/notifications';
+import type { NotificationChannelType, NotificationSceneId, NotificationLogEntry } from '../../types/notifications';
 
 const tabOptions = [
   { value: 'overview', label: '总览' },
@@ -34,6 +35,9 @@ export default function NotificationCenterPage() {
   const [tab, setTab] = usePageTab('overview', tabOptions.map((item) => item.value));
   const [loading, setLoading] = useState(true);
   const [showClearModal, setShowClearModal] = useState(false);
+  const [logPage, setLogPage] = useState(1);
+  const [logTotalPages, setLogTotalPages] = useState(1);
+  const [paginatedLogs, setPaginatedLogs] = useState<NotificationLogEntry[]>([]);
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
@@ -48,6 +52,26 @@ export default function NotificationCenterPage() {
         setLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    if (tab !== 'logs') return;
+
+    let cancelled = false;
+    void getNotificationLogs({ page: logPage, pageSize: 10 })
+      .then((result) => {
+        if (!cancelled) {
+          setPaginatedLogs(result.items);
+          setLogTotalPages(Math.max(1, result.totalPages));
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          showToastRef.current(buildApiErrorMessage(error, '日志加载失败。'), 'error');
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [tab, logPage]);
 
   const metrics = useMemo(() => {
     const channels = Object.values(notificationState.channels);
@@ -102,7 +126,7 @@ export default function NotificationCenterPage() {
               { label: '异常状态数', value: `${metrics.exceptionCount}` },
             ]}
           />
-          <div className="two-column-layout">
+          <div className="page-stack">
               <SectionCard title="统一发送说明" description="当前已经切到后端通知中心，日志、模板、场景和渠道都以数据库为准。">
               <div className="bullet-list">
                 <div className="bullet-item"><span className="bullet-dot" />所有测试发送和业务提醒都会写入统一日志。</div>
@@ -111,7 +135,7 @@ export default function NotificationCenterPage() {
               </div>
             </SectionCard>
             <SectionCard title="最近发送记录" description="便于快速确认通知中心是否正常工作。">
-              <NotificationLogTable logs={latestLogs} />
+              <NotificationLogTable logs={latestLogs} page={1} totalPages={1} onPageChange={() => {}} />
             </SectionCard>
           </div>
         </>
@@ -199,12 +223,20 @@ export default function NotificationCenterPage() {
           title="通知日志"
           description="查看所有测试发送和业务场景发送记录。"
           action={notificationState.logs.length > 0 ? (
-            <Btn tone="secondary" onClick={() => setShowClearModal(true)}>
+            <Btn tone="secondary" onClick={() => {
+              setLogPage(1);
+              setShowClearModal(true);
+            }}>
               清空日志
             </Btn>
           ) : undefined}
         >
-          <NotificationLogTable logs={notificationState.logs} />
+          <NotificationLogTable
+            logs={paginatedLogs}
+            page={logPage}
+            totalPages={logTotalPages}
+            onPageChange={(next) => setLogPage(next)}
+          />
         </SectionCard>
       ) : null}
 

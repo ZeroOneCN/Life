@@ -9,6 +9,7 @@ export interface ApiListData<T> {
   page: number;
   page_size: number;
   total: number;
+  totalPages: number;
 }
 
 export function successResponse<T>(data: T, message = 'ok'): ApiSuccessResponse<T> {
@@ -30,5 +31,6 @@ export function buildListData<T>(
     page,
     page_size: pageSize,
     total,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
   };
 }
