@@ -1005,6 +1005,7 @@ export function triggerLifeCardNotifications(
 
 export function filterLifeCards(
   cards: LifeCardRecord[],
+  carriers: LifeCardCarrier[],
   filter: {
     keyword?: string;
     carrierId?: string;
@@ -1027,8 +1028,13 @@ export function filterLifeCards(
       }
     }
 
-    if (carrierId !== CARD_ALL_CARRIERS && card.carrierId !== carrierId) {
-      return false;
+    if (carrierId !== CARD_ALL_CARRIERS) {
+      const matchedCarrier = carriers.find((c) => c.id === carrierId);
+      const isMatch = card.carrierId === carrierId
+        || (matchedCarrier && card.carrierName === matchedCarrier.name);
+      if (!isMatch) {
+        return false;
+      }
     }
 
     if (location && !card.location.toLowerCase().includes(location)) {

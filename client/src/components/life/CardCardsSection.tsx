@@ -163,14 +163,14 @@ export function CardCardsSection({
   }, [carriers, form.carrierId]);
 
   const filteredCards = useMemo(
-    () => filterLifeCards(cards, {
+    () => filterLifeCards(cards, carriers, {
       keyword,
       carrierId: carrierFilter,
       location: locationFilter,
       minBalance,
       maxBalance,
     }),
-    [cards, carrierFilter, keyword, locationFilter, maxBalance, minBalance],
+    [cards, carriers, carrierFilter, keyword, locationFilter, maxBalance, minBalance],
   );
 
   useEffect(() => {
