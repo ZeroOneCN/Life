@@ -4393,6 +4393,10 @@ textarea {
   flex: 0.55 1 0;
 }
 
+.card-entry-grid-compact > *:nth-child(9) {
+  flex: 1.5 1 0;
+}
+
 .card-entry-grid-compact .btn {
   white-space: nowrap;
 }
