@@ -4382,6 +4382,10 @@ textarea {
   align-items: end;
 }
 
+.card-entry-grid-compact > *:nth-child(9) {
+  grid-column: span 2;
+}
+
 .card-entry-grid-compact .btn {
   white-space: nowrap;
 }
