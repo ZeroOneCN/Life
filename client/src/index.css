@@ -1025,7 +1025,18 @@ textarea {
 }
 
 .step-entry-panel > .form-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1.2fr 1.3fr 2fr;
+  gap: 12px;
+}
+
+.step-entry-panel > .form-grid > * {
+  min-width: 0;
+}
+
+.step-entry-panel .date-popover.is-datetime {
+  left: auto;
+  right: 0;
+  transform: none;
 }
 
 .step-entry-meta {
