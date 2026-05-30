@@ -1,32 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 
-import { EmptyState, PageHeader, SectionCard, StatGrid } from '../components/page';
-import { Tag } from '../components/ui';
+import { EmptyState, PageHeader, SectionCard } from '../components/page';
+import { Btn, Tag } from '../components/ui';
 import { buildApiErrorMessage, apiGet } from '../lib/api';
 import type {
   DashboardAgendaItem,
   DashboardModuleSnapshot,
   DashboardPageSummary,
 } from '../types/dashboard';
-
-const TOOLTIP_STYLE = {
-  background: 'var(--color-surface-1)',
-  border: '1px solid var(--color-hairline)',
-  borderRadius: 14,
-  boxShadow: 'var(--shadow-soft)',
-};
 
 interface RawDashboardSummaryResponse {
   overviewCards: Array<{ key: string; label: string; value: string | number }>;
@@ -98,288 +80,99 @@ interface RawDashboardSummaryResponse {
 }
 
 function formatMoney(value: number) {
-  return `¥${value.toFixed(2)}`;
+  return `¥${value.toFixed(0)}`;
 }
 
 function formatSignedMoney(value: number) {
-  return `${value >= 0 ? '+' : '-'}¥${Math.abs(value).toFixed(2)}`;
+  return `${value >= 0 ? '+' : ''}${value.toFixed(0)}`;
 }
 
 function formatPercent(value: number) {
   return `${(value * 100).toFixed(1)}%`;
 }
 
-function agendaSeverityTagTone(severity: DashboardAgendaItem['severity']) {
-  if (severity === 'high') {
-    return 'red' as const;
-  }
-  if (severity === 'medium') {
-    return 'orange' as const;
-  }
-  return 'blue' as const;
+const MODULE_ICONS: Record<string, string> = {
+  health: '\u2764\uFE0F',
+  finance: '\u{1F4B0}',
+  life: '\u{1F3E0}',
+  investment: '\u{1F4C8}',
+  notification: '\u{1F514}',
+};
+
+const SEVERITY_CONFIG: Record<string, { icon: string; label: string; tone: 'default' | 'green' | 'orange' | 'blue' | 'red' }> = {
+  high: { icon: '\u{1F534}', label: '紧急', tone: 'red' as const },
+  medium: { icon: '\u{1F7E0}', label: '关注', tone: 'orange' as const },
+  low: { icon: '\u{1F7E1}', label: '提示', tone: 'blue' as const },
+};
+
+interface QuickStatProps {
+  icon: string;
+  label: string;
+  value: string;
+  href: string;
+  subValue?: string;
+  trend?: 'up' | 'down' | 'neutral';
 }
 
-function agendaSeverityTagLabel(severity: DashboardAgendaItem['severity']) {
-  if (severity === 'high') {
-    return '高风险';
-  }
-  if (severity === 'medium') {
-    return '需跟进';
-  }
-  return '可关注';
-}
-
-function buildSnapshotFromRaw(summary: RawDashboardSummaryResponse): DashboardPageSummary {
-  const health: DashboardModuleSnapshot = {
-    title: '健康中心摘要',
-    subtitle: '围绕步数、净热量、复查和低库存药品提炼出首页关注信号。',
-    metrics: [
-      { label: '今日步数', value: `${summary.health.stats.todayStepCount} 步`, helper: '来自今日步数记录' },
-      { label: '最近体重', value: summary.health.stats.latestWeight === null ? '-' : `${summary.health.stats.latestWeight} kg`, helper: '最新体重记录' },
-      { label: '待复查', value: `${summary.health.stats.checkupPendingCount} 项`, helper: '近 7 天复查窗口' },
-      { label: '低库存药品', value: `${summary.health.stats.medicationLowStockCount} 项`, helper: `今日净热量 ${Math.round(summary.health.stats.todayCalorieNet)} kcal` },
-    ],
-    chartTitle: '最近步数趋势',
-    chartDescription: '保留最轻量、最易读的今日健康主线图表。',
-    chartKind: 'line',
-    chartData: summary.health.trend.map((item) => ({
-      id: item.date,
-      label: item.label,
-      value: item.steps,
-    })),
-    listTitle: '重点关注',
-    listDescription: '快速看到今天最需要留意的健康事项。',
-    listItems: [
-      { id: 'health-checkup', title: '待复查事项', meta: '近 7 天需处理的复查计划', value: `${summary.health.stats.checkupPendingCount} 项` },
-      { id: 'health-medication', title: '药品库存风险', meta: '低于库存阈值的药品数量', value: `${summary.health.stats.medicationLowStockCount} 项` },
-      { id: 'health-calorie', title: '今日净热量', meta: '饮食摄入减去运动消耗', value: `${Math.round(summary.health.stats.todayCalorieNet)} kcal` },
-    ],
-  };
-
-  const finance: DashboardModuleSnapshot = {
-    title: '财务中心摘要',
-    subtitle: '把贷款与订阅的关键压力信号集中在首页展示。',
-    metrics: [
-      { label: '待还金额', value: formatMoney(summary.finance.stats.totalUnpaidLoanAmount), helper: '当前所有未结清账单' },
-      { label: '逾期贷款', value: `${summary.finance.stats.overdueLoanCount} 笔`, helper: '需要优先处理' },
-      { label: '活跃订阅', value: `${summary.finance.stats.activeSubscriptionCount} 项`, helper: '当前订阅池总量' },
-      { label: '即将到期订阅', value: `${summary.finance.stats.upcomingSubscriptionCount} 项`, helper: '近 7 天到期' },
-    ],
-    chartTitle: '贷款与订阅趋势',
-    chartDescription: '保留最适合首页的跨月趋势摘要。',
-    chartKind: 'bar',
-    chartData: summary.finance.trend.map((item) => ({
-      id: item.month,
-      label: item.label,
-      value: item.loanAmount,
-      secondaryValue: item.subscriptionCount,
-    })),
-    listTitle: '财务提醒',
-    listDescription: '用简洁摘要提醒当前最重要的支出和待还事项。',
-    listItems: [
-      { id: 'finance-loan', title: '贷款待还', meta: '当前未结清贷款金额', value: formatMoney(summary.finance.stats.totalUnpaidLoanAmount) },
-      { id: 'finance-overdue', title: '逾期账单', meta: '存在逾期时建议优先处理', value: `${summary.finance.stats.overdueLoanCount} 笔` },
-      { id: 'finance-subscription', title: '订阅到期', meta: '近 7 天需要关注的续费事项', value: `${summary.finance.stats.upcomingSubscriptionCount} 项` },
-    ],
-  };
-
-  const life: DashboardModuleSnapshot = {
-    title: '生活中心摘要',
-    subtitle: '首页只保留待办、物品追踪和号卡中心的高信号摘要。',
-    metrics: [
-      { label: '未完成待办', value: `${summary.life.stats.pendingTodoCount} 项`, helper: `今日到期 ${summary.life.stats.dueTodayTodoCount} 项` },
-      { label: '使用中物品', value: `${summary.life.stats.activeStorageCount} 件`, helper: '物品追踪中的活跃记录' },
-      { label: '低余额号卡', value: `${summary.life.stats.lowBalanceCardCount} 张`, helper: '需要关注充值或账单' },
-      { label: '生活活跃事项', value: `${summary.life.stats.pendingTodoCount + summary.life.stats.activeStorageCount + summary.life.stats.lowBalanceCardCount}`, helper: '待办 + 物品 + 号卡' },
-    ],
-    chartTitle: '生活事项分布',
-    chartDescription: '看清生活中心当前的主要精力落点。',
-    chartKind: 'bar',
-    chartData: summary.life.trend.map((item) => ({
-      id: item.key,
-      label: item.label,
-      value: item.value,
-    })),
-    listTitle: '生活关注',
-    listDescription: '保留最直观的三个入口，便于首页快速下钻。',
-    listItems: [
-      { id: 'life-todo', title: '待办压力', meta: '未完成任务总量', value: `${summary.life.stats.pendingTodoCount} 项` },
-      { id: 'life-storage', title: '物品追踪', meta: '正在摊销成本的活跃物品', value: `${summary.life.stats.activeStorageCount} 件` },
-      { id: 'life-card', title: '号卡低余额', meta: '可能需要充值或检查账单', value: `${summary.life.stats.lowBalanceCardCount} 张` },
-    ],
-  };
-
-  const investment: DashboardModuleSnapshot = {
-    title: '投资中心摘要',
-    subtitle: '当前真实聚合来源为外汇中心，其余投资页面只保留接入状态。',
-    metrics: [
-      { label: '净收益', value: formatSignedMoney(summary.investment.stats.netPnl), helper: '已实现净收益' },
-      { label: '胜率', value: formatPercent(summary.investment.stats.winRate), helper: '当前交易胜率' },
-      { label: '净入金', value: formatMoney(summary.investment.stats.netCapital), helper: '入金减出金' },
-      { label: '活跃交易', value: `${summary.investment.stats.activeTradeCount} 笔`, helper: '统计区间内交易数' },
-    ],
-    chartTitle: '最近净收益走势',
-    chartDescription: '首页只保留足够判断节奏的净收益走势。',
-    chartKind: 'line',
-    chartData: summary.investment.trend.map((item) => ({
-      id: item.date,
-      label: item.label,
-      value: item.netPnl,
-      secondaryValue: item.tradeCount,
-    })),
-    listTitle: '投资快照',
-    listDescription: '保留资金和结果指标，不在首页复制完整交易台。',
-    listItems: [
-      { id: 'investment-pnl', title: '净收益', meta: '当前外汇中心真实统计', value: formatSignedMoney(summary.investment.stats.netPnl) },
-      { id: 'investment-win-rate', title: '胜率', meta: '统计区间内盈利占比', value: formatPercent(summary.investment.stats.winRate) },
-      { id: 'investment-trades', title: '活跃交易数', meta: '当前统计窗口的交易数量', value: `${summary.investment.stats.activeTradeCount} 笔` },
-    ],
-  };
-
-  const notifications = {
-    enabledChannels: summary.notifications.enabledChannelCount,
-    enabledScenes: summary.notifications.enabledSceneCount,
-    logCount: summary.notifications.recentLogs.length,
-    mostActiveSceneLabel: summary.notifications.hottestSceneId || '暂无活跃场景',
-    recentLogs: summary.notifications.recentLogs.map((log) => ({
-      id: log.id,
-      createdAt: log.created_at,
-      channel: log.channel,
-      sceneId: log.scene_id as DashboardPageSummary['notifications']['recentLogs'][number]['sceneId'],
-      kind: log.kind,
-      status: log.status,
-      title: log.title,
-      message: log.message,
-    })),
-  };
-
-  return {
-    overviewCards: summary.overviewCards.map((item) => ({
-      id: item.key,
-      label: item.label,
-      value: String(item.value),
-      helper: '',
-    })),
-    agenda: summary.agenda,
-    health,
-    finance,
-    life,
-    investment,
-    notifications,
-    connectedModuleCount: Number(summary.overviewCards.find((item) => item.key === 'modules')?.value ?? 0),
-  };
-}
-
-function SnapshotChart({
-  kind,
-  data,
-}: {
-  kind: 'bar' | 'line';
-  data: Array<{ id: string; label: string; value: number; secondaryValue?: number }>;
-}) {
-  if (!data.length) {
-    return <EmptyState title="暂无趋势" description="当前模块还没有足够数据形成首页图表。" />;
-  }
-
-  const axisTickStyle = {
-    fill: 'var(--color-ink-subtle)',
-    fontSize: 11,
-    angle: -35,
-    textAnchor: 'end' as const,
-    dy: 8,
-  };
-
-  if (kind === 'line') {
-    return (
-      <div className="dashboard-chart-shell">
-        <ResponsiveContainer width="100%" height={260}>
-          <LineChart data={data} margin={{ bottom: 20, left: -10 }}>
-            <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="label" tick={axisTickStyle} interval={0} />
-            <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} width={50} />
-            <Tooltip contentStyle={TOOLTIP_STYLE} />
-            <Line type="monotone" dataKey="value" name="主指标" stroke="var(--color-primary)" strokeWidth={2.4} dot={false} />
-            <Line type="monotone" dataKey="secondaryValue" name="辅助指标" stroke="#10b981" strokeWidth={1.8} strokeDasharray="4 4" dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    );
-  }
-
+function QuickStat({ icon, label, value, href, subValue, trend }: QuickStatProps) {
   return (
-    <div className="dashboard-chart-shell">
-      <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={data} margin={{ bottom: 20, left: -10 }}>
-          <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="label" tick={axisTickStyle} interval={0} />
-          <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} width={50} />
-          <Tooltip contentStyle={TOOLTIP_STYLE} />
-          <Bar dataKey="value" name="主指标" radius={[10, 10, 0, 0]} fill="var(--color-primary)" />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+    <Link className="quick-stat-card" to={href}>
+      <span className="quick-stat-icon">{icon}</span>
+      <div className="quick-stat-content">
+        <span className="quick-stat-label">{label}</span>
+        <strong className="quick-stat-value">{value}</strong>
+        {subValue ? <span className="quick-stat-sub">{subValue}</span> : null}
+      </div>
+      {trend ? (
+        <span className={`quick-stat-trend ${trend}`}>
+          {trend === 'up' ? '\u2191' : trend === 'down' ? '\u2193' : '\u2192'}
+        </span>
+      ) : null}
+    </Link>
   );
 }
 
-function SnapshotSection({
-  title,
-  subtitle,
-  metrics,
-  chartTitle,
-  chartDescription,
-  chartKind,
-  chartData,
-  listTitle,
-  listDescription,
-  listItems,
-}: DashboardModuleSnapshot) {
+interface AgendaItemProps {
+  item: DashboardAgendaItem;
+}
+
+function AgendaItem({ item }: AgendaItemProps) {
+  const config = SEVERITY_CONFIG[item.severity];
+
   return (
-    <SectionCard title={title} description={subtitle}>
-      <div className="dashboard-snapshot-stack">
-        <StatGrid className="dashboard-snapshot-stat-grid" items={metrics.map((item) => ({
-          label: item.label,
-          value: item.value,
-          helper: item.helper,
-          accent: item.accent,
-        }))} />
-
-        <div className="dashboard-snapshot-content">
-          <div className="dashboard-chart-card">
-            <div className="dashboard-block-header">
-              <strong>{chartTitle}</strong>
-              <span>{chartDescription}</span>
-            </div>
-            <SnapshotChart kind={chartKind} data={chartData} />
-          </div>
-
-          <div className="dashboard-list-card">
-            <div className="dashboard-block-header">
-              <strong>{listTitle}</strong>
-              <span>{listDescription}</span>
-            </div>
-            {listItems.length ? (
-              <div className="dashboard-summary-list">
-                {listItems.map((item) => (
-                  <article className="dashboard-summary-item" key={item.id}>
-                    <div className="dashboard-summary-copy">
-                      <strong>{item.title}</strong>
-                      <span>{item.meta}</span>
-                    </div>
-                    {item.value ? (
-                      <div className="dashboard-summary-value" style={item.accent ? { color: item.accent } : undefined}>
-                        {item.value}
-                      </div>
-                    ) : null}
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <EmptyState title="暂无记录" description="当前模块还没有形成首页摘要列表。" />
-            )}
-          </div>
+    <Link className="agenda-item" to={item.href}>
+      <span className={`agenda-severity agenda-severity-${item.severity}`}>{config.icon}</span>
+      <div className="agenda-main">
+        <div className="agenda-header">
+          {/* @ts-ignore */}
+          <Tag tone={config.tone} className="agenda-tag">{config.label}</Tag>
+          <span className="agenda-module">{item.module}</span>
         </div>
+        <strong className="agenda-title">{item.title}</strong>
+        <p className="agenda-summary">{item.summary}</p>
       </div>
-    </SectionCard>
+      <div className="agenda-action">\u2192</div>
+    </Link>
+  );
+}
+
+interface TimelineItemProps {
+  time: string;
+  module: string;
+  title: string;
+  description?: string;
+}
+
+function TimelineItem({ time, module, title, description }: TimelineItemProps) {
+  return (
+    <div className="timeline-item">
+      <span className="timeline-time">{time}</span>
+      <span className="timeline-module">{module}</span>
+      <div className="timeline-content">
+        <strong>{title}</strong>
+        {description ? <p>{description}</p> : null}
+      </div>
+    </div>
   );
 }
 
@@ -393,23 +186,111 @@ export default function Dashboard() {
     const load = async () => {
       try {
         const raw = await apiGet<RawDashboardSummaryResponse>('/dashboard/summary');
-        if (cancelled) {
-          return;
-        }
-        setSummary(buildSnapshotFromRaw(raw));
+        if (cancelled) return;
+
+        const health: DashboardModuleSnapshot = {
+          title: '健康中心',
+          subtitle: '',
+          metrics: [
+            { label: '今日步数', value: `${raw.health.stats.todayStepCount}`, helper: '' },
+            { label: '体重', value: raw.health.stats.latestWeight ? `${raw.health.stats.latestWeight} kg` : '-', helper: '' },
+          ],
+          chartTitle: '',
+          chartDescription: '',
+          chartKind: 'line',
+          chartData: [],
+          listTitle: '',
+          listDescription: '',
+          listItems: [],
+        };
+
+        const finance: DashboardModuleSnapshot = {
+          title: '财务中心',
+          subtitle: '',
+          metrics: [
+            { label: '待还金额', value: formatMoney(raw.finance.stats.totalUnpaidLoanAmount), helper: '' },
+            { label: '订阅服务', value: `${raw.finance.stats.activeSubscriptionCount} 项`, helper: '' },
+          ],
+          chartTitle: '',
+          chartDescription: '',
+          chartKind: 'bar',
+          chartData: [],
+          listTitle: '',
+          listDescription: '',
+          listItems: [],
+        };
+
+        const life: DashboardModuleSnapshot = {
+          title: '生活中心',
+          subtitle: '',
+          metrics: [
+            { label: '待办事项', value: `${raw.life.stats.pendingTodoCount}`, helper: '' },
+            { label: '物品追踪', value: `${raw.life.stats.activeStorageCount} 件`, helper: '' },
+          ],
+          chartTitle: '',
+          chartDescription: '',
+          chartKind: 'line',
+          chartData: [],
+          listTitle: '',
+          listDescription: '',
+          listItems: [],
+        };
+
+        const investment: DashboardModuleSnapshot = {
+          title: '投资中心',
+          subtitle: '',
+          metrics: [
+            { label: '净收益', value: formatSignedMoney(raw.investment.stats.netPnl), helper: '' },
+            { label: '胜率', value: formatPercent(raw.investment.stats.winRate), helper: '' },
+          ],
+          chartTitle: '',
+          chartDescription: '',
+          chartKind: 'line',
+          chartData: [],
+          listTitle: '',
+          listDescription: '',
+          listItems: [],
+        };
+
+        setSummary({
+          overviewCards: raw.overviewCards.map((item) => ({
+            id: item.key,
+            label: item.label,
+            value: String(item.value),
+            helper: '',
+          })),
+          agenda: raw.agenda,
+          health,
+          finance,
+          life,
+          investment,
+          notifications: {
+            enabledChannels: raw.notifications.enabledChannelCount,
+            enabledScenes: raw.notifications.enabledSceneCount,
+            logCount: raw.notifications.recentLogs.length,
+            mostActiveSceneLabel: raw.notifications.hottestSceneId || '-',
+            recentLogs: raw.notifications.recentLogs.map((log) => ({
+              id: log.id,
+              createdAt: log.created_at,
+              channel: log.channel,
+              sceneId: log.scene_id as DashboardPageSummary['notifications']['recentLogs'][number]['sceneId'],
+              kind: log.kind,
+              status: log.status,
+              title: log.title,
+              message: log.message,
+            })),
+          },
+          connectedModuleCount: Number(raw.overviewCards.find((item) => item.key === 'modules')?.value ?? 0),
+        });
         setLoadingError('');
       } catch (error) {
-        if (cancelled) {
-          return;
-        }
-        setLoadingError(buildApiErrorMessage(error, '首页数据加载失败。'));
+        if (cancelled) return;
+        setLoadingError(buildApiErrorMessage(error, '首页数据加载失败'));
       }
     };
 
     void load();
-    const intervalId = window.setInterval(() => {
-      void load();
-    }, 20000);
+    const intervalId = window.setInterval(() => void load(), 30000);
 
     return () => {
       cancelled = true;
@@ -417,121 +298,207 @@ export default function Dashboard() {
     };
   }, []);
 
-  const statusTags = useMemo(() => (
-    [
-      { label: '数据库在线', tone: 'green' as const },
-      { label: '业务数据以后端为准', tone: 'blue' as const },
-      { label: `${summary?.connectedModuleCount ?? 0} 个模块已接入`, tone: 'default' as const },
-    ]
-  ), [summary?.connectedModuleCount]);
+  const topStats = useMemo(() => {
+    if (!summary) return [];
+
+    const healthStats = summary.health.metrics;
+    const financeStats = summary.finance.metrics;
+    const lifeStats = summary.life.metrics;
+    const investStats = summary.investment.metrics;
+
+    return [
+      {
+        icon: '\uD83D\uDCC3',
+        label: '今日步数',
+        value: healthStats[0]?.value ?? '0',
+        href: '/health/step',
+        subValue: healthStats[1]?.value,
+      },
+      {
+        icon: '\uD83D\uDCB0',
+        label: '投资收益',
+        value: investStats[0]?.value ?? '¥0',
+        href: '/investment/forex?forexTab=trades',
+        subValue: investStats[1]?.value,
+      },
+      {
+        icon: '\uD83D\uDCCB',
+        label: '待办事项',
+        value: lifeStats[0]?.value ?? '0',
+        href: '/life/todo?todoTab=tasks',
+        subValue: `今日 ${summary.agenda.filter((a) => a.severity === 'high').length} 项紧急`,
+      },
+      {
+        icon: '\uD83D\uDCB3',
+        label: '待还金额',
+        value: financeStats[0]?.value ?? '¥0',
+        href: '/finance/loan',
+        subValue: `${summary.agenda.filter((a) => a.module.includes('贷款') || a.module.includes('订阅')).length} 项待处理`,
+      },
+      {
+        icon: '\uD83D\uDCD1',
+        label: '号卡余额',
+        value: `${lifeStats.find((m) => m.label.includes('物品')) ? lifeStats[1]?.value ?? '0' : '-'}`,
+        href: '/life/card?cardTab=cards',
+        subValue: '检查低余额',
+      },
+      {
+        icon: '\uD83D\uDD14',
+        label: '通知提醒',
+        value: `${summary.notifications.logCount}`,
+        href: '/notifications?tab=logs',
+        subValue: `${summary.notifications.enabledChannels} 渠道`,
+      },
+    ];
+  }, [summary]);
+
+  const timelineItems = useMemo(() => {
+    if (!summary) return [];
+
+    const items: Array<{ time: string; module: string; title: string; description?: string }> = [];
+
+    summary.notifications.recentLogs.slice(0, 3).forEach((log) => {
+      const date = new Date(log.createdAt);
+      items.push({
+        time: `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`,
+        module: '通知',
+        title: log.title,
+        description: log.message.length > 50 ? log.message.slice(0, 50) + '...' : log.message,
+      });
+    });
+
+    summary.agenda.slice(0, 2).forEach((item) => {
+      items.push({
+        time: item.targetDate || '-',
+        module: item.module,
+        title: item.title,
+        description: item.summary,
+      });
+    });
+
+    return items.sort((a, b) => b.time.localeCompare(a.time)).slice(0, 5);
+  }, [summary]);
 
   if (!summary) {
     return (
       <div className="page-stack dashboard-page">
         <PageHeader
-          title="全局控制台"
-          subtitle={loadingError || '正在从后端汇总跨模块数据，请稍候。'}
-          actions={(
-            <div className="dashboard-header-tags">
-              {statusTags.map((item) => (
-                <Tag key={item.label} tone={item.tone}>{item.label}</Tag>
-              ))}
-            </div>
-          )}
+          title="LifeOS 控制台"
+          subtitle={loadingError || '正在加载数据...'}
         />
-        <EmptyState title="首页加载中" description={loadingError || '后端正在返回最新控制台摘要。'} />
+        <EmptyState title="加载中" description={loadingError || '正在获取最新数据'} />
       </div>
     );
   }
 
+  const hasAgenda = summary.agenda.length > 0;
+
   return (
     <div className="page-stack dashboard-page">
       <PageHeader
-        title="全局控制台"
-        subtitle="把健康、财务、生活、投资和通知中心的高信号信息收敛到一张正式首页里，优先帮你看清现在最该处理什么。"
+        title="LifeOS 控制台"
+        subtitle="一目了然，快速行动"
         actions={(
-          <div className="dashboard-header-tags">
-            {statusTags.map((item) => (
-              <Tag key={item.label} tone={item.tone}>{item.label}</Tag>
-            ))}
+          <div className="dashboard-status-row">
+            <Tag tone={hasAgenda ? 'orange' : 'green'}>
+              {hasAgenda ? `${summary.agenda.length} 项待处理` : '全部正常'}
+            </Tag>
+            <Tag tone="default">{summary.connectedModuleCount} 个模块已接入</Tag>
           </div>
         )}
       />
 
-      <StatGrid className="dashboard-overview-grid" items={summary.overviewCards} />
+      <section className="quick-stats-grid">
+        {topStats.map((stat) => (
+          <QuickStat key={stat.label} {...stat} />
+        ))}
+      </section>
 
-      <SectionCard
-        title="统一待处理 / 近期提醒"
-        description="这里不是单纯的通知日志，而是把各业务页真正需要你处理的事项统一列出来，并按风险级别和日期排序。"
-      >
-        {summary.agenda.length ? (
-          <div className="dashboard-agenda-list">
-            {summary.agenda.map((item) => (
-              <Link className="dashboard-agenda-item" key={item.id} to={item.href}>
-                <div className="dashboard-agenda-main">
-                  <div className="dashboard-agenda-top">
-                    <span className="dashboard-agenda-module">{item.module}</span>
-                    <Tag tone={agendaSeverityTagTone(item.severity)}>{agendaSeverityTagLabel(item.severity)}</Tag>
-                  </div>
-                  <strong>{item.title}</strong>
-                  <p>{item.summary}</p>
-                </div>
-                <div className="dashboard-agenda-side">
-                  <span>目标日期</span>
-                  <strong>{item.targetDate || '暂无日期'}</strong>
-                </div>
-              </Link>
+      {hasAgenda ? (
+        <SectionCard
+          title="待处理事项"
+          description={`按优先级排序，共 ${summary.agenda.length} 项需要关注`}
+        >
+          <div className="agenda-list">
+            {summary.agenda.slice(0, 5).map((item) => (
+              <AgendaItem key={item.id} item={item} />
             ))}
           </div>
-        ) : (
-          <EmptyState title="当前没有临近待处理事项" description="所有已接入模块当前都没有进入提醒窗口的事项。" />
-        )}
+          {summary.agenda.length > 5 ? (
+            <div className="agenda-footer">
+              <Btn tone="ghost">查看全部 {summary.agenda.length} 项</Btn>
+            </div>
+          ) : null}
+        </SectionCard>
+      ) : null}
+
+      <SectionCard title="快捷入口" description="点击进入各模块管理">
+        <div className="module-grid">
+          <Link className="module-card" to="/health/step">
+            <span className="module-icon">{MODULE_ICONS.health}</span>
+            <div className="module-info">
+              <strong>健康中心</strong>
+              <span>{summary.health.metrics[0]?.value ?? '0'} 步</span>
+            </div>
+            <span className="module-arrow">\u2192</span>
+          </Link>
+
+          <Link className="module-card" to="/finance/shopping?shoppingTab=overview">
+            <span className="module-icon">{MODULE_ICONS.finance}</span>
+            <div className="module-info">
+              <strong>财务中心</strong>
+              <span>{summary.finance.metrics[0]?.value ?? '¥0'}</span>
+            </div>
+            <span className="module-arrow">\u2192</span>
+          </Link>
+
+          <Link className="module-card" to="/life/todo?todoTab=tasks">
+            <span className="module-icon">{MODULE_ICONS.life}</span>
+            <div className="module-info">
+              <strong>生活中心</strong>
+              <span>{summary.life.metrics[0]?.value ?? '0'} 待办</span>
+            </div>
+            <span className="module-arrow">\u2192</span>
+          </Link>
+
+          <Link className="module-card" to="/investment/forex?forexTab=trades">
+            <span className="module-icon">{MODULE_ICONS.investment}</span>
+            <div className="module-info">
+              <strong>投资中心</strong>
+              <span>{summary.investment.metrics[0]?.value ?? '¥0'}</span>
+            </div>
+            <span className="module-arrow">\u2192</span>
+          </Link>
+
+          <Link className="module-card" to="/notifications?tab=overview">
+            <span className="module-icon">{MODULE_ICONS.notification}</span>
+            <div className="module-info">
+              <strong>通知中心</strong>
+              <span>{summary.notifications.enabledChannels} 渠道</span>
+            </div>
+            <span className="module-arrow">\u2192</span>
+          </Link>
+
+          <Link className="module-card module-card-settings" to="/settings/profile">
+            <span className="module-icon">\u2699\uFE0F</span>
+            <div className="module-info">
+              <strong>系统设置</strong>
+              <span>个人偏好</span>
+            </div>
+            <span className="module-arrow">\u2192</span>
+          </Link>
+        </div>
       </SectionCard>
 
-      <div className="dashboard-bottom-grid">
-        <SnapshotSection {...summary.health} />
-        <SnapshotSection {...summary.finance} />
-        <SnapshotSection {...summary.life} />
-        <SnapshotSection {...summary.investment} />
-
-        <SectionCard
-          title="通知中心动态"
-          description="通知中心继续作为统一出口，首页这里只保留启用状态、最近日志和活跃场景。"
-        >
-          <div className="dashboard-notification-stack">
-            <StatGrid
-              className="dashboard-notification-grid"
-              items={[
-                { label: '启用渠道数', value: `${summary.notifications.enabledChannels}`, helper: '统一管理通知渠道配置' },
-                { label: '启用场景数', value: `${summary.notifications.enabledScenes}`, helper: '与通知中心页面保持一致' },
-                { label: '最近日志数', value: `${summary.notifications.logCount}`, helper: '最近 8 条通知记录摘要' },
-                { label: '最活跃场景', value: summary.notifications.mostActiveSceneLabel, helper: '最近最常出现的业务场景' },
-              ]}
-            />
-
-            {summary.notifications.recentLogs.length ? (
-              <div className="dashboard-notification-list">
-                {summary.notifications.recentLogs.map((log) => (
-                  <article className="dashboard-notification-item" key={log.id}>
-                    <div className="dashboard-notification-copy">
-                      <strong>{log.title}</strong>
-                      <span>{log.message}</span>
-                    </div>
-                    <div className="dashboard-notification-meta">
-                      <Tag tone={log.status === 'success' ? 'green' : log.status === 'error' ? 'red' : 'orange'}>
-                        {log.status === 'success' ? '成功' : log.status === 'error' ? '失败' : '跳过'}
-                      </Tag>
-                      <span>{new Date(log.createdAt).toLocaleString()}</span>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <EmptyState title="暂无通知动态" description="当业务页面触发提醒或手动测试通知后，这里会同步显示最近日志。" />
-            )}
-          </div>
-        </SectionCard>
-      </div>
+      <SectionCard title="最近动态" description="各模块最新活动汇总">
+        <div className="timeline-list">
+          {timelineItems.length > 0 ? (
+            timelineItems.map((item, index) => <TimelineItem key={index} {...item} />)
+          ) : (
+            <EmptyState title="暂无动态" description="当有新活动时会在这里显示" />
+          )}
+        </div>
+      </SectionCard>
     </div>
   );
 }

@@ -3301,6 +3301,10 @@ textarea {
   .rent-records-filter-grid,
   .rent-entry-grid,
   .rent-cost-grid,
+  .quick-stats-grid,
+  .module-grid {
+    grid-template-columns: 1fr;
+  }
   .rent-summary-grid,
   .rent-statistics-grid,
   .rent-channel-form-grid,
@@ -4886,9 +4890,311 @@ textarea {
 .dashboard-notification-meta {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: end;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.dashboard-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quick-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.quick-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid var(--color-hairline);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-surface-3) 92%, transparent), var(--color-surface-2));
+  text-decoration: none;
+  color: var(--color-ink);
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.quick-stat-card:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-hairline));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.quick-stat-icon {
+  font-size: 28px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.quick-stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.quick-stat-label {
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+}
+
+.quick-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.quick-stat-sub {
+  font-size: 12px;
+  color: var(--color-ink-muted);
+}
+
+.quick-stat-trend {
+  font-size: 18px;
+  font-weight: 600;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.agenda-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.agenda-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface-2);
+  text-decoration: none;
+  color: var(--color-ink);
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.agenda-item:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-hairline));
+  transform: translateX(4px);
+}
+
+.agenda-severity {
+  font-size: 18px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.agenda-severity-high {
+  background: color-mix(in srgb, #ef4444 15%, transparent);
+}
+
+.agenda-severity-medium {
+  background: color-mix(in srgb, #f59e0b 15%, transparent);
+}
+
+.agenda-severity-low {
+  background: color-mix(in srgb, #3b82f6 15%, transparent);
+}
+
+.agenda-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.agenda-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.agenda-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+.agenda-module {
+  font-size: 12px;
+  color: var(--color-ink-muted);
+}
+
+.agenda-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.agenda-summary {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agenda-action {
+  font-size: 20px;
+  color: var(--color-primary);
+  font-weight: 600;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.agenda-item:hover .agenda-action {
+  opacity: 1;
+}
+
+.agenda-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-hairline);
+  margin-top: 6px;
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.module-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px solid var(--color-hairline);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-surface-3) 94%, transparent), var(--color-surface-2));
+  text-decoration: none;
+  color: var(--color-ink);
+  transition: all 0.2s ease;
+}
+
+.module-card:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-hairline));
+  box-shadow: 0 4px 24px color-mix(in srgb, var(--color-primary) 8%, transparent);
+  transform: translateY(-2px);
+}
+
+.module-icon {
+  font-size: 32px;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.module-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.module-info strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.module-info span {
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+}
+
+.module-arrow {
+  font-size: 20px;
+  color: var(--color-primary);
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  flex-shrink: 0;
+}
+
+.module-card:hover .module-arrow {
+  opacity: 1;
+  transform: translateX(4px);
+}
+
+.timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timeline-item {
+  display: grid;
+  grid-template-columns: 56px auto 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.timeline-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.timeline-time {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-module {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-surface-3) 80%, transparent);
+  color: var(--color-ink-subtle);
+  white-space: nowrap;
+  width: fit-content;
+}
+
+.timeline-content {
+  min-width: 0;
+}
+
+.timeline-content strong {
+  font-size: 14px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.timeline-content p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+  line-height: 1.5;
 }
 
 .todo-modal-grid {
