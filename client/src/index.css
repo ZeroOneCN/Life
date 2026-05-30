@@ -1024,6 +1024,10 @@ textarea {
   gap: 18px;
 }
 
+.step-entry-panel > .form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .step-entry-meta {
   padding: 16px 18px;
   border-radius: 16px;
