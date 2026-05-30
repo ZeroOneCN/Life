@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { EmptyState, PageHeader, SectionCard } from '../components/page';
-import { Btn, Tag } from '../components/ui';
+import { Tag } from '../components/ui';
 import { buildApiErrorMessage, apiGet } from '../lib/api';
 import type {
   DashboardAgendaItem,
@@ -91,90 +91,11 @@ function formatPercent(value: number) {
   return `${(value * 100).toFixed(1)}%`;
 }
 
-const MODULE_ICONS: Record<string, string> = {
-  health: '\u2764\uFE0F',
-  finance: '\u{1F4B0}',
-  life: '\u{1F3E0}',
-  investment: '\u{1F4C8}',
-  notification: '\u{1F514}',
+const SEVERITY_DOT: Record<string, string> = {
+  high: '\u{1F534}',
+  medium: '\u{1F7E0}',
+  low: '\u{1F7E1}',
 };
-
-const SEVERITY_CONFIG: Record<string, { icon: string; label: string; tone: 'default' | 'green' | 'orange' | 'blue' | 'red' }> = {
-  high: { icon: '\u{1F534}', label: '紧急', tone: 'red' as const },
-  medium: { icon: '\u{1F7E0}', label: '关注', tone: 'orange' as const },
-  low: { icon: '\u{1F7E1}', label: '提示', tone: 'blue' as const },
-};
-
-interface QuickStatProps {
-  icon: string;
-  label: string;
-  value: string;
-  href: string;
-  subValue?: string;
-  trend?: 'up' | 'down' | 'neutral';
-}
-
-function QuickStat({ icon, label, value, href, subValue, trend }: QuickStatProps) {
-  return (
-    <Link className="quick-stat-card" to={href}>
-      <span className="quick-stat-icon">{icon}</span>
-      <div className="quick-stat-content">
-        <span className="quick-stat-label">{label}</span>
-        <strong className="quick-stat-value">{value}</strong>
-        {subValue ? <span className="quick-stat-sub">{subValue}</span> : null}
-      </div>
-      {trend ? (
-        <span className={`quick-stat-trend ${trend}`}>
-          {trend === 'up' ? '\u2191' : trend === 'down' ? '\u2193' : '\u2192'}
-        </span>
-      ) : null}
-    </Link>
-  );
-}
-
-interface AgendaItemProps {
-  item: DashboardAgendaItem;
-}
-
-function AgendaItem({ item }: AgendaItemProps) {
-  const config = SEVERITY_CONFIG[item.severity];
-
-  return (
-    <Link className="agenda-item" to={item.href}>
-      <span className={`agenda-severity agenda-severity-${item.severity}`}>{config.icon}</span>
-      <div className="agenda-main">
-        <div className="agenda-header">
-          {/* @ts-ignore */}
-          <Tag tone={config.tone} className="agenda-tag">{config.label}</Tag>
-          <span className="agenda-module">{item.module}</span>
-        </div>
-        <strong className="agenda-title">{item.title}</strong>
-        <p className="agenda-summary">{item.summary}</p>
-      </div>
-      <div className="agenda-action">\u2192</div>
-    </Link>
-  );
-}
-
-interface TimelineItemProps {
-  time: string;
-  module: string;
-  title: string;
-  description?: string;
-}
-
-function TimelineItem({ time, module, title, description }: TimelineItemProps) {
-  return (
-    <div className="timeline-item">
-      <span className="timeline-time">{time}</span>
-      <span className="timeline-module">{module}</span>
-      <div className="timeline-content">
-        <strong>{title}</strong>
-        {description ? <p>{description}</p> : null}
-      </div>
-    </div>
-  );
-}
 
 export default function Dashboard() {
   const [summary, setSummary] = useState<DashboardPageSummary | null>(null);
@@ -188,69 +109,42 @@ export default function Dashboard() {
         const raw = await apiGet<RawDashboardSummaryResponse>('/dashboard/summary');
         if (cancelled) return;
 
-        const health: DashboardModuleSnapshot = {
-          title: '健康中心',
+        const buildModule = (
+          title: string,
+          metrics: Array<{ label: string; value: string; helper?: string }>,
+          chartKind: 'bar' | 'line',
+        ): DashboardModuleSnapshot => ({
+          title,
           subtitle: '',
-          metrics: [
-            { label: '今日步数', value: `${raw.health.stats.todayStepCount}`, helper: '' },
-            { label: '体重', value: raw.health.stats.latestWeight ? `${raw.health.stats.latestWeight} kg` : '-', helper: '' },
-          ],
+          metrics,
           chartTitle: '',
           chartDescription: '',
-          chartKind: 'line',
+          chartKind,
           chartData: [],
           listTitle: '',
           listDescription: '',
           listItems: [],
-        };
+        });
 
-        const finance: DashboardModuleSnapshot = {
-          title: '财务中心',
-          subtitle: '',
-          metrics: [
-            { label: '待还金额', value: formatMoney(raw.finance.stats.totalUnpaidLoanAmount), helper: '' },
-            { label: '订阅服务', value: `${raw.finance.stats.activeSubscriptionCount} 项`, helper: '' },
-          ],
-          chartTitle: '',
-          chartDescription: '',
-          chartKind: 'bar',
-          chartData: [],
-          listTitle: '',
-          listDescription: '',
-          listItems: [],
-        };
+        const health = buildModule('健康中心', [
+          { label: '今日步数', value: `${raw.health.stats.todayStepCount}`, helper: '' },
+          { label: '体重', value: raw.health.stats.latestWeight ? `${raw.health.stats.latestWeight}kg` : '-', helper: '' },
+        ], 'line');
 
-        const life: DashboardModuleSnapshot = {
-          title: '生活中心',
-          subtitle: '',
-          metrics: [
-            { label: '待办事项', value: `${raw.life.stats.pendingTodoCount}`, helper: '' },
-            { label: '物品追踪', value: `${raw.life.stats.activeStorageCount} 件`, helper: '' },
-          ],
-          chartTitle: '',
-          chartDescription: '',
-          chartKind: 'line',
-          chartData: [],
-          listTitle: '',
-          listDescription: '',
-          listItems: [],
-        };
+        const finance = buildModule('财务中心', [
+          { label: '待还金额', value: formatMoney(raw.finance.stats.totalUnpaidLoanAmount), helper: '' },
+          { label: '订阅服务', value: `${raw.finance.stats.activeSubscriptionCount}项`, helper: '' },
+        ], 'bar');
 
-        const investment: DashboardModuleSnapshot = {
-          title: '投资中心',
-          subtitle: '',
-          metrics: [
-            { label: '净收益', value: formatSignedMoney(raw.investment.stats.netPnl), helper: '' },
-            { label: '胜率', value: formatPercent(raw.investment.stats.winRate), helper: '' },
-          ],
-          chartTitle: '',
-          chartDescription: '',
-          chartKind: 'line',
-          chartData: [],
-          listTitle: '',
-          listDescription: '',
-          listItems: [],
-        };
+        const life = buildModule('生活中心', [
+          { label: '待办事项', value: `${raw.life.stats.pendingTodoCount}`, helper: '' },
+          { label: '物品追踪', value: `${raw.life.stats.activeStorageCount}件`, helper: '' },
+        ], 'line');
+
+        const investment = buildModule('投资中心', [
+          { label: '净收益', value: formatSignedMoney(raw.investment.stats.netPnl), helper: '' },
+          { label: '胜率', value: formatPercent(raw.investment.stats.winRate), helper: '' },
+        ], 'line');
 
         setSummary({
           overviewCards: raw.overviewCards.map((item) => ({
@@ -300,92 +194,60 @@ export default function Dashboard() {
 
   const topStats = useMemo(() => {
     if (!summary) return [];
-
-    const healthStats = summary.health.metrics;
-    const financeStats = summary.finance.metrics;
-    const lifeStats = summary.life.metrics;
-    const investStats = summary.investment.metrics;
-
+    const h = summary.health.metrics;
+    const f = summary.finance.metrics;
+    const l = summary.life.metrics;
+    const inv = summary.investment.metrics;
     return [
-      {
-        icon: '\uD83D\uDCC3',
-        label: '今日步数',
-        value: healthStats[0]?.value ?? '0',
-        href: '/health/step',
-        subValue: healthStats[1]?.value,
-      },
-      {
-        icon: '\uD83D\uDCB0',
-        label: '投资收益',
-        value: investStats[0]?.value ?? '¥0',
-        href: '/investment/forex?forexTab=trades',
-        subValue: investStats[1]?.value,
-      },
-      {
-        icon: '\uD83D\uDCCB',
-        label: '待办事项',
-        value: lifeStats[0]?.value ?? '0',
-        href: '/life/todo?todoTab=tasks',
-        subValue: `今日 ${summary.agenda.filter((a) => a.severity === 'high').length} 项紧急`,
-      },
-      {
-        icon: '\uD83D\uDCB3',
-        label: '待还金额',
-        value: financeStats[0]?.value ?? '¥0',
-        href: '/finance/loan',
-        subValue: `${summary.agenda.filter((a) => a.module.includes('贷款') || a.module.includes('订阅')).length} 项待处理`,
-      },
-      {
-        icon: '\uD83D\uDCD1',
-        label: '号卡余额',
-        value: `${lifeStats.find((m) => m.label.includes('物品')) ? lifeStats[1]?.value ?? '0' : '-'}`,
-        href: '/life/card?cardTab=cards',
-        subValue: '检查低余额',
-      },
-      {
-        icon: '\uD83D\uDD14',
-        label: '通知提醒',
-        value: `${summary.notifications.logCount}`,
-        href: '/notifications?tab=logs',
-        subValue: `${summary.notifications.enabledChannels} 渠道`,
-      },
+      { icon: '\uD83D\uDC63', label: '步数', value: h[0]?.value ?? '0', sub: h[1]?.value, href: '/health/step' },
+      { icon: '\uD83D\uDCC8', label: '收益', value: inv[0]?.value ?? '¥0', sub: inv[1]?.value, href: '/investment/forex?forexTab=trades' },
+      { icon: '\uD83D\uDCCB', label: '待办', value: l[0]?.value ?? '0', sub: `${summary.agenda.filter((a) => a.severity === 'high').length}项紧急`, href: '/life/todo?todoTab=tasks' },
+      { icon: '\uD83D\uDCB3', label: '待还', value: f[0]?.value ?? '¥0', sub: f[1]?.value, href: '/finance/loan' },
+      { icon: '\uD83D\uDD14', label: '通知', value: `${summary.notifications.logCount}`, sub: `${summary.notifications.enabledChannels}渠道`, href: '/notifications?tab=logs' },
+    ];
+  }, [summary]);
+
+  const agendaInline = useMemo(() => {
+    if (!summary) return [];
+    return summary.agenda.slice(0, 5).map((item) => ({
+      id: item.id,
+      dot: SEVERITY_DOT[item.severity],
+      title: item.title,
+      href: item.href,
+    }));
+  }, [summary]);
+
+  const moduleCards = useMemo(() => {
+    if (!summary) return [];
+    return [
+      { icon: '\u2764\uFE0F', title: '健康中心', metrics: summary.health.metrics, href: '/health/step' },
+      { icon: '\uD83D\uDCB0', title: '财务中心', metrics: summary.finance.metrics, href: '/finance/shopping?shoppingTab=overview' },
+      { icon: '\uD83C\uDFE0', title: '生活中心', metrics: summary.life.metrics, href: '/life/todo?todoTab=tasks' },
+      { icon: '\uD83D\uDCC8', title: '投资中心', metrics: summary.investment.metrics, href: '/investment/forex?forexTab=trades' },
     ];
   }, [summary]);
 
   const timelineItems = useMemo(() => {
     if (!summary) return [];
-
-    const items: Array<{ time: string; module: string; title: string; description?: string }> = [];
-
+    const items: Array<{ time: string; module: string; title: string }> = [];
     summary.notifications.recentLogs.slice(0, 3).forEach((log) => {
       const date = new Date(log.createdAt);
       items.push({
         time: `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`,
         module: '通知',
         title: log.title,
-        description: log.message.length > 50 ? log.message.slice(0, 50) + '...' : log.message,
       });
     });
-
     summary.agenda.slice(0, 2).forEach((item) => {
-      items.push({
-        time: item.targetDate || '-',
-        module: item.module,
-        title: item.title,
-        description: item.summary,
-      });
+      items.push({ time: item.targetDate || '-', module: item.module, title: item.title });
     });
-
     return items.sort((a, b) => b.time.localeCompare(a.time)).slice(0, 5);
   }, [summary]);
 
   if (!summary) {
     return (
       <div className="page-stack dashboard-page">
-        <PageHeader
-          title="LifeOS 控制台"
-          subtitle={loadingError || '正在加载数据...'}
-        />
+        <PageHeader title="LifeOS 控制台" subtitle={loadingError || '正在加载数据...'} />
         <EmptyState title="加载中" description={loadingError || '正在获取最新数据'} />
       </div>
     );
@@ -408,92 +270,61 @@ export default function Dashboard() {
         )}
       />
 
-      <section className="quick-stats-grid">
+      <section className="dash-stats-strip">
         {topStats.map((stat) => (
-          <QuickStat key={stat.label} {...stat} />
+          <Link key={stat.label} className="dash-stat-chip" to={stat.href}>
+            <span className="dash-stat-icon">{stat.icon}</span>
+            <div className="dash-stat-body">
+              <strong className="dash-stat-val">{stat.value}</strong>
+              <span className="dash-stat-sub">{stat.sub}</span>
+            </div>
+          </Link>
         ))}
       </section>
 
       {hasAgenda ? (
-        <SectionCard
-          title="待处理事项"
-          description={`按优先级排序，共 ${summary.agenda.length} 项需要关注`}
-        >
-          <div className="agenda-list">
-            {summary.agenda.slice(0, 5).map((item) => (
-              <AgendaItem key={item.id} item={item} />
+        <div className="dash-agenda-strip">
+          <span className="dash-agenda-label">\u26A0\uFE0F 待处理</span>
+          <div className="dash-agenda-items">
+            {agendaInline.map((item) => (
+              <Link key={item.id} className="dash-agenda-chip" to={item.href}>
+                <span className="dash-agenda-dot">{item.dot}</span>
+                <span className="dash-agenda-text">{item.title}</span>
+              </Link>
             ))}
           </div>
-          {summary.agenda.length > 5 ? (
-            <div className="agenda-footer">
-              <Btn tone="ghost">查看全部 {summary.agenda.length} 项</Btn>
-            </div>
-          ) : null}
-        </SectionCard>
+        </div>
       ) : null}
 
-      <SectionCard title="快捷入口" description="点击进入各模块管理">
-        <div className="module-grid">
-          <Link className="module-card" to="/health/step">
-            <span className="module-icon">{MODULE_ICONS.health}</span>
-            <div className="module-info">
-              <strong>健康中心</strong>
-              <span>{summary.health.metrics[0]?.value ?? '0'} 步</span>
+      <section className="dash-modules-row">
+        {moduleCards.map((mod) => (
+          <Link key={mod.title} className="dash-module-card" to={mod.href}>
+            <span className="dash-module-icon">{mod.icon}</span>
+            <div className="dash-module-body">
+              <strong className="dash-module-title">{mod.title}</strong>
+              <div className="dash-module-metrics">
+                {mod.metrics.map((m) => (
+                  <span key={m.label} className="dash-module-metric">
+                    <span className="dash-metric-label">{m.label}</span>
+                    <span className="dash-metric-value">{m.value}</span>
+                  </span>
+                ))}
+              </div>
             </div>
-            <span className="module-arrow">\u2192</span>
           </Link>
+        ))}
+      </section>
 
-          <Link className="module-card" to="/finance/shopping?shoppingTab=overview">
-            <span className="module-icon">{MODULE_ICONS.finance}</span>
-            <div className="module-info">
-              <strong>财务中心</strong>
-              <span>{summary.finance.metrics[0]?.value ?? '¥0'}</span>
-            </div>
-            <span className="module-arrow">\u2192</span>
-          </Link>
-
-          <Link className="module-card" to="/life/todo?todoTab=tasks">
-            <span className="module-icon">{MODULE_ICONS.life}</span>
-            <div className="module-info">
-              <strong>生活中心</strong>
-              <span>{summary.life.metrics[0]?.value ?? '0'} 待办</span>
-            </div>
-            <span className="module-arrow">\u2192</span>
-          </Link>
-
-          <Link className="module-card" to="/investment/forex?forexTab=trades">
-            <span className="module-icon">{MODULE_ICONS.investment}</span>
-            <div className="module-info">
-              <strong>投资中心</strong>
-              <span>{summary.investment.metrics[0]?.value ?? '¥0'}</span>
-            </div>
-            <span className="module-arrow">\u2192</span>
-          </Link>
-
-          <Link className="module-card" to="/notifications?tab=overview">
-            <span className="module-icon">{MODULE_ICONS.notification}</span>
-            <div className="module-info">
-              <strong>通知中心</strong>
-              <span>{summary.notifications.enabledChannels} 渠道</span>
-            </div>
-            <span className="module-arrow">\u2192</span>
-          </Link>
-
-          <Link className="module-card module-card-settings" to="/settings/profile">
-            <span className="module-icon">\u2699\uFE0F</span>
-            <div className="module-info">
-              <strong>系统设置</strong>
-              <span>个人偏好</span>
-            </div>
-            <span className="module-arrow">\u2192</span>
-          </Link>
-        </div>
-      </SectionCard>
-
-      <SectionCard title="最近动态" description="各模块最新活动汇总">
-        <div className="timeline-list">
+      <SectionCard title="最近动态">
+        <div className="dash-timeline">
           {timelineItems.length > 0 ? (
-            timelineItems.map((item, index) => <TimelineItem key={index} {...item} />)
+            timelineItems.map((item, i) => (
+              <div key={i} className="dash-timeline-row">
+                <span className="dash-tl-time">{item.time}</span>
+                <span className="dash-tl-module">{item.module}</span>
+                <span className="dash-tl-title">{item.title}</span>
+              </div>
+            ))
           ) : (
             <EmptyState title="暂无动态" description="当有新活动时会在这里显示" />
           )}
