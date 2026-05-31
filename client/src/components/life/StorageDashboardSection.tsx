@@ -19,6 +19,8 @@ import { formatStorageMoney } from '../../services/storage';
 import { storageApi } from '../../services/storageApi';
 import type { StorageCostRankingPoint, StorageOverviewSummary, StoragePageSettings, StoragePurchaseTrendPoint } from '../../types/storage';
 
+type RankingTab = 'cost' | 'duration';
+
 interface StorageDashboardSectionProps {
   settings: StoragePageSettings;
   showToast: (message: string, type?: 'success' | 'error') => void;
@@ -52,6 +54,7 @@ export function StorageDashboardSection({
   const [overview, setOverview] = useState<StorageOverviewSummary>(EMPTY_OVERVIEW);
   const [trend, setTrend] = useState<StoragePurchaseTrendPoint[]>([]);
   const [ranking, setRanking] = useState<StorageCostRankingPoint[]>([]);
+  const [rankingTab, setRankingTab] = useState<RankingTab>('cost');
 
   const loadDashboard = async () => {
     try {
@@ -88,12 +91,12 @@ export function StorageDashboardSection({
   return (
     <SectionCard
       title="成本看板"
-      description="看板数据全部由后端聚合返回，切换设置后直接刷新 overview、trend 和 ranking。"
+      description="数据概览、趋势分析与成本排行，帮助您掌握物品持有成本全貌。"
     >
       <div className="page-stack">
         <div className="storage-dashboard-toolbar">
           <SelectField
-            label="看板时间范围"
+            label="时间范围"
             value={settings.defaultDashboardRange}
             onChange={async (event) => {
               try {
@@ -116,14 +119,14 @@ export function StorageDashboardSection({
           className="storage-overview-grid"
           items={[
             { label: '总物品数', value: `${overview.totalCount} 件` },
-            { label: '使用中物品数', value: `${overview.activeCount} 件` },
-            { label: '已归档物品数', value: `${overview.archivedCount} 件` },
+            { label: '使用中', value: `${overview.activeCount} 件` },
+            { label: '已归档', value: `${overview.archivedCount} 件` },
             { label: '累计购入金额', value: formatStorageMoney(overview.totalPurchaseAmount) },
-            { label: '当前总日均成本', value: formatStorageMoney(overview.currentDailyCostTotal), helper: '按自然日持续摊销' },
+            { label: '日均成本', value: formatStorageMoney(overview.currentDailyCostTotal), helper: '按自然日持续摊销' },
             { label: '平均持有天数', value: `${overview.averageUsageDays} 天` },
-            { label: '本月新增物品数', value: `${overview.currentMonthNewCount} 件` },
+            { label: '本月新增', value: `${overview.currentMonthNewCount} 件` },
             {
-              label: '当前最高日均成本物品',
+              label: '最高日均成本',
               value: overview.highestDailyCostItemName || '暂无数据',
               helper: overview.highestDailyCost ? formatStorageMoney(overview.highestDailyCost) : undefined,
             },
@@ -134,8 +137,8 @@ export function StorageDashboardSection({
           <div className="storage-dashboard-grid">
             <div className="fitness-chart-card storage-chart-card-wide">
               <div className="fitness-chart-header">
-                <strong>近 12 个月购入金额趋势</strong>
-                <span>按月份聚合每个月的购入金额与件数。</span>
+                <strong>购入金额趋势</strong>
+                <span>近12个月购入金额与件数变化</span>
               </div>
               <div className="fitness-chart-shell">
                 <ResponsiveContainer width="100%" height={320}>
@@ -158,13 +161,26 @@ export function StorageDashboardSection({
             </div>
 
             <div className="storage-dashboard-columns">
-              <div className="storage-dashboard-stack">
-                <div className="fitness-chart-card">
-                  <div className="fitness-chart-header">
-                    <strong>当前使用中物品日均成本排行</strong>
-                    <span>优先识别哪些东西每天仍在持续消耗预算。</span>
-                  </div>
-                  {activeRanking.length ? (
+              <div className="fitness-chart-card">
+                <div className="storage-ranking-tabs">
+                  <button
+                    type="button"
+                    className={`storage-ranking-tab ${rankingTab === 'cost' ? 'active' : ''}`}
+                    onClick={() => setRankingTab('cost')}
+                  >
+                    日均成本排行
+                  </button>
+                  <button
+                    type="button"
+                    className={`storage-ranking-tab ${rankingTab === 'duration' ? 'active' : ''}`}
+                    onClick={() => setRankingTab('duration')}
+                  >
+                    持有天数排行
+                  </button>
+                </div>
+
+                {rankingTab === 'cost' ? (
+                  activeRanking.length ? (
                     <div className="storage-ranking-list">
                       {activeRanking.map((item, index) => (
                         <article key={item.id} className="storage-ranking-item">
@@ -182,15 +198,9 @@ export function StorageDashboardSection({
                     </div>
                   ) : (
                     <EmptyState title="暂无使用中的排行数据" description="至少保留一件使用中的物品，日均成本排行才会出现。" />
-                  )}
-                </div>
-
-                <div className="fitness-chart-card">
-                  <div className="fitness-chart-header">
-                    <strong>持有天数排行</strong>
-                    <span>把持有最久的物品列出来，帮助判断哪些投入已经被充分摊薄。</span>
-                  </div>
-                  {durationRanking.length ? (
+                  )
+                ) : (
+                  durationRanking.length ? (
                     <div className="storage-ranking-list">
                       {durationRanking.map((item, index) => (
                         <article key={item.id} className="storage-ranking-item">
@@ -208,47 +218,45 @@ export function StorageDashboardSection({
                     </div>
                   ) : (
                     <EmptyState title="暂无持有天数排行" description="录入更多物品后，这里会按使用天数自动拉开差异。" />
-                  )}
-                </div>
+                  )
+                )}
               </div>
 
-              <div className="storage-dashboard-stack">
-                <div className="fitness-chart-card">
-                  <div className="fitness-chart-header">
-                    <strong>购入价格分布</strong>
-                    <span>按购入价格查看当前最重的预算投入。</span>
-                  </div>
-                  {priceBreakdown.length ? (
-                    <div className="storage-price-layout">
-                      <div className="storage-price-chart">
-                        <ResponsiveContainer width="100%" height={280}>
-                          <PieChart>
-                            <Pie
-                              data={priceBreakdown}
-                              dataKey="value"
-                              nameKey="name"
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={52}
-                              outerRadius={92}
-                              paddingAngle={3}
-                            >
-                              {priceBreakdown.map((item) => (
-                                <Cell key={item.id} fill={item.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip
-                              contentStyle={tooltipStyle}
-                              formatter={(value) => [formatStorageMoney(Number(value ?? 0)), '购买价格']}
-                            />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  ) : (
-                    <EmptyState title="暂无购入价格分布" description="物品数量增加后，价格分布图会更有参考价值。" />
-                  )}
+              <div className="fitness-chart-card">
+                <div className="fitness-chart-header">
+                  <strong>购入价格分布</strong>
+                  <span>当前最重的预算投入分布</span>
                 </div>
+                {priceBreakdown.length ? (
+                  <div className="storage-price-layout">
+                    <div className="storage-price-chart">
+                      <ResponsiveContainer width="100%" height={240}>
+                        <PieChart>
+                          <Pie
+                            data={priceBreakdown}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={48}
+                            outerRadius={84}
+                            paddingAngle={3}
+                          >
+                            {priceBreakdown.map((item) => (
+                              <Cell key={item.id} fill={item.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={tooltipStyle}
+                            formatter={(value) => [formatStorageMoney(Number(value ?? 0)), '购买价格']}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                ) : (
+                  <EmptyState title="暂无购入价格分布" description="物品数量增加后，价格分布图会更有参考价值。" />
+                )}
               </div>
             </div>
           </div>

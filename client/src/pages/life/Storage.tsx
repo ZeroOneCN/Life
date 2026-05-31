@@ -4,7 +4,7 @@ import { StorageArchiveSection } from '../../components/life/StorageArchiveSecti
 import { StorageDashboardSection } from '../../components/life/StorageDashboardSection';
 import { StorageItemsSection } from '../../components/life/StorageItemsSection';
 import { StorageSettingsSection } from '../../components/life/StorageSettingsSection';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { PageHeader, SectionCard } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
@@ -96,24 +96,6 @@ export default function StoragePage() {
       <PageHeader
         title="物品追踪"
         subtitle={subtitle}
-      />
-
-      <StatGrid
-        className="storage-overview-grid"
-        items={[
-          { label: '总物品数', value: `${overview.totalCount} 件` },
-          { label: '使用中物品数', value: `${overview.activeCount} 件` },
-          { label: '已归档物品数', value: `${overview.archivedCount} 件` },
-          { label: '累计购入金额', value: `¥${overview.totalPurchaseAmount.toFixed(2)}` },
-          { label: '当前总日均成本', value: `¥${overview.currentDailyCostTotal.toFixed(2)}` },
-          { label: '平均持有天数', value: `${overview.averageUsageDays} 天` },
-          { label: '本月新增物品数', value: `${overview.currentMonthNewCount} 件` },
-          {
-            label: '当前最高日均成本物品',
-            value: overview.highestDailyCostItemName || '暂无数据',
-            helper: overview.highestDailyCost ? `¥${overview.highestDailyCost.toFixed(2)} / 天` : undefined,
-          },
-        ]}
       />
 
       <SectionCard

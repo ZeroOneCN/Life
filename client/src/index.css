@@ -4126,6 +4126,42 @@ textarea {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.storage-overview-grid .stat-card {
+  padding: 20px 18px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-surface-2) 72%, transparent);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.storage-overview-grid .stat-card:hover {
+  border-color: var(--color-hairline-strong);
+  transform: translateY(-2px);
+}
+
+.storage-overview-grid .stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-ink-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.storage-overview-grid .stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-ink);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.storage-overview-grid .stat-helper {
+  font-size: 12px;
+  color: var(--color-ink-subtle);
+  margin-top: 6px;
+}
+
 .storage-entry-grid,
 .storage-filter-grid,
 .storage-dashboard-grid,
@@ -4168,6 +4204,18 @@ textarea {
 .storage-dashboard-toolbar {
   display: grid;
   grid-template-columns: minmax(180px, 220px);
+  padding: 18px 20px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-surface-2) 72%, transparent);
+}
+
+.storage-dashboard-toolbar label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
 }
 
 .storage-dashboard-grid,
@@ -4218,10 +4266,17 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 14px 16px;
+  padding: 16px 18px;
   border: 1px solid var(--color-hairline);
   border-radius: 16px;
   background: color-mix(in srgb, var(--color-surface-2) 88%, transparent);
+  transition: all 0.2s ease;
+}
+
+.storage-ranking-item:hover {
+  border-color: var(--color-hairline-strong);
+  background: color-mix(in srgb, var(--color-surface-2) 95%, transparent);
+  transform: translateX(4px);
 }
 
 .storage-ranking-main,
@@ -6342,4 +6397,74 @@ textarea {
 
 .storage-edit-daily-cost {
   color: var(--color-danger);
+}
+
+/* ========== Storage Dashboard Responsive ========== */
+
+.storage-ranking-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: color-mix(in srgb, var(--color-surface-3) 60%, transparent);
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+
+.storage-ranking-tab {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-ink-subtle);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: -0.01em;
+}
+
+.storage-ranking-tab:hover {
+  color: var(--color-ink);
+  background: color-mix(in srgb, var(--color-surface-2) 50%, transparent);
+}
+
+.storage-ranking-tab.active {
+  background: var(--color-surface-1);
+  color: var(--color-ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 1200px) {
+  .storage-overview-grid,
+  .storage-list-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .storage-dashboard-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .storage-price-layout {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .storage-price-chart {
+    max-width: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .storage-dashboard-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .storage-overview-grid .stat-card {
+    padding: 16px 14px;
+  }
+
+  .storage-overview-grid .stat-value {
+    font-size: 19px;
+  }
 }
