@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { In } from 'typeorm';
 import dayjs from 'dayjs';
 
 import { appDataSource } from '../../db/data-source';
 import { LifeStorageItemEntity } from './entities/life-storage-item.entity';
 import { LifeStorageSettingEntity } from './entities/life-storage-setting.entity';
+import { FinanceShoppingRecordEntity } from '../finance/entities/finance-shopping-record.entity';
 import { asyncHandler } from '../../shared/http/async-handler';
 import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
 import { requireAuthUser } from '../../shared/http/request';
@@ -44,6 +46,10 @@ const restoreSchema = z.object({
   itemId: z.string().min(1),
 });
 
+const importFromShoppingSchema = z.object({
+  shoppingRecordIds: z.array(z.string().min(1)).min(1),
+});
+
 const settingService = new BaseUserSettingService(LifeStorageSettingEntity);
 
 function mapStorageItem(entity: LifeStorageItemEntity) {
@@ -56,6 +62,8 @@ function mapStorageItem(entity: LifeStorageItemEntity) {
     notes: entity.notes,
     status: entity.status,
     archivedAt: entity.archived_at?.toISOString() ?? '',
+    source: entity.source ?? 'manual',
+    shoppingRecordId: entity.shopping_record_id ?? '',
     createdAt: entity.created_at.toISOString(),
     updatedAt: entity.updated_at.toISOString(),
   };
@@ -135,10 +143,15 @@ export function createStorageRouter() {
     const { page, pageSize, skip } = parsePagination(request.query as Record<string, unknown>);
     const keyword = String(request.query.keyword ?? '').trim().toLowerCase();
     const status = String(request.query.status ?? '').trim();
+    const source = String(request.query.source ?? '').trim();
     const purchaseStartDate = String(request.query.purchaseStartDate ?? '').trim();
     const purchaseEndDate = String(request.query.purchaseEndDate ?? '').trim();
     const minPrice = Number(request.query.minPrice ?? '');
     const maxPrice = Number(request.query.maxPrice ?? '');
+
+    const validMinPrice = Number.isFinite(minPrice) && minPrice >= 0 ? minPrice : null;
+    const validMaxPrice = Number.isFinite(maxPrice) && maxPrice > 0 ? maxPrice : null;
+
     const repository = appDataSource.getRepository(LifeStorageItemEntity);
     const items = await repository.find({
       where: {
@@ -148,8 +161,13 @@ export function createStorageRouter() {
         updated_at: 'DESC',
       },
     });
+
     const filtered = items.filter((item) => {
       if (status && status !== 'all' && item.status !== status) {
+        return false;
+      }
+
+      if (source && source !== 'all' && item.source !== source) {
         return false;
       }
 
@@ -168,11 +186,11 @@ export function createStorageRouter() {
         return false;
       }
 
-      if (Number.isFinite(minPrice) && Number(item.purchase_price) < minPrice) {
+      if (validMinPrice !== null && Number(item.purchase_price) < validMinPrice) {
         return false;
       }
 
-      if (Number.isFinite(maxPrice) && Number(item.purchase_price) > maxPrice) {
+      if (validMaxPrice !== null && Number(item.purchase_price) > validMaxPrice) {
         return false;
       }
 
@@ -221,6 +239,15 @@ export function createStorageRouter() {
 
     if (!current) {
       throw new AppError('storage_item_not_found', 404, 404);
+    }
+
+    if (current.source === 'shopping') {
+      const allowedFields = ['endDate', 'notes'];
+      const attemptedChanges = Object.keys(payload).filter((key) => !allowedFields.includes(key));
+
+      if (attemptedChanges.length > 0) {
+        throw new AppError('shopping_source_item_restricted', 400, 400, '购物来源物品只能修改结束日期和备注');
+      }
     }
 
     const purchaseDate = payload.purchaseDate ? normalizeDate(payload.purchaseDate) : current.purchase_date;
@@ -385,6 +412,76 @@ export function createStorageRouter() {
     });
 
     response.json(successResponse(mapStorageItem(next), 'restore_storage_item_success'));
+  }));
+
+  router.post('/actions/import-from-shopping', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const payload = validateBody(importFromShoppingSchema, request.body);
+    const { shoppingRecordIds } = payload;
+
+    const shoppingRepo = appDataSource.getRepository(FinanceShoppingRecordEntity);
+    const storageRepo = appDataSource.getRepository(LifeStorageItemEntity);
+
+    const shoppingRecords = await shoppingRepo.findByIds(shoppingRecordIds);
+
+    if (shoppingRecords.length === 0) {
+      throw new AppError('shopping_records_not_found', 404, 404);
+    }
+
+    const existingImported = await storageRepo.find({
+      where: {
+        user_id: userId,
+        shopping_record_id: In(shoppingRecordIds),
+      },
+    });
+    const existingShoppingRecordIds = new Set(existingImported.map((item) => item.shopping_record_id).filter(Boolean));
+
+    let importedCount = 0;
+    let duplicateCount = 0;
+    const importedItems: LifeStorageItemEntity[] = [];
+    const toSave: LifeStorageItemEntity[] = [];
+
+    for (const record of shoppingRecords) {
+      if (existingShoppingRecordIds.has(record.id)) {
+        duplicateCount += 1;
+        continue;
+      }
+
+      const notes = [
+        '来自购物记录',
+        `平台: ${record.platform}`,
+        record.order_no ? `订单号: ${record.order_no}` : '',
+        record.spec ? `规格: ${record.spec}` : '',
+        record.note ? `备注: ${record.note}` : '',
+      ].filter(Boolean).join(' | ');
+
+      const item = storageRepo.create({
+        user_id: userId,
+        item_name: record.item_name,
+        purchase_price: record.price,
+        purchase_date: record.date,
+        end_date: null,
+        notes,
+        status: 'active',
+        archived_at: null,
+        source: 'shopping',
+        shopping_record_id: record.id,
+      });
+
+      toSave.push(item);
+      importedCount += 1;
+    }
+
+    if (toSave.length > 0) {
+      const savedItems = await storageRepo.save(toSave);
+      importedItems.push(...savedItems);
+    }
+
+    response.json(successResponse({
+      importedCount,
+      duplicateCount,
+      items: importedItems.map(mapStorageItem),
+    }, 'import_from_shopping_success'));
   }));
 
   return router;

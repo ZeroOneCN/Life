@@ -24,4 +24,10 @@ export class LifeStorageItemEntity extends UserScopedEntity {
 
   @Column({ type: 'datetime', nullable: true })
   archived_at!: Date | null;
+
+  @Column({ type: 'varchar', length: 20, default: 'manual' })
+  source!: string;
+
+  @Column({ type: 'varchar', length: 36, nullable: true })
+  shopping_record_id!: string | null;
 }

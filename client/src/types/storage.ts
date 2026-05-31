@@ -2,6 +2,8 @@ export type StorageTab = 'items' | 'dashboard' | 'archive' | 'settings';
 
 export type StorageItemStatus = 'active' | 'archived';
 
+export type StorageItemSource = 'manual' | 'shopping';
+
 export interface StorageItemRecord {
   id: string;
   itemName: string;
@@ -11,6 +13,8 @@ export interface StorageItemRecord {
   notes: string;
   status: StorageItemStatus;
   archivedAt: string;
+  source: StorageItemSource;
+  shoppingRecordId: string;
   createdAt: string;
   updatedAt: string;
 }

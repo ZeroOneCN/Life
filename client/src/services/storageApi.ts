@@ -14,6 +14,7 @@ export interface StorageListParams {
   page_size?: number;
   keyword?: string;
   status?: 'all' | 'active' | 'archived';
+  source?: 'all' | 'manual' | 'shopping';
   purchaseStartDate?: string;
   purchaseEndDate?: string;
   minPrice?: number | string;
@@ -63,5 +64,13 @@ export const storageApi = {
 
   restore(itemId: string) {
     return apiPost<StorageItemRecord, { itemId: string }>('/life/storage/actions/restore', { itemId });
+  },
+
+  importFromShopping(shoppingRecordIds: string[]) {
+    return apiPost<{
+      importedCount: number;
+      duplicateCount: number;
+      items: StorageItemRecord[];
+    }, { shoppingRecordIds: string[] }>('/life/storage/actions/import-from-shopping', { shoppingRecordIds });
   },
 };

@@ -125,6 +125,8 @@ function normalizeStorageItem(
     notes: normalizeText(record.notes),
     status: status === 'archived' || safeEndDate ? 'archived' : 'active',
     archivedAt: status === 'archived' || safeEndDate ? archivedAt || normalizeTimestamp('', safeEndDate || purchaseDate) : '',
+    source: (record.source as 'manual' | 'shopping') || 'manual',
+    shoppingRecordId: normalizeText(record.shoppingRecordId),
     createdAt,
     updatedAt: normalizeTimestamp(record.updatedAt, purchaseDate),
   };

@@ -7,6 +7,7 @@ import { Btn, DataTable, Field, Modal, Pagination, SelectField, Tag, TextArea } 
 import { buildApiErrorMessage } from '../../lib/api';
 import { calculateStorageDailyCost, calculateStorageUsageDays, formatStorageMoney, getStorageStatusLabel } from '../../services/storage';
 import { storageApi } from '../../services/storageApi';
+import { StorageImportFromShoppingModal } from './StorageImportFromShoppingModal';
 import type { StorageItemDraft, StorageItemRecord, StoragePageSettings } from '../../types/storage';
 
 interface StorageItemsSectionProps {
@@ -77,6 +78,7 @@ export function StorageItemsSection({
   const [form, setForm] = useState<StorageFormState>(createDefaultFormState);
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | StorageItemRecord['status']>('active');
+  const [sourceFilter, setSourceFilter] = useState<'all' | StorageItemRecord['source']>('all');
   const [purchaseStartDate, setPurchaseStartDate] = useState('');
   const [purchaseEndDate, setPurchaseEndDate] = useState('');
   const [minPrice, setMinPrice] = useState('');
@@ -86,6 +88,7 @@ export function StorageItemsSection({
   const [total, setTotal] = useState(0);
   const [editingItem, setEditingItem] = useState<StorageItemRecord | null>(null);
   const [editingForm, setEditingForm] = useState<StorageFormState>(createDefaultFormState);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const loadItems = async () => {
     try {
@@ -93,6 +96,7 @@ export function StorageItemsSection({
         page,
         page_size: PAGE_SIZE,
         status: statusFilter,
+        source: sourceFilter,
       };
 
       if (keyword) params.keyword = keyword;
@@ -111,11 +115,11 @@ export function StorageItemsSection({
 
   useEffect(() => {
     void loadItems();
-  }, [page, keyword, statusFilter, purchaseStartDate, purchaseEndDate, minPrice, maxPrice]);
+  }, [page, keyword, statusFilter, sourceFilter, purchaseStartDate, purchaseEndDate, minPrice, maxPrice]);
 
   useEffect(() => {
     setPage(1);
-  }, [keyword, statusFilter, purchaseStartDate, purchaseEndDate, minPrice, maxPrice]);
+  }, [keyword, statusFilter, sourceFilter, purchaseStartDate, purchaseEndDate, minPrice, maxPrice]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const summary = useMemo(() => items.reduce((result, item) => {
@@ -171,6 +175,7 @@ export function StorageItemsSection({
   const hasActiveFilters = Boolean(
     keyword
     || statusFilter !== 'active'
+    || sourceFilter !== 'all'
     || purchaseStartDate
     || purchaseEndDate
     || minPrice
@@ -242,9 +247,11 @@ export function StorageItemsSection({
             onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
             placeholder="记录用途或状态"
           />
-          <div className="storage-inline-action">
-            <Btn tone="primary" onClick={handleCreate}>保存物品</Btn>
-          </div>
+        </div>
+
+        <div className="storage-action-bar">
+          <Btn tone="primary" onClick={handleCreate} className="storage-save-btn">保存物品</Btn>
+          <Btn tone="secondary" onClick={() => setShowImportModal(true)} className="storage-import-btn">从购物导入</Btn>
         </div>
 
         <div className="storage-filter-grid">
@@ -262,6 +269,15 @@ export function StorageItemsSection({
             <option value="active">仅使用中</option>
             <option value="all">全部状态</option>
             <option value="archived">仅已归档</option>
+          </SelectField>
+          <SelectField
+            label="来源"
+            value={sourceFilter}
+            onChange={(event) => setSourceFilter(event.target.value as typeof sourceFilter)}
+          >
+            <option value="all">全部来源</option>
+            <option value="manual">手动添加</option>
+            <option value="shopping">购物导入</option>
           </SelectField>
           <DatePickerField label="购买开始" value={purchaseStartDate} onChange={setPurchaseStartDate} clearable popoverStrategy="floating" />
           <DatePickerField label="购买结束" value={purchaseEndDate} onChange={setPurchaseEndDate} clearable popoverStrategy="floating" />
@@ -333,6 +349,16 @@ export function StorageItemsSection({
                   render: (_, row) => <Tag tone={getStatusTone(row.status)}>{getStorageStatusLabel(row.status)}</Tag>,
                 },
                 {
+                  key: 'source',
+                  title: '来源',
+                  width: 100,
+                  render: (_, row) => (
+                    <Tag tone={row.source === 'shopping' ? 'blue' : 'green'}>
+                      {row.source === 'shopping' ? '购物导入' : '手动'}
+                    </Tag>
+                  ),
+                },
+                {
                   key: 'actions',
                   title: '操作',
                   width: 190,
@@ -379,8 +405,8 @@ export function StorageItemsSection({
       <Modal
         open={Boolean(editingItem)}
         onClose={() => setEditingItem(null)}
-        title={editingItem ? `编辑物品：${editingItem.itemName}` : '编辑物品'}
-        width={760}
+        title={editingItem ? `编辑：${editingItem.itemName}` : '编辑物品'}
+        width={720}
         footer={(
           <>
             <Btn tone="secondary" onClick={() => setEditingItem(null)}>取消</Btn>
@@ -388,45 +414,96 @@ export function StorageItemsSection({
           </>
         )}
       >
-        <div className="storage-modal-grid">
-          <Field
-            label="物品名称"
-            value={editingForm.itemName}
-            onChange={(event) => setEditingForm((current) => ({ ...current, itemName: event.target.value }))}
-          />
-          <Field
-            label="购买价格"
-            type="number"
-            min="0"
-            step="0.01"
-            value={editingForm.purchasePrice}
-            onChange={(event) => setEditingForm((current) => ({ ...current, purchasePrice: event.target.value }))}
-          />
-          <DatePickerField
-            label="购买日期"
-            value={editingForm.purchaseDate}
-            onChange={(value) => setEditingForm((current) => ({ ...current, purchaseDate: value }))}
-            clearable={false}
-            popoverStrategy="floating"
-          />
-          <DatePickerField
-            label="结束使用日期"
-            value={editingForm.endDate}
-            onChange={(value) => setEditingForm((current) => ({ ...current, endDate: value }))}
-            clearable
-            minValue={editingForm.purchaseDate}
-            popoverStrategy="floating"
-          />
-          <div className="storage-modal-grid-full">
-            <TextArea
-              label="备注"
-              value={editingForm.notes}
-              onChange={(event) => setEditingForm((current) => ({ ...current, notes: event.target.value }))}
-              placeholder="记录用途、使用感受或归档原因"
-            />
-          </div>
-        </div>
+        {editingItem && (
+          <>
+            {editingItem.source === 'shopping' && (
+              <div className="storage-edit-notice">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span>此物品来自购物记录，只能修改结束日期和备注</span>
+              </div>
+            )}
+
+            <div className="storage-edit-info">
+              <div className="storage-edit-info-item">
+                <span className="storage-edit-info-label">来源</span>
+                <Tag tone={editingItem.source === 'shopping' ? 'blue' : 'green'}>
+                  {editingItem.source === 'shopping' ? '购物导入' : '手动添加'}
+                </Tag>
+              </div>
+              <div className="storage-edit-info-item">
+                <span className="storage-edit-info-label">购买价格</span>
+                <strong className="storage-edit-info-value">¥{formatStorageMoney(editingItem.purchasePrice)}</strong>
+              </div>
+              <div className="storage-edit-info-item">
+                <span className="storage-edit-info-label">已使用天数</span>
+                <strong className="storage-edit-info-value">{calculateStorageUsageDays(editingItem)} 天</strong>
+              </div>
+              <div className="storage-edit-info-item">
+                <span className="storage-edit-info-label">日均成本</span>
+                <strong className="storage-edit-info-value storage-edit-daily-cost">¥{formatStorageMoney(calculateStorageDailyCost(editingItem))}</strong>
+              </div>
+            </div>
+
+            <div className="storage-modal-grid">
+              <Field
+                label="物品名称"
+                value={editingForm.itemName}
+                onChange={(event) => setEditingForm((current) => ({ ...current, itemName: event.target.value }))}
+                disabled={editingItem?.source === 'shopping'}
+                placeholder="输入物品名称"
+              />
+              <Field
+                label="购买价格 (元)"
+                type="number"
+                min="0"
+                step="0.01"
+                value={editingForm.purchasePrice}
+                onChange={(event) => setEditingForm((current) => ({ ...current, purchasePrice: event.target.value }))}
+                disabled={editingItem?.source === 'shopping'}
+                placeholder="0.00"
+              />
+              <DatePickerField
+                label="购买日期"
+                value={editingForm.purchaseDate}
+                onChange={(value) => setEditingForm((current) => ({ ...current, purchaseDate: value }))}
+                clearable={false}
+                popoverStrategy="floating"
+                disabled={editingItem?.source === 'shopping'}
+              />
+              <DatePickerField
+                label="结束使用日期"
+                value={editingForm.endDate}
+                onChange={(value) => setEditingForm((current) => ({ ...current, endDate: value }))}
+                clearable
+                minValue={editingForm.purchaseDate}
+                placeholder="仍在使用可留空"
+                popoverStrategy="floating"
+              />
+              <div className="storage-modal-grid-full">
+                <TextArea
+                  label="备注"
+                  value={editingForm.notes}
+                  onChange={(event) => setEditingForm((current) => ({ ...current, notes: event.target.value }))}
+                  placeholder="记录用途、使用感受或归档原因"
+                />
+              </div>
+            </div>
+          </>
+        )}
       </Modal>
+
+      <StorageImportFromShoppingModal
+        open={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImported={() => {
+          onChanged();
+          void loadItems();
+        }}
+        showToast={showToast}
+        existingItems={items}
+      />
     </SectionCard>
   );
 }
