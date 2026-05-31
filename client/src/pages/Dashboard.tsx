@@ -219,13 +219,20 @@ export default function Dashboard() {
 
   const timelineItems = useMemo(() => {
     if (!summary) return [];
-    const items: Array<{ time: string; module: string; title: string }> = [];
+    const items: Array<{ time: string; module: string; title: string; sortKey: number }> = [];
     summary.notifications.recentLogs.slice(0, 3).forEach((log) => {
       const d = new Date(log.createdAt);
-      items.push({ time: `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`, module: '通知', title: log.title });
+      const month = (d.getMonth() + 1).toString().padStart(2, '0');
+      const day = d.getDate().toString().padStart(2, '0');
+      const hour = d.getHours().toString().padStart(2, '0');
+      const minute = d.getMinutes().toString().padStart(2, '0');
+      items.push({ time: `${month}-${day} ${hour}:${minute}`, module: '通知', title: log.title, sortKey: d.getTime() });
     });
-    summary.agenda.slice(0, 2).forEach((item) => items.push({ time: item.targetDate || '-', module: item.module, title: item.title }));
-    return items.sort((a, b) => b.time.localeCompare(a.time)).slice(0, 5);
+    summary.agenda.slice(0, 2).forEach((item) => {
+      const sortKey = item.targetDate ? new Date(item.targetDate).getTime() : 0;
+      items.push({ time: item.targetDate || '-', module: item.module, title: item.title, sortKey });
+    });
+    return items.sort((a, b) => b.sortKey - a.sortKey).slice(0, 5);
   }, [summary]);
 
   if (!summary) {
