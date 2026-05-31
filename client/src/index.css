@@ -3344,6 +3344,13 @@ textarea {
   }
 }
 
+@media (max-width: 768px) {
+  .storage-entry-grid,
+  .storage-filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 @media (max-width: 960px) {
   .two-column-layout,
   .scene-grid,
@@ -4132,10 +4139,7 @@ textarea {
   grid-template-columns:
     minmax(180px, 1.15fr)
     minmax(120px, 0.78fr)
-    minmax(150px, 0.92fr)
-    minmax(150px, 0.92fr)
-    minmax(220px, 1.2fr)
-    170px;
+    minmax(150px, 0.92fr);
   align-items: end;
 }
 
@@ -4143,10 +4147,7 @@ textarea {
   grid-template-columns:
     minmax(220px, 1.2fr)
     minmax(140px, 0.82fr)
-    minmax(150px, 0.92fr)
-    minmax(150px, 0.92fr)
-    minmax(120px, 0.72fr)
-    minmax(120px, 0.72fr);
+    minmax(150px, 0.92fr);
   align-items: end;
 }
 

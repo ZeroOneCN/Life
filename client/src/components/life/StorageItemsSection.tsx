@@ -89,16 +89,19 @@ export function StorageItemsSection({
 
   const loadItems = async () => {
     try {
-      const result = await storageApi.list({
+      const params: Record<string, unknown> = {
         page,
         page_size: PAGE_SIZE,
-        keyword,
         status: statusFilter,
-        purchaseStartDate,
-        purchaseEndDate,
-        minPrice,
-        maxPrice,
-      });
+      };
+
+      if (keyword) params.keyword = keyword;
+      if (purchaseStartDate) params.purchaseStartDate = purchaseStartDate;
+      if (purchaseEndDate) params.purchaseEndDate = purchaseEndDate;
+      if (minPrice) params.minPrice = minPrice;
+      if (maxPrice) params.maxPrice = maxPrice;
+
+      const result = await storageApi.list(params);
       setItems(result.items);
       setTotal(result.total);
     } catch (error) {

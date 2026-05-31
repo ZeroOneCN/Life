@@ -28,14 +28,17 @@ export function StorageArchiveSection({
 
   const loadArchive = async () => {
     try {
-      const result = await storageApi.list({
+      const params: Record<string, unknown> = {
         page,
         page_size: PAGE_SIZE,
-        keyword,
         status: 'archived',
-        purchaseStartDate,
-        purchaseEndDate,
-      });
+      };
+
+      if (keyword) params.keyword = keyword;
+      if (purchaseStartDate) params.purchaseStartDate = purchaseStartDate;
+      if (purchaseEndDate) params.purchaseEndDate = purchaseEndDate;
+
+      const result = await storageApi.list(params);
       setItems(result.items);
       setTotal(result.total);
     } catch (error) {
