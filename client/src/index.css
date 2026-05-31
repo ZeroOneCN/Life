@@ -5240,7 +5240,7 @@ textarea {
   color: var(--color-ink-subtle);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
-  width: 44px;
+  width: 165px;
 }
 
 .dash-tl-module {
