@@ -2357,7 +2357,7 @@ textarea {
 .travel-report-summary,
 .travel-report-empty {
   color: var(--color-ink-subtle);
-  font-size: 13px;
+  font-size: 16px;
 }
 
 .travel-amount-stack {
@@ -2446,7 +2446,48 @@ textarea {
 .travel-report-column-picker {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 16px;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-surface-3) 60%, transparent);
+}
+
+.travel-col-picker-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-subtle);
+}
+
+.travel-col-picker-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.travel-col-toggle {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.travel-col-toggle:hover {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.travel-col-divider {
+  color: var(--color-hairline);
+  font-size: 12px;
+}
+
+.travel-col-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
 }
 
 .travel-report-sheet {
@@ -2509,23 +2550,43 @@ textarea {
 .travel-report-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
 .travel-report-list-row {
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--color-surface-3) 88%, transparent);
+  display: grid;
+  grid-template-columns: auto 48px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-surface-3) 70%, transparent);
+}
+
+.travel-list-name {
+  font-size: 14px;
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.travel-list-count {
+  font-size: 12px;
+  color: var(--color-ink-subtle);
+  text-align: center;
 }
 
 .travel-report-list-row strong {
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: right;
+  justify-self: end;
 }
 
 .travel-report-summary {
   margin: 0;
   white-space: pre-wrap;
   line-height: 1.7;
+  font-size: 16px;
 }
 
 .travel-report-chart {
@@ -2544,11 +2605,11 @@ textarea {
 
 .travel-report-table th,
 .travel-report-table td {
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--color-hairline);
   text-align: left;
   vertical-align: top;
-  font-size: 12px;
+  font-size: 16px;
 }
 
 .travel-report-table th {

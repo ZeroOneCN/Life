@@ -92,8 +92,16 @@ export function TravelReportSection({
       showToast('报告明细至少保留一列。', 'error');
       return;
     }
-
     onReportColumnsChange(nextColumns);
+  };
+
+  const handleSelectAll = () => {
+    onReportColumnsChange(REPORT_COLUMN_OPTIONS.map((col) => col.value));
+  };
+
+  const handleDeselectAll = () => {
+    if (reportColumns.length <= 1) { showToast('至少保留一列'); return; }
+    onReportColumnsChange([]);
   };
 
   const handleExportPng = async () => {
@@ -147,15 +155,23 @@ export function TravelReportSection({
         </div>
 
         <div className="travel-report-column-picker">
-          {REPORT_COLUMN_OPTIONS.map((column) => (
-            <Checkbox
-              key={column.value}
-              checked={reportColumns.includes(column.value)}
-              onChange={(checked) => handleToggleColumn(column.value, checked)}
-            >
-              {column.label}
-            </Checkbox>
-          ))}
+          <span className="travel-col-picker-label">明细列</span>
+          <div className="travel-col-picker-actions">
+            <button type="button" className="travel-col-toggle" onClick={handleSelectAll}>全选</button>
+            <span className="travel-col-divider">/</span>
+            <button type="button" className="travel-col-toggle" onClick={handleDeselectAll}>反选</button>
+          </div>
+          <div className="travel-col-checkboxes">
+            {REPORT_COLUMN_OPTIONS.map((column) => (
+              <Checkbox
+                key={column.value}
+                checked={reportColumns.includes(column.value)}
+                onChange={(checked) => handleToggleColumn(column.value, checked)}
+              >
+                {column.label}
+              </Checkbox>
+            ))}
+          </div>
         </div>
 
         {reportData.book ? (
@@ -184,17 +200,21 @@ export function TravelReportSection({
                 <span>最大分类</span>
                 <strong>{reportData.summary.topCategoryName}</strong>
               </div>
+              <div className="travel-report-overview-card">
+                <span>记录数</span>
+                <strong>{reportData.summary.totalCount}</strong>
+              </div>
             </div>
 
             <div className="travel-report-grid">
               <section className="travel-report-panel">
-                <strong>分类概览</strong>
+                <strong>分类占比</strong>
                 {reportData.categoryBreakdown.length ? (
                   <div className="travel-report-list">
                     {reportData.categoryBreakdown.slice(0, 8).map((item) => (
                       <div key={item.name} className="travel-report-list-row">
-                        <span>{item.name}</span>
-                        <span>{item.count} 条</span>
+                        <span className="travel-list-name">{item.name}</span>
+                        <span className="travel-list-count">{item.count}笔</span>
                         <strong>{formatTravelAmount(item.paidAmount)}</strong>
                       </div>
                     ))}
@@ -205,13 +225,13 @@ export function TravelReportSection({
               </section>
 
               <section className="travel-report-panel">
-                <strong>支付渠道概览</strong>
+                <strong>支付渠道</strong>
                 {reportData.payChannelBreakdown.length ? (
                   <div className="travel-report-list">
                     {reportData.payChannelBreakdown.slice(0, 8).map((item) => (
                       <div key={item.name} className="travel-report-list-row">
-                        <span>{item.name}</span>
-                        <span>{item.count} 条</span>
+                        <span className="travel-list-name">{item.name}</span>
+                        <span className="travel-list-count">{item.count}笔</span>
                         <strong>{formatTravelAmount(item.paidAmount)}</strong>
                       </div>
                     ))}
@@ -228,7 +248,7 @@ export function TravelReportSection({
                 <div className="travel-report-chart">
                   <ResponsiveContainer width="100%" height={260}>
                     <LineChart data={reportData.dailyTrend}>
-                      <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
+                      <CartesianGrid stroke="var(--color-surface-3)" vertical={false} />
                       <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
                       <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
                       <Tooltip
