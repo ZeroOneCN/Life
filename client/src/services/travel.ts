@@ -1213,7 +1213,47 @@ async function renderTravelReportCanvas(node: HTMLElement) {
     backgroundColor: '#0f1011',
     scale: 2,
     useCORS: true,
+    onclone(clonedDoc) {
+      const clonedNode = clonedDoc.body.querySelector('.travel-report-sheet') as HTMLElement | null;
+      if (!clonedNode) return;
+      sanitizeColorMixInClone(clonedDoc, clonedNode);
+    },
   });
+}
+
+function sanitizeColorMixInClone(doc: Document, root: HTMLElement) {
+  const COLOR_MIX_RE = /color-mix\s*\([^)]+\)/g;
+  for (const styleEl of Array.from(doc.querySelectorAll('style'))) {
+    if (styleEl.sheet) {
+      try {
+        for (const rule of Array.from(styleEl.sheet.cssRules)) {
+          if (rule.cssText && rule.cssText.includes('color-mix')) {
+            rule.style.cssText = rule.style.cssText.replace(COLOR_MIX_RE, 'transparent');
+          }
+        }
+      } catch { }
+    }
+    if (styleEl.textContent && styleEl.textContent.includes('color-mix')) {
+      styleEl.textContent = styleEl.textContent.replace(COLOR_MIX_RE, 'transparent');
+    }
+  }
+  const allElements = [root, ...Array.from(root.querySelectorAll('*'))];
+  for (const el of allElements) {
+    const htmlEl = el as HTMLElement;
+    if (htmlEl.style && htmlEl.style.cssText.includes('color-mix')) {
+      htmlEl.style.cssText = htmlEl.style.cssText.replace(COLOR_MIX_RE, 'transparent');
+    }
+    const cs = doc.defaultView?.getComputedStyle(htmlEl);
+    if (!cs) continue;
+    for (let i = 0; i < cs.length; i++) {
+      const prop = cs[i];
+      try {
+        if (cs.getPropertyValue(prop).includes('color-mix')) {
+          htmlEl.style.setProperty(prop, 'transparent', 'important');
+        }
+      } catch { }
+    }
+  }
 }
 
 export async function exportTravelReportAsPng(node: HTMLElement, fileName: string) {
