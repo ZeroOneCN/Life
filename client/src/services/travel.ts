@@ -148,7 +148,7 @@ function normalizeBookId(value: string) {
 }
 
 export function getTravelCategoryLabel(category: TravelCategory) {
-  return CATEGORY_LABELS[category];
+  return CATEGORY_LABELS[category] || category || '其他';
 }
 
 export function getTravelPayChannelLabel(value: string, payChannels: TravelPayChannel[]) {
