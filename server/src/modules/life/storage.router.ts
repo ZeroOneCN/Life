@@ -284,7 +284,24 @@ export function createStorageRouter() {
       throw new AppError('storage_item_not_found', 404, 404);
     }
 
+    const shoppingRecordId = current.shopping_record_id;
+
     await repository.remove(current);
+
+    if (shoppingRecordId && current.source === 'shopping') {
+      try {
+        const shoppingRepo = appDataSource.getRepository(FinanceShoppingRecordEntity);
+        const shoppingRecord = await shoppingRepo.findOne({
+          where: { id: shoppingRecordId, user_id: userId },
+        });
+        if (shoppingRecord) {
+          await shoppingRepo.remove(shoppingRecord);
+        }
+      } catch (error) {
+        console.error('联动删除购物记录失败:', error);
+      }
+    }
+
     response.json(successResponse({ ok: true }, 'delete_storage_item_success'));
   }));
 

@@ -17,6 +17,7 @@ import { FinanceShoppingLedgerEntity } from './entities/finance-shopping-ledger.
 import { FinanceShoppingPlatformEntity } from './entities/finance-shopping-platform.entity';
 import { FinanceShoppingRecordEntity } from './entities/finance-shopping-record.entity';
 import { FinanceShoppingSettingEntity } from './entities/finance-shopping-setting.entity';
+import { LifeStorageItemEntity } from '../life/entities/life-storage-item.entity';
 
 const recordSchema = z.object({
   userId: z.string().trim().optional(),
@@ -228,6 +229,23 @@ export function createShoppingRouter() {
     }
 
     await repository.remove(current);
+
+    try {
+      const storageRepo = appDataSource.getRepository(LifeStorageItemEntity);
+      const linkedStorageItems = await storageRepo.find({
+        where: {
+          shopping_record_id: recordId,
+          user_id: userId,
+          source: 'shopping',
+        },
+      });
+      if (linkedStorageItems.length > 0) {
+        await storageRepo.remove(linkedStorageItems);
+      }
+    } catch (error) {
+      console.error('联动删除物品追踪记录失败:', error);
+    }
+
     response.json(successResponse({ ok: true }, 'delete_shopping_record_success'));
   }));
 

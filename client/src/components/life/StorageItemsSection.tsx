@@ -309,7 +309,7 @@ export function StorageItemsSection({
                   key: 'itemName',
                   title: '物品名称',
                   dataIndex: 'itemName',
-                  width: 160,
+                  width: 220,
                   render: (_, row) => (
                     <div className="storage-item-name">
                       <strong>{row.itemName}</strong>
@@ -317,51 +317,51 @@ export function StorageItemsSection({
                     </div>
                   ),
                 },
-                { key: 'purchaseDate', title: '购买日期', dataIndex: 'purchaseDate', width: 116 },
+                { key: 'purchaseDate', title: '购买日期', dataIndex: 'purchaseDate', width: 100 },
                 {
                   key: 'purchasePrice',
                   title: '购买价格',
-                  width: 110,
+                  width: 90,
                   render: (_, row) => formatStorageMoney(row.purchasePrice),
                 },
                 {
                   key: 'endDate',
                   title: '结束使用',
-                  width: 116,
+                  width: 90,
                   render: (_, row) => row.endDate || '使用中',
                 },
                 {
                   key: 'usageDays',
                   title: '使用天数',
-                  width: 96,
+                  width: 80,
                   render: (_, row) => `${calculateStorageUsageDays(row)} 天`,
                 },
                 {
                   key: 'dailyCost',
-                  title: '当前/最终日均成本',
-                  width: 140,
+                  title: '日均成本',
+                  width: 100,
                   render: (_, row) => formatStorageMoney(calculateStorageDailyCost(row)),
                 },
                 {
                   key: 'status',
                   title: '状态',
-                  width: 92,
+                  width: 70,
                   render: (_, row) => <Tag tone={getStatusTone(row.status)}>{getStorageStatusLabel(row.status)}</Tag>,
                 },
                 {
                   key: 'source',
                   title: '来源',
-                  width: 100,
+                  width: 80,
                   render: (_, row) => (
                     <Tag tone={row.source === 'shopping' ? 'blue' : 'green'}>
-                      {row.source === 'shopping' ? '购物导入' : '手动'}
+                      {row.source === 'shopping' ? '购物' : '手动'}
                     </Tag>
                   ),
                 },
                 {
                   key: 'actions',
                   title: '操作',
-                  width: 190,
+                  width: 170,
                   render: (_, row) => (
                     <div className="storage-table-actions">
                       <Btn
@@ -386,7 +386,7 @@ export function StorageItemsSection({
                           }
                         }}
                       >
-                        结束使用
+                        归档
                       </Btn>
                     </div>
                   ),
