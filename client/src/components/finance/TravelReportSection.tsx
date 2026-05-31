@@ -209,10 +209,6 @@ export function TravelReportSection({
             <div className="travel-report-grid">
               <section className="travel-report-panel">
                 <strong>分类占比</strong>
-                {(() => {
-                  console.log('[travel-report] categoryBreakdown:', reportData.categoryBreakdown);
-                  return null;
-                })()}
                 {reportData.categoryBreakdown.length ? (
                   <div className="travel-report-list">
                     {reportData.categoryBreakdown.slice(0, 8).map((item) => (
