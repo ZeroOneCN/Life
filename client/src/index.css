@@ -1744,6 +1744,39 @@ textarea {
   background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-3) 92%, transparent), color-mix(in srgb, var(--color-surface-2) 98%, transparent));
 }
 
+.template-preview-hint {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--color-surface-1);
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+  cursor: pointer;
+  transition: background 0.15s;
+  line-height: 1.5;
+}
+
+.template-preview-hint:hover {
+  background: var(--color-surface-2);
+}
+
+.template-detail-trigger {
+  color: var(--color-primary);
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.template-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--color-surface-1);
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+}
+
 .checkup-insight-card p {
   margin: 0;
   color: var(--color-ink-subtle);

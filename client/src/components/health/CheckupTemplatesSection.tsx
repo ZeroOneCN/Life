@@ -56,6 +56,7 @@ export function CheckupTemplatesSection({
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<TemplateFormState>(createDefaultFormState);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [detailTemplate, setDetailTemplate] = useState<CheckupTemplate | null>(null);
 
   const templateCountSummary = useMemo(
     () => templates.reduce((sum, template) => sum + template.items.length, 0),
@@ -84,24 +85,17 @@ export function CheckupTemplatesSection({
       }))
       .filter((item) => item.testName);
 
-    console.log('[CheckupTemplate] handleSave — raw form:', JSON.stringify(form, null, 2));
-    console.log('[CheckupTemplate] handleSave — filtered items:', JSON.stringify(items, null, 2));
-    console.log('[CheckupTemplate] handleSave — name:', JSON.stringify(form.name), 'testType:', JSON.stringify(form.testType));
-
     if (!form.name.trim() || !form.testType.trim() || !items.length) {
       showToast('请填写模板名称、检查类型和至少一个模板项目。', 'error');
       return;
     }
 
     const payload = { name: form.name, testType: form.testType, items };
-    console.log('[CheckupTemplate] handleSave — final payload:', JSON.stringify(payload, null, 2));
 
     if (editingTemplate) {
-      console.log('[CheckupTemplate] calling onUpdateTemplate id=', editingTemplate.id);
       onUpdateTemplate(editingTemplate.id, payload);
       showToast('模板已更新。');
     } else {
-      console.log('[CheckupTemplate] calling onCreateTemplate');
       onCreateTemplate(payload);
       showToast('模板已创建。');
     }
@@ -135,19 +129,14 @@ export function CheckupTemplatesSection({
                   </div>
                 </div>
 
-                <div className="stack-list">
-                  {template.items.map((item) => (
-                    <div key={item.id} className="list-row">
-                      <div>
-                        <strong>{item.testName}</strong>
-                        <div className="list-row-meta">
-                          <span>{item.unit || '无单位'}</span>
-                          <span>{item.referenceRange || '无参考范围'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <p
+                  className="template-preview-hint"
+                  onClick={() => setDetailTemplate(template)}
+                >
+                  {template.items.slice(0, 3).map((item) => item.testName).join('、')}
+                  {template.items.length > 3 ? ` 等${template.items.length}项` : ''}
+                  <span className="template-detail-trigger"> 查看详情 →</span>
+                </p>
 
                 <div className="fitness-row-actions">
                   <Btn tone="primary" onClick={() => onUseTemplate(template.id)}>用于批量录入</Btn>
@@ -164,6 +153,46 @@ export function CheckupTemplatesSection({
           />
         )}
       </div>
+
+      <Modal
+        open={Boolean(detailTemplate)}
+        onClose={() => setDetailTemplate(null)}
+        title={detailTemplate ? `模板详情：${detailTemplate.name}` : ''}
+        width={640}
+        footer={<Btn tone="secondary" onClick={() => setDetailTemplate(null)}>关闭</Btn>}
+      >
+        {detailTemplate && (
+          <div className="page-stack">
+            <div className="template-detail-meta">
+              <span><strong>检查类型：</strong>{detailTemplate.testType}</span>
+              <span><strong>项目数量：</strong>{detailTemplate.items.length} 个</span>
+              <span><strong>更新时间：</strong>{new Date(detailTemplate.updatedAt).toLocaleString()}</span>
+            </div>
+            <div className="data-table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 40 }}>#</th>
+                    <th>项目名称</th>
+                    <th style={{ width: 100 }}>单位</th>
+                    <th style={{ width: 160 }}>参考范围</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detailTemplate.items.map((item, index) => (
+                    <tr key={item.id}>
+                      <td>{index + 1}</td>
+                      <td><strong>{item.testName}</strong></td>
+                      <td>{item.unit || '-'}</td>
+                      <td>{item.referenceRange || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <Modal
         open={formOpen}
@@ -278,9 +307,7 @@ export function CheckupTemplatesSection({
         open={Boolean(pendingDeleteId)}
         onClose={() => setPendingDeleteId(null)}
         onConfirm={() => {
-          if (!pendingDeleteId) {
-            return;
-          }
+          if (!pendingDeleteId) return;
 
           onDeleteTemplate(pendingDeleteId);
           setPendingDeleteId(null);
