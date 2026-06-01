@@ -197,7 +197,7 @@ export function StorageDashboardSection({
                       ))}
                     </div>
                   ) : (
-                    <EmptyState title="暂无使用中的排行数据" description="至少保留一件使用中的物品，日均成本排行才会出现。" />
+                    <EmptyState title="暂无使用中的排行数据" description="至少保留一件使用中的物品，日均成本排行才会出现。" icon="📊" />
                   )
                 ) : (
                   durationRanking.length ? (
@@ -217,7 +217,7 @@ export function StorageDashboardSection({
                       ))}
                     </div>
                   ) : (
-                    <EmptyState title="暂无持有天数排行" description="录入更多物品后，这里会按使用天数自动拉开差异。" />
+                    <EmptyState title="暂无持有天数排行" description="录入更多物品后，这里会按使用天数自动拉开差异。" icon="⏱️" />
                   )
                 )}
               </div>
@@ -255,13 +255,13 @@ export function StorageDashboardSection({
                     </div>
                   </div>
                 ) : (
-                  <EmptyState title="暂无购入价格分布" description="物品数量增加后，价格分布图会更有参考价值。" />
+                  <EmptyState title="暂无购入价格分布" description="物品数量增加后，价格分布图会更有参考价值。" icon="🧾" />
                 )}
               </div>
             </div>
           </div>
         ) : (
-          <EmptyState title="暂无可分析的物品数据" description="先录入几件物品，系统就会自动生成购入趋势和成本排行。" />
+          <EmptyState title="暂无可分析的物品数据" description="先录入几件物品，系统就会自动生成购入趋势和成本排行。" icon="📈" />
         )}
       </div>
     </SectionCard>

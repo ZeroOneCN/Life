@@ -173,7 +173,7 @@ export function StorageArchiveSection({
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         ) : (
-          <EmptyState title="暂无归档物品" description="当某件物品结束使用后，把它归档到这里，就能固定最终持有天数和最终日均成本。" />
+          <EmptyState title="暂无归档物品" description="当某件物品结束使用后，把它归档到这里，就能固定最终持有天数和最终日均成本。" icon="📁" />
         )}
       </div>
     </SectionCard>

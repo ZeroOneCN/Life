@@ -70,14 +70,20 @@ export function StatGrid({
 export function EmptyState({
   title,
   description,
+  icon,
+  action,
 }: {
   title: string;
   description: string;
+  icon?: ReactNode;
+  action?: ReactNode;
 }) {
   return (
     <div className="empty-state">
+      {icon && <div className="empty-state-icon">{icon}</div>}
       <strong>{title}</strong>
       <span>{description}</span>
+      {action && <div className="empty-state-action">{action}</div>}
     </div>
   );
 }

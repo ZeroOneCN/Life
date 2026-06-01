@@ -398,7 +398,7 @@ export function StorageItemsSection({
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         ) : (
-          <EmptyState title="暂无符合条件的物品" description="可以先录入一件正在使用的物品，或者放宽筛选条件后再查看。" />
+          <EmptyState title="暂无符合条件的物品" description="可以先录入一件正在使用的物品，或者放宽筛选条件后再查看。" icon="📦" />
         )}
       </div>
 

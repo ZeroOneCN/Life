@@ -1511,12 +1511,23 @@ textarea {
 .empty-state {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
   justify-content: center;
-  padding: 36px 16px;
+  padding: 48px 24px;
   color: var(--color-ink-subtle);
   text-align: center;
+}
+
+.empty-state-icon {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 4px;
+  opacity: 0.7;
+}
+
+.empty-state-action {
+  margin-top: 8px;
 }
 
 .switch-row {

@@ -509,7 +509,7 @@ export function TodoTasksSection({
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         ) : (
-          <EmptyState title="暂无符合条件的任务" description="可以先新建待办，或者放宽筛选条件后再查看。" />
+          <EmptyState title="暂无符合条件的任务" description="可以先新建待办，或者放宽筛选条件后再查看。" icon="✅" />
         )}
       </div>
 

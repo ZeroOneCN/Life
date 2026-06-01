@@ -318,7 +318,7 @@ export default function Dashboard() {
               </div>
             ))
           ) : (
-            <EmptyState title="暂无动态" description="当有新活动时会在这里显示" />
+            <EmptyState title="暂无动态" description="当有新活动时会在这里显示" icon="📋" />
           )}
         </div>
       </SectionCard>
