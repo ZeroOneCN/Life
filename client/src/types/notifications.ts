@@ -1,4 +1,4 @@
-export type NotificationChannelType = 'email' | 'wechatWork' | 'webhook';
+export type NotificationChannelType = 'email' | 'wechatWork' | 'dingTalk' | 'feishu' | 'telegram' | 'webhook';
 
 export type NotificationSceneId =
   | 'todo.reminder'

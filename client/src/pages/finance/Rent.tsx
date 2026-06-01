@@ -268,20 +268,6 @@ export default function RentPage() {
         subtitle={loading ? '正在从后端加载住房记录、渠道和统计。' : '租房页已切换为后端唯一业务数据源，刷新页面后数据直接来自数据库。'}
       />
 
-      <SectionCard
-        title="当前上下文"
-        description="当前页面始终跟随登录用户加载，不再保留页面级本地业务状态或手动 userId 切换。"
-      >
-        <div className="rent-context-grid">
-          <div className="rent-context-summary">
-            <span>当前用户：{activeUserLabel}</span>
-            <span>租房渠道 {activeChannels.length} 个</span>
-            <span>住房记录 {overview.totalRecords} 条</span>
-            <span>在住 {overview.activeRecords} 条</span>
-          </div>
-        </div>
-      </SectionCard>
-
       <StatGrid
         items={[
           {

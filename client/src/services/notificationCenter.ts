@@ -29,6 +29,24 @@ const emptyState: NotificationCenterState = {
       enabled: false,
       status: 'disabled',
     },
+    dingTalk: {
+      type: 'dingTalk',
+      label: '钉钉',
+      enabled: false,
+      status: 'disabled',
+    },
+    feishu: {
+      type: 'feishu',
+      label: '飞书',
+      enabled: false,
+      status: 'disabled',
+    },
+    telegram: {
+      type: 'telegram',
+      label: 'Telegram',
+      enabled: false,
+      status: 'disabled',
+    },
     webhook: {
       type: 'webhook',
       label: 'Webhook',

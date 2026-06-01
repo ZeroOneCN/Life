@@ -27,6 +27,9 @@ const tabOptions = [
 const channelLabels: Record<NotificationChannelType, string> = {
   email: '邮件',
   wechatWork: '企业微信',
+  dingTalk: '钉钉',
+  feishu: '飞书',
+  telegram: 'Telegram',
   webhook: 'Webhook',
 };
 
@@ -162,7 +165,7 @@ export default function NotificationCenterPage() {
       ) : null}
 
       {tab === 'channels' ? (
-        <div className="page-stack">
+        <div className="channel-config-grid">
           {Object.values(notificationState.channels).map((channel) => (
             <NotificationChannelCard
               key={channel.type}

@@ -76,6 +76,27 @@ export function NotificationChannelCard({
             placeholder="LifeOS"
           />
         </div>
+      ) : config.type === 'telegram' ? (
+        <div className="form-grid">
+          <Field
+            label="Bot Token"
+            value={recipient}
+            onChange={(event) => {
+              setRecipient(event.target.value);
+              scheduleUpdate({ recipient: event.target.value });
+            }}
+            placeholder="123456:ABC-DEF..."
+          />
+          <Field
+            label="Chat ID"
+            value={webhookUrl}
+            onChange={(event) => {
+              setWebhookUrl(event.target.value);
+              scheduleUpdate({ webhookUrl: event.target.value });
+            }}
+            placeholder="用户或群组 ID"
+          />
+        </div>
       ) : (
         <div className="form-grid">
           <Field
@@ -88,7 +109,7 @@ export function NotificationChannelCard({
             placeholder="https://example.com/hook"
           />
           <Field
-            label="密钥 / 签名"
+            label="密钥 / 签名（可选）"
             value={secret}
             onChange={(event) => {
               setSecret(event.target.value);

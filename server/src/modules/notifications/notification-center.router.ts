@@ -10,7 +10,7 @@ import { buildListData, successResponse } from '../../shared/http/response';
 import { validateBody } from '../../shared/http/validation';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
 import { parsePagination } from '../../shared/utils/pagination';
-import { sendEmail, sendWebhook, sendWechatWorkWebhook } from '../../shared/services/notification-sender';
+import { sendEmail, sendWebhook, sendWechatWorkWebhook, sendDingTalkWebhook, sendFeishuWebhook, sendTelegramMessage } from '../../shared/services/notification-sender';
 import { NotificationCenterChannelEntity } from './entities/notification-center-channel.entity';
 import { NotificationCenterLogEntity } from './entities/notification-center-log.entity';
 import { NotificationCenterSceneChannelEntity } from './entities/notification-center-scene-channel.entity';
@@ -41,14 +41,41 @@ const wechatWorkConfigSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
+const dingTalkConfigSchema = z.object({
+  recipient: z.string().optional(),
+  senderName: z.string().optional(),
+  webhookUrl: z.string().url('请输入有效的钉钉 Webhook URL').optional(),
+  secret: z.string().max(128).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+const feishuConfigSchema = z.object({
+  recipient: z.string().optional(),
+  senderName: z.string().optional(),
+  webhookUrl: z.string().url('请输入有效的飞书 Webhook URL').optional(),
+  secret: z.string().max(128).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+const telegramConfigSchema = z.object({
+  recipient: z.string().optional(),
+  senderName: z.string().optional(),
+  webhookUrl: z.string().optional(),
+  secret: z.string().max(128).optional(),
+  notes: z.string().max(500).optional(),
+});
+
 function validateChannelConfig(type: string, config: unknown) {
   if (type === 'email') return emailConfigSchema.parse(config ?? {});
   if (type === 'wechatWork') return wechatWorkConfigSchema.parse(config ?? {});
+  if (type === 'dingTalk') return dingTalkConfigSchema.parse(config ?? {});
+  if (type === 'feishu') return feishuConfigSchema.parse(config ?? {});
+  if (type === 'telegram') return telegramConfigSchema.parse(config ?? {});
   return webhookConfigSchema.parse(config ?? {});
 }
 
 const channelSchema = z.object({
-  type: z.enum(['email', 'wechatWork', 'webhook']),
+  type: z.enum(['email', 'wechatWork', 'dingTalk', 'feishu', 'telegram', 'webhook']),
   label: z.string().trim().min(1).max(64).optional(),
   enabled: z.coerce.boolean().optional(),
   status: z.enum(['ready', 'incomplete', 'disabled']).optional(),
@@ -57,7 +84,7 @@ const channelSchema = z.object({
 
 const sceneSchema = z.object({
   enabled: z.coerce.boolean().optional(),
-  channels: z.array(z.enum(['email', 'wechatWork', 'webhook'])).optional(),
+  channels: z.array(z.enum(['email', 'wechatWork', 'dingTalk', 'feishu', 'telegram', 'webhook'])).optional(),
   label: z.string().trim().max(128).optional(),
   summary: z.string().trim().max(255).optional(),
   description: z.string().trim().optional(),
@@ -69,14 +96,14 @@ const templateSchema = z.object({
 });
 
 const testChannelSchema = z.object({
-  channel: z.enum(['email', 'wechatWork', 'webhook']),
+  channel: z.enum(['email', 'wechatWork', 'dingTalk', 'feishu', 'telegram', 'webhook']),
   title: z.string().trim().min(1).max(255).optional(),
 });
 
 const sendSceneSchema = z.object({
   sceneId: z.string().trim().min(1).max(64),
   message: z.string().trim().min(1).optional(),
-  preferredChannels: z.array(z.enum(['email', 'wechatWork', 'webhook'])).optional(),
+  preferredChannels: z.array(z.enum(['email', 'wechatWork', 'dingTalk', 'feishu', 'telegram', 'webhook'])).optional(),
 });
 
 function normalizeChannelStatus(enabled: boolean, config: Record<string, unknown> | null, type: string) {
@@ -86,6 +113,10 @@ function normalizeChannelStatus(enabled: boolean, config: Record<string, unknown
 
   if (type === 'email') {
     return config?.recipient ? 'ready' : 'incomplete';
+  }
+
+  if (type === 'telegram') {
+    return (config?.recipient && config?.webhookUrl) ? 'ready' : 'incomplete';
   }
 
   return config?.webhookUrl ? 'ready' : 'incomplete';
@@ -102,15 +133,23 @@ export function createNotificationCenterRouter() {
       order: { channel_type: 'ASC' },
     });
 
-    if (items.length === 0) {
-      const defaults = [
-        { channel_type: 'email', label: '邮件通知', enabled: false, status: 'disabled', config_json: null },
-        { channel_type: 'wechatWork', label: '企业微信', enabled: false, status: 'disabled', config_json: null },
-        { channel_type: 'webhook', label: 'Webhook', enabled: false, status: 'disabled', config_json: null },
-      ];
-      items = await repository.save(
-        defaults.map((d) => repository.create({ user_id: userId, ...d })),
+    const ALL_CHANNEL_SEEDS = [
+      { channel_type: 'email', label: '邮件通知', enabled: false, status: 'disabled', config_json: null },
+      { channel_type: 'wechatWork', label: '企业微信', enabled: false, status: 'disabled', config_json: null },
+      { channel_type: 'dingTalk', label: '钉钉', enabled: false, status: 'disabled', config_json: null },
+      { channel_type: 'feishu', label: '飞书', enabled: false, status: 'disabled', config_json: null },
+      { channel_type: 'telegram', label: 'Telegram', enabled: false, status: 'disabled', config_json: null },
+      { channel_type: 'webhook', label: 'Webhook', enabled: false, status: 'disabled', config_json: null },
+    ];
+
+    const existingTypes = new Set(items.map((item) => item.channel_type));
+    const missing = ALL_CHANNEL_SEEDS.filter((seed) => !existingTypes.has(seed.channel_type));
+
+    if (missing.length > 0) {
+      const added = await repository.save(
+        missing.map((d) => repository.create({ user_id: userId, ...d })),
       );
+      items = [...items, ...added];
     }
 
     response.json(successResponse(buildListData(items)));
@@ -431,6 +470,87 @@ export function createNotificationCenterRouter() {
       sendResult = await sendWechatWorkWebhook({
         webhookUrl,
         content: `${title}\n这是一条来自 LifeOS 通知中心的测试消息。`,
+      });
+    } else if (payload.channel === 'dingTalk') {
+      const webhookUrl = config?.webhookUrl as string | undefined;
+      const secret = config?.secret as string | undefined;
+      if (!webhookUrl) {
+        const logEntry = await logRepo.save(logRepo.create({
+          user_id: userId,
+          channel: payload.channel,
+          scene_id: null,
+          kind: 'test',
+          status: 'error',
+          title,
+          message: '钉钉 Webhook 地址未配置',
+        }));
+
+        response.json(successResponse({
+          success: false,
+          message: '钉钉 Webhook 地址未配置',
+          logEntry,
+        }, 'test_notification_channel_success'));
+        return;
+      }
+
+      sendResult = await sendDingTalkWebhook({
+        webhookUrl,
+        secret,
+        content: `${title}\n这是一条来自 LifeOS 通知中心的测试消息。`,
+      });
+    } else if (payload.channel === 'feishu') {
+      const webhookUrl = config?.webhookUrl as string | undefined;
+      const secret = config?.secret as string | undefined;
+      if (!webhookUrl) {
+        const logEntry = await logRepo.save(logRepo.create({
+          user_id: userId,
+          channel: payload.channel,
+          scene_id: null,
+          kind: 'test',
+          status: 'error',
+          title,
+          message: '飞书 Webhook 地址未配置',
+        }));
+
+        response.json(successResponse({
+          success: false,
+          message: '飞书 Webhook 地址未配置',
+          logEntry,
+        }, 'test_notification_channel_success'));
+        return;
+      }
+
+      sendResult = await sendFeishuWebhook({
+        webhookUrl,
+        secret,
+        content: `${title}\n这是一条来自 LifeOS 通知中心的测试消息。`,
+      });
+    } else if (payload.channel === 'telegram') {
+      const botToken = config?.recipient as string | undefined;
+      const chatId = config?.webhookUrl as string | undefined;
+      if (!botToken || !chatId) {
+        const logEntry = await logRepo.save(logRepo.create({
+          user_id: userId,
+          channel: payload.channel,
+          scene_id: null,
+          kind: 'test',
+          status: 'error',
+          title,
+          message: 'Telegram Bot Token 或 Chat ID 未配置',
+        }));
+
+        response.json(successResponse({
+          success: false,
+          message: 'Telegram Bot Token 或 Chat ID 未配置',
+          logEntry,
+        }, 'test_notification_channel_success'));
+        return;
+      }
+
+      sendResult = await sendTelegramMessage({
+        botToken,
+        chatId,
+        text: `${title}\n这是一条来自 LifeOS 通知中心的测试消息。`,
       });
     } else if (payload.channel === 'webhook') {
       const webhookUrl = config?.webhookUrl as string | undefined;

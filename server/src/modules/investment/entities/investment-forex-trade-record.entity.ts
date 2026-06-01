@@ -4,6 +4,9 @@ import { UserScopedEntity } from '../../../shared/persistence/user-scoped.entity
 
 @Entity('investment_forex_trade_record')
 export class InvestmentForexTradeRecordEntity extends UserScopedEntity {
+  @Column({ type: 'int', default: 0 })
+  sort_order!: number;
+
   @Column({ type: 'date' })
   trade_date!: string;
 

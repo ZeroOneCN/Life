@@ -241,7 +241,7 @@ function buildSummary(
     totalWithdrawal: Number(withdrawals.toFixed(2)),
     netCapital: Number(netCapital.toFixed(2)),
     equity: Number((netCapital + realizedNetPnl).toFixed(2)),
-    roi: netCapital > 0 ? realizedNetPnl / netCapital : 0,
+    roi: deposits > 0 ? realizedNetPnl / deposits : 0,
   };
 }
 
@@ -254,7 +254,7 @@ export function createForexRouter() {
     const repository = appDataSource.getRepository(InvestmentForexTradeRecordEntity);
     const [items, total] = await repository.findAndCount({
       where: { user_id: userId },
-      order: { trade_date: 'DESC', updated_at: 'DESC' },
+      order: { trade_date: 'DESC', created_at: 'DESC' },
       skip,
       take: pageSize,
     });
@@ -692,6 +692,7 @@ export function createForexRouter() {
       importedCount += 1;
       toSave.push(repository.create({
         user_id: userId,
+        sort_order: toSave.length,
         trade_date: tradeDate,
         instrument,
         order_type: orderType,
