@@ -202,7 +202,9 @@ export default function ShoppingPage() {
             <Btn
               tone="secondary"
               onClick={() => {
-                void updateSettings({ currencyMode: settings.currencyMode === 'CNY' ? 'USDT' : 'CNY' as ShoppingCurrencyMode });
+                const next = settings.currencyMode === 'CNY' ? 'USDT' : 'CNY';
+                void updateSettings({ currencyMode: next as ShoppingCurrencyMode });
+                showToast(`已切换到 ${next === 'CNY' ? '人民币' : 'USDT'} 视图`);
               }}
             >
               切换到 {settings.currencyMode === 'CNY' ? 'USDT' : '人民币'}
