@@ -131,12 +131,9 @@ export default function CheckupPage() {
       <PageHeader
         title="体检指标"
         subtitle={loading ? '正在从后端加载指标记录、模板和提醒设置。' : '体检页已切到后端唯一数据源，提醒与通知统一由后端和通知中心联动。'}
-        actions={(
-          <>
-            <Tag tone="blue">后端联动</Tag>
-            <Btn tone="primary" onClick={() => setTab('batch')}>去批量录入</Btn>
-          </>
-        )}
+        actions={tab !== 'batch' ? (
+          <Btn tone="secondary" onClick={() => setTab('batch')}>批量录入</Btn>
+        ) : undefined}
       />
 
       <StatGrid
