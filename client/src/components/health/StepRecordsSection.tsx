@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { DateTimePickerField } from '../date';
-import { DeleteModal, Modal, Pagination, Btn, Field, SelectField } from '../ui';
+import { DeleteModal, Modal, Pagination, Btn, Field, SelectField, TableSkeleton } from '../ui';
 import {
   STEP_HOURS,
   buildStepRecordTime,
@@ -240,9 +240,7 @@ export function StepRecordsSection({
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-ink-subtle)' }}>
-            正在加载记录…
-          </div>
+          <TableSkeleton rows={5} cols={6} />
         ) : sortedRecords.length ? (
           <>
             <div className="table-wrap">

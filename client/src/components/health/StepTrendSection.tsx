@@ -15,7 +15,7 @@ import { STEP_HOURS } from '../../services/stepRecords';
 import { stepApi } from '../../services/stepApi';
 import type { StepAggregatePoint, StepConcreteHour, StepStatsGranularity } from '../../types/health';
 import { usePageTab } from '../../hooks/usePageTab';
-import { Btn, Field, Pagination, Tag } from '../../components/ui';
+import { Btn, Field, Pagination, Tag, CardSkeleton } from '../../components/ui';
 import { EmptyState, SectionCard } from '../page';
 
 type ChartHourFilter = 'all' | StepConcreteHour;
@@ -285,9 +285,7 @@ export function StepTrendSection({
           </div>
 
           {trendLoading && trendData.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--color-ink-subtle)' }}>
-              正在加载趋势数据…
-            </div>
+            <CardSkeleton height={320} />
           ) : trendData.length ? (
             <div className="step-chart-canvas" key={`${granularity}-${chartHourFilter}`} style={{ position: 'relative' }}>
               {trendLoading && (

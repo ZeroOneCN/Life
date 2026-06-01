@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { EmptyState, PageHeader, SectionCard } from '../components/page';
-import { Tag } from '../components/ui';
+import { Skeleton, Tag } from '../components/ui';
 import { buildApiErrorMessage, apiGet } from '../lib/api';
 import type {
   DashboardAgendaItem,
@@ -240,7 +240,9 @@ export default function Dashboard() {
     return (
       <div className="page-stack dashboard-page">
         <PageHeader title="LifeOS 控制台" subtitle={loadingError || '正在加载数据...'} />
-        <EmptyState title="加载中" description={loadingError || '正在获取最新数据'} />
+        <div className="section-card" style={{ padding: 24 }}>
+          <Skeleton lines={4} />
+        </div>
       </div>
     );
   }

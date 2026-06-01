@@ -79,6 +79,66 @@ export function Toast({ toast }: { toast: ToastState | null }) {
   );
 }
 
+export function Skeleton({ lines = 3, width }: { lines?: number; width?: string | number }) {
+  return (
+    <div className="skeleton-block" style={width ? { width: typeof width === 'number' ? `${width}px` : width } : undefined}>
+      {Array.from({ length: lines }).map((_, i) => (
+        <div key={i} className="skeleton-line" style={{ width: i === lines - 1 ? '60%' : '100%' }} />
+      ))}
+    </div>
+  );
+}
+
+export function StatGridSkeleton({ cols = 4 }: { cols?: number }) {
+  return (
+    <div className="stat-grid">
+      {Array.from({ length: cols }).map((_, i) => (
+        <div key={i} className="stat-card skeleton-card">
+          <div className="skeleton-line" style={{ width: '40%', height: 14, marginBottom: 10 }} />
+          <div className="skeleton-line" style={{ width: '70%', height: 26, marginBottom: 8 }} />
+          <div className="skeleton-line" style={{ width: '50%', height: 12 }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function TableSkeleton({ rows = 5, cols = 5 }: { rows?: number; cols?: number }) {
+  return (
+    <div className="table-wrap">
+      <table className="data-table">
+        <thead>
+          <tr>
+            {Array.from({ length: cols }).map((_, i) => (
+              <th key={i}><div className="skeleton-line" style={{ width: '60%', height: 14, margin: '0 auto' }} /></th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: rows }).map((_, ri) => (
+            <tr key={ri}>
+              {Array.from({ length: cols }).map((_, ci) => (
+                <td key={ci}><div className="skeleton-line" style={{ width: ci === 0 ? '70%' : '50%', height: 14, margin: '0 auto' }} /></td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export function CardSkeleton({ height = 180 }: { height?: number }) {
+  return (
+    <div className="section-card" style={{ height }}>
+      <div className="skeleton-line" style={{ width: '30%', height: 16, marginBottom: 16 }} />
+      <div className="skeleton-line" style={{ width: '100%', height: 14, marginBottom: 10 }} />
+      <div className="skeleton-line" style={{ width: '80%', height: 14, marginBottom: 10 }} />
+      <div className="skeleton-line" style={{ width: '60%', height: 14 }} />
+    </div>
+  );
+}
+
 export function Modal({ open, onClose, title, width = 560, footer, children }: ModalProps) {
   useEffect(() => {
     if (!open) {
