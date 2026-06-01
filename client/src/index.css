@@ -5,6 +5,13 @@
   --sidebar-width-collapsed: 88px;
   --sidebar-transition-duration: 260ms;
   --sidebar-transition-easing: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Responsive Breakpoints (Standard 4-tier) */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+
   --color-primary: #5e6ad2;
   --color-primary-hover: #7684ef;
   --color-primary-focus: #4957c7;
@@ -1003,7 +1010,7 @@ textarea {
   padding: 0;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 768px) {
   .date-popover.is-datetime {
     left: 0;
     width: 100%;
@@ -3351,7 +3358,7 @@ textarea {
   }
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1024px) {
   .two-column-layout,
   .scene-grid,
   .form-grid,
@@ -5352,7 +5359,7 @@ textarea {
   display: block;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1024px) {
   .fitness-overview-grid,
   .fitness-entry-grid-diet,
   .fitness-entry-grid-exercise,
@@ -5786,7 +5793,7 @@ textarea {
   font-size: 13px;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1024px) {
   .auth-page-shell {
     padding: 24px 16px 40px;
   }
@@ -5800,7 +5807,7 @@ textarea {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .auth-status-grid,
   .auth-form-grid {
     grid-template-columns: 1fr;
@@ -6295,7 +6302,7 @@ textarea {
   color: white !important;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1024px) {
   .shopping-import-header {
     flex-direction: column;
     gap: 16px;
@@ -6435,7 +6442,7 @@ textarea {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1024px) {
   .storage-overview-grid,
   .storage-list-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
