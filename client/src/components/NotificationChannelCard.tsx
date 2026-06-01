@@ -18,6 +18,7 @@ export function NotificationChannelCard({
   const [senderName, setSenderName] = useState(config.senderName ?? '');
   const [webhookUrl, setWebhookUrl] = useState(config.webhookUrl ?? '');
   const [secret, setSecret] = useState(config.secret ?? '');
+  const [testing, setTesting] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -101,8 +102,15 @@ export function NotificationChannelCard({
         <span className="subtle-text">
           最近测试：{config.lastTestAt ? new Date(config.lastTestAt).toLocaleString() : '尚未测试'}
         </span>
-        <Btn tone="secondary" onClick={() => onTest(config.type)}>
-          测试发送
+        <Btn tone="secondary" disabled={testing} onClick={async () => {
+          setTesting(true);
+          try {
+            await onTest(config.type);
+          } finally {
+            setTesting(false);
+          }
+        }}>
+          {testing ? '发送中...' : '测试发送'}
         </Btn>
       </div>
     </div>

@@ -165,14 +165,13 @@ export default function NotificationCenterPage() {
                     showToast(buildApiErrorMessage(error, `${channel.label} 更新失败。`), 'error');
                   });
               }}
-              onTest={(type) => {
-                void sendTestNotification(type)
-                  .then((result) => {
-                    showToast(result.message, result.success ? 'success' : 'error');
-                  })
-                  .catch((error) => {
-                    showToast(buildApiErrorMessage(error, '测试发送失败。'), 'error');
-                  });
+              onTest={async (type) => {
+                try {
+                  const result = await sendTestNotification(type);
+                  showToast(result.message, result.success ? 'success' : 'error');
+                } catch (error) {
+                  showToast(buildApiErrorMessage(error, '测试发送失败。'), 'error');
+                }
               }}
             />
           ))}
