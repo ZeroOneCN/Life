@@ -126,6 +126,26 @@ export default function NotificationCenterPage() {
               { label: '异常状态数', value: `${metrics.exceptionCount}` },
             ]}
           />
+          <div className="quick-actions-row">
+            <Btn tone="secondary" onClick={() => {
+              setLoading(true);
+              void hydrateNotificationCenterState()
+                .catch((error) => {
+                  showToastRef.current(buildApiErrorMessage(error, '刷新数据失败。'), 'error');
+                })
+                .finally(() => {
+                  setLoading(false);
+                });
+            }}>刷新数据</Btn>
+            <Btn tone="secondary" onClick={async () => {
+              try {
+                const result = await sendTestNotification('email');
+                showToast(result.message, result.success ? 'success' : 'error');
+              } catch (error) {
+                showToast(buildApiErrorMessage(error, '测试发送失败。'), 'error');
+              }
+            }}>测试发送</Btn>
+          </div>
           <div className="page-stack">
               <SectionCard title="统一发送说明" description="当前已经切到后端通知中心，日志、模板、场景和渠道都以数据库为准。">
               <div className="bullet-list">

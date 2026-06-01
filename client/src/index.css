@@ -503,6 +503,12 @@ textarea {
   gap: 14px;
 }
 
+.quick-actions-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
 .fitness-overview-grid {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
