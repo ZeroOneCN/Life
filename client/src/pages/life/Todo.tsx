@@ -108,11 +108,7 @@ export default function TodoPage() {
           { label: '总任务数', value: `${overview.totalCount}` },
           { label: '进行中', value: `${overview.activeCount}` },
           { label: '已完成', value: `${overview.completedCount}` },
-          { label: '每日任务', value: `${overview.dailyCount}` },
-          { label: '高优先级', value: `${overview.highPriorityCount}` },
-          { label: '中优先级', value: `${overview.mediumPriorityCount}` },
-          { label: '低优先级', value: `${overview.lowPriorityCount}` },
-          { label: '今日到期', value: `${overview.dueTodayCount}` },
+          { label: '今日到期', value: `${overview.dueTodayCount}`, helper: `高${overview.highPriorityCount} / 中${overview.mediumPriorityCount} / 低${overview.lowPriorityCount}` },
         ]}
       />
 

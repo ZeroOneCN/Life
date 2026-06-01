@@ -164,12 +164,10 @@ export default function FitnessPage() {
   }, [reload, showToast]);
 
   const topSummary = useMemo(() => ([
-    { label: '今日摄入', value: `${overview.todayCaloriesIn.toFixed(0)} kcal` },
-    { label: '今日消耗', value: `${overview.todayCaloriesOut.toFixed(0)} kcal` },
-    { label: '今日净热量', value: `${overview.todayNetCalories.toFixed(0)} kcal` },
+    { label: '今日净热量', value: `${overview.todayNetCalories.toFixed(0)} kcal`, helper: `摄入${overview.todayCaloriesIn.toFixed(0)} / 消耗${overview.todayCaloriesOut.toFixed(0)}` },
     { label: '最新体重', value: overview.latestWeightKg === null ? '-' : `${overview.latestWeightKg.toFixed(1)} kg`, helper: overview.bmi === null ? '暂无 BMI' : `BMI ${overview.bmi.toFixed(1)}` },
-    { label: '本月采购', value: `¥${overview.monthShoppingAmount.toFixed(2)}` },
-    { label: '跟踪天数', value: `${overview.trackedDays}` },
+    { label: '跟踪天数', value: `${overview.trackedDays}`, helper: `本月采购 ¥${overview.monthShoppingAmount.toFixed(2)}` },
+    { label: '目标状态', value: overview.todayNetCalories < 0 ? '消耗中' : (overview.todayNetCalories > 0 ? '盈余中' : '平衡') },
   ]), [overview]);
 
   return (

@@ -161,12 +161,10 @@ export default function LoanPage() {
   }, [reload, showToast]);
 
   const summaryCards = useMemo(() => ([
-    { label: '总负债', value: formatLoanAmount(overview.totalDebt) },
-    { label: '已还金额', value: formatLoanAmount(overview.totalPaid) },
-    { label: '待还金额', value: formatLoanAmount(overview.totalUnpaid) },
-    { label: '总利息', value: formatLoanAmount(overview.totalInterest) },
-    { label: '当前账单数', value: `${overview.totalBillCount}` },
-    { label: '风险账单', value: `${overview.upcomingCount} 待还 / ${overview.overdueCount} 逾期` },
+    { label: '总负债', value: formatLoanAmount(overview.totalDebt), helper: `已还 ${formatLoanAmount(overview.totalPaid)}` },
+    { label: '待还金额', value: formatLoanAmount(overview.totalUnpaid), helper: `利息 ${formatLoanAmount(overview.totalInterest)}` },
+    { label: '风险账单', value: `${overview.overdueCount} 逾期`, helper: overview.upcomingCount > 0 ? `${overview.upcomingCount} 笔即将到期` : '无即将到期' },
+    { label: '当前账单数', value: `${overview.totalBillCount}`, helper: overview.totalBillCount > 0 ? '点击查看详情' : '暂无账单' },
   ]), [overview]);
 
   return (
