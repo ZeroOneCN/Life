@@ -7,6 +7,9 @@ export class HealthCheckupTemplateItemEntity extends TimestampedEntity {
   @Column({ type: 'varchar', length: 36 })
   template_id!: string;
 
+  @Column({ type: 'int', default: 0 })
+  sort_order!: number;
+
   @Column({ type: 'varchar', length: 128 })
   test_name!: string;
 

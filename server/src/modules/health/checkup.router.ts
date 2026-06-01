@@ -244,7 +244,7 @@ export function createCheckupRouter() {
     const userId = String(request.query.userId ?? authUserId);
     const [templates, items] = await Promise.all([
       appDataSource.getRepository(HealthCheckupTemplateEntity).find({ where: { user_id: userId }, order: { updated_at: 'DESC' } }),
-      appDataSource.getRepository(HealthCheckupTemplateItemEntity).find(),
+      appDataSource.getRepository(HealthCheckupTemplateItemEntity).find({ order: { sort_order: 'ASC' } }),
     ]);
 
     response.json(successResponse(buildListData(templates.map((template) => mapTemplate(template, items)))));
@@ -262,8 +262,9 @@ export function createCheckupRouter() {
       test_type: payload.testType,
     }));
     const items = itemsInput.length
-      ? await itemRepo.save(itemsInput.map((item) => itemRepo.create({
+      ? await itemRepo.save(itemsInput.map((item, index) => itemRepo.create({
         template_id: template.id,
+        sort_order: index,
         test_name: item.testName,
         unit: item.unit,
         reference_range: item.referenceRange,
@@ -296,15 +297,16 @@ export function createCheckupRouter() {
 
     if (payload.items) {
       await itemRepo.delete({ template_id: current.id });
-      await itemRepo.save(payload.items.map((item) => itemRepo.create({
+      await itemRepo.save(payload.items.map((item, index) => itemRepo.create({
         template_id: current.id,
+        sort_order: index,
         test_name: item.testName,
         unit: item.unit,
         reference_range: item.referenceRange,
       })));
     }
 
-    const items = await itemRepo.find({ where: { template_id: current.id } });
+    const items = await itemRepo.find({ where: { template_id: current.id }, order: { sort_order: 'ASC' } });
     response.json(successResponse(mapTemplate(template, items), 'update_checkup_template_success'));
   }));
 
@@ -340,7 +342,7 @@ export function createCheckupRouter() {
       throw new AppError('checkup_template_not_found', 404, 404);
     }
 
-    const items = await itemRepo.find({ where: { template_id: template.id } });
+    const items = await itemRepo.find({ where: { template_id: template.id }, order: { sort_order: 'ASC' } });
     const status = payload.status ?? 'unknown';
     const created = await recordRepo.save(items.map((item) => recordRepo.create({
       user_id: payload.userId ?? authUserId,
