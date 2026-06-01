@@ -270,6 +270,7 @@ export default function ForexPage() {
           capitalFlows={capitalFlows}
           startDate={effectiveDashboardRange.startDate}
           endDate={effectiveDashboardRange.endDate}
+          summary={frontendSummary}
           onStartDateChange={(value) => {
             void updateSettings({ dashboardStartDate: value });
           }}

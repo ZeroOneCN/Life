@@ -24,7 +24,7 @@ import {
   formatForexPercent,
   getForexInstrumentLabel,
 } from '../../services/forex';
-import type { ForexCapitalFlow, ForexTradeRecord } from '../../types/forex';
+import type { ForexCapitalFlow, ForexDashboardSummary, ForexTradeRecord } from '../../types/forex';
 
 const AI_STORAGE_KEY = 'forex_ai_analysis';
 
@@ -55,6 +55,7 @@ interface ForexDashboardSectionProps {
   endDate: string;
   onStartDateChange: (value: string) => void;
   onEndDateChange: (value: string) => void;
+  summary?: ForexDashboardSummary;
 }
 
 const tooltipStyle = {
@@ -115,8 +116,9 @@ export function ForexDashboardSection({
   endDate,
   onStartDateChange,
   onEndDateChange,
+  summary: externalSummary,
 }: ForexDashboardSectionProps) {
-  const summary = useMemo(
+  const summary = externalSummary ?? useMemo(
     () => buildForexDashboardSummary(trades, capitalFlows, startDate, endDate),
     [capitalFlows, endDate, startDate, trades],
   );
