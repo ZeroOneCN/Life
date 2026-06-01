@@ -7,7 +7,7 @@ import { LoanRepaymentsSection } from '../../components/finance/LoanRepaymentsSe
 import { LoanSettingsSection } from '../../components/finance/LoanSettingsSection';
 import { LoanStatisticsSection } from '../../components/finance/LoanStatisticsSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
-import { Btn, PillTabs, Toast, useToastState } from '../../components/ui';
+import { Btn, DeleteModal, PillTabs, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { hydrateNotificationCenterState } from '../../services/notificationCenter';
@@ -61,6 +61,7 @@ export default function LoanPage() {
   const [platformBreakdown, setPlatformBreakdown] = useState<LoanPlatformBreakdownPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshToken, setRefreshToken] = useState(0);
+  const [pendingMarkPaidId, setPendingMarkPaidId] = useState<string | null>(null);
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
 
@@ -149,20 +150,27 @@ export default function LoanPage() {
   }, [showToast]);
 
   const handleMarkPaid = useCallback(async (billId: string) => {
+    setPendingMarkPaidId(billId);
+  }, []);
+
+  const confirmMarkPaid = useCallback(async () => {
+    if (!pendingMarkPaidId) return;
+    const id = pendingMarkPaidId;
+    setPendingMarkPaidId(null);
     try {
-      await loanApi.markBillPaid(billId);
+      await loanApi.markBillPaid(id);
       await reload();
       await hydrateNotificationCenterState();
       showToast('账单已标记为已还。');
     } catch (error) {
       showToast(buildApiErrorMessage(error, '标记已还失败。'), 'error');
     }
-  }, [reload, showToast]);
+  }, [pendingMarkPaidId, reload, showToast]);
 
   const summaryCards = useMemo(() => ([
     { label: '总负债', value: formatLoanAmount(overview.totalDebt), helper: `已还 ${formatLoanAmount(overview.totalPaid)}` },
     { label: '待还金额', value: formatLoanAmount(overview.totalUnpaid), helper: `利息 ${formatLoanAmount(overview.totalInterest)}` },
-    { label: '风险账单', value: `${overview.overdueCount} 逾期`, helper: overview.upcomingCount > 0 ? `${overview.upcomingCount} 笔即将到期` : '无即将到期' },
+    { label: '风险账单', value: `${overview.overdueCount} 逾期`, accent: overview.overdueCount > 0 ? 'var(--color-danger)' : undefined, helper: overview.upcomingCount > 0 ? `${overview.upcomingCount} 笔即将到期` : '无即将到期' },
     { label: '当前账单数', value: `${overview.totalBillCount}`, helper: overview.totalBillCount > 0 ? '点击查看详情' : '暂无账单' },
   ]), [overview]);
 
@@ -187,13 +195,19 @@ export default function LoanPage() {
 
       <SectionCard
         title="当前口径"
-        description="页面默认按当前登录用户聚合，不再允许手动填写或切换用户 ID。"
+        description={`页面默认按当前登录用户聚合，共 ${platforms.length} 个平台、${bills.length} 笔账单。`}
       >
         <div className="loan-context-grid">
           <div className="loan-context-summary">
-            <span>平台 {platforms.length} 个</span>
-            <span>账单 {bills.length} 笔</span>
-            <span>还款 {repayments.length} 笔</span>
+            {overview.overdueCount > 0 ? (
+              <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}>⚠ {overview.overdueCount} 笔逾期</span>
+            ) : (
+              <span style={{ color: 'var(--color-success)' }}>✓ 无逾期账单</span>
+            )}
+            {overview.upcomingCount > 0 ? (
+              <span>📅 {overview.upcomingCount} 笔即将到期</span>
+            ) : null}
+            <span>💰 待还 {formatLoanAmount(overview.totalUnpaid)}</span>
           </div>
         </div>
       </SectionCard>
@@ -270,6 +284,15 @@ export default function LoanPage() {
           showToast={showToast}
         />
       ) : null}
+
+      <DeleteModal
+        open={Boolean(pendingMarkPaidId)}
+        onClose={() => setPendingMarkPaidId(null)}
+        onConfirm={confirmMarkPaid}
+        title="确认标记为已还？"
+      >
+        标记后账单状态将变为已还，此操作不可撤销。
+      </DeleteModal>
 
       <Toast toast={toast} />
     </div>
