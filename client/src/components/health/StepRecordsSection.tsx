@@ -59,6 +59,7 @@ export function StepRecordsSection({
   const [editingRecordTime, setEditingRecordTime] = useState('');
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [showBatchDeleteModal, setShowBatchDeleteModal] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
 
   // 后端分页数据
   const [records, setRecords] = useState<StepRecord[]>([]);
@@ -226,10 +227,10 @@ export function StepRecordsSection({
             </label>
             <Btn
               tone="danger"
-              disabled={!selectedIds.length}
+              disabled={!selectedIds.length || batchDeleting}
               onClick={() => setShowBatchDeleteModal(true)}
             >
-              批量删除
+              {batchDeleting ? '删除中...' : '批量删除'}
             </Btn>
           </div>
           <span className="subtle-text">
@@ -398,10 +399,13 @@ export function StepRecordsSection({
         open={showBatchDeleteModal}
         onClose={() => setShowBatchDeleteModal(false)}
         onConfirm={() => {
-          onDeleteRecords(selectedIds);
-          setSelectedIds([]);
+          const idsToDelete = [...selectedIds];
+          setBatchDeleting(true);
           setShowBatchDeleteModal(false);
-          showToast(`已删除 ${selectedIds.length} 条记录。`);
+          onDeleteRecords(idsToDelete);
+          setSelectedIds([]);
+          setBatchDeleting(false);
+          showToast(`已删除 ${idsToDelete.length} 条记录。`);
         }}
         title={`确认批量删除 ${selectedIds.length} 条记录？`}
       >
