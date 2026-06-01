@@ -138,10 +138,10 @@ export default function CheckupPage() {
 
       <StatGrid
         items={[
-          { label: '指标总数', value: `${overview.totalRecords}` },
-          { label: '异常 / 关注', value: `${overview.abnormalCount} / ${overview.attentionCount}` },
-          { label: '待复查', value: `${overview.dueFollowUpCount}` },
-          { label: '最近检查', value: overview.recentTestDate ?? '-' },
+          { label: '指标总数', value: `${overview.totalRecords}`, helper: '累计检查记录' },
+          { label: '异常 / 关注', value: `${overview.abnormalCount} / ${overview.attentionCount}`, accent: overview.abnormalCount > 0 ? 'var(--color-warning)' : undefined, helper: overview.abnormalCount > 0 ? '需要关注' : '正常范围' },
+          { label: '待复查', value: `${overview.dueFollowUpCount}`, accent: overview.dueFollowUpCount > 0 ? 'var(--color-danger)' : undefined, helper: overview.dueFollowUpCount > 0 ? '请安排复查' : '无需复查' },
+          { label: '最近检查', value: overview.recentTestDate ?? '-', helper: '最近一次检查日期' },
         ]}
       />
 
