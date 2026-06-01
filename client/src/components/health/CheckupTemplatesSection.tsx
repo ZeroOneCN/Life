@@ -217,7 +217,7 @@ export function CheckupTemplatesSection({
           </>
         )}
       >
-        <div className="checkup-filter-grid">
+        <div className="template-form-meta">
           <Field
             label="模板名称"
             value={form.name}
@@ -232,68 +232,75 @@ export function CheckupTemplatesSection({
           />
         </div>
 
-        <div className="checkup-batch-header">
-          <strong>模板项目</strong>
-          <Btn
-            tone="secondary"
-            onClick={() => setForm((previous) => ({
-              ...previous,
-              items: [...previous.items, createTemplateItem()],
-            }))}
-          >
-            新增项目
-          </Btn>
-        </div>
+        <div className="template-form-items-section">
+          <div className="template-form-items-header">
+            <strong>模板项目</strong>
+            <span className="template-form-items-count">{form.items.length} 项</span>
+            <Btn
+              tone="secondary"
+              onClick={() => setForm((previous) => ({
+                ...previous,
+                items: [...previous.items, createTemplateItem()],
+              }))}
+            >
+              + 新增项目
+            </Btn>
+          </div>
 
-        <div className="checkup-batch-list">
-          {form.items.map((item) => (
-            <div key={item.id} className="checkup-batch-row">
-              <span className="checkup-batch-index">项</span>
-              <Field
-                label="项目"
-                value={item.testName}
-                onChange={(event) => setForm((previous) => ({
-                  ...previous,
-                  items: previous.items.map((current) => (
-                    current.id === item.id ? { ...current, testName: event.target.value } : current
-                  )),
-                }))}
-                placeholder="例如：ALT"
-              />
-              <Field
-                label="单位"
-                value={item.unit}
-                onChange={(event) => setForm((previous) => ({
-                  ...previous,
-                  items: previous.items.map((current) => (
-                    current.id === item.id ? { ...current, unit: event.target.value } : current
-                  )),
-                }))}
-                placeholder="例如：U/L"
-              />
-              <Field
-                label="参考范围"
-                value={item.referenceRange}
-                onChange={(event) => setForm((previous) => ({
-                  ...previous,
-                  items: previous.items.map((current) => (
-                    current.id === item.id ? { ...current, referenceRange: event.target.value } : current
-                  )),
-                }))}
-                placeholder="例如：7-40"
-              />
-              <Btn
-                tone="danger"
-                disabled={form.items.length === 1}
-                onClick={() => setForm((previous) => ({
-                  ...previous,
-                  items: previous.items.filter((current) => current.id !== item.id),
-                }))}
-              >
-                删除
-              </Btn>
-            </div>
-          ))}
+          <div className="template-form-items-list">
+            {form.items.map((item, index) => (
+              <div key={item.id} className="template-form-item-row">
+                <span className="template-item-index">{index + 1}</span>
+                <div className="template-item-fields">
+                  <Field
+                    label="项目名称"
+                    value={item.testName}
+                    onChange={(event) => setForm((previous) => ({
+                      ...previous,
+                      items: previous.items.map((current) => (
+                        current.id === item.id ? { ...current, testName: event.target.value } : current
+                      )),
+                    }))}
+                    placeholder="例如：ALT"
+                  />
+                  <Field
+                    label="单位"
+                    value={item.unit}
+                    onChange={(event) => setForm((previous) => ({
+                      ...previous,
+                      items: previous.items.map((current) => (
+                        current.id === item.id ? { ...current, unit: event.target.value } : current
+                      )),
+                    }))}
+                    placeholder="例如：U/L"
+                  />
+                  <Field
+                    label="参考范围"
+                    value={item.referenceRange}
+                    onChange={(event) => setForm((previous) => ({
+                      ...previous,
+                      items: previous.items.map((current) => (
+                        current.id === item.id ? { ...current, referenceRange: event.target.value } : current
+                      )),
+                    }))}
+                    placeholder="例如：7-40"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className={`template-item-remove${form.items.length === 1 ? ' is-disabled' : ''}`}
+                  disabled={form.items.length === 1}
+                  onClick={() => setForm((previous) => ({
+                    ...previous,
+                    items: previous.items.filter((current) => current.id !== item.id),
+                  }))}
+                  title="移除此项目"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         <TextArea

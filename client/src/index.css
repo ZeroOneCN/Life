@@ -1777,6 +1777,113 @@ textarea {
   color: var(--color-ink-subtle);
 }
 
+/* ===== Template Form (Edit/Create Modal) ===== */
+
+.template-form-meta {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+  padding-bottom: 4px;
+}
+
+.template-form-items-section {
+  margin-top: 8px;
+}
+
+.template-form-items-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--color-surface-2);
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.template-form-items-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--color-ink-subtle);
+  background: var(--color-surface-1);
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.template-form-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.template-form-item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--color-hairline);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-3) 92%, transparent), color-mix(in srgb, var(--color-surface-2) 98%, transparent));
+  transition: border-color 0.15s;
+}
+
+.template-form-item-row:hover {
+  border-color: var(--color-primary-alpha-200, rgba(94, 106, 210, 0.25));
+}
+
+.template-item-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.template-item-fields {
+  display: grid;
+  grid-template-columns: 1.3fr 0.8fr 1.2fr;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.template-item-fields .field-label {
+  font-size: 11px;
+}
+
+.template-item-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-ink-subtle);
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.template-item-remove:hover:not(.is-disabled) {
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+}
+
+.template-item-remove.is-disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 .checkup-insight-card p {
   margin: 0;
   color: var(--color-ink-subtle);
@@ -3631,6 +3738,22 @@ textarea {
 
   .checkup-batch-index {
     margin-bottom: 0;
+  }
+
+  .template-form-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .template-form-items-header {
+    flex-wrap: wrap;
+  }
+
+  .template-item-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .template-form-item-row {
+    flex-wrap: wrap;
   }
 }
 
