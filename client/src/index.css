@@ -3090,9 +3090,17 @@ textarea {
   max-width: 360px;
   padding: 14px 16px;
   border-radius: 14px;
-  border: 1px solid var(--color-hairline);
+  border-left: 4px solid var(--color-success);
   background: var(--color-surface-1);
   box-shadow: var(--shadow-soft);
+}
+
+.toast.is-warning {
+  border-left-color: var(--color-warning);
+}
+
+.toast.is-error {
+  border-left-color: var(--color-danger);
 }
 
 .toast.is-success strong {
@@ -3101,6 +3109,10 @@ textarea {
 
 .toast.is-error strong {
   color: var(--color-danger);
+}
+
+.toast.is-warning strong {
+  color: var(--color-warning);
 }
 
 .modal-overlay {

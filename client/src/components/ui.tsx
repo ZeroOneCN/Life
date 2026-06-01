@@ -15,7 +15,7 @@ type ButtonTone = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-fill';
 
 interface ToastState {
   message: string;
-  type?: 'success' | 'error';
+  type?: 'success' | 'error' | 'warning';
 }
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -68,9 +68,12 @@ export function Toast({ toast }: { toast: ToastState | null }) {
     return null;
   }
 
+  const typeClass = toast.type === 'error' ? 'is-error' : toast.type === 'warning' ? 'is-warning' : 'is-success';
+  const label = toast.type === 'error' ? '操作提示' : toast.type === 'warning' ? '警告' : '操作成功';
+
   return (
-    <div className={`toast ${toast.type === 'error' ? 'is-error' : 'is-success'}`}>
-      <strong>{toast.type === 'error' ? '操作提示' : '操作成功'}</strong>
+    <div className={`toast ${typeClass}`}>
+      <strong>{label}</strong>
       <span>{toast.message}</span>
     </div>
   );
