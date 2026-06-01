@@ -6468,3 +6468,118 @@ textarea {
     font-size: 19px;
   }
 }
+
+/* ========== Shopping Import Dropzone ========== */
+
+.shopping-import-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px 32px;
+  border: 2px dashed var(--color-hairline-strong);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-surface-3) 50%, transparent);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.shopping-import-dropzone:hover {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.shopping-import-dropzone.drag-over {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  transform: scale(1.02);
+}
+
+.shopping-import-dropzone.importing {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.shopping-import-dropzone-icon {
+  font-size: 48px;
+  line-height: 1;
+  filter: grayscale(20%);
+}
+
+.shopping-import-dropzone-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.shopping-import-dropzone-text strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.shopping-import-dropzone-text span {
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+}
+
+.shopping-import-file-input {
+  display: none;
+}
+
+.shopping-import-result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-hairline);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-danger { color: var(--color-danger); }
+
+.shopping-import-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+}
+
+.shopping-import-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--color-surface-3);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.shopping-import-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  border-radius: 2px;
+  animation: import-progress 1.5s ease-in-out infinite;
+}
+
+@keyframes import-progress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+.shopping-import-progress span {
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+}

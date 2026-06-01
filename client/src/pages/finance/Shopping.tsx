@@ -367,20 +367,71 @@ export default function ShoppingPage() {
         width={560}
       >
         <div className="page-stack">
-          <input
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            disabled={importing}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
+          <div
+            className={`shopping-import-dropzone ${importing ? 'importing' : ''}`}
+            onDragOver={(event) => {
+              event.preventDefault();
+              event.currentTarget.classList.add('drag-over');
+            }}
+            onDragLeave={(event) => {
+              event.currentTarget.classList.remove('drag-over');
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              event.currentTarget.classList.remove('drag-over');
+              const file = event.dataTransfer.files?.[0];
               if (file) {
                 void handleImportFile(file);
               }
             }}
-          />
+          >
+            <div className="shopping-import-dropzone-icon">📊</div>
+            <div className="shopping-import-dropzone-text">
+              <strong>拖拽 Excel/CSV 文件到此处</strong>
+              <span>或点击下方按钮选择文件</span>
+            </div>
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              disabled={importing}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) {
+                  void handleImportFile(file);
+                }
+              }}
+              className="shopping-import-file-input"
+            />
+            <Btn
+              tone={importing ? 'secondary' : 'primary'}
+              disabled={importing}
+              onClick={() => {
+                const fileInput = document.querySelector('.shopping-import-file-input') as HTMLInputElement;
+                fileInput?.click();
+              }}
+            >
+              {importing ? '导入中...' : '选择文件'}
+            </Btn>
+          </div>
+
           {importResult ? (
-            <div className="callout callout-info">
-              共 {importResult.totalRows} 行，成功 {importResult.importedCount} 行，重复 {importResult.duplicateCount} 行，无效 {importResult.invalidCount} 行。
+            <div className={`callout ${importResult.invalidCount > 0 ? 'callout-warning' : 'callout-success'}`}>
+              <strong>导入完成</strong>
+              <div className="shopping-import-result-grid">
+                <span>总行数: {importResult.totalRows}</span>
+                <span className="text-success">成功: {importResult.importedCount}</span>
+                <span className="text-warning">重复: {importResult.duplicateCount}</span>
+                {importResult.invalidCount > 0 ? (
+                  <span className="text-danger">无效: {importResult.invalidCount}</span>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
+          {importing ? (
+            <div className="shopping-import-progress">
+              <div className="shopping-import-progress-bar" />
+              <span>正在解析并导入数据，请稍候...</span>
             </div>
           ) : null}
         </div>
