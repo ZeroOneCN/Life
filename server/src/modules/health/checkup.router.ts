@@ -34,8 +34,8 @@ const recordSchema = z.object({
 const templateItemSchema = z.object({
   id: z.string().optional(),
   testName: z.string().trim().min(1).max(128),
-  unit: z.string().trim().min(1).max(64),
-  referenceRange: z.string().trim().min(1).max(255),
+  unit: z.string().trim().max(64).default(''),
+  referenceRange: z.string().trim().max(255).default(''),
 });
 
 const templateSchema = z.object({

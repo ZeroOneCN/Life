@@ -84,24 +84,25 @@ export function CheckupTemplatesSection({
       }))
       .filter((item) => item.testName);
 
+    console.log('[CheckupTemplate] handleSave — raw form:', JSON.stringify(form, null, 2));
+    console.log('[CheckupTemplate] handleSave — filtered items:', JSON.stringify(items, null, 2));
+    console.log('[CheckupTemplate] handleSave — name:', JSON.stringify(form.name), 'testType:', JSON.stringify(form.testType));
+
     if (!form.name.trim() || !form.testType.trim() || !items.length) {
       showToast('请填写模板名称、检查类型和至少一个模板项目。', 'error');
       return;
     }
 
+    const payload = { name: form.name, testType: form.testType, items };
+    console.log('[CheckupTemplate] handleSave — final payload:', JSON.stringify(payload, null, 2));
+
     if (editingTemplate) {
-      onUpdateTemplate(editingTemplate.id, {
-        name: form.name,
-        testType: form.testType,
-        items,
-      });
+      console.log('[CheckupTemplate] calling onUpdateTemplate id=', editingTemplate.id);
+      onUpdateTemplate(editingTemplate.id, payload);
       showToast('模板已更新。');
     } else {
-      onCreateTemplate({
-        name: form.name,
-        testType: form.testType,
-        items,
-      });
+      console.log('[CheckupTemplate] calling onCreateTemplate');
+      onCreateTemplate(payload);
       showToast('模板已创建。');
     }
 
