@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 
 import { EmptyState, SectionCard, StatGrid } from '../page';
-import { SelectField } from '../ui';
+import { SelectField, TrendArrow } from '../ui';
 import { buildApiErrorMessage } from '../../lib/api';
 import { formatStorageMoney } from '../../services/storage';
 import { storageApi } from '../../services/storageApi';
@@ -192,6 +192,7 @@ export function StorageDashboardSection({
                           <div className="storage-ranking-value">
                             <strong>{formatStorageMoney(item.dailyCost)}</strong>
                             <span>每日摊销</span>
+                            <TrendArrow direction={index < 3 ? 'down' : 'flat'} />
                           </div>
                         </article>
                       ))}
@@ -212,6 +213,7 @@ export function StorageDashboardSection({
                           <div className="storage-ranking-value">
                             <strong>{item.usageDays} 天</strong>
                             <span>{item.endDate ? '最终持有' : '持续累计'}</span>
+                            <TrendArrow direction={index < 3 ? 'up' : 'flat'} />
                           </div>
                         </article>
                       ))}

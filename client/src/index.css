@@ -3150,6 +3150,25 @@ textarea {
   padding: 18px !important;
 }
 
+.trend-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.trend-up { color: var(--color-success); }
+.trend-down { color: var(--color-danger); }
+.trend-flat { color: var(--color-ink-subtle); }
+
+.trend-value {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;

@@ -139,6 +139,24 @@ export function CardSkeleton({ height = 180 }: { height?: number }) {
   );
 }
 
+type TrendDirection = 'up' | 'down' | 'flat';
+
+export function TrendArrow({ direction, value }: { direction: TrendDirection; value?: string }) {
+  const map: Record<TrendDirection, { symbol: string; className: string }> = {
+    up: { symbol: '↑', className: 'trend-up' },
+    down: { symbol: '↓', className: 'trend-down' },
+    flat: { symbol: '→', className: 'trend-flat' },
+  };
+  const { symbol, className } = map[direction];
+
+  return (
+    <span className={`trend-arrow ${className}`}>
+      {symbol}
+      {value ? <span className="trend-value">{value}</span> : null}
+    </span>
+  );
+}
+
 export function Modal({ open, onClose, title, width = 560, footer, children }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
