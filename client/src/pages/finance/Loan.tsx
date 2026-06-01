@@ -7,7 +7,7 @@ import { LoanRepaymentsSection } from '../../components/finance/LoanRepaymentsSe
 import { LoanSettingsSection } from '../../components/finance/LoanSettingsSection';
 import { LoanStatisticsSection } from '../../components/finance/LoanStatisticsSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
-import { PillTabs, Toast, useToastState } from '../../components/ui';
+import { Btn, PillTabs, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { hydrateNotificationCenterState } from '../../services/notificationCenter';
@@ -29,7 +29,6 @@ const TAB_OPTIONS: Array<{ value: LoanTab; label: string }> = [
   { value: 'bills', label: '账单' },
   { value: 'repayments', label: '还款' },
   { value: 'statistics', label: '统计' },
-  { value: 'settings', label: '设置' },
 ];
 
 const EMPTY_SETTINGS: LoanSettings = {
@@ -176,6 +175,14 @@ export default function LoanPage() {
             ? '正在从后端加载贷款平台、账单、还款和提醒设置。'
             : '借贷页面已切换为后端唯一业务数据源。'
         }
+        actions={(
+          <Btn
+            tone="ghost"
+            onClick={() => setTab('settings')}
+          >
+            {tab === 'settings' ? '← 返回业务' : '⚙ 设置'}
+          </Btn>
+        )}
       />
 
       <SectionCard
