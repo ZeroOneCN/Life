@@ -4,7 +4,7 @@ import { ForexCalculatorSection } from '../../components/investment/ForexCalcula
 import { ForexCapitalSection } from '../../components/investment/ForexCapitalSection';
 import { ForexDashboardSection } from '../../components/investment/ForexDashboardSection';
 import { ForexTradesSection } from '../../components/investment/ForexTradesSection';
-import { PageHeader, SectionCard } from '../../components/page';
+import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
@@ -237,6 +237,15 @@ export default function ForexPage() {
       <PageHeader
         title="外汇市场"
         subtitle={loading ? '正在从后端加载交易、出入金、统计和设置。' : '外汇页面已切到后端唯一数据源，浏览器不再保存整页交易真相。'}
+      />
+
+      <StatGrid
+        items={[
+          { label: '净收益', value: `${summary.realizedNetPnl >= 0 ? '+' : ''}$${summary.realizedNetPnl.toFixed(2)}`, accent: summary.realizedNetPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
+          { label: '胜率', value: `${(summary.winRate * 100).toFixed(1)}%`, helper: `${summary.tradeCount} 笔交易` },
+          { label: '总手数', value: `${summary.longCount + summary.shortCount}`, helper: `多 ${summary.longCount} / 空 ${summary.shortCount}` },
+          { label: 'ROI', value: `${summary.roi >= 0 ? '+' : ''}${summary.roi.toFixed(1)}%`, accent: summary.roi >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
+        ]}
       />
 
       <SectionCard
