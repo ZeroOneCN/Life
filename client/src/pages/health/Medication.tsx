@@ -247,10 +247,10 @@ export default function MedicationPage() {
 
       <StatGrid
         items={[
-          { label: '累计用量', value: `${overview.totalDosage}` },
-          { label: '活跃药品', value: `${overview.activeMedicineCount}` },
-          { label: '购药总额', value: `¥${overview.totalPurchaseAmount.toFixed(2)}` },
-          { label: '今日用量', value: `${overview.todayDosage}` },
+          { label: '累计用量', value: `${overview.totalDosage}`, helper: `共 ${overview.trackedDays} 天追踪` },
+          { label: '活跃药品', value: `${overview.activeMedicineCount}`, accent: overview.activeMedicineCount === 0 ? 'var(--color-warning)' : undefined, helper: overview.activeMedicineCount === 0 ? '尚未添加药品' : undefined },
+          { label: '购药总额', value: `¥${overview.totalPurchaseAmount.toFixed(2)}`, helper: `${overview.purchaseCount} 次购药` },
+          { label: '今日用量', value: `${overview.todayDosage}`, accent: overview.todayDosage > 0 ? 'var(--color-primary)' : undefined, helper: overview.todayDosage === 0 ? '今日暂无记录' : undefined },
         ]}
       />
 
