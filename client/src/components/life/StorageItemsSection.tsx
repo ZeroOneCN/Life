@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard, StatGrid } from '../page';
-import { Btn, DataTable, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
+import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
 import { buildApiErrorMessage } from '../../lib/api';
 import { calculateStorageDailyCost, calculateStorageUsageDays, formatStorageMoney, getStorageStatusLabel } from '../../services/storage';
 import { storageApi } from '../../services/storageApi';
@@ -89,6 +89,7 @@ export function StorageItemsSection({
   const [editingItem, setEditingItem] = useState<StorageItemRecord | null>(null);
   const [editingForm, setEditingForm] = useState<StorageFormState>(createDefaultFormState);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [archivingItem, setArchivingItem] = useState<StorageItemRecord | null>(null);
 
   const loadItems = async () => {
     try {
@@ -375,16 +376,7 @@ export function StorageItemsSection({
                       </Btn>
                       <Btn
                         tone="secondary"
-                        onClick={async () => {
-                          try {
-                            await storageApi.archive(row.id, dayjs().format('YYYY-MM-DD'));
-                            showToast('物品已归档，最终摊销结果已固定。');
-                            onChanged();
-                            await loadItems();
-                          } catch (error) {
-                            showToast(buildApiErrorMessage(error, '归档物品失败。'), 'error');
-                          }
-                        }}
+                        onClick={() => setArchivingItem(row)}
                       >
                         归档
                       </Btn>
@@ -504,6 +496,27 @@ export function StorageItemsSection({
         showToast={showToast}
         existingItems={items}
       />
+
+      <DeleteModal
+        open={!!archivingItem}
+        onClose={() => setArchivingItem(null)}
+        onConfirm={async () => {
+          if (!archivingItem) return;
+          try {
+            await storageApi.archive(archivingItem.id, dayjs().format('YYYY-MM-DD'));
+            showToast('物品已归档，最终摊销结果已固定。');
+            onChanged();
+            await loadItems();
+          } catch (error) {
+            showToast(buildApiErrorMessage(error, '归档物品失败。'), 'error');
+          } finally {
+            setArchivingItem(null);
+          }
+        }}
+        title="确认归档"
+      >
+        确定要将「{archivingItem?.itemName}」归档吗？归档后将固定最终持有天数和日均成本。
+      </DeleteModal>
     </SectionCard>
   );
 }
