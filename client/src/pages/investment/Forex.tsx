@@ -9,7 +9,7 @@ import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { forexApi } from '../../services/forexApi';
-import { normalizeForexDashboardRange } from '../../services/forex';
+import { buildForexDashboardSummary, normalizeForexDashboardRange } from '../../services/forex';
 import type {
   ForexCapitalFlow,
   ForexDashboardSummary,
@@ -138,6 +138,11 @@ export default function ForexPage() {
     [settings.dashboardEndDate, settings.dashboardStartDate, trades],
   );
 
+  const frontendSummary = useMemo(
+    () => buildForexDashboardSummary(trades, capitalFlows, effectiveDashboardRange.startDate, effectiveDashboardRange.endDate),
+    [capitalFlows, effectiveDashboardRange.endDate, effectiveDashboardRange.startDate, trades],
+  );
+
   useEffect(() => {
     if (effectiveDashboardRange.shouldReset) {
       void updateSettings({ dashboardStartDate: '', dashboardEndDate: '' });
@@ -244,7 +249,7 @@ export default function ForexPage() {
           { label: '净收益', value: `${summary.realizedNetPnl >= 0 ? '+' : ''}$${summary.realizedNetPnl.toFixed(2)}`, accent: summary.realizedNetPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
           { label: '胜率', value: `${(summary.winRate * 100).toFixed(1)}%`, helper: `${summary.tradeCount} 笔交易` },
           { label: '总手数', value: `${summary.longCount + summary.shortCount}`, helper: `多 ${summary.longCount} / 空 ${summary.shortCount}` },
-          { label: 'ROI', value: `${summary.roi >= 0 ? '+' : ''}${summary.roi.toFixed(1)}%`, accent: summary.roi >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
+          { label: 'ROI', value: `${frontendSummary.roi >= 0 ? '+' : ''}${frontendSummary.roi.toFixed(1)}%`, accent: frontendSummary.roi >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
         ]}
       />
 
