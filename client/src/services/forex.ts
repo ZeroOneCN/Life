@@ -650,7 +650,7 @@ export function buildForexDashboardSummary(
     totalWithdrawal,
     netCapital,
     equity,
-    roi: netCapital > 0 ? realizedNetPnl / netCapital : 0,
+    roi: totalDeposit > 0 ? realizedNetPnl / totalDeposit : 0,
   };
 }
 
