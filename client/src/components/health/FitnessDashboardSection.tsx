@@ -15,7 +15,7 @@ import {
   YAxis,
 } from 'recharts';
 
-import { Field } from '../ui';
+import { Btn, Field } from '../ui';
 import { EmptyState, SectionCard, StatGrid } from '../page';
 import {
   MACRO_COLORS,
@@ -195,6 +195,7 @@ export function FitnessDashboardSection({
               <EmptyState
                 title="暂无营养占比"
                 description="先补充今日饮食记录，才能看到蛋白质、碳水和脂肪结构。"
+                icon="🥗"
               />
             )}
           </ChartCard>
@@ -225,6 +226,7 @@ export function FitnessDashboardSection({
               <EmptyState
                 title="暂无体重趋势"
                 description="先补充几条体重和体脂记录，趋势图才会展示变化。"
+                icon="⚖️"
               />
             )}
           </ChartCard>
@@ -254,6 +256,7 @@ export function FitnessDashboardSection({
               <EmptyState
                 title="暂无热量趋势"
                 description="先补充饮食和运动记录，才能看到每日热量对比。"
+                icon="🔥"
               />
             )}
           </ChartCard>
@@ -285,6 +288,7 @@ export function FitnessDashboardSection({
               <EmptyState
                 title="暂无成本趋势"
                 description="先补充饮食记录和匹配的食材采购记录，才能推算每日饮食成本。"
+                icon="💰"
               />
             )}
           </ChartCard>
