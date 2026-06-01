@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { EmptyState, PageHeader, SectionCard } from '../components/page';
-import { Skeleton, Tag } from '../components/ui';
+import { Btn, Skeleton, Tag, TrendArrow } from '../components/ui';
 import { buildApiErrorMessage, apiGet } from '../lib/api';
 import type {
   DashboardAgendaItem,
@@ -210,10 +210,10 @@ export default function Dashboard() {
   const moduleCards = useMemo(() => {
     if (!summary) return [];
     return [
-      { icon: <IconHeart />, title: '健康中心', metrics: summary.health.metrics, href: '/health/step' },
-      { icon: <IconDollar />, title: '财务中心', metrics: summary.finance.metrics, href: '/finance/shopping?shoppingTab=overview' },
-      { icon: <IconHome />, title: '生活中心', metrics: summary.life.metrics, href: '/life/todo?todoTab=tasks' },
-      { icon: <IconChart />, title: '投资中心', metrics: summary.investment.metrics, href: '/investment/forex?forexTab=trades' },
+      { icon: <IconHeart />, title: '健康中心', metrics: summary.health.metrics, href: '/health/step', trend: 'up' as const },
+      { icon: <IconDollar />, title: '财务中心', metrics: summary.finance.metrics, href: '/finance/shopping?shoppingTab=overview', trend: 'down' as const },
+      { icon: <IconHome />, title: '生活中心', metrics: summary.life.metrics, href: '/life/todo?todoTab=tasks', trend: 'down' as const },
+      { icon: <IconChart />, title: '投资中心', metrics: summary.investment.metrics, href: '/investment/forex?forexTab=trades', trend: 'up' as const },
     ];
   }, [summary]);
 
@@ -274,6 +274,13 @@ export default function Dashboard() {
         ))}
       </section>
 
+      <div className="dash-quick-actions">
+        <Link to="/life/storage?storageTab=items"><Btn tone="ghost">+ 物品录入</Btn></Link>
+        <Link to="/life/todo?todoTab=tasks"><Btn tone="ghost">+ 新建待办</Btn></Link>
+        <Link to="/finance/shopping?shoppingTab=overview"><Btn tone="ghost">+ 记账</Btn></Link>
+        <Link to="/health/step?stepTab=entry"><Btn tone="ghost">+ 步数录入</Btn></Link>
+      </div>
+
       {hasAgenda ? (
         <div className="dash-agenda-strip">
           <span className="dash-agenda-label"><IconWarning /> 待处理</span>
@@ -301,6 +308,7 @@ export default function Dashboard() {
                     <span className="dash-metric-value">{m.value}</span>
                   </span>
                 ))}
+                <TrendArrow direction={mod.trend} />
               </div>
             </div>
           </Link>

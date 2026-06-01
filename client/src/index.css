@@ -5164,6 +5164,13 @@ textarea {
   text-overflow: ellipsis;
 }
 
+.dash-quick-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
 .dash-agenda-strip {
   display: flex;
   align-items: center;
