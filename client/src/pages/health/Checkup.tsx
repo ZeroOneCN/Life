@@ -188,6 +188,7 @@ export default function CheckupPage() {
           onCreateBatch={(drafts: CheckupRecordDraft[]) => {
             void runWithReload(() => Promise.all(drafts.map((draft) => checkupApi.createRecord(draft))).then(() => undefined), `已批量保存 ${drafts.length} 条指标记录。`);
           }}
+          onSaveSuccess={() => setTab('records')}
           showToast={showToast}
         />
       ) : null}

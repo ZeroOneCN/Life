@@ -22,6 +22,7 @@ interface CheckupBatchEntrySectionProps {
   preferredTemplateId?: string | null;
   onPreferredTemplateConsumed: () => void;
   onCreateBatch: (drafts: CheckupRecordDraft[]) => void;
+  onSaveSuccess?: () => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
@@ -42,6 +43,7 @@ export function CheckupBatchEntrySection({
   preferredTemplateId,
   onPreferredTemplateConsumed,
   onCreateBatch,
+  onSaveSuccess,
   showToast,
 }: CheckupBatchEntrySectionProps) {
   const [userId, setUserId] = useState(activeUserId);
@@ -129,10 +131,10 @@ export function CheckupBatchEntrySection({
     }
 
     onCreateBatch(drafts);
+    onSaveSuccess?.();
     setRows(selectedTemplate ? applyCheckupTemplate(selectedTemplate).map((item) => createRow(item)) : [createRow()]);
     setNotes('');
     setFollowUpDate('');
-    showToast(`已批量保存 ${drafts.length} 条指标记录。`);
   };
 
   return (
