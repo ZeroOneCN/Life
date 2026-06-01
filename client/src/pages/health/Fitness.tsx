@@ -79,10 +79,10 @@ export default function FitnessPage() {
 
   const reload = useCallback(async () => {
     const [nextDiet, nextExercise, nextShopping, nextWeight, nextSummary, nextInsights, nextSettings] = await Promise.all([
-      fitnessApi.listDietRecords({ page: 1, page_size: 1000 }),
-      fitnessApi.listExerciseRecords({ page: 1, page_size: 1000 }),
-      fitnessApi.listShoppingRecords({ page: 1, page_size: 1000 }),
-      fitnessApi.listWeightRecords({ page: 1, page_size: 1000 }),
+      fitnessApi.listDietRecords({ page: 1, page_size: 100 }),
+      fitnessApi.listExerciseRecords({ page: 1, page_size: 100 }),
+      fitnessApi.listShoppingRecords({ page: 1, page_size: 100 }),
+      fitnessApi.listWeightRecords({ page: 1, page_size: 100 }),
       fitnessApi.getSummary(),
       fitnessApi.getInsights(),
       fitnessApi.getSettings(),
