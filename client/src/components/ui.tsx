@@ -7,7 +7,7 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { TabOption, TableColumn } from '../types/ui';
 
@@ -140,10 +140,14 @@ export function CardSkeleton({ height = 180 }: { height?: number }) {
 }
 
 export function Modal({ open, onClose, title, width = 560, footer, children }: ModalProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!open) {
       return undefined;
     }
+
+    overlayRef.current?.focus();
 
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -163,9 +167,16 @@ export function Modal({ open, onClose, title, width = 560, footer, children }: M
 
   return (
     <div
+      ref={overlayRef}
       className="modal-overlay"
+      tabIndex={-1}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
           onClose();
         }
       }}
