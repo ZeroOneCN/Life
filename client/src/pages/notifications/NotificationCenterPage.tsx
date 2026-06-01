@@ -223,7 +223,7 @@ export default function NotificationCenterPage() {
           title="通知日志"
           description="查看所有测试发送和业务场景发送记录。"
           action={notificationState.logs.length > 0 ? (
-            <Btn tone="secondary" onClick={() => {
+            <Btn tone="danger" onClick={() => {
               setLogPage(1);
               setShowClearModal(true);
             }}>
