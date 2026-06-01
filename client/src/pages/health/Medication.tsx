@@ -240,7 +240,7 @@ export default function MedicationPage() {
         actions={(
           <>
             <Tag tone="blue">通知中心联动</Tag>
-            <Btn tone="primary" onClick={() => setTab('summary')}>查看提醒</Btn>
+            <Btn tone="secondary" onClick={() => setTab('summary')}>查看提醒</Btn>
           </>
         )}
       />
