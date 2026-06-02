@@ -1093,8 +1093,9 @@ export function filterLifeCardBills(
   });
 }
 
-export function formatLifeCardMoney(value: number) {
-  return `¥${value.toFixed(2)}`;
+export function formatLifeCardMoney(value: number | null | undefined) {
+  const safe = Number.isFinite(Number(value)) ? Number(value) : 0;
+  return `¥${safe.toFixed(2)}`;
 }
 
 export function getCardTabLabel(tab: CardTab) {
