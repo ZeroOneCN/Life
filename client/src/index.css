@@ -1537,8 +1537,36 @@ textarea {
   font-size: 14px;
 }
 
+.data-table tbody tr {
+  transition: background 0.15s ease;
+}
+
 .data-table tr:hover td {
-  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+}
+
+.data-table tbody tr:active td {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.data-table tbody tr.clickable-row {
+  cursor: pointer;
+  position: relative;
+}
+
+.data-table tbody tr.clickable-row::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--color-primary);
+  border-radius: 0 2px 2px 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.data-table tbody tr.clickable-row:hover::before {
+  opacity: 1;
 }
 
 .pagination {
