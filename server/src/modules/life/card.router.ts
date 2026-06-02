@@ -66,8 +66,8 @@ const settingsSchema = z.object({
   balanceLowEnabled: z.boolean().optional(),
   billingUpcomingEnabled: z.boolean().optional(),
   autoDeductionEnabled: z.boolean().optional(),
-  balanceThreshold: z.number().min(0).optional(),
-  notificationDaysBefore: z.number().int().min(0).max(31).optional(),
+  balanceThreshold: z.preprocess((v) => (v == null ? undefined : v), z.number().min(0).optional()),
+  notificationDaysBefore: z.preprocess((v) => (v == null ? undefined : v), z.number().int().min(0).max(31).optional()),
 });
 
 const rechargeActionSchema = z.object({
@@ -780,8 +780,8 @@ export function createCardRouter() {
       balance_low_enabled: payload.balanceLowEnabled,
       billing_upcoming_enabled: payload.billingUpcomingEnabled,
       auto_deduction_enabled: payload.autoDeductionEnabled,
-      balance_threshold: payload.balanceThreshold,
-      notification_days_before: payload.notificationDaysBefore,
+      balance_threshold: payload.balanceThreshold as number | undefined,
+      notification_days_before: payload.notificationDaysBefore as number | undefined,
     }, {
       balance_low_enabled: true,
       billing_upcoming_enabled: true,

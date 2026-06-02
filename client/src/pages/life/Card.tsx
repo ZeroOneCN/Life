@@ -129,7 +129,13 @@ export default function CardPage() {
 
   const updateSettings = useCallback(async (patch: Partial<LifeCardPageState['settings']>) => {
     try {
-      const next = await cardApi.updateSettings(patch);
+      const cleanPatch = Object.fromEntries(
+        Object.entries(patch).filter(([, v]) => v !== null && v !== undefined),
+      );
+      if (Object.keys(cleanPatch).length === 0) {
+        return;
+      }
+      const next = await cardApi.updateSettings(cleanPatch);
       setSettings(next);
       await hydrateNotificationCenterState();
       showToast('号卡提醒设置已更新。');
