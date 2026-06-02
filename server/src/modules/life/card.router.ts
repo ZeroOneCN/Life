@@ -65,6 +65,7 @@ const carrierSchema = z.object({
 const settingsSchema = z.object({
   balanceLowEnabled: z.boolean().optional(),
   billingUpcomingEnabled: z.boolean().optional(),
+  autoDeductionEnabled: z.boolean().optional(),
   balanceThreshold: z.number().min(0).optional(),
   notificationDaysBefore: z.number().int().min(0).max(31).optional(),
 });
@@ -758,6 +759,7 @@ export function createCardRouter() {
     const settings = await settingService.getOrCreate(userId, {
       balance_low_enabled: true,
       billing_upcoming_enabled: true,
+      auto_deduction_enabled: false,
       balance_threshold: 10,
       notification_days_before: 3,
     });
@@ -765,6 +767,7 @@ export function createCardRouter() {
     response.json(successResponse({
       balanceLowEnabled: settings.balance_low_enabled,
       billingUpcomingEnabled: settings.billing_upcoming_enabled,
+      autoDeductionEnabled: settings.auto_deduction_enabled,
       balanceThreshold: Number(settings.balance_threshold),
       notificationDaysBefore: settings.notification_days_before,
     }));
@@ -776,11 +779,13 @@ export function createCardRouter() {
     const settings = await settingService.update(userId, {
       balance_low_enabled: payload.balanceLowEnabled,
       billing_upcoming_enabled: payload.billingUpcomingEnabled,
+      auto_deduction_enabled: payload.autoDeductionEnabled,
       balance_threshold: payload.balanceThreshold,
       notification_days_before: payload.notificationDaysBefore,
     }, {
       balance_low_enabled: true,
       billing_upcoming_enabled: true,
+      auto_deduction_enabled: false,
       balance_threshold: 10,
       notification_days_before: 3,
     });
@@ -793,6 +798,7 @@ export function createCardRouter() {
     response.json(successResponse({
       balanceLowEnabled: settings.balance_low_enabled,
       billingUpcomingEnabled: settings.billing_upcoming_enabled,
+      autoDeductionEnabled: settings.auto_deduction_enabled,
       balanceThreshold: Number(settings.balance_threshold),
       notificationDaysBefore: settings.notification_days_before,
     }, 'update_life_card_settings_success'));
@@ -943,6 +949,125 @@ export function createCardRouter() {
     ];
 
     response.json(successResponse(logs, 'trigger_life_card_reminders_success'));
+  }));
+
+  router.post('/actions/auto-deduct', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const settings = await settingService.getOrCreate(userId, {
+      balance_low_enabled: true,
+      billing_upcoming_enabled: true,
+      auto_deduction_enabled: false,
+      balance_threshold: 10,
+      notification_days_before: 3,
+    });
+
+    if (!settings.auto_deduction_enabled) {
+      throw new AppError('自动扣费功能未开启，请在设置中开启', 400, 400);
+    }
+
+    const cardRepo = appDataSource.getRepository(LifeCardRecordEntity);
+    const billRepo = appDataSource.getRepository(LifeCardBillRecordEntity);
+    const today = dayjs();
+    const currentMonth = today.format('YYYY-MM');
+    const todayDay = today.date();
+
+    const cards = await cardRepo.find({ where: { user_id: userId } });
+    const existingBills = await billRepo.find({
+      where: { user_id: userId, billing_month: currentMonth },
+    });
+
+    const billedSimIds = new Set(existingBills.map((b) => b.sim_id));
+    const processed: Array<{
+      simId: string;
+      phoneNumber: string;
+      carrierName: string;
+      deductedAmount: number;
+      remainingBalance: number;
+      status: string;
+      reason?: string;
+    }> = [];
+    let totalDeducted = 0;
+    let skippedAlreadyBilled = 0;
+    let skippedNoFee = 0;
+
+    const cardsToUpdate: LifeCardRecordEntity[] = [];
+    const billsToCreate: LifeCardBillRecordEntity[] = [];
+
+    for (const card of cards) {
+      const fee = Number(card.monthly_fee);
+
+      if (fee <= 0) {
+        skippedNoFee += 1;
+        continue;
+      }
+
+      if (card.billing_day !== todayDay) {
+        continue;
+      }
+
+      if (billedSimIds.has(card.id)) {
+        skippedAlreadyBilled += 1;
+        processed.push({
+          simId: card.id,
+          phoneNumber: card.phone_number,
+          carrierName: card.carrier_name,
+          deductedAmount: 0,
+          remainingBalance: Number(card.balance),
+          status: 'skipped',
+          reason: '本月已存在账单记录',
+        });
+        continue;
+      }
+
+      const newBalance = Number((Number(card.balance) - fee).toFixed(2));
+      card.balance = newBalance;
+      cardsToUpdate.push(card);
+
+      billsToCreate.push(billRepo.create({
+        user_id: userId,
+        sim_id: card.id,
+        phone_number: card.phone_number,
+        carrier_name: card.carrier_name,
+        billing_month: currentMonth,
+        monthly_fee: fee,
+        actual_fee: fee,
+        extra_charges: 0,
+        total_fee: fee,
+        note: `系统自动扣费（账单日 ${todayDay} 日）`,
+      }));
+
+      totalDeducted += fee;
+      processed.push({
+        simId: card.id,
+        phoneNumber: card.phone_number,
+        carrierName: card.carrier_name,
+        deductedAmount: fee,
+        remainingBalance: newBalance,
+        status: 'deducted',
+      });
+    }
+
+    if (cardsToUpdate.length > 0) {
+      await cardRepo.save(cardsToUpdate);
+    }
+
+    if (billsToCreate.length > 0) {
+      await billRepo.save(billsToCreate);
+    }
+
+    await triggerRuleBasedCardReminders(userId, cardsToUpdate.length > 0 ? cardsToUpdate : [], settings);
+
+    response.json(successResponse({
+      executedAt: today.toISOString(),
+      billingMonth: currentMonth,
+      billingDay: todayDay,
+      processedCount: processed.length,
+      deductedCount: processed.filter((p) => p.status === 'deducted').length,
+      totalDeducted: Number(totalDeducted.toFixed(2)),
+      skippedAlreadyBilled,
+      skippedNoFee,
+      details: processed,
+    }, 'auto_deduct_life_cards_success'));
   }));
 
   return router;

@@ -10,6 +10,9 @@ export class LifeCardSettingEntity extends UserSettingEntity {
   @Column({ type: 'tinyint', width: 1, default: 1 })
   billing_upcoming_enabled!: boolean;
 
+  @Column({ type: 'tinyint', width: 1, default: 0 })
+  auto_deduction_enabled!: boolean;
+
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 20 })
   balance_threshold!: number;
 

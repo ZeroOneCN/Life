@@ -43,6 +43,7 @@ const EMPTY_OVERVIEW: LifeCardOverviewSummary = {
 const EMPTY_SETTINGS: LifeCardPageState['settings'] = {
   balanceLowEnabled: true,
   billingUpcomingEnabled: true,
+  autoDeductionEnabled: false,
   balanceThreshold: 10,
   notificationDaysBefore: 3,
 };

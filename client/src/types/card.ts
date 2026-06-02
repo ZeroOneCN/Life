@@ -162,6 +162,7 @@ export interface LifeCardPageState {
   settings: {
     balanceLowEnabled: boolean;
     billingUpcomingEnabled: boolean;
+    autoDeductionEnabled: boolean;
     balanceThreshold: number;
     notificationDaysBefore: number;
   };

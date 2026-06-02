@@ -433,6 +433,7 @@ function normalizeSettings(
   return {
     balanceLowEnabled: settings?.balanceLowEnabled ?? true,
     billingUpcomingEnabled: settings?.billingUpcomingEnabled ?? true,
+    autoDeductionEnabled: settings?.autoDeductionEnabled ?? false,
     balanceThreshold: Math.max(0, Number(settings?.balanceThreshold ?? 10) || 10),
     notificationDaysBefore: Math.max(0, Math.min(31, Math.round(Number(settings?.notificationDaysBefore ?? 3) || 3))),
   };
@@ -450,6 +451,7 @@ function createInitialState(): LifeCardPageState {
     settings: {
       balanceLowEnabled: true,
       billingUpcomingEnabled: true,
+      autoDeductionEnabled: false,
       balanceThreshold: 10,
       notificationDaysBefore: 3,
     },

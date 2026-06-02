@@ -45,6 +45,7 @@ export interface CardRechargeListParams {
 export interface CardSettingsPayload {
   balanceLowEnabled?: boolean;
   billingUpcomingEnabled?: boolean;
+  autoDeductionEnabled?: boolean;
   balanceThreshold?: number;
   notificationDaysBefore?: number;
 }
@@ -52,8 +53,31 @@ export interface CardSettingsPayload {
 export interface CardSettingsResult {
   balanceLowEnabled: boolean;
   billingUpcomingEnabled: boolean;
+  autoDeductionEnabled: boolean;
   balanceThreshold: number;
   notificationDaysBefore: number;
+}
+
+export interface AutoDeductDetail {
+  simId: string;
+  phoneNumber: string;
+  carrierName: string;
+  deductedAmount: number;
+  remainingBalance: number;
+  status: 'deducted' | 'skipped';
+  reason?: string;
+}
+
+export interface AutoDeductResult {
+  executedAt: string;
+  billingMonth: string;
+  billingDay: number;
+  processedCount: number;
+  deductedCount: number;
+  totalDeducted: number;
+  skippedAlreadyBilled: number;
+  skippedNoFee: number;
+  details: AutoDeductDetail[];
 }
 
 export interface CardImportRow {
@@ -160,5 +184,9 @@ export const cardApi = {
 
   triggerReminders(title?: string) {
     return apiPost('/life/card/actions/trigger-reminders', title ? { title } : {});
+  },
+
+  autoDeduct() {
+    return apiPost<AutoDeductResult>('/life/card/actions/auto-deduct', {});
   },
 };
