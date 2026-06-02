@@ -1851,6 +1851,64 @@ textarea {
   color: var(--color-ink-subtle);
 }
 
+/* ========== 可访问性：键盘焦点可见 ========== */
+.card:focus-visible,
+.stat-card:focus-visible,
+.dash-module-card:focus-visible,
+.channel-card:focus-visible,
+.switch-card:focus-visible,
+.btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ========== 移动端触摸优化 ========== */
+@media (hover: none) and (pointer: coarse) {
+  .card:active,
+  .stat-card:active,
+  .dash-module-card:active {
+    transform: scale(0.98);
+    transition-duration: 0.05s;
+  }
+
+  .card:hover,
+  .stat-card:hover,
+  .dash-module-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* ========== 减弱动画偏好适配 ========== */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .stat-card,
+  .dash-module-card,
+  .clickable-card,
+  .fitness-chart-card,
+  .forex-chart-card,
+  .fitness-insight-card,
+  .forex-insight-card,
+  .forex-result-card,
+  .forex-instrument-summary-card,
+  .channel-card,
+  .switch-card {
+    transition: none !important;
+  }
+
+  .card:hover,
+  .stat-card:hover,
+  .dash-module-card:hover {
+    transform: none !important;
+  }
+
+  .card.animate-in,
+  .stat-card.animate-in {
+    animation: none !important;
+    opacity: 1;
+  }
+}
+
 /* ===== Template Form (Edit/Create Modal) ===== */
 
 .template-form-meta {
