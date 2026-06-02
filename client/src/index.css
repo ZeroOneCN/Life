@@ -1668,6 +1668,14 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  transition: border-color 0.18s ease, box-shadow 0.2s ease;
+}
+
+.switch-card:hover,
+.channel-card:hover,
+.notification-status-card:hover {
+  border-color: var(--color-hairline-strong);
+  box-shadow: 0 2px 10px color-mix(in srgb, black 4%, transparent);
 }
 
 .channel-config-grid {
