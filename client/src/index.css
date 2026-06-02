@@ -1340,6 +1340,20 @@ textarea {
   border-radius: 18px;
   border: 1px solid var(--color-hairline);
   background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-3) 90%, transparent), color-mix(in srgb, var(--color-surface-2) 98%, transparent));
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease, box-shadow 0.25s ease;
+}
+
+.fitness-chart-card:hover,
+.fitness-insight-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-hairline-strong);
+  box-shadow: 0 4px 12px color-mix(in srgb, black 6%, transparent), 0 1px 3px color-mix(in srgb, black 4%, transparent);
+}
+
+.fitness-chart-card:active,
+.fitness-insight-card:active {
+  transform: translateY(0) scale(0.99);
+  transition-duration: 0.08s;
 }
 
 .fitness-chart-header strong,
@@ -3952,6 +3966,26 @@ textarea {
   border: 1px solid var(--color-hairline);
   border-radius: var(--radius-lg);
   background: var(--color-surface-2);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease, box-shadow 0.25s ease;
+}
+
+.forex-chart-card:hover,
+.forex-position-row:hover,
+.forex-result-card:hover,
+.forex-insight-card:hover,
+.forex-instrument-summary-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-hairline-strong);
+  box-shadow: 0 4px 12px color-mix(in srgb, black 6%, transparent), 0 1px 3px color-mix(in srgb, black 4%, transparent);
+}
+
+.forex-chart-card:active,
+.forex-position-row:active,
+.forex-result-card:active,
+.forex-insight-card:active,
+.forex-instrument-summary-card:active {
+  transform: translateY(0) scale(0.99);
+  transition-duration: 0.08s;
 }
 
 .forex-chart-card,
