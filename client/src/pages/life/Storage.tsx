@@ -88,7 +88,7 @@ export default function StoragePage() {
   const subtitle = useMemo(() => (
     loading
       ? '正在从后端加载物品、看板和设置。'
-      : '物品追踪已经切到后端唯一数据源，页面只保留视图级内存状态。'
+      : '追踪个人物品位置、状态和关联信息。'
   ), [loading]);
 
   return (

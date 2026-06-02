@@ -265,7 +265,7 @@ export default function RentPage() {
     <div className="page-stack">
       <PageHeader
         title="房租水电"
-        subtitle={loading ? '正在从后端加载住房记录、渠道和统计。' : '租房页已切换为后端唯一业务数据源，刷新页面后数据直接来自数据库。'}
+        subtitle={loading ? '正在加载住房记录...' : '管理租房合同、租金缴纳和到期提醒。'}
       />
 
       <StatGrid

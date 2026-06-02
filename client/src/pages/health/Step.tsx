@@ -219,7 +219,7 @@ export default function StepPage() {
     <div className="page-stack">
       <PageHeader
         title="运动步数"
-        subtitle={loading ? '正在从后端加载步数记录、统计和设置。' : '步数页已切到后端唯一数据源，刷新页面后数据直接来自数据库。'}
+        subtitle={loading ? '正在加载步数数据...' : '记录每日步数，统计运动趋势和健康目标。'}
       />
 
       <StatGrid

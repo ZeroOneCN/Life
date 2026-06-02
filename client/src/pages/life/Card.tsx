@@ -293,7 +293,7 @@ export default function CardPage() {
     <div className="page-stack">
       <PageHeader
         title="号卡中心"
-        subtitle={loading ? '正在从后端加载号卡数据、账单、运营商和提醒设置。' : '号卡中心已切换为后端唯一数据源。'}
+        subtitle={loading ? '正在加载号卡数据...' : '管理银行卡、手机号等号卡的账单和到期提醒。'}
         actions={(
           <div className="inline-row">
             <Tag tone="blue">低余额 {overview.lowBalanceCount} 张</Tag>

@@ -92,7 +92,7 @@ export default function TodoPage() {
   const subtitle = useMemo(() => (
     loading
       ? '正在从后端加载任务、提醒规则和通知日志。'
-      : '待办中心已经切到后端唯一数据源，页面只保留视图级内存状态。'
+      : '管理日常待办事项，追踪任务完成进度。'
   ), [loading]);
 
   return (

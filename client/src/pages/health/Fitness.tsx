@@ -174,7 +174,7 @@ export default function FitnessPage() {
     <div className="page-stack">
       <PageHeader
         title="健身减脂"
-        subtitle={loading ? '正在从后端加载饮食、运动、食材采购和体重记录。' : '健身页已切到后端唯一数据源，不再读取浏览器业务本地数据。'}
+        subtitle={loading ? '正在加载数据...' : '记录饮食、运动、食材采购和体重变化。'}
         actions={<Btn tone="secondary" onClick={() => setInsightsOpen(true)}>查看健康建议</Btn>}
       />
 

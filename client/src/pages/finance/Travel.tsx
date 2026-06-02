@@ -331,7 +331,7 @@ export default function TravelPage() {
     <div className="page-stack">
       <PageHeader
         title="旅行游玩"
-        subtitle={loading ? '正在从后端加载账本、明细、渠道和统计。' : '旅行页已切换为后端唯一业务数据源，刷新页面后数据直接来自数据库。'}
+        subtitle={loading ? '正在加载旅行数据...' : '记录出行行程、消费明细和行程规划。'}
       />
 
       <SectionCard

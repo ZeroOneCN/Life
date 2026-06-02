@@ -454,8 +454,10 @@ textarea {
 .page-title {
   margin: 0;
   font-size: 32px;
-  line-height: 1.1;
-  letter-spacing: -0.04em;
+  font-weight: 800;
+  font-stretch: expanded;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
 }
 
 .page-subtitle {

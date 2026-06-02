@@ -241,7 +241,7 @@ export default function ForexPage() {
     <div className="page-stack">
       <PageHeader
         title="外汇市场"
-        subtitle={loading ? '正在从后端加载交易、出入金、统计和设置。' : '外汇页面已切到后端唯一数据源，浏览器不再保存整页交易真相。'}
+        subtitle={loading ? '正在加载交易数据...' : '统计、交易、计算器和出入金都直接以数据库与接口响应为准。'}
       />
 
       <StatGrid

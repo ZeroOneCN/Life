@@ -236,7 +236,7 @@ export default function MedicationPage() {
     <div className="page-stack">
       <PageHeader
         title="日常用药"
-        subtitle={loading ? '正在从后端加载用药记录、购药记录和提醒设置。' : '用药页已切到后端唯一数据源，提醒日志统一走通知中心。'}
+        subtitle={loading ? '正在加载数据...' : '追踪用药记录、购药信息和服药提醒。'}
         actions={(
           <>
             <Tag tone="blue">通知中心联动</Tag>

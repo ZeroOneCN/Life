@@ -181,7 +181,7 @@ export default function LoanPage() {
         subtitle={
           loading
             ? '正在从后端加载贷款平台、账单、还款和提醒设置。'
-            : '借贷页面已切换为后端唯一业务数据源。'
+            : '管理借贷合同、还款计划和逾期提醒。'
         }
         actions={(
           <Btn

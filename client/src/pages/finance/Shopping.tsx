@@ -195,7 +195,7 @@ export default function ShoppingPage() {
     <div className="page-stack">
       <PageHeader
         title="网上购物"
-        subtitle={loading ? '正在从后端加载购物记录、账本、平台和设置。' : '购物页已切到后端唯一数据源，页面刷新后数据直接回显数据库内容。'}
+        subtitle={loading ? '正在加载购物数据...' : '记录消费明细、管理账本分类和支出分析。'}
         actions={(
           <div className="inline-row">
             <Btn tone="secondary" onClick={() => setImportOpen(true)}>导入 Excel</Btn>

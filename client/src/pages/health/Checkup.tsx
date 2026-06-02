@@ -130,7 +130,7 @@ export default function CheckupPage() {
     <div className="page-stack">
       <PageHeader
         title="体检指标"
-        subtitle={loading ? '正在从后端加载指标记录、模板和提醒设置。' : '体检页已切到后端唯一数据源，提醒与通知统一由后端和通知中心联动。'}
+        subtitle={loading ? '正在加载体检数据...' : '统一管理体检指标记录、模板配置和复查提醒。'}
         actions={tab !== 'batch' ? (
           <Btn tone="secondary" onClick={() => setTab('batch')}>批量录入</Btn>
         ) : undefined}

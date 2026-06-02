@@ -107,7 +107,7 @@ export function createStepRouter() {
       .getOne();
 
     if (existing) {
-      throw new AppError('step_record_duplicate', 409, 409);
+      throw new AppError('该日期已有步数记录，请检查后重新录入', 409, 409);
     }
 
     const item = await repository.save(repository.create({
