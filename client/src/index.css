@@ -5584,7 +5584,30 @@ textarea {
   background: var(--color-surface-2);
   text-decoration: none;
   color: var(--color-ink);
+  position: relative;
+  overflow: hidden;
   transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dash-module-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dash-module-card:hover::before {
+  opacity: 1;
+}
+
+.dash-module-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .dash-module-card:hover {

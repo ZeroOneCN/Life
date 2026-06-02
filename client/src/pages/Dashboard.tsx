@@ -297,7 +297,19 @@ export default function Dashboard() {
 
       <section className="dash-modules-row">
         {moduleCards.map((mod) => (
-          <Link key={mod.title} className="dash-module-card" to={mod.href}>
+          <Link
+            key={mod.title}
+            className="dash-module-card"
+            to={mod.href}
+            onMouseMove={(e) => {
+              const el = e.currentTarget;
+              const rect = el.getBoundingClientRect();
+              const x = ((e.clientX - rect.left) / rect.width) * 100;
+              const y = ((e.clientY - rect.top) / rect.height) * 100;
+              el.style.setProperty('--mouse-x', `${x}%`);
+              el.style.setProperty('--mouse-y', `${y}%`);
+            }}
+          >
             <span className="dash-module-icon">{mod.icon}</span>
             <div className="dash-module-body">
               <strong className="dash-module-title">{mod.title}</strong>
