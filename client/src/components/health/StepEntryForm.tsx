@@ -26,7 +26,7 @@ function getEntryTitle(hour: StepHour) {
 function getEntryDescription(hour: StepHour) {
   return hour === null
     ? '适合补录当天总步数，重复提交时会提醒你是否覆盖原有记录。'
-    : '保存成功后会自动尝试切到下一个小时，连续录入会更顺手。';
+    : '';
 }
 
 export function StepEntryForm({
