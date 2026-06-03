@@ -1,0 +1,283 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createStepRouter = createStepRouter;
+const express_1 = require("express");
+const zod_1 = require("zod");
+const dayjs_1 = __importDefault(require("dayjs"));
+const typeorm_1 = require("typeorm");
+const data_source_1 = require("../../db/data-source");
+const async_handler_1 = require("../../shared/http/async-handler");
+const request_1 = require("../../shared/http/request");
+const response_1 = require("../../shared/http/response");
+const validation_1 = require("../../shared/http/validation");
+const pagination_1 = require("../../shared/utils/pagination");
+const base_user_setting_service_1 = require("../../shared/db/base-user-setting.service");
+const app_error_1 = require("../../shared/errors/app-error");
+const health_step_record_entity_1 = require("./entities/health-step-record.entity");
+const health_step_setting_entity_1 = require("./entities/health-step-setting.entity");
+const recordSchema = zod_1.z.object({
+    userId: zod_1.z.string().trim().optional(),
+    steps: zod_1.z.number().int().min(0),
+    hour: zod_1.z.number().int().min(0).max(23).nullable().optional(),
+    recordTime: zod_1.z.string().min(1),
+});
+const settingsSchema = zod_1.z.object({
+    strideLength: zod_1.z.number().min(0.1).optional(),
+    activeUserId: zod_1.z.string().optional(),
+    statsUserId: zod_1.z.string().optional(),
+    recordsUserId: zod_1.z.string().optional(),
+});
+/** 从请求中获取用户 ID，空字符串回退到认证用户 */
+function resolveUserId(request) {
+    const authUserId = (0, request_1.requireAuthUser)(request);
+    const raw = String(request.query.userId ?? '');
+    return raw || authUserId;
+}
+const settingService = new base_user_setting_service_1.BaseUserSettingService(health_step_setting_entity_1.HealthStepSettingEntity);
+function mapRecord(entity) {
+    return {
+        id: entity.id,
+        userId: entity.user_id,
+        steps: entity.steps,
+        hour: entity.hour,
+        recordTime: (0, dayjs_1.default)(entity.record_time).toISOString(),
+        createdAt: entity.created_at.toISOString(),
+        updatedAt: entity.updated_at.toISOString(),
+    };
+}
+function calculateDistanceKm(steps, strideLength) {
+    return Number(((steps * strideLength) / 1000).toFixed(2));
+}
+function createStepRouter() {
+    const router = (0, express_1.Router)();
+    // GET /records — paginated list
+    router.get('/records', (0, async_handler_1.asyncHandler)(async (request, response) => {
+        const userId = resolveUserId(request);
+        const hour = request.query.hour !== undefined ? Number(request.query.hour) : 'all';
+        const month = String(request.query.month ?? '');
+        const { page, pageSize, skip } = (0, pagination_1.parsePagination)(request.query);
+        const repository = data_source_1.appDataSource.getRepository(health_step_record_entity_1.HealthStepRecordEntity);
+        const where = { user_id: userId };
+        if (hour !== 'all') {
+            where.hour = hour;
+        }
+        if (month) {
+            const monthStart = (0, dayjs_1.default)(`${month}-01`).startOf('month').toDate();
+            const monthEnd = (0, dayjs_1.default)(`${month}-01`).endOf('month').toDate();
+            where.record_time = (0, typeorm_1.Between)(monthStart, monthEnd);
+        }
+        const [items, total] = await repository.findAndCount({
+            where,
+            order: { record_time: 'DESC', updated_at: 'DESC' },
+            skip,
+            take: pageSize,
+        });
+        response.json((0, response_1.successResponse)((0, response_1.buildListData)(items.map(mapRecord), page, pageSize, total)));
+    }));
+    // POST /records — create with duplicate check
+    router.post('/records', (0, async_handler_1.asyncHandler)(async (request, response) => {
+        const authUserId = (0, request_1.requireAuthUser)(request);
+        const payload = (0, validation_1.validateBody)(recordSchema, request.body);
+        const repository = data_source_1.appDataSource.getRepository(health_step_record_entity_1.HealthStepRecordEntity);
+        const userId = payload.userId ?? authUserId;
+        const recordTime = (0, dayjs_1.default)(payload.recordTime).isValid() ? (0, dayjs_1.default)(payload.recordTime) : (0, dayjs_1.default)();
+        const dateStr = recordTime.format('YYYY-MM-DD');
+        const hour = payload.hour ?? null;
+        // Duplicate check: same user + same date + same hour (like Runrecord)
+        const dateStart = (0, dayjs_1.default)(`${dateStr}T00:00:00`).toDate();
+        const dateEnd = (0, dayjs_1.default)(`${dateStr}T23:59:59`).toDate();
+        const existing = await repository
+            .createQueryBuilder('r')
+            .where('r.user_id = :userId', { userId })
+            .andWhere('r.record_time BETWEEN :start AND :end', { start: dateStart, end: dateEnd })
+            .andWhere(hour !== null ? 'r.hour = :hour' : 'r.hour IS NULL', hour !== null ? { hour } : {})
+            .getOne();
+        if (existing) {
+            throw new app_error_1.AppError('step_record_duplicate', 409, 409);
+        }
+        const item = await repository.save(repository.create({
+            user_id: userId,
+            steps: payload.steps,
+            hour,
+            record_time: recordTime.toDate(),
+        }));
+        response.json((0, response_1.successResponse)(mapRecord(item), 'create_step_record_success'));
+    }));
+    // PATCH /records/:id
+    router.patch('/records/:id', (0, async_handler_1.asyncHandler)(async (request, response) => {
+        const userId = (0, request_1.requireAuthUser)(request);
+        const recordId = String(request.params.id ?? '');
+        const payload = (0, validation_1.validateBody)(recordSchema.partial(), request.body);
+        const repository = data_source_1.appDataSource.getRepository(health_step_record_entity_1.HealthStepRecordEntity);
+        const current = await repository.findOne({
+            where: { id: recordId, user_id: userId },
+        });
+        if (!current) {
+            throw new app_error_1.AppError('step_record_not_found', 404, 404);
+        }
+        const next = await repository.save({
+            ...current,
+            user_id: payload.userId ?? current.user_id,
+            steps: payload.steps ?? current.steps,
+            hour: payload.hour !== undefined ? payload.hour : current.hour,
+            record_time: payload.recordTime ? ((0, dayjs_1.default)(payload.recordTime).isValid() ? (0, dayjs_1.default)(payload.recordTime).toDate() : current.record_time) : current.record_time,
+        });
+        response.json((0, response_1.successResponse)(mapRecord(next), 'update_step_record_success'));
+    }));
+    // DELETE /records/:id
+    router.delete('/records/:id', (0, async_handler_1.asyncHandler)(async (request, response) => {
+        const userId = (0, request_1.requireAuthUser)(request);
+        const recordId = String(request.params.id ?? '');
+        const repository = data_source_1.appDataSource.getRepository(health_step_record_entity_1.HealthStepRecordEntity);
+        const current = await repository.findOne({
+            where: { id: recordId, user_id: userId },
+        });
+        if (!current) {
+            throw new app_error_1.AppError('step_record_not_found', 404, 404);
+        }
+        await repository.remove(current);
+        response.json((0, response_1.successResponse)({ ok: true }, 'delete_step_record_success'));
+    }));
+    // GET /summary — daily totals use MAX(steps) for cumulative data model
+    router.get('/summary', (0, async_handler_1.asyncHandler)(async (request, response) => {
+        const authUserId = (0, request_1.requireAuthUser)(request);
+        const userId = resolveUserId(request);
+        const settings = await settingService.getOrCreate(authUserId, {
+            stride_length: 0.7,
+            active_user_id: authUserId,
+            stats_user_id: authUserId,
+            records_user_id: authUserId,
+        });
+        const repository = data_source_1.appDataSource.getRepository(health_step_record_entity_1.HealthStepRecordEntity);
+        const today = (0, dayjs_1.default)().format('YYYY-MM-DD');
+        const currentMonth = (0, dayjs_1.default)().format('YYYY-MM');
+        const monthStart = (0, dayjs_1.default)(`${currentMonth}-01`).startOf('month').format('YYYY-MM-DD HH:mm:ss');
+        const monthEnd = (0, dayjs_1.default)(`${currentMonth}-01`).endOf('month').format('YYYY-MM-DD HH:mm:ss');
+        const [todayResult, monthResult, totalCount] = await Promise.all([
+            repository.query('SELECT MAX(steps) as maxSteps FROM health_step_record WHERE user_id = ? AND record_time BETWEEN ? AND ?', [userId, `${today} 00:00:00`, `${today} 23:59:59`]),
+            repository.query('SELECT SUM(daily.maxSteps) as totalSteps FROM (SELECT MAX(r2.steps) as maxSteps FROM health_step_record r2 WHERE r2.user_id = ? AND r2.record_time BETWEEN ? AND ? GROUP BY DATE(r2.record_time)) daily', [userId, monthStart, monthEnd]),
+            repository.count({ where: { user_id: userId } }),
+        ]);
+        const todaySteps = Number(todayResult?.[0]?.maxSteps) || 0;
+        const monthSteps = Number(monthResult?.[0]?.totalSteps) || 0;
+        response.json((0, response_1.successResponse)({
+            totalRecords: totalCount,
+            todaySteps,
+            todayDistanceKm: calculateDistanceKm(todaySteps, Number(settings.stride_length)),
+            currentMonthSteps: monthSteps,
+            currentMonthDistanceKm: calculateDistanceKm(monthSteps, Number(settings.stride_length)),
+            strideLength: Number(settings.stride_length),
+        }));
+    }));
+    // GET /trend — date buckets with MAX(steps) per day, ordered ASC for chart
+    router.get('/trend', (0, async_handler_1.asyncHandler)(async (request, response) => {
+        const authUserId = (0, request_1.requireAuthUser)(request);
+        const userId = resolveUserId(request);
+        const month = String(request.query.month ?? (0, dayjs_1.default)().format('YYYY-MM'));
+        const hour = request.query.hour !== undefined ? Number(request.query.hour) : 'all';
+        const settings = await settingService.getOrCreate(authUserId, {
+            stride_length: 0.7,
+            active_user_id: authUserId,
+            stats_user_id: authUserId,
+            records_user_id: authUserId,
+        });
+        const monthStart = (0, dayjs_1.default)(`${month}-01`).startOf('month').toDate();
+        const monthEnd = (0, dayjs_1.default)(`${month}-01`).endOf('month').toDate();
+        const repository = data_source_1.appDataSource.getRepository(health_step_record_entity_1.HealthStepRecordEntity);
+        let sql = 'SELECT DATE_FORMAT(record_time, \'%Y-%m-%d\') as date, MAX(steps) as totalSteps, COUNT(*) as recordCount FROM health_step_record WHERE user_id = ? AND record_time BETWEEN ? AND ?';
+        const params = [userId, monthStart, monthEnd];
+        if (hour !== 'all') {
+            sql += ' AND hour = ?';
+            params.push(hour);
+        }
+        sql += ' GROUP BY DATE_FORMAT(record_time, \'%Y-%m-%d\') ORDER BY date ASC';
+        const rows = await repository.query(sql, params);
+        const stride = Number(settings.stride_length);
+        const result = rows.map((row) => ({
+            bucket: row.date,
+            label: (0, dayjs_1.default)(String(row.date)).format('M月D日'),
+            totalSteps: Number(row.totalSteps),
+            recordCount: Number(row.recordCount),
+            distanceKm: calculateDistanceKm(Number(row.totalSteps), stride),
+        }));
+        response.json((0, response_1.successResponse)(result));
+    }));
+    // GET /month-compare — sum of daily MAX(steps) for each month
+    router.get('/month-compare', (0, async_handler_1.asyncHandler)(async (request, response) => {
+        const authUserId = (0, request_1.requireAuthUser)(request);
+        const userId = resolveUserId(request);
+        const month = String(request.query.month ?? (0, dayjs_1.default)().format('YYYY-MM'));
+        const currentMonth = (0, dayjs_1.default)(`${month}-01`);
+        const previousMonth = currentMonth.subtract(1, 'month');
+        const settings = await settingService.getOrCreate(authUserId, {
+            stride_length: 0.7,
+            active_user_id: authUserId,
+            stats_user_id: authUserId,
+            records_user_id: authUserId,
+        });
+        const repository = data_source_1.appDataSource.getRepository(health_step_record_entity_1.HealthStepRecordEntity);
+        async function getMonthSteps(m) {
+            const start = m.startOf('month').format('YYYY-MM-DD HH:mm:ss');
+            const end = m.endOf('month').format('YYYY-MM-DD HH:mm:ss');
+            const rows = await repository.query('SELECT SUM(daily.maxSteps) as totalSteps FROM (SELECT MAX(r2.steps) as maxSteps FROM health_step_record r2 WHERE r2.user_id = ? AND r2.record_time BETWEEN ? AND ? GROUP BY DATE(r2.record_time)) daily', [userId, start, end]);
+            return Number(rows?.[0]?.totalSteps) || 0;
+        }
+        const [currentSteps, previousSteps] = await Promise.all([
+            getMonthSteps(currentMonth),
+            getMonthSteps(previousMonth),
+        ]);
+        const changePercentage = previousSteps === 0 ? null : Number((((currentSteps - previousSteps) / previousSteps) * 100).toFixed(1));
+        response.json((0, response_1.successResponse)({
+            currentLabel: currentMonth.format('YYYY年M月'),
+            previousLabel: previousMonth.format('YYYY年M月'),
+            currentSteps,
+            previousSteps,
+            currentDistanceKm: calculateDistanceKm(currentSteps, Number(settings.stride_length)),
+            previousDistanceKm: calculateDistanceKm(previousSteps, Number(settings.stride_length)),
+            changePercentage,
+            trend: changePercentage === null ? 'none' : changePercentage > 0 ? 'up' : changePercentage < 0 ? 'down' : 'flat',
+        }));
+    }));
+    // GET /settings
+    router.get('/settings', (0, async_handler_1.asyncHandler)(async (request, response) => {
+        const userId = (0, request_1.requireAuthUser)(request);
+        const settings = await settingService.getOrCreate(userId, {
+            stride_length: 0.7,
+            active_user_id: userId,
+            stats_user_id: userId,
+            records_user_id: userId,
+        });
+        response.json((0, response_1.successResponse)({
+            strideLength: Number(settings.stride_length),
+            activeUserId: settings.active_user_id ?? userId,
+            statsUserId: settings.stats_user_id ?? userId,
+            recordsUserId: settings.records_user_id ?? userId,
+        }));
+    }));
+    // PATCH /settings
+    router.patch('/settings', (0, async_handler_1.asyncHandler)(async (request, response) => {
+        const userId = (0, request_1.requireAuthUser)(request);
+        const payload = (0, validation_1.validateBody)(settingsSchema, request.body);
+        const settings = await settingService.update(userId, {
+            stride_length: payload.strideLength,
+            active_user_id: payload.activeUserId,
+            stats_user_id: payload.statsUserId,
+            records_user_id: payload.recordsUserId,
+        }, {
+            stride_length: 0.7,
+            active_user_id: userId,
+            stats_user_id: userId,
+            records_user_id: userId,
+        });
+        response.json((0, response_1.successResponse)({
+            strideLength: Number(settings.stride_length),
+            activeUserId: settings.active_user_id ?? userId,
+            statsUserId: settings.stats_user_id ?? userId,
+            recordsUserId: settings.records_user_id ?? userId,
+        }, 'update_step_settings_success'));
+    }));
+    return router;
+}
