@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
+  },
+  "include": ["src", "vite.config.ts"],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "src/pages/health/AIAnalysis.tsx",
+    "src/pages/health/BiochemicalTests.tsx",
+    "src/pages/health/Dashboard.tsx",
+    "src/pages/health/HealthRecords.tsx",
+    "src/pages/health/MealRecords.tsx",
+    "src/pages/health/Settings.tsx",
+    "src/pages/health/SleepRecords.tsx",
+    "src/pages/life/BillImport.tsx",
+    "src/pages/life/BillManagement.tsx",
+    "src/pages/life/Settings.tsx",
+    "src/pages/life/SimCardForm.tsx",
+    "src/pages/life/SimCardList.tsx",
+    "src/pages/life/Statistics.tsx"
+  ]
+}
