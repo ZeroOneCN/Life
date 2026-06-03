@@ -6147,13 +6147,7 @@ textarea {
   }
 }
 
-  .auth-mode-tab {
-    flex: 1 1 auto;
-    text-align: center;
-  }
-}
-
-/* ========== Shopping Import Modal Styles (Linear Design System) ========== */
+/* ========== Shopping Import Modal Styles ========== */
 
 .shopping-import-modal {
   display: flex;
