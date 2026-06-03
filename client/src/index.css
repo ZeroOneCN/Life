@@ -557,12 +557,6 @@ textarea {
 
 .card:hover {
   box-shadow: 0 8px 24px var(--shadow-blue), 0 2px 6px rgba(0,55,112,0.04);
-  transform: translateY(-2px);
-}
-
-.card:active {
-  transform: translateY(0) scale(0.99);
-  transition-duration: 0.08s;
 }
 
 .stat-grid {
@@ -1702,7 +1696,6 @@ textarea {
 
 /* ========== 移动端触摸优化 ========== */
 @media (hover: none) and (pointer: coarse) {
-  .card:active,
   .stat-card:active,
   .dash-module-card:active {
     transform: scale(0.98);
@@ -4198,9 +4191,10 @@ textarea {
   min-height: 0;
 }
 .pnl-cell:hover {
-  transform: scale(1.2);
   z-index: 10;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.14);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
 }
 
 .pnl-cell-header {
