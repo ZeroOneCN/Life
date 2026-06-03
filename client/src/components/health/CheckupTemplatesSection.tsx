@@ -213,11 +213,11 @@ export function CheckupTemplatesSection({
             >
               取消
             </Btn>
-            <Btn tone="primary" onClick={handleSave}>{editingTemplate ? '保存模板' : '创建模板'}</Btn>
+            <Btn tone="primary" type="submit" form="template-create-form">{editingTemplate ? '保存模板' : '创建模板'}</Btn>
           </>
         )}
       >
-        <div className="template-form-meta">
+        <form id="template-create-form" className="template-form-meta" onSubmit={(event) => { event.preventDefault(); handleSave(); }}>
           <Field
             label="模板名称"
             value={form.name}
@@ -230,7 +230,7 @@ export function CheckupTemplatesSection({
             onChange={(event) => setForm((previous) => ({ ...previous, testType: event.target.value }))}
             placeholder="例如：生化检查"
           />
-        </div>
+        </form>
 
         <div className="template-form-items-section">
           <div className="template-form-items-header">

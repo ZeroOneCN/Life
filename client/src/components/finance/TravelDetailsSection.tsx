@@ -346,7 +346,7 @@ export function TravelDetailsSection({
           明细筛选账本可单独切换，不影响顶部当前账本上下文。
         </div>
 
-        <div className="travel-record-entry-grid">
+        <form className="travel-record-entry-grid" onSubmit={(e) => { e.preventDefault(); handleCreate(); }}>
           <DatePickerField
             label="日期"
             value={form.date}
@@ -433,9 +433,9 @@ export function TravelDetailsSection({
           />
           <div className="travel-inline-action">
             <span className="field-label">保存记录</span>
-            <Btn tone="primary" onClick={handleCreate}>保存旅行消费</Btn>
+            <Btn tone="primary" type="submit">保存旅行消费</Btn>
           </div>
-        </div>
+        </form>
 
         <div className="travel-duration-card">
           <strong>自动计算时长</strong>

@@ -281,7 +281,7 @@ export function ShoppingRecordsSection({
           如需导入 Excel，请使用页面右上角的导入入口。
         </div>
 
-        <div className="shopping-entry-grid shopping-entry-grid-records">
+        <form className="shopping-entry-grid shopping-entry-grid-records" onSubmit={(e) => { e.preventDefault(); handleCreate(); }}>
           <DatePickerField
             label="下单日期"
             value={form.date}
@@ -341,9 +341,9 @@ export function ShoppingRecordsSection({
           />
           <div className="shopping-inline-action">
             <span className="field-label">保存记录</span>
-            <Btn tone="primary" onClick={handleCreate}>保存购物记录</Btn>
+            <Btn tone="primary" type="submit">保存购物记录</Btn>
           </div>
-        </div>
+        </form>
 
         <div className="shopping-filter-grid">
           <Field

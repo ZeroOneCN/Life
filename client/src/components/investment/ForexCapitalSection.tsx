@@ -199,7 +199,7 @@ export function ForexCapitalSection({
       description="入金和出金会和看板中的净入金、净值和 ROI 联动，不需要再额外维护一套账户统计。"
     >
       <div className="page-stack">
-        <div className="forex-capital-form-row">
+        <form className="forex-capital-form-row" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <DatePickerField
             label="日期"
             value={form.flowDate}
@@ -228,9 +228,9 @@ export function ForexCapitalSection({
             placeholder="例如：初始入金"
           />
           <div className="forex-submit-cell">
-            <Btn tone="primary" onClick={handleCreate}>保存出入金记录</Btn>
+            <Btn tone="primary" type="submit">保存出入金记录</Btn>
           </div>
-        </div>
+        </form>
 
         <StatGrid
           items={[

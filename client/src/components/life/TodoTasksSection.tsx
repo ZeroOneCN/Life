@@ -265,7 +265,7 @@ export function TodoTasksSection({
             <Tag tone="blue">后端直写</Tag>
           </div>
 
-          <div className="todo-entry-grid">
+          <form className="todo-entry-grid" onSubmit={(e) => { e.preventDefault(); void handleCreate(); }}>
             <Field
               label="任务标题"
               value={form.title}
@@ -304,9 +304,9 @@ export function TodoTasksSection({
               placeholder="用逗号分隔多个标签"
             />
             <div className="todo-entry-action">
-              <Btn tone="primary" onClick={handleCreate}>保存任务</Btn>
+              <Btn tone="primary" type="submit">保存任务</Btn>
             </div>
-          </div>
+          </form>
         </div>
 
         <div className="todo-surface">

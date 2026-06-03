@@ -359,7 +359,7 @@ export function ForexTradesSection({
       )}
     >
       <div className="page-stack">
-        <div className="forex-compact-grid">
+        <form className="forex-compact-grid" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <DatePickerField
             label="日期时间"
             value={form.tradeDate}
@@ -434,9 +434,9 @@ export function ForexTradesSection({
             placeholder="例如：欧盘突破单"
           />
           <div className="forex-submit-cell">
-            <Btn tone="primary" onClick={handleCreate}>保存交易记录</Btn>
+            <Btn tone="primary" type="submit">保存交易记录</Btn>
           </div>
-        </div>
+        </form>
 
 
         {importResult ? (

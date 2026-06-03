@@ -172,7 +172,7 @@ export function RentChannelsSection({
           历史住房记录里已经保存了 `channelId + channelName` 快照，所以删除渠道不会改写旧记录。
         </div>
 
-        <div className="rent-channel-form-grid">
+        <form className="rent-channel-form-grid" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <Field
             label="当前归属用户"
             value={currentUserLabel}
@@ -186,9 +186,9 @@ export function RentChannelsSection({
           />
           <div className="rent-inline-action">
             <span className="field-label">新增渠道</span>
-            <Btn tone="primary" onClick={handleCreate}>保存渠道</Btn>
+            <Btn tone="primary" type="submit">保存渠道</Btn>
           </div>
-        </div>
+        </form>
 
         {scopedChannels.length ? (
           <DataTable rowKey="id" columns={columns} data={scopedChannels} />

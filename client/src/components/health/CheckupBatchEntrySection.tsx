@@ -142,7 +142,7 @@ export function CheckupBatchEntrySection({
       title="批量录入"
       description="适合一次录入同一天、同一用户、同一检查类型下的多项指标，也可从模板快速回填。"
     >
-      <div className="page-stack">
+      <form className="page-stack" onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
         <div className="checkup-filter-grid">
           <Field
             label="当前录入用户"
@@ -237,9 +237,9 @@ export function CheckupBatchEntrySection({
           <span className="subtle-text">
             {selectedTemplate ? `当前模板：${selectedTemplate.name}` : '当前为手动录入模式'}
           </span>
-          <Btn tone="primary" onClick={handleSubmit}>批量保存指标</Btn>
+          <Btn tone="primary" type="submit">批量保存指标</Btn>
         </div>
-      </div>
+      </form>
     </SectionCard>
   );
 }

@@ -287,7 +287,7 @@ export function TravelBooksSection({
           切换当前账本后，明细录入、统计看板和报告导出都会联动更新。
         </div>
 
-        <div className="travel-book-form-grid">
+        <form className="travel-book-form-grid" onSubmit={(e) => { e.preventDefault(); handleCreate(); }}>
           <Field
             label="当前创建用户"
             value={currentUserLabel}
@@ -319,9 +319,9 @@ export function TravelBooksSection({
           />
           <div className="travel-inline-action">
             <span className="field-label">保存账本</span>
-            <Btn tone="primary" onClick={handleCreate}>新建行程账本</Btn>
+            <Btn tone="primary" type="submit">新建行程账本</Btn>
           </div>
-        </div>
+        </form>
 
         {bookSummaries.length ? (
           <>

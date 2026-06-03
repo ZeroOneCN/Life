@@ -210,7 +210,7 @@ export function StorageItemsSection({
           ]}
         />
 
-        <div className="storage-entry-grid">
+        <form className="storage-entry-grid" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <Field
             label="物品名称"
             value={form.itemName}
@@ -248,10 +248,10 @@ export function StorageItemsSection({
             onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
             placeholder="记录用途或状态"
           />
-        </div>
+        </form>
 
         <div className="storage-action-bar">
-          <Btn tone="primary" onClick={handleCreate} className="storage-save-btn">保存物品</Btn>
+          <Btn tone="primary" type="submit" className="storage-save-btn">保存物品</Btn>
           <Btn tone="secondary" onClick={() => setShowImportModal(true)} className="storage-import-btn">从购物导入</Btn>
         </div>
 

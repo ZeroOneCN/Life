@@ -270,7 +270,7 @@ export function CardCardsSection({
           低余额阈值当前为 {formatLifeCardMoney(settings.balanceThreshold)}，账单日前提醒窗口为 {settings.notificationDaysBefore} 天。
         </div>
 
-        <div className="card-entry-grid-compact">
+        <form className="card-entry-grid-compact" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <Field
             label="电话号码"
             value={form.phoneNumber}
@@ -350,8 +350,8 @@ export function CardCardsSection({
             onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
             placeholder="主力号等"
           />
-          <Btn tone="primary" onClick={handleCreate}>保存</Btn>
-        </div>
+          <Btn tone="primary" type="submit">保存</Btn>
+        </form>
 
         <div className="card-filter-grid">
           <Field

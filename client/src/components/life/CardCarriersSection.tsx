@@ -113,7 +113,7 @@ export function CardCarriersSection({
       description="维护录入和筛选要用到的运营商列表，历史数据继续保留运营商名称快照。"
     >
       <div className="page-stack">
-        <div className="card-carrier-entry-grid">
+        <form className="card-carrier-entry-grid" onSubmit={(e) => { e.preventDefault(); handleCreate(); }}>
           <Field
             label="运营商名称"
             value={form.name}
@@ -127,9 +127,9 @@ export function CardCarriersSection({
             placeholder="例如 适合日常通话与流量套餐管理"
           />
           <div className="card-entry-action">
-            <Btn tone="primary" onClick={handleCreate}>新增运营商</Btn>
+            <Btn tone="primary" type="submit">新增运营商</Btn>
           </div>
-        </div>
+        </form>
 
         {carriers.length ? (
           <DataTable

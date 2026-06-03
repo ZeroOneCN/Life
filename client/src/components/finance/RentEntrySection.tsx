@@ -251,6 +251,7 @@ export function RentEntrySection({
           保存成功后会自动回到住房记录列表，并保留完整的渠道快照与成本统计。
         </div>
 
+        <form onSubmit={(event) => { event.preventDefault(); handleSave(); }}>
         <div className="rent-entry-grid rent-entry-grid-primary">
           <div className="rent-entry-cell rent-entry-cell-address">
             <Field
@@ -355,9 +356,11 @@ export function RentEntrySection({
 
         <div className="rent-form-actions">
           <Btn tone="secondary" onClick={handleReset}>清空表单</Btn>
-          <Btn tone="primary" onClick={handleSave}>{editingRecord ? '保存住房记录' : '新增住房记录'}</Btn>
+          <Btn tone="primary" type="submit">{editingRecord ? '保存住房记录' : '新增住房记录'}</Btn>
         </div>
+        </form>
       </div>
+
     </SectionCard>
   );
 }
