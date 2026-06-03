@@ -319,8 +319,8 @@ function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCo
           className="pnl-tooltip"
           style={{
             position: 'fixed',
-            left: hoverPos.x + 12,
-            top: hoverPos.y - 10,
+            left: hoverPos.x + 20,
+            top: hoverPos.y - 16,
             zIndex: 9999,
             pointerEvents: 'none',
           }}
