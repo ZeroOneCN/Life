@@ -7,7 +7,7 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { createPortal, useEffect, useRef, useState } from 'react';
 
 import type { TabOption, TableColumn } from '../types/ui';
 
@@ -193,7 +193,7 @@ export function Modal({ open, onClose, title, width = 560, footer, children }: M
     return null;
   }
 
-  return (
+  return createPortal(
     <div
       ref={overlayRef}
       className="modal-overlay"
@@ -214,7 +214,8 @@ export function Modal({ open, onClose, title, width = 560, footer, children }: M
         <div>{children}</div>
         {footer ? <div className="modal-footer">{footer}</div> : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
