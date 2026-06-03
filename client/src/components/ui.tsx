@@ -167,15 +167,25 @@ export function Modal({ open, onClose, title, width = 560, footer, children }: M
 
     overlayRef.current?.focus();
 
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
+    // 计算当前滚动条宽度，用于补偿 overflow:hidden 导致的布局偏移
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
 
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyPaddingRight = document.body.style.paddingRight;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousHtmlPaddingRight = document.documentElement.style.paddingRight;
+
+    // 锁定滚动 + 补偿滚动条宽度防止闪屏
     document.body.style.overflow = 'hidden';
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
     document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.paddingRight = `${scrollbarWidth}px`;
 
     return () => {
       document.body.style.overflow = previousBodyOverflow;
+      document.body.style.paddingRight = previousBodyPaddingRight;
       document.documentElement.style.overflow = previousHtmlOverflow;
+      document.documentElement.style.paddingRight = previousHtmlPaddingRight;
     };
   }, [open]);
 
