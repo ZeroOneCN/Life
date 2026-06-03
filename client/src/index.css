@@ -4080,6 +4080,226 @@ textarea {
   border-radius: 999px;
 }
 
+/* ===== 盈亏日历 PnL Calendar ===== */
+.pnl-calendar-wrapper {
+  padding: 4px 0;
+}
+
+.pnl-calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pnl-calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pnl-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.pnl-nav-btn:hover {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.pnl-calendar-title {
+  font-size: var(--fs-body);
+  color: var(--color-ink);
+  min-width: 120px;
+  text-align: center;
+}
+
+.pnl-calendar-summary {
+  display: flex;
+  gap: 16px;
+  font-size: var(--fs-caption);
+  color: var(--color-ink-muted);
+}
+.pnl-calendar-summary em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+}
+
+/* 日历网格 */
+.pnl-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.pnl-cell {
+  position: relative;
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  padding: 2px;
+  min-height: 0;
+}
+.pnl-cell:hover {
+  transform: scale(1.18);
+  z-index: 10;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.14);
+}
+
+.pnl-cell-header {
+  aspect-ratio: auto;
+  cursor: default;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--color-ink-subtle);
+  background: transparent !important;
+}
+.pnl-cell-header:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.pnl-cell-blank {
+  background: transparent !important;
+  cursor: default;
+}
+.pnl-cell-blank:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.pnl-cell-date {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.85;
+}
+
+.pnl-cell-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+/* 颜色分级：盈利（绿色系） */
+.pnl-cell-profit-1 {
+  background: #d4edda;
+  color: #1a6b31;
+}
+.pnl-cell-profit-2 {
+  background: #a8d5b2;
+  color: #155726;
+}
+.pnl-cell-profit-3 {
+  background: #6cbd7e;
+  color: #0d401a;
+}
+.pnl-cell-profit-4 {
+  background: #27a644;
+  color: #fff;
+}
+
+/* 颜色分级：亏损（红色系） */
+.pnl-cell-loss-1 {
+  background: #f8d7da;
+  color: #8b1a1a;
+}
+.pnl-cell-loss-2 {
+  background: #f0aeb4;
+  color: #6e1515;
+}
+.pnl-cell-loss-3 {
+  background: #e57373;
+  color: #4a0e0e;
+}
+.pnl-cell-loss-4 {
+  background: #e5484d;
+  color: #fff;
+}
+
+/* 无交易 */
+.pnl-cell-empty {
+  background: var(--color-surface-3);
+  color: var(--color-ink-subtle);
+  cursor: default;
+}
+.pnl-cell-empty:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* 悬停 tooltip */
+.pnl-tooltip {
+  position: fixed;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-hairline);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  font-size: 13px;
+  pointer-events: none;
+  z-index: 200;
+  white-space: nowrap;
+}
+.pnl-tooltip-date {
+  font-weight: 600;
+  color: var(--color-ink);
+  margin-bottom: 4px;
+}
+.pnl-tooltip-row {
+  color: var(--color-ink-muted);
+  line-height: 1.6;
+}
+
+/* 图例 */
+.pnl-calendar-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: var(--fs-caption);
+  color: var(--color-ink-subtle);
+}
+.pnl-legend-label {
+  font-size: 11px;
+}
+.pnl-legend-bar {
+  display: flex;
+  gap: 3px;
+}
+.pnl-legend-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
 @media (max-width: 1280px) {
   .fitness-overview-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -7212,6 +7432,29 @@ select:focus-visible {
 
   .forex-instrument-cards {
     grid-template-columns: 1fr !important;
+  }
+
+  /* 盈亏日历移动端适配 */
+  .pnl-calendar-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .pnl-calendar-summary {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .pnl-calendar-grid {
+    gap: 3px;
+  }
+  .pnl-cell {
+    border-radius: 4px;
+  }
+  .pnl-cell-date {
+    font-size: 11px;
+  }
+  .pnl-cell-dot {
+    width: 4px;
+    height: 4px;
   }
 }
 

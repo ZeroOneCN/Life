@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import dayjs from 'dayjs';
 import {
   Area,
   Cell,
@@ -108,6 +109,198 @@ function renderMarkdown(text: string) {
   html = html.replace(/<\/li><br><\/ul>/g, '</li></ul>');
   html = html.replace(/<ul[^>]*><br>/g, '<ul>');
   return `<p style="margin:8px 0">${html}</p>`;
+}
+
+/** 单日盈亏数据，用于日历格子 */
+interface PnlDayData {
+  date: string;
+  netPnl: number;
+  tradeCount: number;
+}
+
+/** 盈亏日历组件：按月展示每日盈亏热力图 */
+function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCount: number }[] }) {
+  const [viewMonth, setViewMonth] = useState(() => dayjs());
+  const [hoverDay, setHoverDay] = useState<PnlDayData | null>(null);
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
+
+  /** 将 trend 数据按日期建立 Map，方便日历查找 */
+  const pnlMap = useMemo(() => {
+    const map = new Map<string, PnlDayData>();
+    trend.forEach((item) => {
+      map.set(item.date, { date: item.date, netPnl: item.netPnl, tradeCount: item.tradeCount });
+    });
+    return map;
+  }, [trend]);
+
+  /** 计算颜色分级阈值（基于有交易日期的绝对值分布） */
+  const colorThresholds = useMemo(() => {
+    const values = trend
+      .filter((d) => d.tradeCount > 0)
+      .map((d) => Math.abs(d.netPnl))
+      .sort((a, b) => a - b);
+    if (values.length === 0) return { q1: 1, q2: 10, q3: 50, q4: 200 };
+    const len = values.length;
+    return {
+      q1: values[Math.floor(len * 0.25)] || 1,
+      q2: values[Math.floor(len * 0.5)] || 10,
+      q3: values[Math.floor(len * 0.75)] || 50,
+      q4: values[Math.min(len - 1, Math.floor(len * 0.95))] || 200,
+    };
+  }, [trend]);
+
+  /** 根据净盈亏值返回对应的 CSS 类名 */
+  function getPnlColorClass(pnl: number, count: number): string {
+    if (count === 0) return 'pnl-cell-empty';
+    const abs = Math.abs(pnl);
+    if (pnl > 0) {
+      if (abs >= colorThresholds.q4) return 'pnl-cell-profit-4';
+      if (abs >= colorThresholds.q3) return 'pnl-cell-profit-3';
+      if (abs >= colorThresholds.q2) return 'pnl-cell-profit-2';
+      return 'pnl-cell-profit-1';
+    }
+    if (abs >= colorThresholds.q4) return 'pnl-cell-loss-4';
+    if (abs >= colorThresholds.q3) return 'pnl-cell-loss-3';
+    if (abs >= colorThresholds.q2) return 'pnl-cell-loss-2';
+    return 'pnl-cell-loss-1';
+  }
+
+  /** 生成当月日历网格（6行 x 7列） */
+  const calendarDays = useMemo(() => {
+    const startOfMonth = viewMonth.startOf('month');
+    const endOfMonth = viewMonth.endOf('month');
+    const startPad = startOfMonth.day(); // 0=周日
+    const daysInMonth = endOfMonth.date();
+    const totalCells = Math.ceil((startPad + daysInMonth) / 7) * 7;
+    const cells: (PnlDayData | null)[] = [];
+
+    for (let i = 0; i < startPad; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateKey = viewMonth.date(d).format('YYYY-MM-DD');
+      cells.push(pnlMap.get(dateKey) ?? { date: dateKey, netPnl: 0, tradeCount: 0 });
+    }
+    while (cells.length < totalCells) cells.push(null);
+
+    return cells;
+  }, [viewMonth, pnlMap]);
+
+  /** 当月统计摘要 */
+  const monthStats = useMemo(() => {
+    let totalPnl = 0;
+    let winDays = 0;
+    let lossDays = 0;
+    let tradeDays = 0;
+    calendarDays.forEach((d) => {
+      if (!d) return;
+      totalPnl += d.netPnl;
+      tradeDays += d.tradeCount > 0 ? 1 : 0;
+      if (d.tradeCount > 0) {
+        if (d.netPnl >= 0) winDays++;
+        else lossDays++;
+      }
+    });
+    return { totalPnl, winDays, lossDays, tradeDays };
+  }, [calendarDays]);
+
+  const weekHeaders = ['日', '一', '二', '三', '四', '五', '六'];
+
+  return (
+    <div className="pnl-calendar-wrapper">
+      <div className="pnl-calendar-head">
+        <div className="pnl-calendar-nav">
+          <button
+            type="button"
+            className="pnl-nav-btn"
+            onClick={() => setViewMonth((m) => m.subtract(1, 'month'))}
+          >
+            ‹
+          </button>
+          <strong className="pnl-calendar-title">{viewMonth.format('YYYY 年 M 月')}</strong>
+          <button
+            type="button"
+            className="pnl-nav-btn"
+            onClick={() => setViewMonth((m) => m.add(1, 'month'))}
+          >
+            ›
+          </button>
+        </div>
+        <div className="pnl-calendar-summary">
+          <span>月盈亏 <em>{formatForexAmount(monthStats.totalPnl)}</em></span>
+          <span>交易日 {monthStats.tradeDays}</span>
+          <span style={{ color: 'var(--color-success)' }}>盈利 {monthStats.winDays}天</span>
+          <span style={{ color: 'var(--color-danger)' }}>亏损 {monthStats.lossDays}天</span>
+        </div>
+      </div>
+
+      <div className="pnl-calendar-grid">
+        {weekHeaders.map((w) => (
+          <div key={w} className="pnl-cell pnl-cell-header">{w}</div>
+        ))}
+        {calendarDays.map((day, idx) => {
+          if (!day) return <div key={`e-${idx}`} className="pnl-cell pnl-cell-blank" />;
+          const colorClass = getPnlColorClass(day.netPnl, day.tradeCount);
+          return (
+            <button
+              key={day.date}
+              type="button"
+              className={`pnl-cell ${colorClass}`}
+              onMouseEnter={(e) => {
+                setHoverDay(day);
+                setHoverPos({ x: e.clientX, y: e.clientY });
+              }}
+              onMouseMove={(e) => setHoverPos({ x: e.clientX, y: e.clientY })}
+              onMouseLeave={() => {
+                setHoverDay(null);
+                setHoverPos(null);
+              }}
+            >
+              <span className="pnl-cell-date">{parseInt(day.date.slice(8), 10)}</span>
+              {(day.tradeCount > 0 || day.netPnl !== 0) && (
+                <span className="pnl-cell-dot" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 悬停浮层 */}
+      {hoverDay && hoverPos && (
+        <div
+          className="pnl-tooltip"
+          style={{
+            position: 'fixed',
+            left: hoverPos.x + 12,
+            top: hoverPos.y - 10,
+            zIndex: 100,
+            pointerEvents: 'none',
+          }}
+        >
+          <div className="pnl-tooltip-date">{hoverDay.date}</div>
+          <div className="pnl-tooltip-row" style={{ color: hoverDay.netPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+            净盈亏 {formatForexMoney(hoverDay.netPnl)}
+          </div>
+          <div className="pnl-tooltip-row">交易笔数 {hoverDay.tradeCount}</div>
+        </div>
+      )}
+
+      {/* 图例 */}
+      <div className="pnl-calendar-legend">
+        <span className="pnl-legend-label">少</span>
+        <div className="pnl-legend-bar">
+          <span className="pnl-legend-swatch pnl-cell-loss-1" />
+          <span className="pnl-legend-swatch pnl-cell-loss-2" />
+          <span className="pnl-legend-swatch pnl-cell-loss-3" />
+          <span className="pnl-legend-swatch pnl-cell-loss-4" />
+          <span className="pnl-legend-swatch pnl-cell-empty" />
+          <span className="pnl-legend-swatch pnl-cell-profit-1" />
+          <span className="pnl-legend-swatch pnl-cell-profit-2" />
+          <span className="pnl-legend-swatch pnl-cell-profit-3" />
+          <span className="pnl-legend-swatch pnl-cell-profit-4" />
+        </div>
+        <span className="pnl-legend-label">多</span>
+      </div>
+    </div>
+  );
 }
 
 export function ForexDashboardSection({
@@ -339,6 +532,17 @@ export function ForexDashboardSection({
             )}
           </div>
         </div>
+
+        <ChartCard
+          title="盈亏日历"
+          description="按月查看每日盈亏热力图，颜色越深代表金额越大，绿色盈利 / 红色亏损。"
+        >
+          {isDataReady && hasTrendData ? (
+            <PnlCalendar trend={trend} />
+          ) : (
+            <EmptyState title="暂无日历数据" description="录入交易记录后，这里会显示每日盈亏分布。" />
+          )}
+        </ChartCard>
 
         <ChartCard
           title="品种分析"
