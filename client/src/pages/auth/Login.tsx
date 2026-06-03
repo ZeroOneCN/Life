@@ -14,13 +14,14 @@ import type { SystemHealthSnapshot } from '../../types/auth';
 
 type AuthMode = 'login' | 'register';
 
+/** 构建系统状态标签组 */
 function buildAuthTags(snapshot: SystemHealthSnapshot | null, canRegister: boolean) {
   return (
     <div className="dashboard-header-tags">
       <Tag tone={snapshot?.databaseReady ? 'green' : 'red'}>
         {snapshot?.databaseReady ? '数据库已就绪' : '数据库待初始化'}
       </Tag>
-      <Tag tone="blue">安全登录</Tag>
+      <Tag tone="blue">JWT 认证</Tag>
       <Tag tone={canRegister ? 'orange' : 'default'}>
         {canRegister ? '注册开放' : '注册已关闭'}
       </Tag>
@@ -51,11 +52,13 @@ export default function LoginPage() {
   const routeState = (location.state as { from?: string; reason?: string } | null) ?? null;
   const redirectTarget = routeState?.from || '/dashboard';
 
+  /** 会话过期提示 */
   const sessionMessage = useMemo(() => {
     const reason = routeState?.reason ?? authState.reason;
     return reason === 'session_expired' ? '登录状态已失效，请重新登录后继续。' : '';
   }, [authState.reason, routeState]);
 
+  /** 加载系统健康状态 */
   async function loadSystemHealth() {
     setHealthLoading(true);
     setHealthError('');
@@ -84,34 +87,22 @@ export default function LoginPage() {
   const canLogin = Boolean(healthSnapshot?.databaseReady && healthSnapshot?.hasUsers);
   const showBootstrapBlocked = Boolean(healthSnapshot && !healthSnapshot.databaseReady);
 
+  /** 页面标题 */
   const title = useMemo(() => {
-    if (showBootstrapBlocked) {
-      return '系统初始化';
-    }
-
+    if (showBootstrapBlocked) return '系统初始化';
     return mode === 'login' ? '登录 LifeOS' : '创建管理员账号';
   }, [mode, showBootstrapBlocked]);
 
+  /** 页面副标题 */
   const subtitle = useMemo(() => {
-    if (healthLoading) {
-      return '正在连接服务器，请稍候…';
-    }
-
-    if (healthError) {
-      return '暂时无法连接到服务，请检查网络后重试。';
-    }
-
-    if (showBootstrapBlocked) {
-      return '系统数据库尚未完成初始化，请稍后再试。';
-    }
-
-    if (canRegister) {
-      return '欢迎使用 LifeOS，请先创建管理员账号以开始使用系统。';
-    }
-
-    return '请输入账号密码登录系统。';
+    if (healthLoading) return '正在连接服务器…';
+    if (healthError) return '暂时无法连接到服务，请检查网络后重试。';
+    if (showBootstrapBlocked) return '系统数据库尚未完成初始化，请稍后再试。';
+    if (canRegister) return '欢迎使用 LifeOS，请先创建管理员账号以开始使用。';
+    return '输入账号密码登录系统。';
   }, [canRegister, healthError, healthLoading, showBootstrapBlocked]);
 
+  /** 前端表单校验 */
   const validateForm = () => {
     const nextErrors: Record<string, string> = {};
 
@@ -133,11 +124,9 @@ export default function LoginPage() {
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
         nextErrors.email = '请输入有效的邮箱地址。';
       }
-
       if (form.nickname.trim().length > 64) {
         nextErrors.nickname = '昵称不能超过 64 个字符。';
       }
-
       if (!form.confirmPassword) {
         nextErrors.confirmPassword = '请再次输入密码。';
       } else if (form.confirmPassword !== form.password) {
@@ -149,14 +138,13 @@ export default function LoginPage() {
     return Object.keys(nextErrors).length === 0;
   };
 
+  /** 提交登录/注册 */
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPageError('');
     setFieldErrors({});
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setSubmitting(true);
 
@@ -174,7 +162,7 @@ export default function LoginPage() {
           username: form.username.trim(),
           password: form.password,
         });
-        showToast('登录成功。');
+        showToast('登录成功，欢迎回来。');
       }
 
       navigate(redirectTarget, { replace: true });
@@ -183,23 +171,11 @@ export default function LoginPage() {
       const formErrors = getApiFormErrors(error);
       const errorCode = getApiErrorCode(error);
 
-      if (Object.keys(nextFieldErrors).length) {
-        setFieldErrors(nextFieldErrors);
-      }
+      if (Object.keys(nextFieldErrors).length) setFieldErrors(nextFieldErrors);
 
-      if (errorCode === 'registration_closed') {
-        setMode('login');
-        void loadSystemHealth();
-      }
-
-      if (errorCode === 'bootstrap_required') {
-        setMode('register');
-        void loadSystemHealth();
-      }
-
-      if (errorCode === 'database_not_ready') {
-        void loadSystemHealth();
-      }
+      if (errorCode === 'registration_closed') { setMode('login'); void loadSystemHealth(); }
+      if (errorCode === 'bootstrap_required') { setMode('register'); void loadSystemHealth(); }
+      if (errorCode === 'database_not_ready') { void loadSystemHealth(); }
 
       setPageError(formErrors[0] || buildApiErrorMessage(
         error,
@@ -222,12 +198,13 @@ export default function LoginPage() {
         />
 
         <div className="auth-layout-grid">
+          {/* 左侧品牌面板 */}
           <section className="card auth-hero-panel">
             <div className="auth-hero-copy">
               <span className="auth-eyebrow">LifeOS Control Console</span>
-              <h2>全生命周期管理系统的统一入口</h2>
+              <h2>全生命周期数字化管理平台</h2>
               <p>
-                登录后即可使用仪表盘、通知中心和各业务管理模块，所有数据安全存储于后端数据库。
+                统一管理健康、财务、生活和投资数据。登录后即可使用仪表盘、通知中心及各业务模块。
               </p>
             </div>
 
@@ -235,40 +212,42 @@ export default function LoginPage() {
               <div className="auth-status-card">
                 <span>数据库状态</span>
                 <strong>{healthSnapshot?.databaseReady ? '已就绪' : '待初始化'}</strong>
-                <p>{healthSnapshot ? `状态：${healthSnapshot.databaseReady ? '正常运行' : '需要初始化'}` : '正在检测'}</p>
+                <p>{healthSnapshot ? (healthSnapshot.databaseReady ? '正常运行中' : '需要初始化') : '检测中…'}</p>
               </div>
               <div className="auth-status-card">
                 <span>注册策略</span>
                 <strong>仅首个管理员</strong>
-                <p>{canRegister ? '当前允许创建管理员账号' : '已有管理员，注册入口已关闭'}</p>
+                <p>{canRegister ? '当前允许创建管理员' : '已有管理员，入口已关闭'}</p>
               </div>
               <div className="auth-status-card">
                 <span>业务模块</span>
                 <strong>{healthSnapshot?.entityCount ?? 0} 个</strong>
-                <p>系统已加载的业务模块数量。</p>
+                <p>系统已加载的业务模块数量</p>
               </div>
               <div className="auth-status-card">
-                <span>系统模式</span>
+                <span>运行模式</span>
                 <strong>{healthSnapshot?.schemaMode ?? '检测中'}</strong>
-                <p>当前系统运行模式。</p>
+                <p>当前数据库 Schema 模式</p>
               </div>
             </div>
 
             <div className="auth-page-note">
-              <strong>系统已就绪：</strong>
+              <strong>系统已就绪</strong>
               <span>登录后即可使用仪表盘、通知中心、待办事项、物品追踪及各业务管理功能。</span>
             </div>
           </section>
 
+          {/* 右侧登录/注册表单 */}
           <SectionCard
-            title={showBootstrapBlocked ? '系统初始化' : mode === 'login' ? '账号登录' : '创建管理员账号'}
+            title={showBootstrapBlocked ? '系统初始化' : mode === 'login' ? '账号登录' : '创建管理员'}
             description={showBootstrapBlocked
               ? '请等待数据库初始化完成后再进行操作。'
               : mode === 'login'
                 ? '输入管理员账号和密码登录系统。'
-                : '创建系统管理员账号，创建完成后即可正常使用。'}
+                : '创建系统管理员账号，完成后即可正常使用。'}
           >
             <div className="page-stack">
+              {/* 登录/注册切换 */}
               <div className="auth-mode-switch">
                 <button
                   type="button"
@@ -280,28 +259,24 @@ export default function LoginPage() {
                 <button
                   type="button"
                   className={`auth-mode-tab ${mode === 'register' ? 'is-active' : ''}`}
-                  onClick={() => {
-                    if (canRegister) {
-                      setMode('register');
-                    }
-                  }}
+                  onClick={() => { if (canRegister) setMode('register'); }}
                   disabled={!canRegister}
                 >
                   注册
                 </button>
               </div>
 
+              {/* 消息提示 */}
               {sessionMessage ? <div className="auth-banner is-warning">{sessionMessage}</div> : null}
               {healthError ? <div className="auth-banner is-error">{healthError}</div> : null}
               {pageError ? <div className="auth-banner is-error">{pageError}</div> : null}
 
+              {/* 表单内容 */}
               {showBootstrapBlocked ? (
                 <div className="auth-bootstrap-panel">
                   <div className="auth-bootstrap-card">
                     <strong>系统尚未就绪</strong>
-                    <p>
-                      数据库正在初始化中，请稍后再试。如问题持续存在，请联系系统管理员。
-                    </p>
+                    <p>数据库正在初始化中，请稍后再试。如问题持续存在，请联系系统管理员。</p>
                     <div className="auth-bootstrap-meta">
                       <span>原因：{healthSnapshot?.reason ?? '未知'}</span>
                     </div>
@@ -313,12 +288,11 @@ export default function LoginPage() {
               ) : (
                 <form className="auth-form-stack" onSubmit={handleSubmit}>
                   {canRegister ? (
-                    <div className="auth-banner is-info">
-                      首次使用请先创建管理员账号，创建完成后注册入口将自动关闭。
-                    </div>
+                    <div className="auth-banner is-info">首次使用请先创建管理员账号，创建完成后注册入口将自动关闭。</div>
                   ) : null}
 
                   <div className="auth-form-grid">
+                    {/* 用户名 */}
                     <div className="auth-field-stack">
                       <Field
                         label="用户名"
@@ -330,6 +304,7 @@ export default function LoginPage() {
                       {fieldErrors.username ? <span className="auth-field-error">{fieldErrors.username}</span> : null}
                     </div>
 
+                    {/* 邮箱（仅注册） */}
                     {mode === 'register' ? (
                       <div className="auth-field-stack">
                         <Field
@@ -344,6 +319,7 @@ export default function LoginPage() {
                       </div>
                     ) : null}
 
+                    {/* 昵称（仅注册） */}
                     {mode === 'register' ? (
                       <div className="auth-field-stack">
                         <Field
@@ -351,13 +327,14 @@ export default function LoginPage() {
                           value={form.nickname}
                           aria-invalid={Boolean(fieldErrors.nickname)}
                           onChange={(event) => setForm((previous) => ({ ...previous, nickname: event.target.value }))}
-                          placeholder="用于顶部用户区和系统壳显示"
-                          hint="不填时默认使用用户名。"
+                          placeholder="用于顶部用户区显示"
+                          hint="不填时默认使用用户名"
                         />
                         {fieldErrors.nickname ? <span className="auth-field-error">{fieldErrors.nickname}</span> : null}
                       </div>
                     ) : null}
 
+                    {/* 密码 */}
                     <div className="auth-field-stack">
                       <Field
                         label="密码"
@@ -366,11 +343,12 @@ export default function LoginPage() {
                         aria-invalid={Boolean(fieldErrors.password)}
                         onChange={(event) => setForm((previous) => ({ ...previous, password: event.target.value }))}
                         placeholder={mode === 'login' ? '请输入密码' : '至少 8 个字符'}
-                        hint={mode === 'register' ? '密码长度至少 8 位。' : undefined}
+                        hint={mode === 'register' ? '密码长度至少 8 位' : undefined}
                       />
                       {fieldErrors.password ? <span className="auth-field-error">{fieldErrors.password}</span> : null}
                     </div>
 
+                    {/* 确认密码（仅注册） */}
                     {mode === 'register' ? (
                       <div className="auth-field-stack">
                         <Field
@@ -386,6 +364,7 @@ export default function LoginPage() {
                     ) : null}
                   </div>
 
+                  {/* 提交按钮 */}
                   <div className="auth-submit-stack">
                     <Btn
                       tone="primary"
@@ -394,12 +373,9 @@ export default function LoginPage() {
                     >
                       {submitting ? '提交中…' : mode === 'login' ? '登录' : '创建账号'}
                     </Btn>
-
                     <span className="auth-submit-note">
                       {mode === 'login'
-                        ? (canRegister
-                          ? '请先创建管理员账号后再登录。'
-                          : '登录成功后进入系统首页。')
+                        ? (canRegister ? '请先创建管理员账号后再登录。' : '登录成功后进入系统首页。')
                         : '注册成功后将自动登录并进入系统。'}
                     </span>
                   </div>
