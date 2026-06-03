@@ -312,7 +312,7 @@ function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCo
         })}
       </div>
 
-      {/* 悬停浮层 */}
+      {/* 悬停浮层 - 显示当日详情 + 月度汇总 */}
       {hoverDay && hoverPos && (
         <div
           className="pnl-tooltip"
@@ -325,10 +325,25 @@ function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCo
           }}
         >
           <div className="pnl-tooltip-date">{hoverDay.date}</div>
-          <div className="pnl-tooltip-row" style={{ color: hoverDay.netPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
-            净盈亏 {formatForexMoney(hoverDay.netPnl)}
+          <div
+            className="pnl-tooltip-pnl"
+            style={{ color: hoverDay.netPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}
+          >
+            {formatForexMoney(hoverDay.netPnl)}
           </div>
-          <div className="pnl-tooltip-row">交易笔数 {hoverDay.tradeCount}</div>
+          <div className="pnl-tooltip-row">交易 {hoverDay.tradeCount} 笔</div>
+          <div className="pnl-tooltip-divider" />
+          <div className="pnl-tooltip-month">
+            <span>月盈亏</span>
+            <strong style={{ color: monthStats.totalPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+              {formatForexAmount(monthStats.totalPnl)}
+            </strong>
+          </div>
+          <div className="pnl-tooltip-month-stats">
+            <span>{monthStats.tradeDays}交易日</span>
+            <span style={{ color: 'var(--color-success)' }}>{monthStats.winDays}盈</span>
+            <span style={{ color: 'var(--color-danger)' }}>{monthStats.lossDays}亏</span>
+          </div>
         </div>
       )}
 
@@ -419,6 +434,38 @@ export function ForexDashboardSection({
     return t.pnl > 0;
   }).length;
   const lossCount = summary.tradeCount - winCount;
+
+  /** 盈亏分布模块的衍生统计 */
+  const pnlStats = useMemo(() => {
+    const days = trend.filter((d) => d.tradeCount > 0);
+    if (days.length === 0) return null;
+    // 最佳单日盈利 / 最差单日亏损
+    let bestDay = days[0], worstDay = days[0];
+    let totalPnl = 0;
+    let winDays = 0;
+    for (const d of days) {
+      totalPnl += d.netPnl;
+      if (d.netPnl > bestDay.netPnl) bestDay = d;
+      if (d.netPnl < worstDay.netPnl) worstDay = d;
+      if (d.netPnl >= 0) winDays++;
+    }
+    // 连续盈/亏最长 streak
+    let maxWinStreak = 0, maxLossStreak = 0;
+    let curWinStreak = 0, curLossStreak = 0;
+    for (const d of trend) {
+      if (d.tradeCount === 0) continue;
+      if (d.netPnl >= 0) { curWinStreak++; curLossStreak = 0; maxWinStreak = Math.max(maxWinStreak, curWinStreak); }
+      else { curLossStreak++; curWinStreak = 0; maxLossStreak = Math.max(maxLossStreak, curLossStreak); }
+    }
+    return {
+      avgDaily: totalPnl / days.length,
+      bestDay,
+      worstDay,
+      winRate: ((winDays / days.length) * 100).toFixed(1),
+      maxWinStreak,
+      maxLossStreak,
+    };
+  }, [trend]);
 
   return (
     <SectionCard
@@ -571,6 +618,54 @@ export function ForexDashboardSection({
                     </span>
                   </div>
                 </div>
+                {/* 衍生统计指标 */}
+                {pnlStats && (
+                  <div className="pnl-distribution-stats">
+                    <div className="pnl-stat-item">
+                      <span className="pnl-stat-label">最佳单日</span>
+                      <strong className="pnl-stat-value pnl-stat-profit">
+                        +{formatForexMoney(pnlStats.bestDay.netPnl)}
+                      </strong>
+                      <span className="pnl-stat-sub">{pnlStats.bestDay.date.slice(5)}</span>
+                    </div>
+                    <div className="pnl-stat-divider" />
+                    <div className="pnl-stat-item">
+                      <span className="pnl-stat-label">最差单日</span>
+                      <strong className="pnl-stat-value pnl-stat-loss">
+                        {formatForexMoney(pnlStats.worstDay.netPnl)}
+                      </strong>
+                      <span className="pnl-stat-sub">{pnlStats.worstDay.date.slice(5)}</span>
+                    </div>
+                    <div className="pnl-stat-divider" />
+                    <div className="pnl-stat-item">
+                      <span className="pnl-stat-label">日均盈亏</span>
+                      <strong className={`pnl-stat-value ${pnlStats.avgDaily >= 0 ? 'pnl-stat-profit' : 'pnl-stat-loss'}`}>
+                        {formatForexMoney(pnlStats.avgDaily)}
+                      </strong>
+                    </div>
+                    <div className="pnl-stat-divider" />
+                    <div className="pnl-stat-item">
+                      <span className="pnl-stat-label">胜率</span>
+                      <strong className="pnl-stat-value" style={{ color: Number(pnlStats.winRate) >= 50 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                        {pnlStats.winRate}%
+                      </strong>
+                    </div>
+                    <div className="pnl-stat-divider" />
+                    <div className="pnl-stat-item">
+                      <span className="pnl-stat-label">最长连盈</span>
+                      <strong className="pnl-stat-value pnl-stat-profit">
+                        {pnlStats.maxWinStreak}天
+                      </strong>
+                    </div>
+                    <div className="pnl-stat-divider" />
+                    <div className="pnl-stat-item">
+                      <span className="pnl-stat-label">最长连亏</span>
+                      <strong className="pnl-stat-value pnl-stat-loss">
+                        {pnlStats.maxLossStreak}天
+                      </strong>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <EmptyState
