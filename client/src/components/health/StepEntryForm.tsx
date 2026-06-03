@@ -45,10 +45,7 @@ export function StepEntryForm({
     <SectionCard title="步数录入" description="支持按用户、全天或具体小时录入步数记录。">
       <div className="step-entry-panel">
         <div className="step-entry-meta">
-          <div>
-            <strong>{getEntryTitle(selectedHour)}</strong>
-            <span>{getEntryDescription(selectedHour)}</span>
-          </div>
+          <strong>{getEntryTitle(selectedHour)}</strong>
         </div>
 
         <div className="form-grid">
@@ -81,30 +78,36 @@ export function StepEntryForm({
             value={recordTime}
             onChange={onRecordTimeChange}
             clearable={false}
-            hint="会和下方时间段联动，全天记录默认按 23:59 保存。"
           />
         </div>
 
-        <div className="field">
-          <span className="field-label">时间段</span>
-          <div className="step-hour-buttons">
-            {STEP_HOURS.map((hour) => (
+        {/* 时间段选择行：左侧按钮 + 右侧提示和保存 */}
+        <div className="step-hour-row">
+          <div className="step-hour-row-left">
+            <span className="field-label">时间段</span>
+            <div className="step-hour-buttons">
+              {STEP_HOURS.map((hour) => (
+                <button
+                  key={hour}
+                  type="button"
+                  className={`step-hour-button ${selectedHour === hour ? 'is-active' : ''}`}
+                  onClick={() => onSelectHour(hour)}
+                >
+                  {hour}
+                </button>
+              ))}
               <button
-                key={hour}
                 type="button"
-                className={`step-hour-button ${selectedHour === hour ? 'is-active' : ''}`}
-                onClick={() => onSelectHour(hour)}
+                className={`step-hour-button ${selectedHour === null ? 'is-active' : ''}`}
+                onClick={() => onSelectHour(null)}
               >
-                {hour}
+                全天
               </button>
-            ))}
-            <button
-              type="button"
-              className={`step-hour-button ${selectedHour === null ? 'is-active' : ''}`}
-              onClick={() => onSelectHour(null)}
-            >
-              全天
-            </button>
+            </div>
+          </div>
+          <div className="step-hour-row-right">
+            <span className="subtle-text">{getEntryDescription(selectedHour)}</span>
+            <Btn tone="primary" onClick={onSubmit}>保存本次记录</Btn>
           </div>
         </div>
 
@@ -129,11 +132,6 @@ export function StepEntryForm({
               昨天 23:59
             </Btn>
           </div>
-        </div>
-
-        <div className="step-entry-actions">
-          <Btn tone="primary" onClick={onSubmit}>保存本次记录</Btn>
-          <span className="subtle-text">保存成功后，焦点会自动回到步数输入框。</span>
         </div>
       </div>
     </SectionCard>

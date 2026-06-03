@@ -903,6 +903,30 @@ textarea {
   flex-wrap: wrap;
 }
 
+/* 时间段选择行：左侧按钮 + 右侧提示和保存按钮 */
+.step-hour-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 0;
+}
+
+.step-hour-row-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.step-hour-row-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
 .step-filter-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
