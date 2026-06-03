@@ -1,5 +1,4 @@
 import type { CSSProperties, ReactNode } from 'react';
-import type { Matcher } from 'react-day-picker';
 
 export interface TabOption {
   value: string;
@@ -15,8 +14,6 @@ export interface TableColumn<T> {
   render?: (value: unknown, row: T, index: number) => ReactNode;
 }
 
-export type CalendarTone = 'default';
-
 export interface DateShortcutOption {
   label: string;
   value: string;
@@ -29,27 +26,33 @@ interface DateFieldBaseProps {
   hint?: string;
   placeholder?: string;
   disabled?: boolean;
+  /** 兼容性属性，原生输入框忽略 */
   clearable?: boolean;
-  tone?: CalendarTone;
+  /** 兼容性属性，原生输入框忽略 */
   popoverStrategy?: 'floating' | 'inline';
 }
 
 export interface DatePickerFieldProps extends DateFieldBaseProps {
   minValue?: string;
   maxValue?: string;
-  disabledDates?: Matcher | Matcher[];
+  /** 兼容性属性，原生输入框忽略 */
+  disabledDates?: unknown;
 }
 
 export interface MonthPickerFieldProps extends DateFieldBaseProps {
   minValue?: string;
   maxValue?: string;
+  /** 兼容性属性，原生输入框忽略 */
   isMonthDisabled?: (value: string) => boolean;
 }
 
 export interface DateTimePickerFieldProps extends DateFieldBaseProps {
+  /** 兼容性属性，原生输入框忽略 */
   minuteStep?: 15 | 30;
   minValue?: string;
   maxValue?: string;
-  disabledDates?: Matcher | Matcher[];
+  /** 兼容性属性，原生输入框忽略 */
+  disabledDates?: unknown;
+  /** 兼容性属性，原生输入框忽略 */
   shortcutOptions?: DateShortcutOption[];
 }

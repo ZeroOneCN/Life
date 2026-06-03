@@ -718,406 +718,91 @@ textarea {
   background-image: none;
 }
 
-.date-field {
-  position: relative;
+/* ========== 原生日期/时间选择器 ========== */
+
+.date-native-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.date-field.has-inline-popover {
-  padding-bottom: 6px;
+.date-native-field.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
-.date-trigger {
+.date-native-input {
   width: 100%;
   min-height: 42px;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border-radius: 10px;
   border: 1px solid var(--color-hairline);
   background: var(--color-surface-2);
   color: var(--color-ink);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-medium);
+  line-height: 1.4;
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease,
-    background 0.15s ease,
-    transform 0.15s ease;
+    background 0.15s ease;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
 }
 
-.date-trigger:hover {
+.date-native-input:hover {
   border-color: var(--color-hairline-strong);
   background: color-mix(in srgb, var(--color-surface-3) 90%, transparent);
 }
 
-.date-trigger.is-open,
-.date-trigger:focus-visible {
+.date-native-input:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
-.date-trigger:disabled {
+.date-native-input:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
-.date-trigger.is-placeholder .date-trigger-value {
-  color: var(--color-ink-mute);
-}
-
-.date-trigger-value {
-  min-width: 0;
-  text-align: left;
-}
-
-.date-trigger-icons {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--color-ink-mute-2);
-}
-
-.date-trigger-icon,
-.date-trigger-chevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.date-trigger-chevron {
-  transition: transform 0.18s ease, color 0.18s ease;
-}
-
-.date-trigger-chevron.is-open {
-  transform: rotate(180deg);
-  color: var(--color-ink);
-}
-
-.date-popover {
-  position: absolute;
-  top: calc(100% + 10px);
-  left: 0;
-  z-index: 40;
-  width: min(100%, 680px);
-  min-width: 300px;
-  border-radius: 18px;
-  border: 1px solid var(--color-hairline);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-surface-1) 96%, transparent), color-mix(in srgb, var(--color-surface-2) 98%, transparent));
-  box-shadow: var(--shadow-soft);
-  overflow: hidden;
-}
-
-.date-field.has-inline-popover .date-popover {
-  position: relative;
-  top: 0;
-  left: 0;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  margin-top: 10px;
-  transform: none;
-}
-
-.date-field.has-inline-popover .date-popover.is-datetime {
-  left: 0;
-  width: 100%;
-  max-width: 100%;
-}
-
-.date-popover.is-datetime {
-  left: 50%;
-  width: min(720px, calc(100vw - 48px));
-  max-width: calc(100vw - 48px);
-  transform: translateX(-50%);
-}
-
-.date-popover-header,
-.date-popover-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 18px;
-}
-
-.date-popover-header {
-  border-bottom: 1px solid var(--color-hairline);
-}
-
-.date-popover-header strong,
-.date-time-summary strong,
-.month-picker-year-bar strong {
-  display: block;
-  font-size: var(--fs-body);
-  letter-spacing: -0.02em;
-}
-
-.date-popover-header span,
-.date-time-summary span {
-  display: block;
-  margin-top: 4px;
-  color: var(--color-ink-mute);
-  font-size: var(--fs-caption);
-}
-
-.date-popover-body {
-  padding: 18px;
-}
-
-.date-popover-footer {
-  border-top: 1px solid var(--color-hairline);
-}
-
-.date-popover-footer-start,
-.date-popover-footer-end {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.calendar-root {
-  width: 100%;
-}
-
-.calendar-months,
-.calendar-month {
-  width: 100%;
-}
-
-.calendar-caption {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.calendar-caption-label {
-  font-size: var(--fs-body);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.calendar-nav {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.calendar-nav-button {
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  border: 1px solid var(--color-hairline);
-  background: color-mix(in srgb, var(--color-surface-3) 92%, transparent);
-  color: var(--color-ink);
+/* WebKit 日历图标美化 */
+.date-native-input::-webkit-calendar-picker-indicator {
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  padding: 4px;
+  border-radius: 6px;
 }
 
-.calendar-nav-button:hover {
-  transform: translateY(-1px);
-  border-color: var(--color-hairline-strong);
-  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface-3));
+.date-native-input:hover::-webkit-calendar-picker-indicator {
+  opacity: 1;
 }
 
-.calendar-grid {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 6px;
-}
-
-.calendar-weekdays th {
-  padding-bottom: 6px;
-}
-
-.calendar-weekday {
-  color: var(--color-ink-mute);
-  font-size: var(--fs-overline);
-  font-weight: 500;
-  text-align: center;
-}
-
-.calendar-day {
-  padding: 0;
-  text-align: center;
-}
-
-.calendar-day-button {
-  width: 100%;
-  min-width: 38px;
-  height: 38px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--color-ink);
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    color 0.15s ease,
-    transform 0.15s ease;
-}
-
-.calendar-day-button:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--color-primary) 24%, var(--color-hairline));
+.date-native-input::-webkit-calendar-picker-indicator:hover {
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  transform: scale(1.1);
 }
 
-.calendar-day.is-outside .calendar-day-button {
-  color: var(--color-ink-mute-2);
-  opacity: 0.5;
-}
-
-.calendar-day.is-disabled .calendar-day-button,
-.month-picker-item:disabled {
-  opacity: 0.38;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.calendar-day.is-today .calendar-day-button {
-  border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-hairline));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 20%, transparent);
-}
-
-.calendar-day.is-selected .calendar-day-button,
-.month-picker-item.is-active,
-.time-option-button.is-active,
-.date-shortcut-button.is-active {
-  background: color-mix(in srgb, var(--color-primary) 20%, transparent);
-  border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-hairline));
-  color: var(--color-ink);
-}
-
-.month-picker-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.month-picker-year-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.month-picker-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.month-picker-item,
-.time-option-button,
-.date-shortcut-button {
-  border: 1px solid var(--color-hairline);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--color-surface-3) 94%, transparent);
-  color: var(--color-ink);
-  min-height: 40px;
-  padding: 0 14px;
+/* Firefox 日历按钮 */
+.date-native-input::calendar-picker-indicator {
   cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    border-color 0.15s ease,
-    background 0.15s ease,
-    color 0.15s ease;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+  padding: 4px;
+  border-radius: 6px;
 }
 
-.month-picker-item:hover,
-.time-option-button:hover,
-.date-shortcut-button:hover {
-  transform: translateY(-1px);
-  border-color: var(--color-hairline-strong);
-  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface-3));
+.date-native-input:hover::calendar-picker-indicator {
+  opacity: 1;
 }
 
-.date-time-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
-  gap: 18px;
-  align-items: start;
-}
-
-.date-time-calendar,
-.date-time-controls {
-  min-width: 0;
-}
-
-.date-time-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.date-time-summary {
-  padding: 14px 16px;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, var(--color-hairline));
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 10%, transparent), color-mix(in srgb, var(--color-surface-2) 94%, transparent));
-}
-
-.date-shortcuts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.date-shortcut-button {
-  min-height: 34px;
-  padding: 0 12px;
-  border-radius: 10px;
-}
-
-.date-time-columns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.time-column {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.time-column-label {
-  color: var(--color-ink-mute);
-  font-size: var(--fs-caption);
-}
-
-.time-option-list {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.time-option-button {
-  min-height: 36px;
-  padding: 0;
-}
-
-@media (max-width: 768px) {
-  .date-popover.is-datetime {
-    left: 0;
-    width: 100%;
-    max-width: 100%;
-    transform: none;
-  }
-
-  .date-popover.is-datetime .date-time-layout,
-  .date-popover.is-datetime .date-time-columns {
-    grid-template-columns: 1fr;
-  }
+/* 深色模式适配 */
+[data-theme="dark"] .date-native-input {
+  background: var(--color-surface-2);
+  color-scheme: dark;
 }
 
 .step-entry-panel,
@@ -1134,12 +819,6 @@ textarea {
 
 .step-entry-panel > .form-grid > * {
   min-width: 0;
-}
-
-.step-entry-panel .date-popover.is-datetime {
-  left: auto;
-  right: 0;
-  transform: none;
 }
 
 .step-entry-meta {
@@ -1362,7 +1041,7 @@ textarea {
 
 .fitness-entry-grid input,
 .fitness-entry-grid select,
-.fitness-entry-grid .date-trigger {
+.fitness-entry-grid .date-native-input {
   min-height: 38px;
   padding-top: 8px;
   padding-bottom: 8px;
@@ -1626,11 +1305,11 @@ textarea {
 }
 
 .data-table th {
-  color: var(--color-ink-mute);
-  font-size: var(--fs-overline);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  color: var(--color-ink);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.02em;
+  text-transform: none;
   white-space: nowrap;
 }
 
@@ -1856,7 +1535,7 @@ textarea {
 
 .checkup-entry-grid input,
 .checkup-entry-grid select,
-.checkup-entry-grid .date-trigger,
+.checkup-entry-grid .date-native-input,
 .checkup-batch-row input {
   min-height: 38px;
   padding-top: 8px;
@@ -2260,13 +1939,13 @@ textarea {
 
 .medication-entry-grid input,
 .medication-entry-grid select,
-.medication-entry-grid .date-trigger,
+.medication-entry-grid .date-native-input,
 .medication-purchase-grid input,
 .medication-purchase-grid select,
-.medication-purchase-grid .date-trigger,
+.medication-purchase-grid .date-native-input,
 .medication-filter-grid input,
 .medication-filter-grid select,
-.medication-filter-grid .date-trigger {
+.medication-filter-grid .date-native-input {
   min-height: 38px;
   padding-top: 8px;
   padding-bottom: 8px;
@@ -2476,7 +2155,7 @@ textarea {
 
 .medication-modal-grid input,
 .medication-modal-grid select,
-.medication-modal-grid .date-trigger {
+.medication-modal-grid .date-native-input {
   min-height: 40px;
   padding-top: 8px;
   padding-bottom: 8px;
@@ -2532,20 +2211,20 @@ textarea {
 
 .shopping-entry-grid input,
 .shopping-entry-grid select,
-.shopping-entry-grid .date-trigger,
+.shopping-entry-grid .date-native-input,
 .shopping-filter-grid input,
 .shopping-filter-grid select,
-.shopping-filter-grid .date-trigger,
+.shopping-filter-grid .date-native-input,
 .shopping-ledger-form-grid input,
 .shopping-ledger-form-grid select,
-.shopping-ledger-form-grid .date-trigger,
+.shopping-ledger-form-grid .date-native-input,
 .shopping-platform-form-grid input,
 .shopping-platform-form-grid select,
 .shopping-context-grid input,
 .shopping-context-grid select,
 .shopping-modal-grid input,
 .shopping-modal-grid select,
-.shopping-modal-grid .date-trigger {
+.shopping-modal-grid .date-native-input {
   min-height: 44px;
 }
 
@@ -2733,21 +2412,6 @@ textarea {
 .travel-book-form-grid.travel-book-form-grid-modal {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
-}
-
-.travel-book-modal-date-slot {
-  position: relative;
-  min-width: 0;
-}
-
-.travel-book-modal-date-slot .date-popover {
-  width: min(360px, calc(100vw - 72px));
-  min-width: 320px;
-}
-
-.travel-book-modal-date-slot-end .date-popover {
-  left: auto;
-  right: 0;
 }
 
 .travel-record-entry-grid {
@@ -3420,21 +3084,6 @@ textarea {
   gap: 18px;
 }
 
-.loan-modal-date-slot {
-  position: relative;
-  min-width: 0;
-}
-
-.loan-modal-date-slot .date-popover {
-  width: min(360px, calc(100vw - 72px));
-  min-width: 320px;
-}
-
-.loan-modal-date-slot-end .date-popover {
-  left: auto;
-  right: 0;
-}
-
 .loan-inline-action {
   display: flex;
   flex-direction: column;
@@ -3629,6 +3278,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
+  overscroll-behavior: contain;
 }
 
 .modal-panel {
@@ -3640,6 +3290,7 @@ textarea {
   width: calc(100% - 40px);
   max-height: 85vh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   box-shadow: 0 24px 80px rgba(13,37,61,0.15), 0 8px 24px rgba(13,37,61,0.08);
 }
 
@@ -3886,8 +3537,6 @@ textarea {
   .step-compare-grid,
   .step-aggregate-grid,
   .fitness-dashboard-grid,
-  .date-time-layout,
-  .date-time-columns,
   .checkup-entry-grid,
   .checkup-filter-grid,
   .checkup-setting-grid,
@@ -4016,19 +3665,6 @@ textarea {
 
   .content {
     padding: 20px;
-  }
-
-  .date-popover {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .month-picker-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .time-option-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .checkup-batch-row {
@@ -4899,6 +4535,33 @@ textarea {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* 表格操作列按钮 - 紧凑样式 */
+.table-actions,
+.storage-table-actions,
+.todo-table-actions,
+.card-entry-action {
+  /* 容器 */
+}
+
+.table-actions .btn,
+.storage-table-actions .btn,
+.todo-table-actions .btn,
+.card-entry-action .btn {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  padding: 5px 12px;
+  border-radius: 8px;
+  line-height: 1.4;
+  transform: none;
+}
+
+.table-actions .btn:hover,
+.storage-table-actions .btn:hover,
+.todo-table-actions .btn:hover,
+.card-entry-action .btn:hover {
+  transform: translateY(-1px);
 }
 
 .storage-modal-grid {
@@ -6058,22 +5721,6 @@ textarea {
   .todo-modal-grid,
   .todo-markdown-grid {
     grid-template-columns: 1fr;
-  }
-
-  .travel-book-modal-date-slot .date-popover,
-  .travel-book-modal-date-slot-end .date-popover {
-    left: 0;
-    right: auto;
-    width: 100%;
-    min-width: 0;
-  }
-
-  .loan-modal-date-slot .date-popover,
-  .loan-modal-date-slot-end .date-popover {
-    left: 0;
-    right: auto;
-    width: 100%;
-    min-width: 0;
   }
 
   .shopping-platform-grid {
