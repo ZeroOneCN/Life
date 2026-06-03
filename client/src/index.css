@@ -4722,6 +4722,7 @@ textarea {
   font-weight: var(--fw-bold);
   line-height: var(--lh-snug);
   color: var(--color-ink);
+}
 
 .storage-overview-grid .stat-helper {
   font-size: var(--fs-overline);
