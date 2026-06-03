@@ -164,7 +164,6 @@ input:focus,
 textarea:focus,
 select:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(83,58,253,0.10);
 }
 
 textarea {
@@ -296,7 +295,6 @@ textarea {
 
 .topbar-user-trigger:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 24%, transparent);
 }
 
 .topbar-user-avatar {
@@ -443,7 +441,6 @@ textarea {
 .menu-link:focus-visible,
 .icon-button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 24%, transparent);
 }
 
 .menu-link.is-active {
@@ -761,7 +758,6 @@ textarea {
 .date-native-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
 .date-native-input:disabled {
@@ -1168,8 +1164,7 @@ textarea {
   white-space: nowrap;
 }
 .btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: none;
 }
 .btn:hover {
   transform: translateY(-1px);
@@ -1651,16 +1646,16 @@ textarea {
   color: var(--color-ink-mute);
 }
 
-/* ========== 可访问性：键盘焦点可见 ========== */
+/* ========== 可访问性：键盘焦点可见 ==========
 .card:focus-visible,
 .stat-card:focus-visible,
 .dash-module-card:focus-visible,
 .channel-card:focus-visible,
 .switch-card:focus-visible,
 .btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: none;
 }
+*/
 
 /* ========== 移动端触摸优化 ========== */
 @media (hover: none) and (pointer: coarse) {
@@ -6200,7 +6195,6 @@ textarea {
 
 .shopping-import-search:focus {
   border-color: var(--color-primary) !important;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-focus) 50%, transparent) !important;
 }
 
 .shopping-import-actions {
@@ -6957,16 +6951,14 @@ textarea {
   text-transform: uppercase;
 }
 
-/* 全局 focus-visible 无障碍 */
+/* 全局 focus 无外圈 */
 :focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: none;
 }
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: none;
 }
