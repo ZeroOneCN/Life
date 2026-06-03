@@ -48,7 +48,8 @@ export function StepEntryForm({
           <strong>{getEntryTitle(selectedHour)}</strong>
         </div>
 
-        <div className="form-grid">
+        {/* 一行：用户 + 步数 + 记录时间 + 保存按钮 */}
+        <div className="step-entry-main-row">
           <Field
             label="当前录入用户"
             value={currentUserLabel}
@@ -79,9 +80,13 @@ export function StepEntryForm({
             onChange={onRecordTimeChange}
             clearable={false}
           />
+
+          <div className="step-save-cell">
+            <Btn tone="primary" onClick={onSubmit}>保存本次记录</Btn>
+          </div>
         </div>
 
-        {/* 时间段选择行：左侧按钮 + 右侧提示和保存 */}
+        {/* 时间段选择行 */}
         <div className="step-hour-row">
           <div className="step-hour-row-left">
             <span className="field-label">时间段</span>
@@ -107,7 +112,6 @@ export function StepEntryForm({
           </div>
           <div className="step-hour-row-right">
             <span className="subtle-text">{getEntryDescription(selectedHour)}</span>
-            <Btn tone="primary" onClick={onSubmit}>保存本次记录</Btn>
           </div>
         </div>
 

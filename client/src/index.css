@@ -814,6 +814,20 @@ textarea {
   gap: 12px;
 }
 
+/* 步数录入主行：用户 + 步数 + 记录时间 + 保存按钮 并列 */
+.step-entry-main-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.5fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.step-save-cell {
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 6px;
+}
+
 .step-entry-panel > .form-grid > * {
   min-width: 0;
 }
@@ -929,7 +943,7 @@ textarea {
 
 .step-filter-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
