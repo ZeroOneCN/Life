@@ -247,7 +247,7 @@ export function MedicationPurchasesSection({
           ]}
         />
 
-        <div className="medication-purchase-grid">
+        <form className="medication-purchase-grid" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <DatePickerField
             label="购买日期"
             value={form.purchaseDate}
@@ -304,9 +304,9 @@ export function MedicationPurchasesSection({
           </SelectField>
           <div className="medication-inline-action">
             <span className="field-label">保存</span>
-            <Btn tone="primary" onClick={handleCreate}>保存购药记录</Btn>
+            <Btn tone="primary" type="submit">保存购药记录</Btn>
           </div>
-        </div>
+        </form>
 
         <div className="medication-filter-grid medication-filter-grid-purchase">
           <Field

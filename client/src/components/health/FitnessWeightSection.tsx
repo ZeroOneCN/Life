@@ -209,7 +209,7 @@ export function FitnessWeightSection({
           当前录入用户：<strong>{currentUserLabel}</strong>。默认身高会跟随最近一次保存值更新。
         </div>
 
-        <div className="form-grid fitness-entry-grid fitness-entry-grid-weight">
+        <form className="form-grid fitness-entry-grid fitness-entry-grid-weight" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <DatePickerField
             label="记录日期"
             value={form.date}
@@ -240,9 +240,9 @@ export function FitnessWeightSection({
             onChange={(event) => setForm((previous) => ({ ...previous, bodyFat: event.target.value }))}
           />
           <div className="fitness-save-cell">
-            <Btn tone="primary" onClick={handleCreate}>新增体重记录</Btn>
+            <Btn tone="primary" type="submit">新增体重记录</Btn>
           </div>
-        </div>
+        </form>
 
         <div className="step-filter-grid">
           <Field

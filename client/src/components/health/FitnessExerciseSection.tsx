@@ -217,7 +217,7 @@ export function FitnessExerciseSection({
           当前录入用户：<strong>{currentUserLabel}</strong>。训练记录默认直接归属当前登录用户。
         </div>
 
-        <div className="form-grid fitness-entry-grid fitness-entry-grid-exercise">
+        <form className="form-grid fitness-entry-grid fitness-entry-grid-exercise" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <DatePickerField
             label="记录日期"
             value={form.date}
@@ -263,9 +263,9 @@ export function FitnessExerciseSection({
             ))}
           </SelectField>
           <div className="fitness-save-cell">
-            <Btn tone="primary" onClick={handleCreate}>新增运动记录</Btn>
+            <Btn tone="primary" type="submit">新增运动记录</Btn>
           </div>
-        </div>
+        </form>
 
         <div className="step-filter-grid">
           <Field

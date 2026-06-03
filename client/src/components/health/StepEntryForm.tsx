@@ -49,7 +49,7 @@ export function StepEntryForm({
         </div>
 
         {/* 一行：用户 + 步数 + 记录时间 + 保存按钮 */}
-        <div className="step-entry-main-row">
+        <form className="step-entry-main-row" onSubmit={(event) => { event.preventDefault(); onSubmit(); }}>
           <Field
             label="当前录入用户"
             value={currentUserLabel}
@@ -65,12 +65,6 @@ export function StepEntryForm({
               placeholder="输入本次步数"
               value={stepsInput}
               onChange={(event) => onStepsInputChange(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  onSubmit();
-                }
-              }}
             />
           </label>
 
@@ -82,9 +76,9 @@ export function StepEntryForm({
           />
 
           <div className="step-save-cell">
-            <Btn tone="primary" onClick={onSubmit}>保存本次记录</Btn>
+            <Btn tone="primary" type="submit">保存本次记录</Btn>
           </div>
-        </div>
+        </form>
 
         {/* 时间段选择行 */}
         <div className="step-hour-row">

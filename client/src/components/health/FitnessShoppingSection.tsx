@@ -205,7 +205,7 @@ export function FitnessShoppingSection({
           当前录入用户：<strong>{currentUserLabel}</strong>。这些采购记录只服务于健康页食材成本分析，不与财务模块共用。
         </div>
 
-        <div className="form-grid fitness-entry-grid fitness-entry-grid-shopping">
+        <form className="form-grid fitness-entry-grid fitness-entry-grid-shopping" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <DatePickerField
             label="采购日期"
             value={form.date}
@@ -248,9 +248,9 @@ export function FitnessShoppingSection({
             onChange={(event) => setForm((previous) => ({ ...previous, location: event.target.value }))}
           />
           <div className="fitness-save-cell">
-            <Btn tone="primary" onClick={handleCreate}>新增采购记录</Btn>
+            <Btn tone="primary" type="submit">新增采购记录</Btn>
           </div>
-        </div>
+        </form>
 
         <div className="step-filter-grid">
           <Field

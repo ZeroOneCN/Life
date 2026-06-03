@@ -216,7 +216,7 @@ export function MedicationRecordsSection({
           当前录入用户为 <strong>{currentUserLabel}</strong>，新的用药记录会默认归属当前登录用户。
         </div>
 
-        <div className="medication-entry-grid">
+        <form className="medication-entry-grid" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <DatePickerField
             label="日期"
             value={form.date}
@@ -252,9 +252,9 @@ export function MedicationRecordsSection({
           />
           <div className="medication-inline-action">
             <span className="field-label">保存</span>
-            <Btn tone="primary" onClick={handleCreate}>保存每日用药</Btn>
+            <Btn tone="primary" type="submit">保存每日用药</Btn>
           </div>
-        </div>
+        </form>
 
         <div className="medication-filter-grid">
           <Field

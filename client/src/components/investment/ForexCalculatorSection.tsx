@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { EmptyState, SectionCard, StatGrid } from '../page';
 import { Btn, Field, SelectField, Tag } from '../ui';
@@ -146,6 +146,9 @@ export function ForexCalculatorSection({
     } catch { /* ignore quota */ }
   }, [shared, positions]);
 
+  /** 标记用户是否手动修改过余额（手动修改后不再自动覆盖） */
+  const balanceManualEdited = useRef(false);
+
   useEffect(() => {
     setShared((current) => ({
       ...current,
@@ -154,14 +157,19 @@ export function ForexCalculatorSection({
     }));
   }, [initialShared.forcedLiquidationRatio, initialShared.leverage]);
 
+  /**
+   * 当 dashboard 数据加载完成后，自动将账户余额填入计算器。
+   * 仅在用户未手动改过余额时自动同步；一旦用户手写，后续不再覆盖。
+   */
   useEffect(() => {
-    if (!shared.balance && defaultBalance > 0) {
-      setShared((current) => ({
-        ...current,
-        balance: defaultBalance.toFixed(2),
-      }));
+    if (defaultBalance > 0 && !balanceManualEdited.current) {
+      setShared((current) => {
+        /** 已有相同值则跳过，避免不必要的重渲染 */
+        if (Number(current.balance) === defaultBalance) return current;
+        return { ...current, balance: defaultBalance.toFixed(2) };
+      });
     }
-  }, [defaultBalance, shared.balance]);
+  }, [defaultBalance]);
 
   const result = useMemo(() => {
     const draftPositions = toDraftPositions(positions);
@@ -194,7 +202,10 @@ export function ForexCalculatorSection({
           <Field
             label="账户余额"
             value={shared.balance}
-            onChange={(event) => setShared((current) => ({ ...current, balance: event.target.value }))}
+            onChange={(event) => {
+              balanceManualEdited.current = true;
+              setShared((current) => ({ ...current, balance: event.target.value }));
+            }}
             placeholder="可手动改写"
           />
           <Field

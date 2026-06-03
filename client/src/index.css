@@ -5846,8 +5846,12 @@ textarea {
 .auth-page-shell {
   min-height: 100vh;
   padding: 40px 28px 56px;
-  background: var(--color-canvas);
   font-family: var(--font-family);
+  /* 渐变背景：白色基底 + 淡 indigo 径向光晕，增加空间深度 */
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 40%, rgba(83, 58, 253, 0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(83, 58, 253, 0.04) 0%, transparent 60%),
+    linear-gradient(180deg, #fafafe 0%, #fff 100%);
 }
 
 .auth-page-main {
@@ -5865,6 +5869,14 @@ textarea {
   align-items: start;
 }
 
+/* 右侧登录/注册表单卡片 — 增强阴影包裹感 */
+.auth-layout-grid > .card {
+  box-shadow:
+    0 8px 32px rgba(83, 58, 253, 0.10),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  border-color: rgba(83, 58, 253, 0.10);
+}
+
 /* 左侧品牌面板 */
 .auth-hero-panel {
   display: flex;
@@ -5873,7 +5885,13 @@ textarea {
   padding: 32px;
   border-radius: 16px;
   border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  /* 微妙渐变底色 + 左侧 indigo 强调线 + 柔和阴影，增强包裹感 */
+  background:
+    linear-gradient(135deg, rgba(83, 58, 253, 0.02) 0%, var(--color-surface) 50%);
+  border-left: 3px solid var(--color-primary);
+  box-shadow:
+    0 4px 24px rgba(83, 58, 253, 0.08),
+    0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .auth-hero-copy {

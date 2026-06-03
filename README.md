@@ -1,10 +1,10 @@
-# LifeOS2 — 全生命周期数字化管理平台
+# LifeOS — 全生命周期数字化管理平台
 
 > 一站式个人生活数据管理系统，覆盖健康、财务、生活、投资四大领域，提供统一的数据采集、分析、提醒和通知能力。
 
 ## 项目概览
 
-LifeOS2 是一个前后端分离的全栈 Web 应用，采用 **React 18 + TypeScript + Vite** 构建前端界面，**Express + TypeScript + TypeORM** 搭建后端服务，**MySQL** 作为持久化存储。系统以「全生命周期」为设计理念，将个人生活的各个维度纳入统一的数据管理体系。
+LifeOS 是一个前后端分离的全栈 Web 应用，采用 **React 18 + TypeScript + Vite** 构建前端界面，**Express + TypeScript + TypeORM** 搭建后端服务，**MySQL** 作为持久化存储。系统以「全生命周期」为设计理念，将个人生活的各个维度纳入统一的数据管理体系。
 
 ### 核心特性
 
@@ -37,7 +37,7 @@ LifeOS2 是一个前后端分离的全栈 Web 应用，采用 **React 18 + TypeS
 ## 项目结构
 
 ```
-LifeOS2/
+LifeOS/
 ├── client/                          # 前端应用（React + Vite）
 │   ├── src/
 │   │   ├── components/             # 公共组件

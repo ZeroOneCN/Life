@@ -304,7 +304,7 @@ export function CheckupRecordsSection({
           当前录入用户为 <strong>{currentUserLabel}</strong>。新的体检指标会默认归属当前登录用户。
         </div>
 
-        <div className="checkup-entry-grid">
+        <form id="checkup-create-form" className="checkup-entry-grid" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <DatePickerField
             label="检查日期"
             value={form.testDate}
@@ -360,7 +360,7 @@ export function CheckupRecordsSection({
             <option value="abnormal">异常</option>
             <option value="unknown">待判断</option>
           </SelectField>
-        </div>
+        </form>
 
         <div className="checkup-entry-footer">
           <TextArea
@@ -371,7 +371,7 @@ export function CheckupRecordsSection({
           />
           <div className="fitness-form-actions">
             <span className="subtle-text">支持填写自动判定无法识别的自定义状态，并可补充复查日期。</span>
-            <Btn tone="primary" onClick={handleCreate}>保存指标记录</Btn>
+            <Btn tone="primary" type="submit" form="checkup-create-form">保存指标记录</Btn>
           </div>
         </div>
 

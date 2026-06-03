@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
+  Area,
   Cell,
   Line,
   LineChart,
@@ -221,6 +222,12 @@ export function ForexDashboardSection({
               <div className="forex-chart-shell">
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={trend}>
+                    <defs>
+                      <linearGradient id="forexPnlGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#5e6ad2" stopOpacity={0.2} />
+                        <stop offset="100%" stopColor="#5e6ad2" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
                     <XAxis
                       dataKey="date"
                       tick={{ fill: 'var(--color-ink-subtle)', fontSize: 11 }}
@@ -237,12 +244,24 @@ export function ForexDashboardSection({
                       formatter={(value) => [formatForexMoney(Number(value ?? 0)), '净盈亏']}
                       labelFormatter={(label) => `日期 ${String(label ?? '')}`}
                     />
+                    <Area
+                      type="monotone"
+                      dataKey="netPnl"
+                      stroke="none"
+                      fill="url(#forexPnlGradient)"
+                      isAnimationActive
+                      animationDuration={3200}
+                      animationEasing="ease-in-out"
+                    />
                     <Line
                       type="monotone"
                       dataKey="netPnl"
                       stroke="#5e6ad2"
                       strokeWidth={2.5}
                       dot={false}
+                      isAnimationActive
+                      animationDuration={3600}
+                      animationEasing="ease-in-out"
                     />
                   </LineChart>
                 </ResponsiveContainer>
