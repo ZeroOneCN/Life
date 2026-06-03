@@ -4176,14 +4176,12 @@ textarea {
   font-size: 12px;
 }
 
-/* 日历网格 - 居中适中尺寸 */
+/* 日历网格 - 填满父容器 */
 .pnl-calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 3px;
   width: 100%;
-  max-width: 460px;
-  margin: 0 auto;
 }
 
 .pnl-cell {
@@ -7495,9 +7493,7 @@ select:focus-visible {
   }
   .pnl-calendar-grid {
     width: 100%;
-    max-width: none;
     gap: 2px;
-    margin: 0;
   }
   .pnl-cell {
     border-radius: 4px;

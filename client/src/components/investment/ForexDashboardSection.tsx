@@ -454,68 +454,67 @@ export function ForexDashboardSection({
           ]}
         />
 
-        <div className="forex-dashboard-grid">
-          <div className="forex-chart-card">
-            <div className="forex-chart-header">
-              <strong>每日盈亏曲线</strong>
-              <span>按交易日观察净盈亏变化趋势。</span>
+        {/* 每日盈亏曲线 - 独占整行 */}
+        <ChartCard title="每日盈亏曲线" description="按交易日观察净盈亏变化趋势。">
+          {isDataReady && hasTrendData ? (
+            <div className="forex-chart-shell">
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={trend}>
+                  <defs>
+                    <linearGradient id="forexPnlGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#5e6ad2" stopOpacity={0.2} />
+                      <stop offset="100%" stopColor="#5e6ad2" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: 'var(--color-ink-subtle)', fontSize: 11 }}
+                    tickFormatter={(value) => String(value ?? '').slice(5)}
+                    interval={0}
+                    angle={-40}
+                    textAnchor="end"
+                    height={70}
+                    minTickGap={16}
+                  />
+                  <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    formatter={(value) => [formatForexMoney(Number(value ?? 0)), '净盈亏']}
+                    labelFormatter={(label) => `日期 ${String(label ?? '')}`}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="netPnl"
+                    stroke="none"
+                    fill="url(#forexPnlGradient)"
+                    isAnimationActive
+                    animationDuration={3200}
+                    animationEasing="ease-in-out"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="netPnl"
+                    stroke="#5e6ad2"
+                    strokeWidth={2.5}
+                    dot={false}
+                    isAnimationActive
+                    animationDuration={3600}
+                    animationEasing="ease-in-out"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
-            {isDataReady && hasTrendData ? (
-              <div className="forex-chart-shell">
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={trend}>
-                    <defs>
-                      <linearGradient id="forexPnlGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#5e6ad2" stopOpacity={0.2} />
-                        <stop offset="100%" stopColor="#5e6ad2" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fill: 'var(--color-ink-subtle)', fontSize: 11 }}
-                      tickFormatter={(value) => String(value ?? '').slice(5)}
-                      interval={0}
-                      angle={-40}
-                      textAnchor="end"
-                      height={70}
-                      minTickGap={16}
-                    />
-                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                    <Tooltip
-                      contentStyle={tooltipStyle}
-                      formatter={(value) => [formatForexMoney(Number(value ?? 0)), '净盈亏']}
-                      labelFormatter={(label) => `日期 ${String(label ?? '')}`}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="netPnl"
-                      stroke="none"
-                      fill="url(#forexPnlGradient)"
-                      isAnimationActive
-                      animationDuration={3200}
-                      animationEasing="ease-in-out"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="netPnl"
-                      stroke="#5e6ad2"
-                      strokeWidth={2.5}
-                      dot={false}
-                      isAnimationActive
-                      animationDuration={3600}
-                      animationEasing="ease-in-out"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <EmptyState
-                title={isDataReady ? '暂无盈亏曲线' : '正在加载数据...'}
-                description={isDataReady ? '先录入几笔交易记录，趋势线才会形成。' : '正在从后端获取交易数据，请稍候。'}
-              />
-            )}
-          </div>
+          ) : (
+            <EmptyState
+              title={isDataReady ? '暂无盈亏曲线' : '正在加载数据...'}
+              description={isDataReady ? '先录入几笔交易记录，趋势线才会形成。' : '正在从后端获取交易数据，请稍候。'}
+            />
+          )}
+        </ChartCard>
 
+        {/* 盈亏分布 + 盈亏日历 并排 */}
+        <div className="forex-dashboard-grid">
+          {/* 左侧：盈亏分布饼图 */}
           <div className="forex-chart-card">
             <div className="forex-chart-header">
               <strong>盈亏分布</strong>
@@ -580,18 +579,20 @@ export function ForexDashboardSection({
               />
             )}
           </div>
-        </div>
 
-        <ChartCard
-          title="盈亏日历"
-          description="按月查看每日盈亏热力图，颜色越深代表金额越大，绿色盈利 / 红色亏损。"
-        >
-          {isDataReady && hasTrendData ? (
-            <PnlCalendar trend={trend} />
-          ) : (
-            <EmptyState title="暂无日历数据" description="录入交易记录后，这里会显示每日盈亏分布。" />
-          )}
-        </ChartCard>
+          {/* 右侧：盈亏日历 */}
+          <div className="forex-chart-card">
+            <div className="forex-chart-header">
+              <strong>盈亏日历</strong>
+              <span>按月查看每日盈亏热力图，颜色越深金额越大。</span>
+            </div>
+            {isDataReady && hasTrendData ? (
+              <PnlCalendar trend={trend} />
+            ) : (
+              <EmptyState title="暂无日历数据" description="录入交易记录后显示每日盈亏分布。" />
+            )}
+          </div>
+        </div>
 
         <ChartCard
           title="品种分析"
