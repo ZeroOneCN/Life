@@ -189,7 +189,7 @@ export function Modal({ open, onClose, title, width = 560, footer, children }: M
     };
   }, [open]);
 
-  if (!open) {
+  if (!open || typeof document === 'undefined') {
     return null;
   }
 
