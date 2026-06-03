@@ -11,7 +11,7 @@ server/dist/
 client/dist/
 build/
 scripts/
-数据导入/
+docs/
 
 # Environment files
 .env
