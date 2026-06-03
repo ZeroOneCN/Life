@@ -6088,6 +6088,10 @@ textarea {
   gap: 6px;
 }
 
+.auth-field-stack .field-label {
+  font-size: 14px;
+}
+
 .auth-field-stack input {
   min-height: 44px;
 }
