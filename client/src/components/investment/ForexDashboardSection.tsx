@@ -118,7 +118,7 @@ interface PnlDayData {
   tradeCount: number;
 }
 
-/** 盈亏日历组件：按月展示每日盈亏热力图 */
+/** 盈亏日历组件：按月展示每日盈亏热力图，支持年/月切换 */
 function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCount: number }[] }) {
   const [viewMonth, setViewMonth] = useState(() => dayjs());
   const [hoverDay, setHoverDay] = useState<PnlDayData | null>(null);
@@ -202,36 +202,88 @@ function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCo
     return { totalPnl, winDays, lossDays, tradeDays };
   }, [calendarDays]);
 
+  /** 年份快速切换列表：当前年 ±2 */
+  const yearOptions = useMemo(() => {
+    const y = viewMonth.year();
+    return Array.from({ length: 5 }, (_, i) => y - 2 + i);
+  }, [viewMonth]);
+
   const weekHeaders = ['日', '一', '二', '三', '四', '五', '六'];
 
   return (
     <div className="pnl-calendar-wrapper">
+      {/* 导航栏：年份选择 + 月份翻页 + 摘要 */}
       <div className="pnl-calendar-head">
         <div className="pnl-calendar-nav">
-          <button
-            type="button"
-            className="pnl-nav-btn"
-            onClick={() => setViewMonth((m) => m.subtract(1, 'month'))}
-          >
-            ‹
-          </button>
-          <strong className="pnl-calendar-title">{viewMonth.format('YYYY 年 M 月')}</strong>
-          <button
-            type="button"
-            className="pnl-nav-btn"
-            onClick={() => setViewMonth((m) => m.add(1, 'month'))}
-          >
-            ›
-          </button>
+          {/* 年份快捷切换 */}
+          <div className="pnl-year-picker">
+            <button
+              type="button"
+              className={`pnl-year-btn ${viewMonth.year() === yearOptions[0] ? 'is-active' : ''}`}
+              onClick={() => setViewMonth((m) => m.year(yearOptions[0]))}
+            >
+              {yearOptions[0]}
+            </button>
+            <button
+              type="button"
+              className={`pnl-year-btn ${viewMonth.year() === yearOptions[1] ? 'is-active' : ''}`}
+              onClick={() => setViewMonth((m) => m.year(yearOptions[1]))}
+            >
+              {yearOptions[1]}
+            </button>
+            <button
+              type="button"
+              className={`pnl-year-btn ${viewMonth.year() === yearOptions[2] ? 'is-active' : ''}`}
+              onClick={() => setViewMonth((m) => m.year(yearOptions[2]))}
+            >
+              {yearOptions[2]}
+            </button>
+            <button
+              type="button"
+              className={`pnl-year-btn ${viewMonth.year() === yearOptions[3] ? 'is-active' : ''}`}
+              onClick={() => setViewMonth((m) => m.year(yearOptions[3]))}
+            >
+              {yearOptions[3]}
+            </button>
+            <button
+              type="button"
+              className={`pnl-year-btn ${viewMonth.year() === yearOptions[4] ? 'is-active' : ''}`}
+              onClick={() => setViewMonth((m) => m.year(yearOptions[4]))}
+            >
+              {yearOptions[4]}
+            </button>
+          </div>
+
+          {/* 月份翻页 */}
+          <div className="pnl-month-nav">
+            <button
+              type="button"
+              className="pnl-nav-btn"
+              onClick={() => setViewMonth((m) => m.subtract(1, 'month'))}
+            >
+              ‹
+            </button>
+            <strong className="pnl-calendar-title">{viewMonth.format('M 月')}</strong>
+            <button
+              type="button"
+              className="pnl-nav-btn"
+              onClick={() => setViewMonth((m) => m.add(1, 'month'))}
+            >
+              ›
+            </button>
+          </div>
         </div>
+
+        {/* 当月摘要（紧凑单行） */}
         <div className="pnl-calendar-summary">
           <span>月盈亏 <em>{formatForexAmount(monthStats.totalPnl)}</em></span>
-          <span>交易日 {monthStats.tradeDays}</span>
-          <span style={{ color: 'var(--color-success)' }}>盈利 {monthStats.winDays}天</span>
-          <span style={{ color: 'var(--color-danger)' }}>亏损 {monthStats.lossDays}天</span>
+          <span>{monthStats.tradeDays}交易日</span>
+          <span style={{ color: 'var(--color-success)' }}>{monthStats.winDays}盈</span>
+          <span style={{ color: 'var(--color-danger)' }}>{monthStats.lossDays}亏</span>
         </div>
       </div>
 
+      {/* 日历网格 */}
       <div className="pnl-calendar-grid">
         {weekHeaders.map((w) => (
           <div key={w} className="pnl-cell pnl-cell-header">{w}</div>
@@ -255,9 +307,6 @@ function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCo
               }}
             >
               <span className="pnl-cell-date">{parseInt(day.date.slice(8), 10)}</span>
-              {(day.tradeCount > 0 || day.netPnl !== 0) && (
-                <span className="pnl-cell-dot" />
-              )}
             </button>
           );
         })}
