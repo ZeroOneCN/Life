@@ -4368,7 +4368,7 @@ textarea {
   justify-content: space-between;
   gap: 4px;
   margin-top: 14px;
-  padding: 10px 12px;
+  padding: 14px 16px;
   background: var(--color-surface-3);
   border-radius: 10px;
   border: 1px solid var(--color-hairline);
@@ -4382,26 +4382,26 @@ textarea {
   flex: 1;
 }
 .pnl-stat-label {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--color-ink-subtle);
   white-space: nowrap;
 }
 .pnl-stat-value {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
   font-family: var(--font-mono);
   line-height: 1.2;
   white-space: nowrap;
 }
 .pnl-stat-sub {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-ink-muted);
 }
 .pnl-stat-profit { color: var(--color-success); }
 .pnl-stat-loss { color: var(--color-danger); }
 .pnl-stat-divider {
   width: 1px;
-  height: 32px;
+  height: 40px;
   background: var(--color-hairline);
   flex-shrink: 0;
 }
