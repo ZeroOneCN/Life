@@ -7062,3 +7062,844 @@ textarea:focus-visible,
 select:focus-visible {
   outline: none;
 }
+
+/* ===== Mobile Responsive Adaptation ===== */
+
+/* ---------- 全局移动端基础（<=768px）---------- */
+@media (max-width: 768px) {
+  .content {
+    padding: 16px 12px !important;
+  }
+
+  .page-header h1 {
+    font-size: 22px !important;
+  }
+
+  .stat-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .stat-card {
+    padding: 14px 12px !important;
+  }
+
+  .stat-value {
+    font-size: 20px !important;
+  }
+
+  .card {
+    padding: 20px 16px !important;
+    border-radius: 12px !important;
+  }
+
+  .data-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .data-table {
+    min-width: 600px;
+  }
+
+  .modal-overlay {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+
+  .modal-panel {
+    width: 100% !important;
+    max-height: 85vh;
+    border-radius: 20px 20px 0 0 !important;
+    max-width: none !important;
+  }
+}
+
+/* ---------- 平板适配（<=1024px 且 >768px）---------- */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .content {
+    padding: 24px 20px !important;
+  }
+}
+
+/* ---------- 移动端侧边栏抽屉样式 ---------- */
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed !important;
+    z-index: 1000 !important;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    width: 280px !important;
+    border-right: none !important;
+    box-shadow: none !important;
+  }
+
+  .sidebar.is-mobile-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+  }
+
+  .sidebar-overlay.is-visible {
+    display: block;
+  }
+
+  .layout-main {
+    margin-left: 0 !important;
+  }
+
+  .sidebar-toggle-mobile {
+    display: flex !important;
+  }
+
+  .sidebar-toggle-desktop {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .sidebar-toggle-mobile {
+    display: none !important;
+  }
+
+  .sidebar-toggle-desktop {
+    display: flex !important;
+  }
+
+  .sidebar-overlay {
+    display: none !important;
+  }
+}
+
+/* ---------- Forex 模块移动端适配 ---------- */
+@media (max-width: 768px) {
+  .forex-calculator-shared-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .forex-position-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .forex-dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .forex-calculator-stat-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .forex-chart-shell {
+    min-height: 220px !important;
+  }
+
+  .forex-result-card-metrics {
+    flex-wrap: wrap;
+    gap: 6px !important;
+  }
+
+  .forex-instrument-cards {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---------- 健康模块移动端适配 ---------- */
+@media (max-width: 768px) {
+  .fitness-entry-grid-diet,
+  .fitness-entry-grid-exercise,
+  .fitness-entry-grid-shopping,
+  .fitness-entry-grid-weight {
+    grid-template-columns: 1fr !important;
+  }
+
+  .fitness-save-cell {
+    grid-column: 1 / -1 !important;
+  }
+
+  .step-entry-main-row {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .step-hour-buttons {
+    flex-wrap: wrap;
+  }
+
+  .step-hour-button {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+
+  .medication-entry-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .medication-purchase-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .medication-filter-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .medication-inline-action {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------- 触控优化 ---------- */
+@media (hover: none) and (pointer: coarse) {
+  .btn {
+    min-height: 44px;
+  }
+
+  .icon-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .field input,
+  .field select {
+    min-height: 44px;
+  }
+
+  .tab-bar .tab {
+    min-height: 40px;
+  }
+
+  .menu-link {
+    min-height: 44px;
+  }
+}
+
+/* ============================================================
+   全页面移动端响应式适配 — Page-Level Mobile Adaptation
+   覆盖：Dashboard / Login / Profile / 通知中心
+        健康模块 / 财务模块 / 生活模块 / 投资模块
+        通用组件 + 平板断点
+   ============================================================ */
+
+/* ---------- 3.1 Dashboard 控制台 ---------- */
+@media (max-width: 768px) {
+  /* 统计条改为竖向堆叠 */
+  .dash-stats-strip {
+    flex-direction: column;
+    border-radius: 12px;
+  }
+  .dash-stat-chip {
+    padding: 16px 18px;
+    border-left: none !important;
+    border-bottom: 1px solid var(--color-hairline);
+  }
+  .dash-stat-chip:last-child {
+    border-bottom: none;
+  }
+  .dash-stat-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  .dash-stat-val {
+    font-size: 18px;
+  }
+
+  /* 快捷操作按钮换行 */
+  .dash-quick-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .dash-quick-actions .btn {
+    flex: 1;
+    min-width: calc(50% - 4px);
+  }
+
+  /* 模块卡片 2 列 */
+  .dash-modules-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .dash-module-card {
+    padding: 16px !important;
+  }
+  .dash-module-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .dash-module-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  .dash-module-metrics {
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+
+  /* 时间线紧凑 */
+  .dash-timeline-row {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-hairline);
+  }
+  .dash-tl-time {
+    font-size: 11px;
+    min-width: 120px;
+  }
+  .dash-tl-title {
+    width: 100%;
+  }
+
+  /* 待处理条竖向 */
+  .dash-agenda-strip {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .dash-agenda-items {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .dash-modules-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---------- 3.2 Login 登录页补充 ---------- */
+@media (max-width: 768px) {
+  .auth-page-shell {
+    padding: 24px 16px 32px;
+  }
+  .auth-hero-panel {
+    padding: 20px 16px;
+    border-radius: 12px;
+  }
+  .auth-hero-copy h2 {
+    font-size: 22px;
+  }
+  .auth-status-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px;
+  }
+  .auth-status-card {
+    padding: 12px;
+  }
+  .auth-page-note {
+    padding: 12px 14px;
+  }
+}
+
+/* ---------- 3.3 Profile 个人中心 ---------- */
+@media (max-width: 768px) {
+  .profile-shell {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .profile-avatar {
+    width: 64px;
+    height: 64px;
+  }
+  .profile-avatar-fallback {
+    width: 64px;
+    height: 64px;
+    font-size: 24px;
+  }
+}
+
+/* ---------- 3.4 通知中心 ---------- */
+@media (max-width: 768px) {
+  .channel-config-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  .scene-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .scene-grid .section-card {
+    padding: 18px 16px;
+  }
+  .quick-actions-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .quick-actions-row .btn {
+    width: 100%;
+  }
+  .channel-checkbox-group {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* ---------- 3.5 Fitness 健康总入口 ---------- */
+@media (max-width: 768px) {
+  .fitness-overview-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .fitness-dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .fitness-chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .fitness-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .fitness-form-actions .btn {
+    width: 100%;
+  }
+  .fitness-insight-head {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+/* ---------- 3.6 Checkup 体检 ---------- */
+@media (max-width: 768px) {
+  .checkup-overview-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .checkup-entry-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+  .checkup-filter-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+  .checkup-setting-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .checkup-template-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .checkup-insight-grid {
+    grid-template-columns: 1fr !important;
+  }
+  /* 批量录入行单列 */
+  .checkup-batch-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+    padding: 12px;
+  }
+  .checkup-batch-index {
+    display: none;
+  }
+  .checkup-batch-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .template-form-meta {
+    grid-template-columns: 1fr !important;
+  }
+  .template-item-fields {
+    grid-template-columns: 1fr !important;
+  }
+  .template-form-item-row {
+    flex-direction: column;
+  }
+}
+
+/* ---------- 3.7 Medication 用药 ---------- */
+@media (max-width: 768px) {
+  .medication-overview-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .medication-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .medication-reminder-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .medication-threshold-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .medication-analysis-grid {
+    grid-template-columns: 1fr !important;
+  }
+  /* Modal 内网格 */
+  .medication-modal-summary {
+    grid-template-columns: 1fr !important;
+  }
+  .medication-modal-grid-records,
+  .medication-modal-grid-dose {
+    grid-template-columns: 1fr !important;
+  }
+  .medication-modal-grid-purchase-main,
+  .medication-modal-grid-purchase-pricing {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---------- 3.8 Step 步数补充 ---------- */
+@media (max-width: 768px) {
+  .step-chart-toolbar {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .step-records-toolbar {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .step-compare-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .step-aggregate-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .step-chart-container {
+    min-height: 200px;
+  }
+}
+
+/* ---------- 3.9 Shopping 财务购物 ---------- */
+@media (max-width: 768px) {
+  .shopping-context-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .shopping-dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .shopping-ledger-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .shopping-platform-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .shopping-filter-grid,
+  .shopping-filter-grid-dashboard {
+    grid-template-columns: 1fr !important;
+  }
+  .shopping-ledger-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .shopping-platform-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .shopping-summary-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .shopping-import-meta {
+    flex-direction: column;
+  }
+  .shopping-entry-grid-records {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---------- 3.10 Loan 借贷 ---------- */
+@media (max-width: 768px) {
+  .loan-context-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .loan-dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .loan-platform-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .loan-platform-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .loan-bill-entry-grid,
+  .loan-repayment-entry-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .loan-filter-grid,
+  .loan-settings-grid,
+  .loan-statistics-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .loan-summary-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .loan-dashboard-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .loan-summary-card-head,
+  .loan-platform-spotlight-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .loan-channel-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .loan-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .loan-modal-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .loan-settings-inline-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---------- 3.11 Rent 租房 ---------- */
+@media (max-width: 768px) {
+  .rent-context-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .rent-records-filter-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .rent-entry-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .rent-cost-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .rent-summary-grid,
+  .rent-statistics-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .rent-channel-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .rent-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .rent-context-summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .rent-breakdown-head,
+  .rent-breakdown-foot {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .rent-cost-overview-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .rent-cost-overview-metrics,
+  .rent-cost-overview-legend {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---------- 3.12 Travel 旅行 ---------- */
+@media (max-width: 768px) {
+  .travel-context-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .travel-book-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .travel-record-entry-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .travel-filter-grid,
+  .travel-filter-grid-stats,
+  .travel-filter-grid-report {
+    grid-template-columns: 1fr !important;
+  }
+  .travel-dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .travel-import-result-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .travel-report-overview {
+    grid-template-columns: 1fr !important;
+  }
+  .travel-report-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .travel-summary-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .travel-report-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .travel-report-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .travel-pay-channel-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .travel-duration-card {
+    padding: 14px;
+  }
+}
+
+/* ---------- 3.13 Subscription 订阅 ---------- */
+@media (max-width: 768px) {
+  .subscription-top-summary {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---------- 3.14 Card 号卡 ---------- */
+@media (max-width: 768px) {
+  .card-overview-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---------- 3.15 Storage 物品补充 ---------- */
+@media (max-width: 768px) {
+  .storage-list-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .storage-price-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .storage-action-bar {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .storage-action-bar .btn {
+    width: 100%;
+  }
+}
+
+/* ---------- 3.16 Todo 待办 ---------- */
+@media (max-width: 768px) {
+  .todo-overview-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---------- 3.17 USStock / HKStock ---------- */
+@media (max-width: 768px) {
+  .usstock-overview-grid,
+  .hkstock-overview-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---------- 3.18 Forex 补漏 ---------- */
+@media (max-width: 768px) {
+  .forex-filter-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .forex-compact-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .forex-capital-form-row {
+    grid-template-columns: 1fr !important;
+  }
+  .forex-modal-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .forex-insight-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .forex-mini-stat-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  /* AI 分析区 */
+  .forex-ai-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .forex-ai-controls .btn {
+    width: 100%;
+  }
+}
+
+/* ---------- 3.19 通用组件补充适配 ---------- */
+@media (max-width: 768px) {
+  /* PillTabs 横向滚动 */
+  .pill-tab-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding-bottom: 4px;
+  }
+  .pill-tab-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .pill-tab {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  /* PageHeader 紧凑 */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .page-header h1 {
+    font-size: 22px;
+  }
+  .page-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Modal 底部按钮全宽 */
+  .modal-footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .modal-footer .btn {
+    width: 100%;
+  }
+
+  /* 分页控件居中换行 */
+  .pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+
+/* ---------- 平板断点补充 (769–1024px) ---------- */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .dash-modules-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .dash-stats-strip {
+    flex-wrap: wrap;
+  }
+  .dash-stat-chip {
+    flex: 0 0 calc(50% - 1px);
+  }
+  .channel-config-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .scene-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}

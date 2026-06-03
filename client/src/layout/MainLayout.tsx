@@ -50,6 +50,14 @@ function ChevronIcon({ open }: { open: boolean }) {
   );
 }
 
+function HamburgerIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function SidebarToggleIcon({ collapsed }: { collapsed: boolean }) {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -153,6 +161,7 @@ export default function MainLayout() {
   const authState = useAuthState();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>(() => {
@@ -184,7 +193,22 @@ export default function MainLayout() {
     setOpenGroups(parent ? [parent] : []);
     setActiveMenuKey(getActiveMenuKey(location.pathname));
     setUserMenuOpen(false);
+    setMobileMenuOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1025px)');
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => {
+      if (e.matches) {
+        setMobileMenuOpen(false);
+      }
+    };
+    mq.addEventListener('change', handler);
+    if (mq.matches) {
+      setMobileMenuOpen(false);
+    }
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   useEffect(() => {
     if (!userMenuOpen) {
@@ -205,7 +229,14 @@ export default function MainLayout() {
 
   return (
     <div className={`layout-shell ${collapsed ? 'is-collapsed' : ''}`}>
-      <aside className="sidebar" style={{ width: sidebarWidth }}>
+      {/* 移动端侧边栏遮罩 */}
+      <div
+        className={`sidebar-overlay ${mobileMenuOpen ? 'is-visible' : ''}`}
+        onClick={() => setMobileMenuOpen(false)}
+        aria-hidden="true"
+      />
+
+      <aside className={`sidebar${mobileMenuOpen ? ' is-mobile-open' : ''}`} style={{ width: sidebarWidth }}>
         <div className="sidebar-brand">
           <div className="sidebar-brand-copy">
             <strong>{collapsed ? 'LO' : 'LifeOS'}</strong>
@@ -231,8 +262,18 @@ export default function MainLayout() {
       <div className="layout-main" style={{ marginLeft: sidebarWidth }}>
         <header className="topbar">
           <div className="topbar-left">
+            {/* 移动端汉堡菜单按钮 */}
             <button
-              className="icon-button"
+              className="icon-button sidebar-toggle-mobile"
+              type="button"
+              aria-label="打开导航菜单"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+            >
+              <HamburgerIcon />
+            </button>
+            {/* PC 端折叠/展开按钮 */}
+            <button
+              className="icon-button sidebar-toggle-desktop"
               type="button"
               aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
               onClick={() => setCollapsed((previous) => !previous)}
