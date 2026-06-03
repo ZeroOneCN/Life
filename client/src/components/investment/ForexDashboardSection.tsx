@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import dayjs from 'dayjs';
 import {
   Area,
@@ -312,15 +313,15 @@ function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCo
         })}
       </div>
 
-      {/* 悬停浮层 - 显示当日详情 + 月度汇总 */}
-      {hoverDay && hoverPos && (
+      {/* 悬停浮层 - Portal 挂到 body 避免被父容器裁剪 */}
+      {hoverDay && hoverPos && createPortal(
         <div
           className="pnl-tooltip"
           style={{
             position: 'fixed',
             left: hoverPos.x + 12,
             top: hoverPos.y - 10,
-            zIndex: 100,
+            zIndex: 9999,
             pointerEvents: 'none',
           }}
         >
@@ -344,7 +345,8 @@ function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCo
             <span style={{ color: 'var(--color-success)' }}>{monthStats.winDays}盈</span>
             <span style={{ color: 'var(--color-danger)' }}>{monthStats.lossDays}亏</span>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 图例 */}

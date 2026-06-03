@@ -4193,8 +4193,6 @@ textarea {
 .pnl-cell:hover {
   z-index: 10;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.14);
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
 }
 
 .pnl-cell-header {
@@ -4221,8 +4219,8 @@ textarea {
 }
 
 .pnl-cell-date {
-  font-size: 10px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1;
   color: inherit;
 }
@@ -7572,7 +7570,7 @@ select:focus-visible {
     border-radius: 4px;
   }
   .pnl-cell-date {
-    font-size: 11px;
+    font-size: 12px;
   }
   .pnl-cell-header {
     height: 18px;
