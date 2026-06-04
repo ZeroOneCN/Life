@@ -3363,7 +3363,7 @@ textarea {
   border: 1px solid var(--color-hairline);
   border-radius: 16px;
   padding: 32px;
-  max-width: 520px;
+  max-width: 90vw;
   width: calc(100% - 40px);
   max-height: 85vh;
   overflow-y: auto;
@@ -4663,7 +4663,7 @@ textarea {
 }
 
 .subscription-entry-action .btn {
-  width: 100%;
+  /* 继承统一表格操作按钮样式 */
 }
 
 .subscription-modal-grid {
@@ -4918,14 +4918,20 @@ textarea {
 .table-actions,
 .storage-table-actions,
 .todo-table-actions,
-.card-entry-action {
-  /* 容器 */
+.card-entry-action,
+.subscription-entry-action {
+  /* 容器：flex 横排 + 间距 */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 
 .table-actions .btn,
 .storage-table-actions .btn,
 .todo-table-actions .btn,
-.card-entry-action .btn {
+.card-entry-action .btn,
+.subscription-entry-action .btn {
   font-size: var(--fs-body);
   font-weight: 600;
   padding: 8px 16px;
@@ -5118,7 +5124,7 @@ textarea {
 }
 
 .card-entry-action .btn {
-  width: 100%;
+  /* 继承 table-actions 统一样式 */
 }
 
 .card-entry-grid-compact {
