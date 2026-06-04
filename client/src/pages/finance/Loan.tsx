@@ -29,6 +29,7 @@ const TAB_OPTIONS: Array<{ value: LoanTab; label: string }> = [
   { value: 'bills', label: '账单' },
   { value: 'repayments', label: '还款' },
   { value: 'statistics', label: '统计' },
+  { value: 'settings', label: '设置' },
 ];
 
 const EMPTY_SETTINGS: LoanSettings = {
