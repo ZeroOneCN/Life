@@ -625,6 +625,10 @@ export function TravelDetailsSection({
               onChange={(event) => setEditingForm((previous) => ({ ...previous, discountNote: event.target.value }))}
             />
           </div>
+          <div className="travel-duration-card">
+            <strong>自动计算时长</strong>
+            <span>{formatTravelDuration(calculateTravelDurationMinutes(editingForm.timeStart, editingForm.timeEnd))}</span>
+          </div>
           <TextArea
             label="备注"
             value={editingForm.remark}
