@@ -220,7 +220,7 @@ export function TravelReportSection({
                     ))}
                   </div>
                 ) : (
-                  <div className="travel-report-empty">暂无分类统计</div>
+                  <EmptyState title="暂无分类统计" description="当前账本下没有旅行消费记录，分类占比会在录入后自动生成。" />
                 )}
               </section>
 
@@ -237,7 +237,7 @@ export function TravelReportSection({
                     ))}
                   </div>
                 ) : (
-                  <div className="travel-report-empty">暂无支付渠道统计</div>
+                  <EmptyState title="暂无支付渠道统计" description="有消费记录后这里会按支付方式聚合展示。" />
                 )}
               </section>
             </div>
@@ -267,7 +267,7 @@ export function TravelReportSection({
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="travel-report-empty">暂无趋势数据</div>
+                <EmptyState title="暂无趋势数据" description="需要至少 2 天的消费记录才能生成趋势图。" />
               )}
             </section>
 
@@ -276,7 +276,7 @@ export function TravelReportSection({
               {reportData.book.summary ? (
                 <p className="travel-report-summary">{reportData.book.summary}</p>
               ) : (
-                <div className="travel-report-empty">暂无行程总结</div>
+                <EmptyState title="暂无行程总结" description="在详情页编辑行程总结后，这里会自动展示。" />
               )}
             </section>
 
@@ -310,7 +310,7 @@ export function TravelReportSection({
                   </table>
                 </div>
               ) : (
-                <div className="travel-report-empty">暂无消费明细</div>
+                <EmptyState title="暂无消费明细" description="当前账本下还没有旅行消费记录。" />
               )}
             </section>
           </div>

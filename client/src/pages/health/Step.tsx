@@ -264,6 +264,7 @@ export default function StepPage() {
           focusStepsInput();
         }}
         onSubmit={handleCreateRecord}
+        showToast={showToast}
       />
 
       <StepTrendSection

@@ -17,6 +17,7 @@ interface StepEntryFormProps {
   onRecordTimeChange: (value: string) => void;
   onQuickTimeSelect: (hour: StepHour, previousDay?: boolean) => void;
   onSubmit: () => void;
+  showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
 function getEntryTitle(hour: StepHour) {
@@ -40,6 +41,7 @@ export function StepEntryForm({
   onRecordTimeChange,
   onQuickTimeSelect,
   onSubmit,
+  showToast,
 }: StepEntryFormProps) {
   return (
     <SectionCard title="步数录入" description="支持按用户、全天或具体小时录入步数记录。">
@@ -49,7 +51,22 @@ export function StepEntryForm({
         </div>
 
         {/* 一行：用户 + 步数 + 记录时间 + 保存按钮 */}
-        <form className="step-entry-main-row" onSubmit={(event) => { event.preventDefault(); onSubmit(); }}>
+        <form className="step-entry-main-row" onSubmit={(event) => {
+          event.preventDefault();
+          const trimmed = stepsInput.trim();
+          if (!trimmed) {
+            showToast('请输入步数。', 'error');
+            stepsInputRef && typeof stepsInputRef !== 'function' && stepsInputRef.current?.focus();
+            return;
+          }
+          const parsed = Number(trimmed);
+          if (!Number.isFinite(parsed) || parsed < 0 || parsed > 999999) {
+            showToast('请输入有效的步数（0-999999）。', 'error');
+            stepsInputRef && typeof stepsInputRef !== 'function' && stepsInputRef.current?.focus();
+            return;
+          }
+          onSubmit();
+        }}>
           <Field
             label="当前录入用户"
             value={currentUserLabel}

@@ -439,7 +439,7 @@ export function TravelDetailsSection({
 
         <div className="travel-duration-card">
           <strong>自动计算时长</strong>
-          <span>{formatTravelDuration(calculateTravelDurationMinutes(form.timeStart, form.timeEnd))}</span>
+          <span>{formatTravelDuration(calculateTravelDurationMinutes(form.timeStart, form.timeEnd, form.date))}</span>
         </div>
 
         <div className="travel-summary-card">
@@ -627,7 +627,7 @@ export function TravelDetailsSection({
           </div>
           <div className="travel-duration-card">
             <strong>自动计算时长</strong>
-            <span>{formatTravelDuration(calculateTravelDurationMinutes(editingForm.timeStart, editingForm.timeEnd))}</span>
+            <span>{formatTravelDuration(calculateTravelDurationMinutes(editingForm.timeStart, editingForm.timeEnd, editingForm.date))}</span>
           </div>
           <TextArea
             label="备注"

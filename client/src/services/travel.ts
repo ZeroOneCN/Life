@@ -181,8 +181,12 @@ export function formatTravelDateRange(startDate: string, endDate: string) {
 }
 
 export function formatTravelDuration(minutes: number) {
-  if (!Number.isFinite(minutes) || minutes <= 0) {
+  if (!Number.isFinite(minutes) || minutes < 0) {
     return '-';
+  }
+
+  if (minutes === 0) {
+    return '0 分钟';
   }
 
   const hours = Math.floor(minutes / 60);
@@ -207,11 +211,12 @@ export function buildTravelTimeRangeLabel(record: Pick<TravelExpenseRecord, 'tim
   return `${record.timeStart} - ${record.timeEnd}`;
 }
 
-export function calculateTravelDurationMinutes(timeStart: string, timeEnd: string) {
+export function calculateTravelDurationMinutes(timeStart: string, timeEnd: string, date?: string) {
   const start = normalizeTime(timeStart);
   const end = normalizeTime(timeEnd);
-  const startDate = buildDateTime(dayjs().format(DATE_FORMAT), start);
-  let endDate = buildDateTime(dayjs().format(DATE_FORMAT), end);
+  const baseDate = date || dayjs().format(DATE_FORMAT);
+  const startDate = buildDateTime(baseDate, start);
+  let endDate = buildDateTime(baseDate, end);
 
   if (!startDate.isValid() || !endDate.isValid()) {
     return 0;

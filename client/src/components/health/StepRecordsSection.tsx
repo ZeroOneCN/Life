@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 
 import { DateTimePickerField } from '../date';
 import { DeleteModal, Modal, Pagination, Btn, Field, SelectField, TableSkeleton } from '../ui';
+import { EmptyState } from '../page';
 import {
   STEP_HOURS,
   buildStepRecordTime,
@@ -309,10 +310,10 @@ export function StepRecordsSection({
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         ) : (
-          <div className="empty-state">
-            <strong>还没有步数记录</strong>
-            <span>{filterUserId.trim() ? '这个用户当前还没有记录。' : '先在上方录入一条记录，这里会自动展示可管理的列表。'}</span>
-          </div>
+          <EmptyState
+            title="还没有步数记录"
+            description={filterUserId.trim() ? '这个用户当前还没有记录。' : '先在上方录入一条记录，这里会自动展示可管理的列表。'}
+          />
         )}
       </div>
 

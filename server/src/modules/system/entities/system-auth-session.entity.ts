@@ -13,7 +13,7 @@ export class SystemAuthSessionEntity extends UserScopedEntity {
   @Column({ type: 'datetime' })
   expires_at!: Date;
 
-  @Column({ type: 'varchar', length: 128, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   device_name!: string | null;
 
   @Column({ type: 'varchar', length: 64, nullable: true })
