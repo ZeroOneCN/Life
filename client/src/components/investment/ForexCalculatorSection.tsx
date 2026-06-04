@@ -16,6 +16,12 @@ import type { ForexCalculationResult, ForexCalculatorPositionDraft, ForexInstrum
 
 const CALCULATOR_STORAGE_KEY = 'forex_calculator_state';
 
+/** 品种对应的推荐杠杆，切换品种时自动匹配 */
+const INSTRUMENT_DEFAULT_LEVERAGE: Record<ForexInstrument, number> = {
+  XAUUSD: 500,
+  XAGUSD: 100,
+};
+
 interface ForexCalculatorSectionProps {
   leverage: number;
   forcedLiquidationRatio: number;
@@ -238,9 +244,15 @@ export function ForexCalculatorSection({
                 <SelectField
                   label="品种"
                   value={position.instrument}
-                  onChange={(event) => setPositions((current) => current.map((item) => (
-                    item.id === position.id ? { ...item, instrument: event.target.value as ForexInstrument } : item
-                  )))}
+                  onChange={(event) => {
+                    const nextInstrument = event.target.value as ForexInstrument;
+                    const autoLeverage = INSTRUMENT_DEFAULT_LEVERAGE[nextInstrument];
+                    setPositions((current) => current.map((item) => (
+                      item.id === position.id ? { ...item, instrument: nextInstrument } : item
+                    )));
+                    setShared((current) => ({ ...current, leverage: String(autoLeverage) }));
+                    onLeverageChange(autoLeverage);
+                  }}
                 >
                   {FOREX_INSTRUMENT_OPTIONS.map((instrument) => (
                     <option key={instrument} value={instrument}>{getForexInstrumentLabel(instrument)}</option>
