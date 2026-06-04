@@ -4275,9 +4275,9 @@ textarea {
 
 /* 日期数字 */
 .pnl-cell-date {
-  font-size: 20px;
+  font-size: 25px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.1;
   color: inherit;
 }
 
@@ -4293,10 +4293,10 @@ textarea {
 
 /* 日收益文字 */
 .pnl-cell-pnl {
-  font-size: 9px;
+  font-size: 20px;
   font-weight: 700;
   font-family: var(--font-mono);
-  line-height: 1.2;
+  line-height: 1.1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4305,9 +4305,9 @@ textarea {
 
 /* 入金/出金文字 */
 .pnl-cell-flow {
-  font-size: 8px;
+  font-size: 20px;
   font-weight: 500;
-  line-height: 1.2;
+  line-height: 1.1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4926,12 +4926,11 @@ textarea {
 .storage-table-actions .btn,
 .todo-table-actions .btn,
 .card-entry-action .btn {
-  font-size: var(--fs-caption);
-  font-weight: var(--fw-medium);
-  padding: 5px 12px;
-  border-radius: 8px;
-  line-height: 1.4;
-  transform: none;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  line-height: 1;
 }
 
 .table-actions .btn:hover,
@@ -5414,8 +5413,6 @@ textarea {
 
 .todo-table-actions .btn {
   white-space: nowrap;
-  padding-left: 8px;
-  padding-right: 8px;
 }
 
 .notification-log-message {
@@ -7586,7 +7583,7 @@ select:focus-visible {
     border-radius: 4px;
   }
   .pnl-cell-date {
-    font-size: 12px;
+    font-size: 16px;
   }
   .pnl-cell-header {
     height: 18px;
