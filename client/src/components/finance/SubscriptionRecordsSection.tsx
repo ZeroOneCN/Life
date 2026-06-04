@@ -415,8 +415,8 @@ export function SubscriptionRecordsSection({
                   title: '操作',
                   render: (_, row) => (
                     <div className="table-actions">
-                      <Btn tone="ghost" onClick={() => openEditModal(row)}>编辑</Btn>
-                      <Btn tone="ghost" onClick={() => setPendingDelete(row)}>删除</Btn>
+                      <Btn tone="secondary" onClick={() => openEditModal(row)}>编辑</Btn>
+                      <Btn tone="danger" onClick={() => setPendingDelete(row)}>删除</Btn>
                     </div>
                   ),
                 },

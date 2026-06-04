@@ -151,7 +151,7 @@ export function SubscriptionCategoriesSection({
                 render: (_, row) => (
                   <div className="table-actions">
                     <Btn
-                      tone="ghost"
+                      tone="secondary"
                       onClick={() => {
                         setEditingCategory(row);
                         setEditingForm(buildFormState(row));
@@ -159,7 +159,7 @@ export function SubscriptionCategoriesSection({
                     >
                       编辑
                     </Btn>
-                    <Btn tone="ghost" onClick={() => setPendingDelete(row)}>删除</Btn>
+                    <Btn tone="danger" onClick={() => setPendingDelete(row)}>删除</Btn>
                   </div>
                 ),
               },

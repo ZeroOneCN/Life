@@ -158,14 +158,14 @@ export function CardCarriersSection({
                 width: 160,
                 render: (_, row) => (
                   <div className="table-actions">
-                    <Btn tone="ghost" onClick={() => {
+                    <Btn tone="secondary" onClick={() => {
                       setEditingCarrier(row);
                       setEditingForm(buildFormState(row));
                     }}
                     >
                       编辑
                     </Btn>
-                    <Btn tone="ghost" onClick={() => setPendingDelete(row)}>删除</Btn>
+                    <Btn tone="danger" onClick={() => setPendingDelete(row)}>删除</Btn>
                   </div>
                 ),
               },

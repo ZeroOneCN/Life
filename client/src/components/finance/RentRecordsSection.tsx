@@ -136,7 +136,7 @@ export function RentRecordsSection({
       title: '操作',
       render: (_value: unknown, row: RentHousingRecord) => (
         <div className="fitness-row-actions">
-          <Btn tone="ghost" onClick={() => setDetailRecord(row)}>详情</Btn>
+          <Btn tone="secondary" onClick={() => setDetailRecord(row)}>详情</Btn>
           <Btn tone="secondary" onClick={() => onEditRecord(row.id)}>编辑</Btn>
           <Btn tone="danger" onClick={() => setPendingDeleteId(row.id)}>删除</Btn>
         </div>

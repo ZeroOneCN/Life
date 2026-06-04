@@ -106,7 +106,7 @@ export function TodoTrashSection({
                   render: (_, row) => (
                     <div className="todo-table-actions">
                       <Btn
-                        tone="ghost"
+                        tone="secondary"
                         onClick={async () => {
                           try {
                             await todoApi.restore(row.id);
@@ -120,7 +120,7 @@ export function TodoTrashSection({
                       >
                         恢复
                       </Btn>
-                      <Btn tone="ghost" onClick={() => setPendingDeleteTask(row)}>永久删除</Btn>
+                      <Btn tone="danger" onClick={() => setPendingDeleteTask(row)}>永久删除</Btn>
                     </div>
                   ),
                 },

@@ -477,7 +477,7 @@ export function TodoTasksSection({
                   render: (_, row) => (
                     <div className="todo-table-actions">
                       <Btn
-                        tone="ghost"
+                        tone="secondary"
                         onClick={() => {
                           setEditingTask(row);
                           setEditingForm(buildEditFormState(row));
@@ -486,7 +486,7 @@ export function TodoTasksSection({
                         编辑
                       </Btn>
                       <Btn
-                        tone="ghost"
+                        tone="secondary"
                         onClick={async () => {
                           try {
                             await todoApi.toggleCompleted(row.id, !row.completed);
@@ -500,7 +500,7 @@ export function TodoTasksSection({
                       >
                         {row.completed ? '恢复' : '完成'}
                       </Btn>
-                      <Btn tone="ghost" onClick={() => setPendingDeleteTask(row)}>删除</Btn>
+                      <Btn tone="danger" onClick={() => setPendingDeleteTask(row)}>删除</Btn>
                     </div>
                   ),
                 },

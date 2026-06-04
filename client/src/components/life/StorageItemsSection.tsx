@@ -366,7 +366,7 @@ export function StorageItemsSection({
                   render: (_, row) => (
                     <div className="storage-table-actions">
                       <Btn
-                        tone="ghost"
+                        tone="secondary"
                         onClick={() => {
                           setEditingItem(row);
                           setEditingForm(buildFormState(row));

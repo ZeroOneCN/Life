@@ -471,14 +471,14 @@ export function CardCardsSection({
                   width: 154,
                   render: (_, row) => (
                     <div className="table-actions">
-                      <Btn tone="ghost" onClick={() => {
+                      <Btn tone="secondary" onClick={() => {
                         setEditingRecord(row);
                         setEditingForm(buildCardForm(row, carriers));
                       }}
                       >
                         编辑
                       </Btn>
-                      <Btn tone="ghost" onClick={() => {
+                      <Btn tone="secondary" onClick={() => {
                         setRechargeRecord(row);
                         setRechargeForm({
                           simId: row.id,
@@ -490,7 +490,7 @@ export function CardCardsSection({
                       >
                         充值
                       </Btn>
-                      <Btn tone="ghost" onClick={() => setPendingDelete(row)}>删除</Btn>
+                      <Btn tone="danger" onClick={() => setPendingDelete(row)}>删除</Btn>
                     </div>
                   ),
                 },
