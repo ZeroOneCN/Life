@@ -4923,7 +4923,6 @@ textarea {
   /* 容器：flex 横排 + 间距 */
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
   flex-wrap: nowrap;
 }

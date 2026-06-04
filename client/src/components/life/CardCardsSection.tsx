@@ -464,12 +464,11 @@ export function CardCardsSection({
                     );
                   },
                 },
-                { key: 'notes', title: '备注', render: (_, row) => row.notes || '-', width: 80 },
+                { key: 'notes', title: '备注', render: (_, row) => row.notes || '-', width: 140 },
                 {
                   key: 'actions',
                   title: '操作',
                   width: 200,
-                  align: 'right',
                   render: (_, row) => (
                     <div className="table-actions">
                       <Btn tone="secondary" onClick={() => {
