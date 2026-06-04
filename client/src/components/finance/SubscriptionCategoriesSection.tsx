@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import dayjs from 'dayjs';
 
 import { EmptyState, SectionCard } from '../page';
 import { Btn, DataTable, DeleteModal, Field, Modal, Tag, TextArea } from '../ui';
@@ -144,6 +145,7 @@ export function SubscriptionCategoriesSection({
                 key: 'updatedAt',
                 title: '最近更新',
                 dataIndex: 'updatedAt',
+                render: (value: unknown) => (value ? dayjs(String(value)).format('YYYY-MM-DD HH:mm') : '-'),
               },
               {
                 key: 'actions',
