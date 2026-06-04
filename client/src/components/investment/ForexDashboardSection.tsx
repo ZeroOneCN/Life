@@ -309,14 +309,14 @@ function PnlCalendar({ trend, capitalFlows }: { trend: { date: string; netPnl: n
                 <div className="pnl-cell-detail">
                   {day.netPnl !== 0 && (
                     <span className={`pnl-cell-pnl ${day.netPnl > 0 ? 'pnl-text-profit' : 'pnl-text-loss'}`}>
-                      {day.netPnl > 0 ? '+' : ''}{formatForexAmount(day.netPnl)}
+                      {formatForexAmount(day.netPnl)}
                     </span>
                   )}
                   {day.deposit > 0 && (
-                    <span className="pnl-cell-flow pnl-text-deposit">入{formatForexMoney(day.deposit)}</span>
+                    <span className="pnl-cell-flow pnl-text-deposit">入 {formatForexMoney(day.deposit)}</span>
                   )}
                   {day.withdrawal > 0 && (
-                    <span className="pnl-cell-flow pnl-text-withdrawal">出{formatForexMoney(day.withdrawal)}</span>
+                    <span className="pnl-cell-flow pnl-text-withdrawal">出 {formatForexMoney(day.withdrawal)}</span>
                   )}
                 </div>
               )}
