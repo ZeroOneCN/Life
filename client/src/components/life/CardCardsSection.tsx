@@ -468,7 +468,8 @@ export function CardCardsSection({
                 {
                   key: 'actions',
                   title: '操作',
-                  width: 154,
+                  width: 200,
+                  align: 'right',
                   render: (_, row) => (
                     <div className="table-actions">
                       <Btn tone="secondary" onClick={() => {
