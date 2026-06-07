@@ -215,8 +215,8 @@ export default function Dashboard() {
     return items.sort((a, b) => b.sortKey - a.sortKey);
   }, [summary]);
 
-  /* 从最近日志中判断各渠道是否已配置 */
-  const channelStatus = useMemo(() => {
+  /* 从最近日志中判断各渠道是否有最近活动（非配置状态） */
+  const channelActivity = useMemo(() => {
     if (!summary) return { email: false, wechatWork: false, webhook: false };
     const channels = new Set(summary.notifications.recentLogs.map((log) => log.channel));
     return {
@@ -484,15 +484,15 @@ export default function Dashboard() {
             <div style={{ borderTop: '1px solid var(--color-surface-3)', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
               <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 15 }}>
                 <span style={{ color: 'var(--color-ink-secondary)' }}>邮件通道</span>
-                <Tag tone={channelStatus.email ? 'green' : 'default'}>{channelStatus.email ? '正常' : '未配置'}</Tag>
+                <Tag tone={channelActivity.email ? 'green' : 'default'}>{channelActivity.email ? '有日志' : '静默'}</Tag>
               </span>
               <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 15 }}>
                 <span style={{ color: 'var(--color-ink-secondary)' }}>企业微信</span>
-                <Tag tone={channelStatus.wechatWork ? 'green' : 'default'}>{channelStatus.wechatWork ? '正常' : '未配置'}</Tag>
+                <Tag tone={channelActivity.wechatWork ? 'green' : 'default'}>{channelActivity.wechatWork ? '有日志' : '静默'}</Tag>
               </span>
               <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 15 }}>
                 <span style={{ color: 'var(--color-ink-secondary)' }}>Webhook</span>
-                <Tag tone={channelStatus.webhook ? 'green' : 'default'}>{channelStatus.webhook ? '已接入' : '未配置'}</Tag>
+                <Tag tone={channelActivity.webhook ? 'green' : 'default'}>{channelActivity.webhook ? '有日志' : '静默'}</Tag>
               </span>
             </div>
           </div>
