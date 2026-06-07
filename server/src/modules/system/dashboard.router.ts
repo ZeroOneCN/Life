@@ -358,7 +358,7 @@ export function createDashboardRouter() {
         title: '健康中心摘要',
         stats: {
           todayStepCount: stepToday,
-          latestWeight: fitnessWeightRecords.filter((item) => item.date && dayjs(item.date).isValid()).sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())[0]?.weight ?? null,
+          latestWeight: Number(fitnessWeightRecords.filter((item) => item.date && dayjs(item.date).isValid()).sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())[0]?.weight) || null,
           todayCalorieNet: Number((
             fitnessDietRecords.filter((item) => item.date === dayjs().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories || 0), 0)
             - fitnessExerciseRecords.filter((item) => item.date === dayjs().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories || 0), 0)
@@ -500,7 +500,7 @@ export function createDashboardRouter() {
       title: '健康中心摘要',
       stats: {
         todayStepCount: stepRecords.filter((item) => dayjs(item.record_time).isSame(dayjs(), 'day')).reduce((sum, item) => sum + item.steps, 0),
-        latestWeight: weightRecords.sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())[0]?.weight ?? null,
+        latestWeight: Number(weightRecords.sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())[0]?.weight) || null,
         todayCalorieNet: Number((
           dietRecords.filter((item) => item.date === dayjs().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories), 0)
           - exerciseRecords.filter((item) => item.date === dayjs().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories), 0)
