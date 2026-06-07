@@ -1,7 +1,5 @@
-import { InvestmentDashboard } from '../../components/investment/InvestmentDashboard';
-import { INVESTMENT_THEMES } from '../../components/investment/investment-themes';
+import { InvestmentTradePage } from '../../components/investment/InvestmentTradePage';
 
 export default function CryptoPage() {
-  const theme = INVESTMENT_THEMES.crypto;
-  return <InvestmentDashboard marketId="crypto" theme={theme} />;
+  return <InvestmentTradePage market="crypto" />;
 }

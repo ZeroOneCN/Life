@@ -9178,3 +9178,611 @@ select:focus-visible {
     display: none;
   }
 }
+
+/* ============================================
+   Investment Trade Page (本地存储实盘记录)
+   共享 Crypto / US Stock / HK Stock
+   ============================================ */
+
+.invest-trade-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  --invest-accent: #533afd;
+  --invest-accent-soft: rgba(83, 58, 253, 0.14);
+  --invest-up: #16a34a;
+  --invest-down: #ea2261;
+}
+
+.invest-trade-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+}
+
+.invest-trade-meta-divider {
+  color: var(--color-hairline);
+}
+
+.invest-trade-spacer {
+  flex: 1;
+}
+
+.invest-trade-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.invest-trade-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* 资金概览 */
+.invest-capital-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.invest-capital-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 12px;
+  background: var(--color-surface-1);
+}
+
+.invest-capital-cell span {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+  font-weight: 600;
+}
+
+.invest-capital-cell strong {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-ink);
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+}
+
+.invest-capital-cell small {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+}
+
+.invest-capital-cell-accent {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--invest-accent) 12%, var(--color-surface-1)) 0%,
+    var(--color-surface-1) 100%);
+  border-color: color-mix(in srgb, var(--invest-accent) 22%, var(--color-hairline));
+}
+
+/* 按标的盈亏排行 */
+.invest-symbol-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invest-symbol-row {
+  display: grid;
+  grid-template-columns: 32px minmax(120px, 1fr) minmax(0, 2fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-hairline) 60%, transparent);
+}
+
+.invest-symbol-row:last-child {
+  border-bottom: none;
+}
+
+.invest-symbol-rank {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.invest-symbol-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.invest-symbol-main strong {
+  font-size: var(--fs-body);
+  color: var(--color-ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.invest-symbol-main span {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invest-symbol-bar {
+  height: 6px;
+  background: color-mix(in srgb, var(--color-ink-mute) 10%, transparent);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.invest-symbol-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.invest-symbol-value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.invest-symbol-value strong {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.invest-symbol-value span {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+}
+
+/* 月度柱状图 */
+.invest-month-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 200px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.invest-month-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.invest-month-bar-wrap {
+  width: 100%;
+  height: 140px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.invest-month-bar {
+  width: 70%;
+  max-width: 36px;
+  min-height: 4px;
+  border-radius: 6px 6px 0 0;
+  transition: height 0.4s ease;
+}
+
+.invest-month-label {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+  font-weight: 600;
+}
+
+.invest-month-value {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* P&L 区间分布 */
+.invest-bucket-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invest-bucket-row {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) 60px 110px;
+  gap: 12px;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.invest-bucket-range {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.invest-bucket-bar {
+  height: 6px;
+  background: color-mix(in srgb, var(--color-ink-mute) 10%, transparent);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.invest-bucket-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.invest-bucket-count {
+  font-size: var(--fs-caption);
+  color: var(--color-ink);
+  font-weight: 600;
+  text-align: right;
+}
+
+.invest-bucket-pnl {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 净值曲线 */
+.invest-equity-curve {
+  width: 100%;
+  background: var(--color-surface-1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* 交易风格 */
+.invest-style-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.invest-style-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 10px;
+  background: var(--color-surface-1);
+}
+
+.invest-style-cell span {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+  font-weight: 600;
+}
+
+.invest-style-cell strong {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+}
+
+/* 持仓卡片 */
+.invest-position-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.invest-position-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 14px;
+  background: var(--color-surface-1);
+  position: relative;
+  overflow: hidden;
+}
+
+.invest-position-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--invest-accent);
+  opacity: 0.6;
+}
+
+.invest-position-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.invest-position-head strong {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--color-ink);
+  display: block;
+  letter-spacing: -0.01em;
+}
+
+.invest-position-head span {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+}
+
+.invest-position-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--color-hairline);
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.invest-position-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.invest-position-stats span {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+  font-weight: 600;
+}
+
+.invest-position-stats strong {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.invest-position-value {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.invest-position-value > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.invest-position-value span {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+  font-weight: 600;
+}
+
+.invest-position-value strong {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.invest-position-value small {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.invest-position-foot {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+}
+
+/* 未平仓交易列表 */
+.invest-open-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.invest-open-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-hairline) 60%, transparent);
+}
+
+.invest-open-item:last-child {
+  border-bottom: none;
+}
+
+.invest-open-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.invest-open-symbol {
+  font-weight: 700;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.invest-open-name {
+  color: var(--color-ink-mute);
+  font-size: var(--fs-caption);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.invest-open-meta {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.invest-open-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* 交易录入表单 */
+.invest-trade-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.invest-trade-form-modal {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.invest-form-actions {
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+}
+
+.invest-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+/* 出入金表单 */
+.invest-capital-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+/* 平仓对话框 */
+.invest-close-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.invest-close-form p {
+  color: var(--color-ink-secondary);
+  font-size: var(--fs-body);
+}
+
+.invest-close-preview {
+  padding: 10px 14px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 10px;
+  background: var(--color-surface-2);
+  font-size: var(--fs-body);
+}
+
+/* 响应式 */
+@media (max-width: 1024px) {
+  .invest-capital-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .invest-style-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .invest-capital-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .invest-style-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .invest-symbol-row {
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .invest-symbol-bar,
+  .invest-symbol-value {
+    grid-column: 2;
+  }
+
+  .invest-bucket-row {
+    grid-template-columns: 1fr 60px;
+  }
+
+  .invest-bucket-range,
+  .invest-bucket-pnl {
+    grid-column: span 2;
+  }
+
+  .invest-bucket-bar {
+    grid-column: 1;
+  }
+
+  .invest-bucket-count {
+    grid-column: 2;
+  }
+
+  .invest-trade-form {
+    grid-template-columns: 1fr;
+  }
+
+  .invest-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .invest-open-item {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .invest-open-actions {
+    grid-column: 1;
+  }
+}
