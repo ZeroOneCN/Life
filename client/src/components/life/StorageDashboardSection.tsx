@@ -3,9 +3,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -230,32 +227,48 @@ export function StorageDashboardSection({
                   <span>当前最重的预算投入分布</span>
                 </div>
                 {priceBreakdown.length ? (
-                  <div className="storage-price-layout">
-                    <div className="storage-price-chart">
-                      <ResponsiveContainer width="100%" height={240}>
-                        <PieChart>
-                          <Pie
-                            data={priceBreakdown}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={48}
-                            outerRadius={84}
-                            paddingAngle={3}
-                          >
-                            {priceBreakdown.map((item) => (
-                              <Cell key={item.id} fill={item.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            contentStyle={tooltipStyle}
-                            formatter={(value) => [formatStorageMoney(Number(value ?? 0)), '购买价格']}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
+                  (() => {
+                    const total = priceBreakdown.reduce((sum, item) => sum + (item.value || 0), 0) || 1;
+                    return (
+                      <div className="storage-price-layout">
+                        <div
+                          className="storage-price-bar"
+                          role="img"
+                          aria-label="购入价格分布堆叠条"
+                        >
+                          {priceBreakdown.map((item) => {
+                            const percent = ((item.value || 0) / total) * 100;
+                            if (percent <= 0) return null;
+                            return (
+                              <span
+                                key={item.id}
+                                className="storage-price-bar-segment"
+                                style={{ width: `${percent}%`, background: item.color }}
+                                title={`${item.name} · ${formatStorageMoney(item.value || 0)} · ${percent.toFixed(0)}%`}
+                              />
+                            );
+                          })}
+                        </div>
+                        <ul className="storage-price-legend">
+                          {priceBreakdown.map((item) => {
+                            const percent = ((item.value || 0) / total) * 100;
+                            return (
+                              <li key={item.id} className="storage-price-legend-item">
+                                <span className="storage-price-legend-dot" style={{ background: item.color }} />
+                                <span className="storage-price-legend-name" title={item.name}>{item.name}</span>
+                                <span className="storage-price-legend-percent">{percent.toFixed(0)}%</span>
+                                <span className="storage-price-legend-value">{formatStorageMoney(item.value || 0)}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        <div className="storage-price-total">
+                          <span>总计</span>
+                          <strong>{formatStorageMoney(total)}</strong>
+                        </div>
+                      </div>
+                    );
+                  })()
                 ) : (
                   <EmptyState title="暂无购入价格分布" description="物品数量增加后，价格分布图会更有参考价值。" icon="🧾" />
                 )}
