@@ -194,25 +194,6 @@ export default function LoanPage() {
         )}
       />
 
-      <SectionCard
-        title="当前口径"
-        description={`页面默认按当前登录用户聚合，共 ${platforms.length} 个平台、${bills.length} 笔账单。`}
-      >
-        <div className="loan-context-grid">
-          <div className="loan-context-summary">
-            {overview.overdueCount > 0 ? (
-              <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}>⚠ {overview.overdueCount} 笔逾期</span>
-            ) : (
-              <span style={{ color: 'var(--color-success)' }}>✓ 无逾期账单</span>
-            )}
-            {overview.upcomingCount > 0 ? (
-              <span>📅 {overview.upcomingCount} 笔即将到期</span>
-            ) : null}
-            <span>💰 待还 {formatLoanAmount(overview.totalUnpaid)}</span>
-          </div>
-        </div>
-      </SectionCard>
-
       <StatGrid items={summaryCards} />
 
       <SectionCard

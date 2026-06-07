@@ -3070,7 +3070,6 @@ textarea {
   flex-shrink: 0;
 }
 
-.loan-context-grid,
 .loan-dashboard-grid,
 .loan-platform-grid,
 .loan-platform-form-grid,
@@ -3085,12 +3084,6 @@ textarea {
   gap: 16px;
 }
 
-.loan-context-grid {
-  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.1fr);
-  align-items: end;
-}
-
-.loan-context-summary,
 .loan-dashboard-actions,
 .loan-summary-bar,
 .loan-summary-card-meta,
@@ -3101,7 +3094,6 @@ textarea {
   flex-wrap: wrap;
 }
 
-.loan-context-summary,
 .loan-summary-card-meta,
 .loan-summary-card-metrics {
   color: var(--color-ink-mute);
@@ -3664,7 +3656,6 @@ textarea {
   .rent-statistics-grid,
   .rent-channel-form-grid,
   .rent-detail-grid,
-  .loan-context-grid,
   .loan-dashboard-grid,
   .loan-platform-grid,
   .loan-platform-form-grid,
@@ -3716,7 +3707,6 @@ textarea {
   .rent-context-summary,
   .rent-breakdown-head,
   .rent-breakdown-foot,
-  .loan-context-summary,
   .loan-dashboard-actions,
   .loan-summary-bar,
   .loan-platform-card-head,
@@ -7859,9 +7849,6 @@ select:focus-visible {
 
 /* ---------- 3.10 Loan 借贷 ---------- */
 @media (max-width: 768px) {
-  .loan-context-grid {
-    grid-template-columns: 1fr !important;
-  }
   .loan-dashboard-grid {
     grid-template-columns: 1fr !important;
   }
