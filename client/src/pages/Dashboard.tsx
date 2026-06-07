@@ -211,7 +211,10 @@ export default function Dashboard() {
     });
     summary.agenda.slice(0, 4).forEach((item) => {
       const sortKey = item.targetDate ? new Date(item.targetDate).getTime() : 0;
-      items.push({ time: item.targetDate ? item.targetDate.replace('T', ' ').slice(0, 19) : '-', module: item.module, title: item.title, sortKey });
+      const raw = item.targetDate ? item.targetDate.replace('T', ' ').slice(0, 19) : '-';
+      /* 日期只有 YYYY-MM-DD 时补全为 00:00:00 */
+      const time = raw !== '-' && raw.length <= 10 ? `${raw} 00:00:00` : raw;
+      items.push({ time, module: item.module, title: item.title, sortKey });
     });
     return items.sort((a, b) => b.sortKey - a.sortKey);
   }, [summary]);
