@@ -51,6 +51,8 @@
   --color-warning: #ffbd2e;
   --color-warning-bg: rgba(255,189,46,0.10);
   --color-warning-strong: #d97706;
+  --color-warning-muted: #fcd34d;
+  --color-warning-subtle: #fffbeb;
 
   /* Module Theme 模块主题色（dashboard / sidebar 标签使用） */
   --color-module-step-bg: #ede9fe;
@@ -1162,7 +1164,7 @@ textarea {
   gap: 16px;
 }
 
-.fitness-chart-card,
+.chart-card,
 .fitness-insight-card {
   display: flex;
   flex-direction: column;
@@ -1174,14 +1176,14 @@ textarea {
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.fitness-chart-card:hover,
+.chart-card:hover,
 .fitness-insight-card:hover {
   transform: translateY(-2px);
   border-color: var(--color-hairline-strong);
   box-shadow: 0 6px 20px var(--shadow-blue);
 }
 
-.fitness-chart-card:active,
+.chart-card:active,
 .fitness-insight-card:active {
   transform: translateY(0) scale(0.99);
   transition-duration: 0.08s;
@@ -1806,7 +1808,7 @@ textarea {
   .stat-card,
   .dash-card,
   .clickable-card,
-  .fitness-chart-card,
+  .chart-card,
   .forex-chart-card,
   .fitness-insight-card,
   .forex-insight-card,
@@ -1846,7 +1848,7 @@ textarea {
   .card.animate-in,
   .stat-card.animate-in,
   .dash-masonry-item.animate-in,
-  .fitness-chart-card.animate-in,
+  .chart-card.animate-in,
   .forex-chart-card.animate-in,
   .storage-overview-grid .stat-card.animate-in,
   .shopping-ledger-card.animate-in,
@@ -2554,7 +2556,7 @@ textarea {
 }
 
 .travel-chart-card-full,
-.travel-dashboard-grid > .fitness-chart-card:last-child {
+.travel-dashboard-grid > .chart-card:last-child {
   grid-column: 1 / -1;
 }
 
@@ -4180,7 +4182,7 @@ textarea {
   display: flex;
   gap: 2px;
 }
-.pnl-year-btn {
+.pnl-year-button {
   padding: 2px 10px;
   border: 1px solid var(--color-hairline);
   border-radius: 6px;
@@ -4192,11 +4194,11 @@ textarea {
   transition: all 0.1s ease;
   line-height: 1.5;
 }
-.pnl-year-btn:hover {
+.pnl-year-button:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
-.pnl-year-btn.is-active {
+.pnl-year-button.is-active {
   background: var(--color-primary);
   color: #fff;
   border-color: var(--color-primary);
@@ -6386,7 +6388,7 @@ textarea {
 }
 
 .p-high { background: var(--color-danger-bg, #fee2e2); color: var(--color-danger-text, #991b1b); }
-.p-med { background: #fef3c7; color: #92400e; }
+.p-med { background: var(--color-warning-subtle); color: var(--color-warning-strong); }
 .p-low { background: var(--color-surface-3); color: var(--color-ink-secondary); }
 
 /* ===== 时间线/动态卡片 ===== */
@@ -6906,9 +6908,9 @@ textarea {
 }
 
 .auth-banner.is-warning {
-  background: #fffbeb;
-  border-color: #fcd34d;
-  color: #92400e;
+  background: var(--color-warning-subtle);
+  border-color: var(--color-warning-muted);
+  color: var(--color-warning-strong);
 }
 
 .auth-banner.is-info {
@@ -8092,7 +8094,7 @@ select:focus-visible {
     width: 100%;
     justify-content: center;
   }
-  .pnl-year-btn {
+  .pnl-year-button {
     padding: 1px 5px;
     font-size: 10px;
   }
