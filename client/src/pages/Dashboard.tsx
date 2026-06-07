@@ -454,7 +454,7 @@ export default function Dashboard() {
             {timelineItems.length > 0 ? (
               <>
                 {/* 表头 */}
-                <div style={{ display: 'grid', gridTemplateColumns: '150px 70px 1fr', gap: 12, padding: '8px 4px', borderBottom: '1px solid var(--color-surface-3)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(160px,auto) minmax(60px,auto) 1fr', gap: 16, padding: '8px 0', borderBottom: '1px solid var(--color-surface-3)' }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink-mute)' }}>日期时间</span>
                   <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink-mute)' }}>类型</span>
                   <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink-mute)' }}>具体内容</span>
@@ -462,8 +462,8 @@ export default function Dashboard() {
                 {/* 数据行 */}
                 {timelineItems.map((item, i) => (
                   <div key={i} style={{
-                    display: 'grid', gridTemplateColumns: '150px 70px 1fr', gap: 12,
-                    padding: '10px 4px', borderBottom: i < timelineItems.length - 1 ? '1px solid var(--color-surface-3)' : 'none',
+                    display: 'grid', gridTemplateColumns: 'minmax(160px,auto) minmax(60px,auto) 1fr', gap: 16,
+                    padding: '12px 0', borderBottom: i < timelineItems.length - 1 ? '1px solid var(--color-surface-3)' : 'none',
                     alignItems: 'center',
                   }}>
                     <span style={{ fontSize: 13, color: 'var(--color-ink-secondary)', whiteSpace: 'nowrap' }}>{item.time}</span>
