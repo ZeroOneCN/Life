@@ -150,8 +150,10 @@ export default function StepPage() {
   }, [reload, showToast]);
 
   const handleSelectHour = (hour: StepHour) => {
-    setSelectedHour(hour);
-    setRecordTime((previous) => buildStepRecordTime(previous || getTodayEndDateTime(), hour));
+    // 选择 23 点时自动切换为全天模式
+    const targetHour = hour === 23 ? null : hour;
+    setSelectedHour(targetHour);
+    setRecordTime((previous) => buildStepRecordTime(previous || getTodayEndDateTime(), targetHour));
   };
 
   const handleRecordTimeChange = (value: string) => {
@@ -163,6 +165,16 @@ export default function StepPage() {
     setStepsInput('');
 
     if (hour === null) {
+      // 全天保存完毕后，跳转到次日 08:00
+      setSelectedHour(8);
+      const nextDay = dayjs().add(1, 'day').format('YYYY-MM-DDTHH:mm');
+      setRecordTime(buildStepRecordTime(nextDay, 8));
+      focusStepsInput();
+      return;
+    }
+
+    // 23 点也自动跳转全天（兜底）
+    if (hour === 23) {
       setSelectedHour(null);
       setRecordTime(getTodayEndDateTime());
       focusStepsInput();
