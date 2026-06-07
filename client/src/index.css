@@ -1373,6 +1373,14 @@ textarea {
   padding: 6px 14px;
 }
 
+.tag-muted {
+  background: color-mix(in srgb, var(--color-ink-mute) 14%, transparent);
+  color: var(--color-ink-mute);
+  font-weight: 600;
+  font-size: var(--fs-body);
+  padding: 6px 14px;
+}
+
 .table-wrap {
   overflow: auto;
 }
@@ -5068,6 +5076,12 @@ textarea {
    Storage Dashboard v2 — 信息流 + Bento 布局
    ============================================ */
 
+.storage-dashboard-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 .storage-dashboard-range {
   display: inline-flex;
   align-items: center;
@@ -5290,10 +5304,10 @@ textarea {
 
 .storage-activity-item {
   display: grid;
-  grid-template-columns: 88px 64px minmax(0, 1fr) auto auto 60px;
-  gap: 12px;
+  grid-template-columns: 92px auto minmax(0, 1fr) auto auto 56px;
+  gap: 14px;
   align-items: center;
-  padding: 10px 4px;
+  padding: 12px 4px;
   border-bottom: 1px solid color-mix(in srgb, var(--color-hairline) 70%, transparent);
   min-width: 0;
   font-size: var(--fs-caption);
@@ -5307,27 +5321,6 @@ textarea {
   color: var(--color-ink-mute);
   font-variant-numeric: tabular-nums;
   font-weight: 500;
-}
-
-.storage-activity-status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-.storage-activity-status-active {
-  background: color-mix(in srgb, #27a644 14%, transparent);
-  color: #1f7c34;
-}
-
-.storage-activity-status-archived {
-  background: color-mix(in srgb, var(--color-ink-mute) 14%, transparent);
-  color: var(--color-ink-mute);
 }
 
 .storage-activity-name {

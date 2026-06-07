@@ -167,6 +167,7 @@ export function StorageDashboardSection({
       description="数据概览、活动流与成本分析"
       action={rangePills}
     >
+      <div className="storage-dashboard-stack">
       {/* Hero 4 张数字卡 */}
       <div className="storage-hero-grid">
         <div className="storage-hero-card">
@@ -275,7 +276,7 @@ export function StorageDashboardSection({
             {activityFeed.map((item) => (
               <li key={item.id} className="storage-activity-item">
                 <span className="storage-activity-date">{formatActivityDate(item.purchaseDate)}</span>
-                <span className={`storage-activity-status storage-activity-status-${item.status}`}>
+                <span className={`tag ${item.status === 'active' ? 'tag-green' : 'tag-muted'}`}>
                   {item.status === 'active' ? '使用中' : '已归档'}
                 </span>
                 <span className="storage-activity-name" title={item.itemName}>{item.itemName}</span>
@@ -316,6 +317,7 @@ export function StorageDashboardSection({
       ) : null}
 
       {loading ? <div className="storage-dashboard-loading">加载中…</div> : null}
+      </div>
     </SectionCard>
   );
 }
