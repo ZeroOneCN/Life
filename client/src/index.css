@@ -365,7 +365,7 @@ textarea {
 }
 
 .topbar-user-trigger:focus-visible {
-  outline: none;
+  outline-offset: 2px;
 }
 
 .topbar-user-avatar {
@@ -511,7 +511,7 @@ textarea {
 
 .menu-link:focus-visible,
 .icon-button:focus-visible {
-  outline: none;
+  outline-offset: 2px;
 }
 
 .menu-link.is-active {
@@ -1273,7 +1273,7 @@ textarea {
   white-space: nowrap;
 }
 .btn:focus-visible {
-  outline: none;
+  outline-offset: 2px;
 }
 .btn:hover {
   transform: translateY(-1px);
@@ -1784,15 +1784,13 @@ textarea {
 }
 
 /* ========== 可访问性：键盘焦点可见 ==========
-.card:focus-visible,
-.stat-card:focus-visible,
+   全局 :focus-visible 已提供 2px outline 环（见 § 全局焦点环），
+   此处仅对卡片类做偏移增强让焦点环远离卡片边界 */
 .dash-card:focus-visible,
 .channel-card:focus-visible,
-.switch-card:focus-visible,
-.btn:focus-visible {
-  outline: none;
+.switch-card:focus-visible {
+  outline-offset: 4px;
 }
-*/
 
 /* ========== 移动端触摸优化 ========== */
 @media (hover: none) and (pointer: coarse) {
@@ -7922,16 +7920,20 @@ textarea {
   text-transform: uppercase;
 }
 
-/* 全局 focus 无外圈 */
+/* 全局焦点环：键盘可访问性
+   抑制 :focus（鼠标点击）默认环，但 :focus-visible（键盘 Tab）显示高对比环 */
+:focus { outline: none; }
 :focus-visible {
-  outline: none;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: inherit;
 }
-button:focus-visible,
-a:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
   outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft, var(--color-primary-bg));
 }
 
 /* ===== Mobile Responsive Adaptation ===== */
