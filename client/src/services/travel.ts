@@ -54,6 +54,18 @@ const CATEGORY_LABELS: Record<TravelCategory, string> = {
   other: '其他',
 };
 
+/* 中文旧值或自定义输入回退映射 */
+const CATEGORY_LABEL_FALLBACKS: Record<string, TravelCategory> = {
+  交通: 'transport',
+  住宿: 'hotel',
+  酒店: 'hotel',
+  餐饮: 'food',
+  美食: 'food',
+  门票: 'ticket',
+  购物: 'shopping',
+  其他: 'other',
+};
+
 const FALLBACK_PAY_CHANNELS = [
   { value: 'ALIPAY', label: '支付宝' },
   { value: 'WECHAT', label: '微信' },
@@ -147,8 +159,18 @@ function normalizeBookId(value: string) {
   return value.trim();
 }
 
-export function getTravelCategoryLabel(category: TravelCategory) {
-  return CATEGORY_LABELS[category] || category || '其他';
+export function getTravelCategoryLabel(category: TravelCategory | string) {
+  if (!category) return '其他';
+  /* 英文枚举走主映射 */
+  if (Object.prototype.hasOwnProperty.call(CATEGORY_LABELS, category)) {
+    return CATEGORY_LABELS[category as TravelCategory];
+  }
+  /* 中文/旧值/自定义走回退映射（找到则用对应中文标签） */
+  const normalized = CATEGORY_LABEL_FALLBACKS[category as string];
+  if (normalized) {
+    return CATEGORY_LABELS[normalized];
+  }
+  return category as string;
 }
 
 export function getTravelPayChannelLabel(value: string, payChannels: TravelPayChannel[]) {
@@ -831,7 +853,8 @@ export function buildTravelCategoryBreakdown(records: TravelExpenseRecord[]): Tr
   const grouped = new Map<TravelCategory, TravelBreakdownPoint>();
 
   records.forEach((record) => {
-    const current = grouped.get(record.category) ?? {
+    const normalized = (CATEGORY_LABEL_FALLBACKS[record.category] ?? record.category) as TravelCategory;
+    const current = grouped.get(normalized) ?? {
       name: getTravelCategoryLabel(record.category),
       count: 0,
       totalAmount: 0,
@@ -842,7 +865,7 @@ export function buildTravelCategoryBreakdown(records: TravelExpenseRecord[]): Tr
     current.count += 1;
     current.totalAmount += record.amount;
     current.savedAmount += record.discountAmount;
-    grouped.set(record.category, current);
+    grouped.set(normalized, current);
   });
 
   return Array.from(grouped.values())
