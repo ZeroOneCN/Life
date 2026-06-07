@@ -16,6 +16,7 @@ export interface ApiErrorShape {
   code: number;
   message: string;
   data?: unknown;
+  details?: unknown;
 }
 
 export interface ApiClientOptions {

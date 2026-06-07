@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import dayjs from 'dayjs';
 import {
   Area,
@@ -66,7 +66,7 @@ const tooltipStyle = {
   border: '1px solid var(--color-hairline)',
   borderRadius: 8,
   color: 'var(--color-ink)',
-  fontSize: 14,
+  fontSize: 'var(--fs-label)',
 };
 
 function ChartCard({
@@ -96,10 +96,10 @@ function renderMarkdown(text: string) {
   let html = text
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--color-ink)">$1</strong>')
-    .replace(/`(.+?)`/g, '<code style="background:var(--color-surface-3);padding:2px 6px;border-radius:4px;font-size:13px">$1</code>')
-    .replace(/^### (.+)$/gm, '<h4 style="font-size:16px;font-weight:600;margin:14px 0 6px;color:var(--color-ink)">$1</h4>')
-    .replace(/^## (.+)$/gm, '<h3 style="font-size:18px;font-weight:600;margin:16px 0 8px;color:var(--color-ink)">$1</h3>')
-    .replace(/^# (.+)$/gm, '<h2 style="font-size:20px;font-weight:600;margin:18px 0 10px;color:var(--color-ink)">$1</h2>')
+    .replace(/`(.+?)`/g, '<code style="background:var(--color-surface-3);padding:2px 6px;border-radius:4px;font-size: var(--fs-caption)">$1</code>')
+    .replace(/^### (.+)$/gm, '<h4 style="font-size: var(--fs-body);font-weight:600;margin:14px 0 6px;color:var(--color-ink)">$1</h4>')
+    .replace(/^## (.+)$/gm, '<h3 style="font-size: var(--fs-subtitle);font-weight:600;margin:16px 0 8px;color:var(--color-ink)">$1</h3>')
+    .replace(/^# (.+)$/gm, '<h2 style="font-size: var(--fs-title);font-weight:600;margin:18px 0 10px;color:var(--color-ink)">$1</h2>')
     .replace(/^- (.+)$/gm, '<li style="margin-left:16px;color:var(--color-ink-muted)">$1</li>')
     .replace(/^\d+\. (.+)$/gm, '<li style="margin-left:16px;color:var(--color-ink-muted)">$1</li>')
     .replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid var(--color-hairline);margin:12px 0">')
@@ -200,35 +200,35 @@ function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCo
           <div className="pnl-year-picker">
             <button
               type="button"
-              className={`pnl-year-btn ${viewMonth.year() === yearOptions[0] ? 'is-active' : ''}`}
+              className={`pnl-year-button ${viewMonth.year() === yearOptions[0] ? 'is-active' : ''}`}
               onClick={() => setViewMonth((m) => m.year(yearOptions[0]))}
             >
               {yearOptions[0]}
             </button>
             <button
               type="button"
-              className={`pnl-year-btn ${viewMonth.year() === yearOptions[1] ? 'is-active' : ''}`}
+              className={`pnl-year-button ${viewMonth.year() === yearOptions[1] ? 'is-active' : ''}`}
               onClick={() => setViewMonth((m) => m.year(yearOptions[1]))}
             >
               {yearOptions[1]}
             </button>
             <button
               type="button"
-              className={`pnl-year-btn ${viewMonth.year() === yearOptions[2] ? 'is-active' : ''}`}
+              className={`pnl-year-button ${viewMonth.year() === yearOptions[2] ? 'is-active' : ''}`}
               onClick={() => setViewMonth((m) => m.year(yearOptions[2]))}
             >
               {yearOptions[2]}
             </button>
             <button
               type="button"
-              className={`pnl-year-btn ${viewMonth.year() === yearOptions[3] ? 'is-active' : ''}`}
+              className={`pnl-year-button ${viewMonth.year() === yearOptions[3] ? 'is-active' : ''}`}
               onClick={() => setViewMonth((m) => m.year(yearOptions[3]))}
             >
               {yearOptions[3]}
             </button>
             <button
               type="button"
-              className={`pnl-year-btn ${viewMonth.year() === yearOptions[4] ? 'is-active' : ''}`}
+              className={`pnl-year-button ${viewMonth.year() === yearOptions[4] ? 'is-active' : ''}`}
               onClick={() => setViewMonth((m) => m.year(yearOptions[4]))}
             >
               {yearOptions[4]}
@@ -455,7 +455,7 @@ export function ForexDashboardSection({
                   </defs>
                   <XAxis
                     dataKey="date"
-                    tick={{ fill: 'var(--color-ink-subtle)', fontSize: 11 }}
+                    tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-overline)' }}
                     tickFormatter={(value) => String(value ?? '').slice(5)}
                     interval={0}
                     angle={-40}
@@ -463,7 +463,7 @@ export function ForexDashboardSection({
                     height={70}
                     minTickGap={16}
                   />
-                  <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                  <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
                   <Tooltip
                     contentStyle={tooltipStyle}
                     formatter={(value) => [formatForexMoney(Number(value ?? 0)), '净盈亏']}
@@ -540,16 +540,16 @@ export function ForexDashboardSection({
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap', marginTop: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: 'var(--color-success)' }} />
-                    <span style={{ fontSize: 14, color: 'var(--color-ink-muted)' }}>盈利 {winCount} 笔</span>
+                    <span style={{ fontSize: 'var(--fs-label)', color: 'var(--color-ink-muted)' }}>盈利 {winCount} 笔</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: 'var(--color-danger)' }} />
-                    <span style={{ fontSize: 14, color: 'var(--color-ink-muted)' }}>亏损 {lossCount} 笔</span>
+                    <span style={{ fontSize: 'var(--fs-label)', color: 'var(--color-ink-muted)' }}>亏损 {lossCount} 笔</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: 13, color: 'var(--color-ink-subtle)' }}>盈亏比</span>
+                    <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--color-ink-subtle)' }}>盈亏比</span>
                     <span style={{
-                      fontSize: 15,
+                      fontSize: 'var(--fs-label)',
                       fontWeight: 600,
                       fontFamily: 'var(--font-mono)',
                       color: summary.profitLossRatio >= 1 ? 'var(--color-success)' : 'var(--color-danger)',
@@ -639,28 +639,28 @@ export function ForexDashboardSection({
                 <div key={item.instrument} className="forex-instrument-summary-card">
                   <div className="forex-instrument-summary-card-head">
                     <strong>{getForexInstrumentLabel(item.instrument)}</strong>
-                    <span style={{ color: item.netPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)', fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 15 }}>
+                    <span style={{ color: item.netPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)', fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 'var(--fs-label)' }}>
                       {formatForexAmount(item.netPnl)}
                     </span>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 10 }}>
                     <div>
-                      <span style={{ display: 'block', fontSize: 12, color: 'var(--color-ink-subtle)' }}>笔数</span>
-                      <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--color-ink)' }}>{item.tradeCount}</span>
+                      <span style={{ display: 'block', fontSize: 'var(--fs-meta)', color: 'var(--color-ink-subtle)' }}>笔数</span>
+                      <span style={{ fontSize: 'var(--fs-label)', fontWeight: 500, color: 'var(--color-ink)' }}>{item.tradeCount}</span>
                     </div>
                     <div>
-                      <span style={{ display: 'block', fontSize: 12, color: 'var(--color-ink-subtle)' }}>均盈</span>
-                      <span style={{ fontSize: 15, fontFamily: 'var(--font-mono)', color: 'var(--color-ink-muted)' }}>
+                      <span style={{ display: 'block', fontSize: 'var(--fs-meta)', color: 'var(--color-ink-subtle)' }}>均盈</span>
+                      <span style={{ fontSize: 'var(--fs-label)', fontFamily: 'var(--font-mono)', color: 'var(--color-ink-muted)' }}>
                         {item.tradeCount > 0 ? formatForexMoney(item.grossPnl / item.tradeCount) : '--'}
                       </span>
                     </div>
                     <div>
-                      <span style={{ display: 'block', fontSize: 12, color: 'var(--color-ink-subtle)' }}>胜率</span>
-                      <span style={{ fontSize: 15, color: 'var(--color-ink-muted)' }}>{formatForexPercent(item.winRate)}</span>
+                      <span style={{ display: 'block', fontSize: 'var(--fs-meta)', color: 'var(--color-ink-subtle)' }}>胜率</span>
+                      <span style={{ fontSize: 'var(--fs-label)', color: 'var(--color-ink-muted)' }}>{formatForexPercent(item.winRate)}</span>
                     </div>
                     <div>
-                      <span style={{ display: 'block', fontSize: 12, color: 'var(--color-ink-subtle)' }}>方向</span>
-                      <span style={{ fontSize: 14, color: 'var(--color-ink-muted)' }}>{item.longCount}多 / {item.shortCount}空</span>
+                      <span style={{ display: 'block', fontSize: 'var(--fs-meta)', color: 'var(--color-ink-subtle)' }}>方向</span>
+                      <span style={{ fontSize: 'var(--fs-label)', color: 'var(--color-ink-muted)' }}>{item.longCount}多 / {item.shortCount}空</span>
                     </div>
                   </div>
                 </div>

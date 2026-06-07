@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+﻿import { useMemo, type ReactNode } from 'react';
 import {
   Bar,
   BarChart,
@@ -48,7 +48,7 @@ function ChartCard({
   className?: string;
 }) {
   return (
-    <div className={`fitness-chart-card ${className ?? ''}`.trim()}>
+    <div className={`chart-card ${className ?? ''}`.trim()}>
       <div className="fitness-chart-header">
         <strong>{title}</strong>
         <span>{description}</span>
@@ -197,12 +197,12 @@ export function RentStatisticsSection({
                 <ResponsiveContainer width="100%" height={320}>
                   <BarChart data={channelBreakdown} layout="vertical" margin={{ left: 18 }}>
                     <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                    <XAxis type="number" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
                     <YAxis
                       type="category"
                       dataKey="channelName"
                       width={86}
-                      tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }}
+                      tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }}
                     />
                     <Tooltip
                       contentStyle={tooltipStyle}

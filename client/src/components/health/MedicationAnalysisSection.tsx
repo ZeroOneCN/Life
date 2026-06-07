@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+﻿import { useMemo, useState, type ReactNode } from 'react';
 import {
   Bar,
   BarChart,
@@ -16,6 +16,7 @@ import {
 
 import { EmptyState, SectionCard, StatGrid } from '../page';
 import { Field } from '../ui';
+import { CHART_CATEGORY_8 } from '../../lib/chartPalette';
 import {
   MEDICATION_TIME_COLORS,
   MEDICATION_TREND_RANGE_OPTIONS,
@@ -68,7 +69,7 @@ function ChartCard({
   children: ReactNode;
 }) {
   return (
-    <div className="fitness-chart-card">
+    <div className="chart-card">
       <div className="fitness-chart-header">
         <strong>{title}</strong>
         <span>{description}</span>
@@ -168,8 +169,8 @@ export function MedicationAnalysisSection({
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={trendData}>
                     <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
+                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
                     <Tooltip
                       contentStyle={tooltipStyle}
                       itemSorter={(item) => {
@@ -236,8 +237,8 @@ export function MedicationAnalysisSection({
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={timeOfDayData}>
                     <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
+                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
                     <Tooltip
                       contentStyle={tooltipStyle}
                       formatter={(value) => [`${Number(value ?? 0).toFixed(1)}`, '累计用量']}

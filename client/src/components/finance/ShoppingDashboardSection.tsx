@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+﻿import { useMemo, type ReactNode } from 'react';
 import {
   Bar,
   BarChart,
@@ -56,7 +56,7 @@ function ChartCard({
   children: ReactNode;
 }) {
   return (
-    <div className="fitness-chart-card">
+    <div className="chart-card">
       <div className="fitness-chart-header">
         <strong>{title}</strong>
         <span>{description}</span>
@@ -147,8 +147,8 @@ export function ShoppingDashboardSection({
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={monthlyTrend}>
                     <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
+                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
                     <Tooltip
                       contentStyle={tooltipStyle}
                       formatter={(value, name, item) => {
@@ -212,8 +212,8 @@ export function ShoppingDashboardSection({
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={platformBreakdown.slice(0, 6)} layout="vertical" margin={{ left: 20 }}>
                     <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                    <YAxis type="category" dataKey="name" width={72} tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                    <XAxis type="number" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
+                    <YAxis type="category" dataKey="name" width={72} tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
                     <Tooltip
                       contentStyle={tooltipStyle}
                       formatter={(value) => [formatShoppingAmount(Number(value ?? 0), currencyMode, usdtRate), '累计金额']}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import {
   Area,
@@ -289,7 +289,7 @@ export function StepTrendSection({
           ) : trendData.length ? (
             <div className="step-chart-canvas" key={`${granularity}-${chartHourFilter}`} style={{ position: 'relative' }}>
               {trendLoading && (
-                <div style={{ position: 'absolute', top: 8, right: 8, fontSize: 12, color: 'var(--color-ink-subtle)', zIndex: 1 }}>
+                <div style={{ position: 'absolute', top: 8, right: 8, fontSize: 'var(--fs-meta)', color: 'var(--color-ink-subtle)', zIndex: 1 }}>
                   加载中…
                 </div>
               )}
@@ -304,13 +304,13 @@ export function StepTrendSection({
                   <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
                   <XAxis
                     dataKey="label"
-                    tick={{ fill: 'var(--color-ink-subtle)', fontSize: 11 }}
+                    tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-overline)' }}
                     interval="preserveStartEnd"
                     angle={-45}
                     textAnchor="end"
                     height={70}
                   />
-                  <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                  <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
                   <Tooltip
                     contentStyle={{
                       background: 'var(--color-surface-1)',

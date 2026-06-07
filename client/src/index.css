@@ -95,6 +95,14 @@
   --fs-label: 14px;     /* T5 表单label/表头/描述 */
   --fs-caption: 13px;   /* T6 注释/元数据 */
   --fs-overline: 11px;  /* T7 Pill标签/Badge/Eyebrow */
+  /* Extended 扩展级（数据/统计/巨字） */
+  --fs-mega: 48px;      /* T0 巨型数字（步数/收益） */
+  --fs-display-lg: 40px;/* T1+ 超大主标题/核心数据 */
+  --fs-stat: 28px;      /* 数据块主指标 */
+  --fs-stat-sm: 22px;   /* 数据块副指标 */
+  --fs-subtitle: 18px;  /* 卡片内副标题 */
+  --fs-meta: 12px;      /* 弱化元数据 */
+  --fs-tag: 10px;       /* 紧凑 pill/优先级标 */
 
   /* Line Height */
   --lh-tight: 1.1;
@@ -1125,7 +1133,7 @@ textarea {
 }
 
 .fitness-entry-grid .field-label {
-  font-size: 14px;
+  font-size: var(--fs-label);
 }
 
 .fitness-entry-grid .field {
@@ -1650,7 +1658,7 @@ textarea {
 
 .checkup-entry-grid .field-label,
 .checkup-batch-row .field-label {
-  font-size: 14px;
+  font-size: var(--fs-label);
 }
 
 .checkup-entry-grid .field,
@@ -2052,7 +2060,7 @@ textarea {
 .medication-entry-grid .field-label,
 .medication-purchase-grid .field-label,
 .medication-filter-grid .field-label {
-  font-size: 14px;
+  font-size: var(--fs-label);
 }
 
 .medication-entry-grid .field,
@@ -2457,7 +2465,7 @@ textarea {
 }
 
 .shopping-platform-card-amount {
-  font-size: 24px;
+  font-size: var(--fs-heading);
   letter-spacing: -0.03em;
 }
 
@@ -3450,7 +3458,7 @@ textarea {
 }
 
 .theme-toggle {
-  font-size: 20px;
+  font-size: var(--fs-title);
   line-height: 1;
   min-width: 44px;
 }
@@ -3498,7 +3506,7 @@ textarea {
   justify-content: center;
   background: color-mix(in srgb, var(--color-primary) 18%, transparent);
   color: var(--color-primary-hover);
-  font-size: 28px;
+  font-size: var(--fs-stat);
   font-weight: 700;
 }
 
@@ -4188,7 +4196,7 @@ textarea {
   border-radius: 6px;
   background: var(--color-surface);
   color: var(--color-ink-muted);
-  font-size: 14px;
+  font-size: var(--fs-label);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.1s ease;
@@ -4221,7 +4229,7 @@ textarea {
   border-radius: 5px;
   background: var(--color-surface);
   color: var(--color-ink);
-  font-size: 14px;
+  font-size: var(--fs-label);
   cursor: pointer;
   transition: all 0.1s ease;
 }
@@ -4232,7 +4240,7 @@ textarea {
 }
 
 .pnl-calendar-title {
-  font-size: 13px;
+  font-size: var(--fs-caption);
   color: var(--color-ink);
   min-width: 40px;
   text-align: center;
@@ -4241,7 +4249,7 @@ textarea {
 .pnl-calendar-summary {
   display: flex;
   gap: 14px;
-  font-size: 13px;
+  font-size: var(--fs-caption);
   color: var(--color-ink-muted);
   align-items: center;
 }
@@ -4250,7 +4258,7 @@ textarea {
   font-weight: 700;
   color: var(--color-ink);
   font-family: var(--font-mono);
-  font-size: 15px;
+  font-size: var(--fs-label);
 }
 
 /* 日历网格 - 填满父容器 */
@@ -4285,7 +4293,7 @@ textarea {
   aspect-ratio: auto;
   height: 20px;
   cursor: default;
-  font-size: 10px;
+  font-size: var(--fs-tag);
   font-weight: 600;
   color: var(--color-ink-subtle);
   background: transparent !important;
@@ -4315,7 +4323,7 @@ textarea {
 
 /* 日期数字 */
 .pnl-cell-date {
-  font-size: 25px;
+  font-size: var(--fs-heading);
   font-weight: 700;
   line-height: 1.1;
   color: inherit;
@@ -4333,7 +4341,7 @@ textarea {
 
 /* 日收益文字 */
 .pnl-cell-pnl {
-  font-size: 20px;
+  font-size: var(--fs-title);
   font-weight: 700;
   font-family: var(--font-mono);
   line-height: 1.1;
@@ -4345,7 +4353,7 @@ textarea {
 
 /* 入金/出金文字 */
 .pnl-cell-flow {
-  font-size: 20px;
+  font-size: var(--fs-title);
   font-weight: 500;
   line-height: 1.1;
   white-space: nowrap;
@@ -4392,11 +4400,11 @@ textarea {
   justify-content: center;
   gap: 6px;
   margin-top: 10px;
-  font-size: 10px;
+  font-size: var(--fs-tag);
   color: var(--color-ink-subtle);
 }
 .pnl-legend-label {
-  font-size: 10px;
+  font-size: var(--fs-tag);
 }
 .pnl-legend-bar {
   display: flex;
@@ -4430,19 +4438,19 @@ textarea {
   flex: 1;
 }
 .pnl-stat-label {
-  font-size: 13px;
+  font-size: var(--fs-caption);
   color: var(--color-ink-subtle);
   white-space: nowrap;
 }
 .pnl-stat-value {
-  font-size: 18px;
+  font-size: var(--fs-subtitle);
   font-weight: 700;
   font-family: var(--font-mono);
   line-height: 1.2;
   white-space: nowrap;
 }
 .pnl-stat-sub {
-  font-size: 12px;
+  font-size: var(--fs-meta);
   color: var(--color-ink-muted);
 }
 .pnl-stat-profit { color: var(--color-success); }
@@ -5171,7 +5179,7 @@ textarea {
 }
 
 .storage-hero-value {
-  font-size: 26px;
+  font-size: var(--fs-heading);
   font-weight: 700;
   color: var(--color-ink);
   letter-spacing: -0.02em;
@@ -5473,7 +5481,7 @@ textarea {
   }
 
   .storage-hero-value {
-    font-size: 22px;
+    font-size: var(--fs-stat-sm);
   }
 }
 
@@ -5967,7 +5975,7 @@ textarea {
 }
 
 .dash-arrow {
-  font-size: 20px; font-weight: 700;
+  font-size: var(--fs-title); font-weight: 700;
   color: var(--color-ink-mute);
   flex-shrink: 0;
   transition: transform 0.15s, color 0.15s;
@@ -6001,12 +6009,12 @@ textarea {
 .dash-card-title-area { flex: 1; min-width: 0; }
 
 .dash-card-title-area h3 {
-  font-size: 18px; font-weight: 700;
+  font-size: var(--fs-subtitle); font-weight: 700;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 .dash-card-title-area span {
-  font-size: 14px; color: var(--color-ink-mute);
+  font-size: var(--fs-label); color: var(--color-ink-mute);
 }
 
 .dash-card-bd { padding: 20px 22px 24px; }
@@ -6079,7 +6087,7 @@ textarea {
 }
 
 .dash-step-value {
-  font-size: 48px; font-weight: 700;
+  font-size: var(--fs-mega); font-weight: 700;
   line-height: 1.1; letter-spacing: -1.5px;
   background: linear-gradient(135deg, var(--color-primary), #7c3aed);
   -webkit-background-clip: text;
@@ -6112,7 +6120,7 @@ textarea {
   margin-bottom: 6px;
 }
 .dash-mini-stat-value {
-  font-size: 22px; font-weight: var(--fw-bold);
+  font-size: var(--fs-stat-sm); font-weight: var(--fw-bold);
 }
 
 /* ===== 投资中心：净收益大数字 ===== */
@@ -6123,7 +6131,7 @@ textarea {
   margin-bottom: 4px;
 }
 .dash-pnl-display {
-  font-size: 40px; font-weight: var(--fw-bold);
+  font-size: var(--fs-display-lg); font-weight: var(--fw-bold);
   line-height: 1.1; letter-spacing: -1px;
 }
 .dash-pnl-display.is-positive { color: var(--color-success); }
@@ -6132,7 +6140,7 @@ textarea {
 /* 指标行变体（紧凑/宽松） */
 .dash-metric-row.is-tight { padding: 10px 0; }
 .dash-metric-row.is-loose { padding: 12px 0; }
-.dash-metric-value.is-strong { font-weight: var(--fw-bold); font-size: 18px; }
+.dash-metric-value.is-strong { font-weight: var(--fw-bold); font-size: var(--fs-subtitle); }
 .dash-metric-value.is-danger-accent { color: var(--color-danger); }
 
 /* 居中的 CTA 链接 */
@@ -6220,7 +6228,7 @@ textarea {
   text-align: center;
 }
 .dash-notif-stat-value {
-  font-size: 28px; font-weight: var(--fw-bold);
+  font-size: var(--fs-stat); font-weight: var(--fw-bold);
   color: var(--color-ink);
 }
 .dash-notif-stat-value.is-primary { color: var(--color-primary); }
@@ -6256,7 +6264,7 @@ textarea {
 
 /* ===== 大号统计卡片 ===== */
 .dash-stat-big .dash-stat-value {
-  font-size: 42px; font-weight: 700;
+  font-size: var(--fs-display-lg); font-weight: 700;
   line-height: 1.1; letter-spacing: -1.5px;
   background: linear-gradient(135deg, var(--color-primary), #7c3aed);
   -webkit-background-clip: text;
@@ -6264,39 +6272,39 @@ textarea {
 }
 
 .dash-stat-big .dash-stat-label {
-  font-size: 13px; color: var(--color-ink-mute); margin-top: 4px;
+  font-size: var(--fs-caption); color: var(--color-ink-mute); margin-top: 4px;
 }
 
 .dash-stat-big .dash-stat-sub {
-  font-size: 13px; color: var(--color-ink-secondary);
+  font-size: var(--fs-caption); color: var(--color-ink-secondary);
   margin-top: 8px; padding-top: 8px;
   border-top: 1px solid var(--color-surface-3);
 }
 
 /* 中号统计卡片 */
 .dash-stat-med .dash-stat-value {
-  font-size: 30px; font-weight: 700;
+  font-size: var(--fs-stat); font-weight: 700;
   line-height: 1.2; letter-spacing: -1px;
   color: var(--color-ink);
 }
 
 .dash-stat-med .dash-stat-label {
-  font-size: 13px; color: var(--color-ink-mute); margin-top: 2px;
+  font-size: var(--fs-caption); color: var(--color-ink-mute); margin-top: 2px;
 }
 
 .dash-stat-med .dash-stat-sub {
-  font-size: 12px; color: var(--color-ink-mute);
+  font-size: var(--fs-meta); color: var(--color-ink-mute);
   margin-top: 10px; padding-top: 10px;
   border-top: 1px solid var(--color-surface-3);
 }
 
 /* 小号统计卡片 */
 .dash-stat-sm .dash-stat-value {
-  font-size: 22px; font-weight: 700; line-height: 1.2; color: var(--color-ink);
+  font-size: var(--fs-stat-sm); font-weight: 700; line-height: 1.2; color: var(--color-ink);
 }
 
 .dash-stat-sm .dash-stat-label {
-  font-size: 12px; color: var(--color-ink-mute); margin-top: 2px;
+  font-size: var(--fs-meta); color: var(--color-ink-mute); margin-top: 2px;
 }
 
 /* ===== 模块指标行卡片 ===== */
@@ -6308,12 +6316,12 @@ textarea {
 
 .dash-metric-row:last-child { border-bottom: none; }
 
-.dash-metric-label { font-size: 15px; color: var(--color-ink-secondary); }
-.dash-metric-value { font-size: 18px; font-weight: 700; }
+.dash-metric-label { font-size: var(--fs-label); color: var(--color-ink-secondary); }
+.dash-metric-value { font-size: var(--fs-subtitle); font-weight: 700; }
 
 .dash-trend-tag {
   display: inline-flex; align-items: center; gap: 4px;
-  font-size: 13px; font-weight: 600; padding: 5px 14px;
+  font-size: var(--fs-caption); font-weight: 600; padding: 5px 14px;
   border-radius: 9999px; margin-top: 16px;
 }
 
@@ -6355,7 +6363,7 @@ textarea {
 
 .dash-quick-btn .qa-icon svg { width: 20px; height: 20px; }
 
-.dash-quick-btn .qa-text { font-size: 15px; font-weight: 600; }
+.dash-quick-btn .qa-text { font-size: var(--fs-label); font-weight: 600; }
 
 /* ===== 待办列表卡片 ===== */
 .dash-todo-list .dash-todo-item {
@@ -6379,11 +6387,11 @@ textarea {
   transform: rotate(45deg);
 }
 
-.dash-todo-text { flex: 1; font-size: 13px; line-height: 1.5; }
+.dash-todo-text { flex: 1; font-size: var(--fs-caption); line-height: 1.5; }
 .dash-todo-text.done { text-decoration: line-through; color: var(--color-ink-mute); }
 
 .dash-priority {
-  font-size: 10px; font-weight: 600; padding: 2px 7px;
+  font-size: var(--fs-tag); font-weight: 600; padding: 2px 7px;
   border-radius: 9999px; flex-shrink: 0;
 }
 
@@ -6404,10 +6412,10 @@ textarea {
   background: var(--color-primary); border: 2px solid var(--color-canvas);
 }
 
-.dash-tl-time { font-size: 14px; color: var(--color-ink-mute); white-space: nowrap; min-width: 80px; padding-top: 2px; font-weight: 500; }
+.dash-tl-time { font-size: var(--fs-label); color: var(--color-ink-mute); white-space: nowrap; min-width: 80px; padding-top: 2px; font-weight: 500; }
 .dash-tl-body { flex: 1; }
-.dash-tl-title { font-size: 15px; font-weight: 500; }
-.dash-tl-module { font-size: 13px; color: var(--color-ink-mute); margin-top: 4px; }
+.dash-tl-title { font-size: var(--fs-label); font-weight: 500; }
+.dash-tl-module { font-size: var(--fs-caption); color: var(--color-ink-mute); margin-top: 4px; }
 
 /* ===== 进度条 ===== */
 .dash-progress-bar {
@@ -6979,7 +6987,7 @@ textarea {
 }
 
 .auth-field-stack .field-label {
-  font-size: 14px;
+  font-size: var(--fs-label);
 }
 
 .auth-field-stack input {
@@ -7675,7 +7683,7 @@ textarea {
   }
 
   .storage-overview-grid .stat-value {
-    font-size: 19px;
+    font-size: var(--fs-title);
   }
 }
 
@@ -7712,7 +7720,7 @@ textarea {
 }
 
 .shopping-import-dropzone-icon {
-  font-size: 48px;
+  font-size: var(--fs-mega);
   line-height: 1;
   filter: grayscale(20%);
 }
@@ -7895,7 +7903,7 @@ textarea {
 
 /* 排版层次（Typography Scale — 使用变量） */
 .display-xxl { font-size: var(--fs-display); font-weight: 800; line-height: var(--lh-tight); letter-spacing: -0.02em; }
-.display-xl { font-size: 40px; font-weight: 800; line-height: var(--lh-tight); letter-spacing: -0.02em; }
+.display-xl { font-size: var(--fs-display-lg); font-weight: 800; line-height: var(--lh-tight); letter-spacing: -0.02em; }
 .display-lg { font-size: var(--fs-heading); font-weight: var(--fw-bold); line-height: var(--lh-snug); }
 .display-md { font-size: var(--fs-title); font-weight: var(--fw-semibold); line-height: var(--lh-snug); }
 
@@ -7935,7 +7943,7 @@ select:focus-visible {
   }
 
   .page-header h1 {
-    font-size: 22px !important;
+    font-size: var(--fs-stat-sm) !important;
   }
 
   .stat-grid {
@@ -7948,7 +7956,7 @@ select:focus-visible {
   }
 
   .stat-value {
-    font-size: 20px !important;
+    font-size: var(--fs-title) !important;
   }
 
   .card {
@@ -8096,13 +8104,13 @@ select:focus-visible {
   }
   .pnl-year-button {
     padding: 1px 5px;
-    font-size: 10px;
+    font-size: var(--fs-tag);
   }
   .pnl-month-nav {
     display: none;
   }
   .pnl-calendar-summary {
-    font-size: 10px;
+    font-size: var(--fs-tag);
     gap: 6px;
     width: 100%;
     justify-content: center;
@@ -8115,11 +8123,11 @@ select:focus-visible {
     border-radius: 4px;
   }
   .pnl-cell-date {
-    font-size: 16px;
+    font-size: var(--fs-body);
   }
   .pnl-cell-header {
     height: 18px;
-    font-size: 10px;
+    font-size: var(--fs-tag);
   }
 
   /* 盈亏分布统计指标移动端 */
@@ -8162,7 +8170,7 @@ select:focus-visible {
   }
 
   .step-hour-button {
-    font-size: 13px;
+    font-size: var(--fs-caption);
     padding: 6px 10px;
   }
 
@@ -8235,7 +8243,7 @@ select:focus-visible {
     height: 20px;
   }
   .dash-stat-val {
-    font-size: 18px;
+    font-size: var(--fs-subtitle);
   }
 
   /* 快捷操作按钮换行 */
@@ -8277,7 +8285,7 @@ select:focus-visible {
     border-bottom: 1px solid var(--color-hairline);
   }
   .dash-tl-time {
-    font-size: 11px;
+    font-size: var(--fs-overline);
     min-width: 120px;
   }
   .dash-tl-title {
@@ -8310,7 +8318,7 @@ select:focus-visible {
     border-radius: 12px;
   }
   .auth-hero-copy h2 {
-    font-size: 22px;
+    font-size: var(--fs-stat-sm);
   }
   .auth-status-grid {
     grid-template-columns: 1fr 1fr !important;
@@ -8338,7 +8346,7 @@ select:focus-visible {
   .profile-avatar-fallback {
     width: 64px;
     height: 64px;
-    font-size: 24px;
+    font-size: var(--fs-heading);
   }
 }
 
@@ -8767,7 +8775,7 @@ select:focus-visible {
     flex-shrink: 0;
     white-space: nowrap;
     padding: 8px 14px;
-    font-size: 13px;
+    font-size: var(--fs-caption);
   }
 
   /* PageHeader 紧凑 */
@@ -8777,7 +8785,7 @@ select:focus-visible {
     gap: 10px;
   }
   .page-header h1 {
-    font-size: 22px;
+    font-size: var(--fs-stat-sm);
   }
   .page-header-actions {
     width: 100%;
@@ -8975,7 +8983,7 @@ select:focus-visible {
 }
 
 .invest-hero-value {
-  font-size: 38px;
+  font-size: var(--fs-display);
   font-weight: 700;
   color: var(--color-ink);
   letter-spacing: -0.025em;
@@ -9018,7 +9026,7 @@ select:focus-visible {
 }
 
 .invest-hero-stat-value {
-  font-size: 22px;
+  font-size: var(--fs-stat-sm);
   font-weight: 700;
   color: var(--color-ink);
   letter-spacing: -0.02em;
@@ -9234,7 +9242,7 @@ select:focus-visible {
 }
 
 .invest-mover-icon {
-  font-size: 14px;
+  font-size: var(--fs-label);
 }
 
 .invest-mover-list {
@@ -9410,11 +9418,11 @@ select:focus-visible {
 
 @media (max-width: 768px) {
   .invest-hero-value {
-    font-size: 30px;
+    font-size: var(--fs-stat);
   }
 
   .invest-hero-stat-value {
-    font-size: 18px;
+    font-size: var(--fs-subtitle);
   }
 
   .invest-alert-item {
@@ -9496,7 +9504,7 @@ select:focus-visible {
 }
 
 .invest-capital-cell strong {
-  font-size: 20px;
+  font-size: var(--fs-title);
   font-weight: 700;
   color: var(--color-ink);
   letter-spacing: -0.015em;
@@ -9735,7 +9743,7 @@ select:focus-visible {
 }
 
 .invest-style-cell strong {
-  font-size: 18px;
+  font-size: var(--fs-subtitle);
   font-weight: 700;
   color: var(--color-ink);
   font-variant-numeric: tabular-nums;
@@ -9842,7 +9850,7 @@ select:focus-visible {
 }
 
 .invest-position-value strong {
-  font-size: 18px;
+  font-size: var(--fs-subtitle);
   font-weight: 700;
   color: var(--color-ink);
   font-variant-numeric: tabular-nums;

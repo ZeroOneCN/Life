@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+﻿import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import dayjs from 'dayjs';
 import {
   Bar,
@@ -19,6 +19,7 @@ import {
 import { DatePickerField, MonthPickerField } from '../date';
 import { EmptyState, SectionCard, StatGrid } from '../page';
 import { SelectField, Tag } from '../ui';
+import { CHART_CATEGORY_6 } from '../../lib/chartPalette';
 import { buildApiErrorMessage } from '../../lib/api';
 import { LOAN_ALL_PLATFORMS, formatLoanAmount } from '../../services/loan';
 import { loanApi } from '../../services/loanApi';
@@ -50,7 +51,7 @@ function ChartCard({
   className?: string;
 }) {
   return (
-    <div className={`fitness-chart-card ${className ?? ''}`.trim()}>
+    <div className={`chart-card ${className ?? ''}`.trim()}>
       <div className="fitness-chart-header">
         <strong>{title}</strong>
         <span>{description}</span>
@@ -238,8 +239,8 @@ export function LoanStatisticsSection({
                 <ResponsiveContainer width="100%" height={320}>
                   <LineChart data={trendData}>
                     <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} angle={-45} textAnchor="end" height={56} interval="preserveStartEnd" minTickGap={8} padding={{ left: 8, right: 24 }} />
-                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} angle={-45} textAnchor="end" height={56} interval="preserveStartEnd" minTickGap={8} padding={{ left: 8, right: 24 }} />
+                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
                     <Tooltip
                       contentStyle={tooltipStyle}
                       formatter={(value, name) => [formatLoanAmount(Number(value ?? 0)), name === 'repaymentAmount' ? '还款金额' : '利息']}
@@ -288,7 +289,7 @@ export function LoanStatisticsSection({
                       align="center"
                       verticalAlign="bottom"
                       iconType="circle"
-                      wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+                      wrapperStyle={{ fontSize: 'var(--fs-meta)', paddingTop: 8 }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -311,8 +312,8 @@ export function LoanStatisticsSection({
                     margin={{ left: 16 }}
                   >
                     <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                    <YAxis type="category" dataKey="platformName" width={84} tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                    <XAxis type="number" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
+                    <YAxis type="category" dataKey="platformName" width={84} tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
                     <Tooltip
                       contentStyle={tooltipStyle}
                       formatter={(value, name) => [formatLoanAmount(Number(value ?? 0)), name === 'unpaidAmount' ? '待还金额' : '累计账单']}

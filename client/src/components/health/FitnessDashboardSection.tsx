@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+﻿import { useMemo, type ReactNode } from 'react';
 import {
   Bar,
   BarChart,
@@ -17,6 +17,7 @@ import {
 
 import { Btn, Field } from '../ui';
 import { EmptyState, SectionCard, StatGrid } from '../page';
+import { CHART_CATEGORY_8, CHART_PNL } from '../../lib/chartPalette';
 import {
   MACRO_COLORS,
   buildCalorieTrend,
@@ -60,7 +61,7 @@ function ChartCard({
   children: ReactNode;
 }) {
   return (
-    <div className="fitness-chart-card">
+    <div className="chart-card">
       <div className="fitness-chart-header">
         <strong>{title}</strong>
         <span>{description}</span>
@@ -206,9 +207,9 @@ export function FitnessDashboardSection({
                 <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={weightTrendData}>
                     <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                    <YAxis yAxisId="left" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                    <YAxis yAxisId="right" orientation="right" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
+                    <YAxis yAxisId="left" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
                     <Tooltip
                       contentStyle={tooltipStyle}
                       formatter={(value, name) => [
@@ -237,8 +238,8 @@ export function FitnessDashboardSection({
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={calorieTrendData}>
                     <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
+                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
                     <Tooltip
                       contentStyle={tooltipStyle}
                       formatter={(value, name) => [
@@ -267,8 +268,8 @@ export function FitnessDashboardSection({
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={costTrendData}>
                     <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
+                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
                     <Tooltip
                       contentStyle={tooltipStyle}
                       formatter={(value) => [`¥${Number(value ?? 0).toFixed(2)}`, '成本']}

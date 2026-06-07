@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+﻿import { useMemo, useRef } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 import { EmptyState, SectionCard } from '../page';
@@ -249,8 +249,8 @@ export function TravelReportSection({
                   <ResponsiveContainer width="100%" height={260}>
                     <LineChart data={reportData.dailyTrend}>
                       <CartesianGrid stroke="var(--color-surface-3)" vertical={false} />
-                      <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                      <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                      <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
+                      <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
                       <Tooltip
                         contentStyle={tooltipStyle}
                         formatter={(value) => [formatTravelAmount(Number(value ?? 0)), '实付']}

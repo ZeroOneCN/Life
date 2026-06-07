@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+﻿import { useMemo, useState, type ReactNode } from 'react';
 import {
   Area,
   AreaChart,
@@ -56,7 +56,7 @@ function ChartCard({
   className?: string;
 }) {
   return (
-    <div className={`fitness-chart-card ${className ?? ''}`.trim()}>
+    <div className={`chart-card ${className ?? ''}`.trim()}>
       <div className="fitness-chart-header">
         <strong>{title}</strong>
         <span>{description}</span>
@@ -223,8 +223,8 @@ export function TravelStatsSection({
                 <ResponsiveContainer width="100%" height={320}>
                   <AreaChart data={dailyTrend}>
                     <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
+                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
                     <Tooltip
                       contentStyle={tooltipStyle}
                       formatter={(value, name) => {

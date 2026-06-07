@@ -1254,7 +1254,7 @@ function sanitizeColorMixInClone(doc: Document, root: HTMLElement) {
   for (const styleEl of Array.from(doc.querySelectorAll('style'))) {
     if (styleEl.sheet) {
       try {
-        for (const rule of Array.from(styleEl.sheet.cssRules)) {
+        for (const rule of Array.from(styleEl.sheet.cssRules) as CSSStyleRule[]) {
           if (rule.cssText && rule.cssText.includes('color-mix')) {
             rule.style.cssText = rule.style.cssText.replace(COLOR_MIX_RE, 'transparent');
           }

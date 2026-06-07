@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import {
   CartesianGrid,
@@ -422,7 +422,7 @@ export function CheckupRecordsSection({
           />
         )}
 
-        <div className="fitness-chart-card">
+        <div className="chart-card">
           <div className="fitness-chart-header">
             <strong>单指标趋势</strong>
             <span>按用户、项目和日期范围查看历史变化。</span>
@@ -453,8 +453,8 @@ export function CheckupRecordsSection({
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={trendData}>
                   <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
-                  <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                  <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
+                  <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
                   <Tooltip
                     contentStyle={tooltipStyle}
                     formatter={(value, _name, payload) => {

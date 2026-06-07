@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { EmptyState, SectionCard } from '../page';
@@ -206,12 +206,12 @@ export function StorageDashboardSection({
                 <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="label"
-                  tick={{ fill: 'var(--color-ink-subtle)', fontSize: 11 }}
+                  tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-overline)' }}
                   tickLine={false}
                   axisLine={false}
                 />
                 <YAxis
-                  tick={{ fill: 'var(--color-ink-subtle)', fontSize: 11 }}
+                  tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-overline)' }}
                   tickLine={false}
                   axisLine={false}
                   width={36}
