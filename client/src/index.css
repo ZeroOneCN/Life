@@ -20,6 +20,9 @@
 
   /* Brand Dark (用于深色卡片/dashboard) */
   --color-brand-dark: #1c1e54;
+  --color-accent-purple: #7c3aed;  /* 渐变辅色（步数/大统计数字） */
+  --color-page-bg-from: #fafafe;   /* 登录页背景起始色 */
+  --color-page-bg-to: #ffffff;     /* 登录页背景结束色 */
 
   /* Ink 文字层级 */
   --color-ink: #0d253d;
@@ -6112,7 +6115,7 @@ textarea {
 .dash-step-value {
   font-size: var(--fs-mega); font-weight: 700;
   line-height: 1.1; letter-spacing: -1.5px;
-  background: linear-gradient(135deg, var(--color-primary), #7c3aed);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent-purple));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
