@@ -1,4 +1,4 @@
-import dayjs from 'dayjs';
+﻿import dayjs from 'dayjs';
 
 import { CHART_EXERCISE, CHART_INTENSITY, CHART_MACRO, CHART_MEAL } from '../lib/chartPalette';
 import type {
@@ -506,7 +506,7 @@ export function buildFitnessOverviewSummary(
         - exerciseRecords.filter((record) => record.date === today).reduce((sum, record) => sum + record.calories, 0)
       ).toFixed(1)
     ),
-    latestWeightKg: latestWeightRecord ? Number(latestWeightRecord.weight.toFixed(1)) : null,
+    latestWeightKg: latestWeightRecord ? Number(latestWeightRecord.weight.toFixed(2)) : null,
     bmi: latestWeightRecord
       ? calculateBmi(latestWeightRecord.weight, latestWeightRecord.height || defaultHeightCm)
       : null,

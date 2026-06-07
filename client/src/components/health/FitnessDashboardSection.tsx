@@ -213,7 +213,7 @@ export function FitnessDashboardSection({
                     <Tooltip
                       contentStyle={tooltipStyle}
                       formatter={(value, name) => [
-                        name === '体重' ? `${Number(value ?? 0).toFixed(1)} kg` : `${Number(value ?? 0).toFixed(1)} %`,
+                        name === '体重' ? `${Number(value ?? 0).toFixed(2)} kg` : `${Number(value ?? 0).toFixed(1)} %`,
                         String(name ?? ''),
                       ]}
                     />
