@@ -3408,6 +3408,7 @@ textarea {
 }
 
 .modal-panel {
+  position: relative;
   background: var(--color-canvas);
   border: 1px solid var(--color-hairline);
   border-radius: 16px;
@@ -3422,6 +3423,30 @@ textarea {
 
 .modal-title {
   margin: 0 0 16px;
+  padding-right: 32px; /* 给关闭按钮留位 */
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--color-ink-mute);
+  font-size: 22px;
+  line-height: 1;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.modal-close:hover {
+  background: var(--color-surface-3);
+  color: var(--color-ink);
 }
 
 .modal-footer {

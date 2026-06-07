@@ -7,7 +7,7 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { TabOption, TableColumn } from '../types/ui';
@@ -160,6 +160,7 @@ export function TrendArrow({ direction, value }: { direction: TrendDirection; va
 
 export function Modal({ open, onClose, title, width = 560, footer, children }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
 
   useEffect(() => {
     if (!open) {
@@ -198,6 +199,9 @@ export function Modal({ open, onClose, title, width = 560, footer, children }: M
     <div
       ref={overlayRef}
       className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={title ? titleId : undefined}
       tabIndex={-1}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
@@ -211,7 +215,15 @@ export function Modal({ open, onClose, title, width = 560, footer, children }: M
       }}
     >
       <div className="modal-panel" style={{ width }}>
-        {title ? <h3 className="modal-title">{title}</h3> : null}
+        {title ? <h3 id={titleId} className="modal-title">{title}</h3> : null}
+        <button
+          type="button"
+          className="modal-close"
+          aria-label="关闭弹窗"
+          onClick={onClose}
+        >
+          ×
+        </button>
         <div>{children}</div>
         {footer ? <div className="modal-footer">{footer}</div> : null}
       </div>
