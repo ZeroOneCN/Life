@@ -654,6 +654,36 @@ textarea {
   letter-spacing: -0.04em;
 }
 
+/* ===== 中文显示修复：travel 页面相关元素使用支持 CJK 的字体栈 ===== */
+.stat-value,
+.data-table th,
+.data-table td,
+.travel-report-table th,
+.travel-report-table td,
+.travel-report-overview-card,
+.travel-report-overview-card span,
+.travel-report-overview-card strong,
+.travel-report-list-row,
+.travel-report-list-row strong,
+.travel-list-name,
+.travel-report-summary,
+.travel-amount-stack strong {
+  font-family: 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', 'Outfit', system-ui, sans-serif;
+}
+
+/* stat-value 包含中文时取消负字间距，避免中文挤在一起 */
+.stat-value:has(+ .stat-helper),
+.travel-report-overview-card strong,
+.travel-report-list-row strong,
+.travel-amount-stack strong {
+  letter-spacing: 0;
+}
+
+.data-table th,
+.travel-report-table th {
+  letter-spacing: 0;
+}
+
 .stat-helper {
   display: block;
   margin-top: 8px;
