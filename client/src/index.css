@@ -5445,25 +5445,25 @@ textarea {
 
 /* ===== Dashboard Masonry Layout ===== */
 .dashboard-page {
-  gap: 24px;
+  gap: 28px;
 }
 
 .dashboard-header-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
 }
 
 /* 瀑布流核心 - 使用 CSS columns */
 .dash-masonry {
-  column-count: 3;
-  column-gap: 20px;
+  column-count: 2;
+  column-gap: 24px;
 }
 
-@media (max-width: 1100px) {
+@media (min-width: 1200px) {
   .dash-masonry { column-count: 2; }
 }
-@media (max-width: 680px) {
+@media (max-width: 900px) {
   .dash-masonry { column-count: 1; }
 }
 
@@ -5509,35 +5509,47 @@ textarea {
   display: block;
 }
 
+.dash-arrow {
+  font-size: 20px; font-weight: 700;
+  color: var(--color-ink-mute);
+  flex-shrink: 0;
+  transition: transform 0.15s, color 0.15s;
+}
+
+.dash-card-link:hover .dash-arrow {
+  color: var(--color-primary);
+  transform: translateX(3px);
+}
+
 .dash-card-hd {
-  padding: 16px 18px 12px;
+  padding: 20px 22px 16px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   border-bottom: 1px solid var(--color-surface-3);
 }
 
 .dash-card-icon {
-  width: 36px; height: 36px;
-  border-radius: 10px;
+  width: 44px; height: 44px;
+  border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 
-.dash-card-icon svg { width: 20px; height: 20px; stroke-width: 2; }
+.dash-card-icon svg { width: 24px; height: 24px; stroke-width: 2; }
 
 .dash-card-title-area { flex: 1; min-width: 0; }
 
 .dash-card-title-area h3 {
-  font-size: 15px; font-weight: 600;
+  font-size: 18px; font-weight: 700;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 .dash-card-title-area span {
-  font-size: 12px; color: var(--color-ink-mute);
+  font-size: 14px; color: var(--color-ink-mute);
 }
 
-.dash-card-bd { padding: 14px 18px 18px; }
+.dash-card-bd { padding: 20px 22px 24px; }
 
 /* 图标背景色 */
 .dash-bg-step { background: #ede9fe; color: #533afd; }
@@ -5595,19 +5607,19 @@ textarea {
 /* ===== 模块指标行卡片 ===== */
 .dash-metric-row {
   display: flex; justify-content: space-between; align-items: baseline;
-  padding: 8px 0;
+  padding: 12px 0;
   border-bottom: 1px dashed var(--color-surface-3);
 }
 
 .dash-metric-row:last-child { border-bottom: none; }
 
-.dash-metric-label { font-size: 13px; color: var(--color-ink-secondary); }
-.dash-metric-value { font-size: 15px; font-weight: 600; }
+.dash-metric-label { font-size: 15px; color: var(--color-ink-secondary); }
+.dash-metric-value { font-size: 18px; font-weight: 700; }
 
 .dash-trend-tag {
-  display: inline-flex; align-items: center; gap: 3px;
-  font-size: 11px; font-weight: 600; padding: 3px 8px;
-  border-radius: 9999px; margin-top: 12px;
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 13px; font-weight: 600; padding: 5px 14px;
+  border-radius: 9999px; margin-top: 16px;
 }
 
 .trend-up { background: var(--color-success-bg, #d1fae5); color: var(--color-success-text, #065f46); }
@@ -5617,7 +5629,7 @@ textarea {
 .dash-quick-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  gap: 14px;
 }
 
 @media (max-width: 900px) {
@@ -5625,11 +5637,11 @@ textarea {
 }
 
 .dash-quick-btn {
-  display: flex; align-items: center; gap: 10px;
-  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 18px 18px;
   background: var(--color-surface-2);
   border: 1px solid var(--color-hairline);
-  border-radius: 12px;
+  border-radius: 14px;
   cursor: pointer; transition: all 0.15s;
   text-decoration: none; color: inherit;
 }
@@ -5641,14 +5653,14 @@ textarea {
 }
 
 .dash-quick-btn .qa-icon {
-  width: 32px; height: 32px; border-radius: 8px;
+  width: 38px; height: 38px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 
-.dash-quick-btn .qa-icon svg { width: 18px; height: 18px; }
+.dash-quick-btn .qa-icon svg { width: 20px; height: 20px; }
 
-.dash-quick-btn .qa-text { font-size: 13px; font-weight: 500; }
+.dash-quick-btn .qa-text { font-size: 15px; font-weight: 600; }
 
 /* ===== 待办列表卡片 ===== */
 .dash-todo-list .dash-todo-item {
@@ -5686,21 +5698,21 @@ textarea {
 
 /* ===== 时间线/动态卡片 ===== */
 .dash-tl-item {
-  display: flex; gap: 12px; padding: 10px 0;
+  display: flex; gap: 14px; padding: 14px 0;
   border-left: 2px solid var(--color-hairline);
-  padding-left: 14px; position: relative;
+  padding-left: 18px; position: relative;
 }
 
 .dash-tl-item::before {
-  content: ''; position: absolute; left: -5px; top: 14px;
-  width: 8px; height: 8px; border-radius: 50%;
+  content: ''; position: absolute; left: -5px; top: 18px;
+  width: 10px; height: 10px; border-radius: 50%;
   background: var(--color-primary); border: 2px solid var(--color-canvas);
 }
 
-.dash-tl-time { font-size: 11px; color: var(--color-ink-mute); white-space: nowrap; min-width: 72px; padding-top: 1px; }
+.dash-tl-time { font-size: 14px; color: var(--color-ink-mute); white-space: nowrap; min-width: 80px; padding-top: 2px; font-weight: 500; }
 .dash-tl-body { flex: 1; }
-.dash-tl-title { font-size: 13px; font-weight: 500; }
-.dash-tl-module { font-size: 11px; color: var(--color-ink-mute); margin-top: 2px; }
+.dash-tl-title { font-size: 15px; font-weight: 500; }
+.dash-tl-module { font-size: 13px; color: var(--color-ink-mute); margin-top: 4px; }
 
 /* ===== 进度条 ===== */
 .dash-progress-bar {
