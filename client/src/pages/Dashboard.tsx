@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { EmptyState, PageHeader } from '../components/page';
-import { Btn, Skeleton, Tag } from '../components/ui';
+import { Skeleton, Tag } from '../components/ui';
 import { buildApiErrorMessage, apiGet } from '../lib/api';
 import type {
   DashboardAgendaItem,
@@ -111,19 +111,11 @@ const IconChart = () => (
   </svg>
 );
 
-const IconWarning = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-    <line x1="12" y1="9" x2="12" y2="13"/>
-    <line x1="12" y1="17" x2="12.01" y2="17"/>
-  </svg>
-);
-
-const DotHigh = () => <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />;
-const DotMedium = () => <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />;
-const DotLow = () => <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />;
-
-const SEVERITY_DOT: Record<string, React.ReactNode> = { high: <DotHigh />, medium: <DotMedium />, low: <DotLow /> };
+const SEVERITY_DOT_CLASS: Record<string, string> = {
+  high: 'dash-dot dash-dot-high',
+  medium: 'dash-dot dash-dot-medium',
+  low: 'dash-dot dash-dot-low',
+};
 
 export default function Dashboard() {
   const [summary, setSummary] = useState<DashboardPageSummary | null>(null);
@@ -193,12 +185,12 @@ export default function Dashboard() {
 
   const agendaInline = useMemo(() => {
     if (!summary) return [];
-    return summary.agenda.slice(0, 6).map((item) => ({ id: item.id, dot: SEVERITY_DOT[item.severity], title: item.title, href: item.href }));
+    return summary.agenda.slice(0, 6).map((item) => ({ id: item.id, dotClass: SEVERITY_DOT_CLASS[item.severity] ?? 'dash-dot dash-dot-low', title: item.title, href: item.href }));
   }, [summary]);
 
   const timelineItems = useMemo(() => {
     if (!summary) return [];
-    const items: Array<{ time: string; module: string; title: string; sortKey: number }> = [];
+    const items: Array<{ time: string; module: string; moduleClass: string; title: string; sortKey: number }> = [];
     summary.notifications.recentLogs.slice(0, 6).forEach((log) => {
       const d = new Date(log.createdAt);
       const year = d.getFullYear();
@@ -207,14 +199,14 @@ export default function Dashboard() {
       const hour = d.getHours().toString().padStart(2, '0');
       const minute = d.getMinutes().toString().padStart(2, '0');
       const second = d.getSeconds().toString().padStart(2, '0');
-      items.push({ time: `${year}-${month}-${day} ${hour}:${minute}:${second}`, module: '通知', title: log.title, sortKey: d.getTime() });
+      items.push({ time: `${year}-${month}-${day} ${hour}:${minute}:${second}`, module: '通知', moduleClass: 'is-notif', title: log.title, sortKey: d.getTime() });
     });
     summary.agenda.slice(0, 4).forEach((item) => {
       const sortKey = item.targetDate ? new Date(item.targetDate).getTime() : 0;
       const raw = item.targetDate ? item.targetDate.replace('T', ' ').slice(0, 19) : '-';
       /* 日期只有 YYYY-MM-DD 时补全为 00:00:00 */
       const time = raw !== '-' && raw.length <= 10 ? `${raw} 00:00:00` : raw;
-      items.push({ time, module: item.module, title: item.title, sortKey });
+      items.push({ time, module: item.module, moduleClass: 'is-agenda', title: item.title, sortKey });
     });
     return items.sort((a, b) => b.sortKey - a.sortKey);
   }, [summary]);
@@ -234,7 +226,7 @@ export default function Dashboard() {
     return (
       <div className="page-stack dashboard-page">
         <PageHeader title="LifeOS 控制台" subtitle={loadingError || '正在加载数据...'} />
-        <div className="section-card" style={{ padding: 24 }}>
+        <div className="section-card dash-skeleton-pad">
           <Skeleton lines={4} />
         </div>
       </div>
@@ -244,8 +236,9 @@ export default function Dashboard() {
   const hasAgenda = summary.agenda.length > 0;
   const h = summary.health.metrics, f = summary.finance.metrics, l = summary.life.metrics, inv = summary.investment.metrics;
   const stepsNum = Number(h[0]?.value || 0);
-  const pnlVal = Number(inv[0]?.value?.replace(/[^0-9.-]/g, '') || 0);
-  const isPnlPositive = pnlVal >= 0;
+  /* PNL 字符串形如 "+123" / "-123" / "0"，判断首字符判断正负 */
+  const pnlRaw = inv[0]?.value ?? '0';
+  const isPnlPositive = !pnlRaw.startsWith('-');
 
   return (
     <div className="page-stack dashboard-page">
@@ -264,29 +257,22 @@ export default function Dashboard() {
 
         {/* ====== 0. 待办事项（顶部一行，全宽横跨）====== */}
         {hasAgenda ? (
-          <div className="dash-masonry-item dash-card" style={{ breakInside: 'avoid-column', marginBottom: 24 }}>
-            <div className="dash-card-hd" style={{ paddingBottom: 16 }}>
+          <div className="dash-masonry-item dash-card is-full">
+            <div className="dash-card-hd is-tight">
               <div className="dash-card-icon dash-bg-life"><IconTodo /></div>
               <div className="dash-card-title-area">
-                <h3 style={{ fontSize: 18 }}>待处理事项</h3>
-                <span style={{ fontSize: 14 }}>共 {summary.agenda.length} 项需要关注</span>
+                <h3>待处理事项</h3>
+                <span>共 {summary.agenda.length} 项需要关注</span>
               </div>
-              <Link to="/life/todo?todoTab=tasks" style={{ textDecoration: 'none', color: 'var(--color-primary)', fontSize: 15, fontWeight: 600, whiteSpace: 'nowrap' }}>
-                查看全部 →
-              </Link>
+              <Link to="/life/todo?todoTab=tasks" className="dash-link-primary">查看全部 →</Link>
             </div>
             <div className="dash-card-bd">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="dash-agenda-list">
                 {agendaInline.map((item) => (
-                  <Link key={item.id} to={item.href} style={{
-                    display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
-                    borderRadius: 12, background: 'var(--color-surface-2)', border: '1px solid var(--color-hairline)',
-                    textDecoration: 'none', color: 'inherit', fontSize: 15,
-                    transition: 'all 0.15s',
-                  }}>
-                    <span style={{ lineHeight: 1, flexShrink: 0 }}>{item.dot}</span>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{item.title}</span>
-                    <span style={{ flexShrink: 0, color: 'var(--color-ink-mute)', fontSize: 13 }}>→</span>
+                  <Link key={item.id} to={item.href} className="dash-agenda-item">
+                    <span className={item.dotClass} aria-hidden="true" />
+                    <span className="dash-agenda-title">{item.title}</span>
+                    <span className="dash-agenda-arrow">→</span>
                   </Link>
                 ))}
               </div>
@@ -296,36 +282,30 @@ export default function Dashboard() {
 
         {/* ====== 1. 健康中心（大模块，可点击跳转）====== */}
         <Link to="/health/step" className="dash-masonry-item dash-card dash-card-link">
-          <div className="dash-card-hd" style={{ paddingBottom: 16 }}>
+          <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-health"><IconHeart /></div>
             <div className="dash-card-title-area">
-              <h3 style={{ fontSize: 18 }}>健康中心</h3>
-              <span style={{ fontSize: 14 }}>今日数据快照</span>
+              <h3>健康中心</h3>
+              <span>今日数据快照</span>
             </div>
             <span className="dash-arrow">→</span>
           </div>
           <div className="dash-card-bd">
-            {/* 步数大数字（无目标进度条） */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 14, color: 'var(--color-ink-secondary)', marginBottom: 6 }}>今日步数</div>
-              <div style={{
-                fontSize: 48, fontWeight: 700, lineHeight: 1.1, letterSpacing: -1.5,
-                background: 'linear-gradient(135deg, var(--color-primary), #7c3aed)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-              }}>
+            <div className="dash-step-block">
+              <div className="dash-step-label">今日步数</div>
+              <div className="dash-step-value">
                 {h[0]?.value?.toLocaleString() || '0'}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
-                <span style={{ fontSize: 15, color: 'var(--color-ink-secondary)' }}>今日已录入</span>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#059669' }}>{stepsNum.toLocaleString()} 步</span>
+              <div className="dash-step-meta">
+                <span className="dash-step-meta-label">今日已录入</span>
+                <span className="dash-step-meta-value">{stepsNum.toLocaleString()} 步</span>
               </div>
             </div>
-            {/* 指标网格 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div className="dash-mini-grid">
               {h.slice(1).map((m, i) => (
-                <div key={i} style={{ padding: '14px 16px', background: 'var(--color-surface-2)', borderRadius: 12 }}>
-                  <div style={{ fontSize: 14, color: 'var(--color-ink-mute)', marginBottom: 6 }}>{m.label}</div>
-                  <div style={{ fontSize: 22, fontWeight: 700 }}>{m.value}</div>
+                <div key={i} className="dash-mini-stat">
+                  <div className="dash-mini-stat-label">{m.label}</div>
+                  <div className="dash-mini-stat-value">{m.value}</div>
                 </div>
               ))}
             </div>
@@ -334,30 +314,30 @@ export default function Dashboard() {
 
         {/* ====== 2. 快捷操作入口 ====== */}
         <div className="dash-masonry-item dash-card">
-          <div className="dash-card-hd" style={{ paddingBottom: 16 }}>
+          <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-step"><IconSteps /></div>
             <div className="dash-card-title-area">
-              <h3 style={{ fontSize: 18 }}>快捷操作</h3>
-              <span style={{ fontSize: 14 }}>常用功能一键直达</span>
+              <h3>快捷操作</h3>
+              <span>常用功能一键直达</span>
             </div>
           </div>
           <div className="dash-card-bd">
             <div className="dash-quick-grid">
               <Link to="/health/step?stepTab=entry" className="dash-quick-btn">
                 <div className="qa-icon dash-bg-step"><IconSteps /></div>
-                <span className="qa-text" style={{ fontSize: 15, fontWeight: 600 }}>录入步数</span>
+                <span className="qa-text">录入步数</span>
               </Link>
               <Link to="/finance/travel?travelTab=details" className="dash-quick-btn">
                 <div className="qa-icon dash-bg-finance"><IconWallet /></div>
-                <span className="qa-text" style={{ fontSize: 15, fontWeight: 600 }}>记录消费</span>
+                <span className="qa-text">记录消费</span>
               </Link>
               <Link to="/life/todo?todoTab=tasks" className="dash-quick-btn">
                 <div className="qa-icon dash-bg-life"><IconTodo /></div>
-                <span className="qa-text" style={{ fontSize: 15, fontWeight: 600 }}>新建待办</span>
+                <span className="qa-text">新建待办</span>
               </Link>
               <Link to="/finance/shopping?shoppingTab=records" className="dash-quick-btn">
                 <div className="qa-icon dash-bg-invest"><IconChart /></div>
-                <span className="qa-text" style={{ fontSize: 15, fontWeight: 600 }}>购物记录</span>
+                <span className="qa-text">购物记录</span>
               </Link>
             </div>
           </div>
@@ -365,30 +345,29 @@ export default function Dashboard() {
 
         {/* ====== 3. 投资中心（可点击跳转）====== */}
         <Link to="/investment/forex?forexTab=trades" className="dash-masonry-item dash-card dash-card-link">
-          <div className="dash-card-hd" style={{ paddingBottom: 16 }}>
+          <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-invest"><IconTrend /></div>
             <div className="dash-card-title-area">
-              <h3 style={{ fontSize: 18 }}>投资中心</h3>
-              <span style={{ fontSize: 14 }}>本月累计数据</span>
+              <h3>投资中心</h3>
+              <span>本月累计数据</span>
             </div>
             <span className="dash-arrow">→</span>
           </div>
           <div className="dash-card-bd">
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 14, color: 'var(--color-ink-secondary)', marginBottom: 4 }}>净收益</div>
-              <div style={{ fontSize: 40, fontWeight: 700, lineHeight: 1.1, letterSpacing: -1, color: isPnlPositive ? '#059669' : '#dc2626' }}>
+            <div className="dash-pnl-block">
+              <div className="dash-pnl-block-label">净收益</div>
+              <div className={`dash-pnl-display ${isPnlPositive ? 'is-positive' : 'is-negative'}`}>
                 {inv[0]?.value || '¥0'}
               </div>
             </div>
-            {/* 指标行 */}
             {inv.slice(1).map((m, i) => (
-              <div key={i} className="dash-metric-row" style={{ padding: '10px 0' }}>
-                <span className="dash-metric-label" style={{ fontSize: 15 }}>{m.label}</span>
-                <span className="dash-metric-value" style={{ fontSize: 17 }}>{m.value}</span>
+              <div key={i} className="dash-metric-row is-tight">
+                <span className="dash-metric-label">{m.label}</span>
+                <span className="dash-metric-value">{m.value}</span>
               </div>
             ))}
-            <div style={{ textAlign: 'center', marginTop: 12 }}>
-              <span className={`trend-tag ${isPnlPositive ? 'trend-up' : 'trend-down'}`} style={{ fontSize: 13, padding: '4px 12px' }}>
+            <div className="dash-trend-cta">
+              <span className={`dash-trend-cta-pill ${isPnlPositive ? 'is-positive' : 'is-negative'}`}>
                 {isPnlPositive ? '盈利中' : '亏损中'} · 查看详情 →
               </span>
             </div>
@@ -397,84 +376,72 @@ export default function Dashboard() {
 
         {/* ====== 4. 财务中心（可点击跳转）====== */}
         <Link to="/finance/loan" className="dash-masonry-item dash-card dash-card-link">
-          <div className="dash-card-hd" style={{ paddingBottom: 16 }}>
+          <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-finance"><IconWallet /></div>
             <div className="dash-card-title-area">
-              <h3 style={{ fontSize: 18 }}>财务中心</h3>
-              <span style={{ fontSize: 14 }}>资金与订阅概览</span>
+              <h3>财务中心</h3>
+              <span>资金与订阅概览</span>
             </div>
             <span className="dash-arrow">→</span>
           </div>
           <div className="dash-card-bd">
             {f.map((m, i) => (
-              <div key={i} className="dash-metric-row" style={{ padding: '12px 0' }}>
-                <span className="dash-metric-label" style={{ fontSize: 15 }}>{m.label}</span>
-                <span className="dash-metric-value" style={{ fontSize: 18, fontWeight: 700, ...(i === 0 ? { color: '#dc2626' } : {}) }}>{m.value}</span>
+              <div key={i} className="dash-metric-row is-loose">
+                <span className="dash-metric-label">{m.label}</span>
+                <span className={`dash-metric-value is-strong ${i === 0 ? 'is-danger-accent' : ''}`}>{m.value}</span>
               </div>
             ))}
-            <div style={{ textAlign: 'center', marginTop: 12 }}>
-              <span className="trend-tag trend-down" style={{ fontSize: 13, padding: '4px 12px' }}>管理财务 →</span>
+            <div className="dash-trend-cta">
+              <span className="dash-trend-cta-pill is-negative">管理财务 →</span>
             </div>
           </div>
         </Link>
 
         {/* ====== 5. 生活中心（可点击跳转）====== */}
         <Link to="/life/todo?todoTab=tasks" className="dash-masonry-item dash-card dash-card-link">
-          <div className="dash-card-hd" style={{ paddingBottom: 16 }}>
+          <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-life"><IconHome /></div>
             <div className="dash-card-title-area">
-              <h3 style={{ fontSize: 18 }}>生活中心</h3>
-              <span style={{ fontSize: 14 }}>待办与物品追踪</span>
+              <h3>生活中心</h3>
+              <span>待办与物品追踪</span>
             </div>
             <span className="dash-arrow">→</span>
           </div>
           <div className="dash-card-bd">
             {l.map((m, i) => (
-              <div key={i} className="dash-metric-row" style={{ padding: '12px 0' }}>
-                <span className="dash-metric-label" style={{ fontSize: 15 }}>{m.label}</span>
-                <span className="dash-metric-value" style={{ fontSize: 18, fontWeight: 700 }}>{m.value}</span>
+              <div key={i} className="dash-metric-row is-loose">
+                <span className="dash-metric-label">{m.label}</span>
+                <span className="dash-metric-value is-strong">{m.value}</span>
               </div>
             ))}
-            <div style={{ textAlign: 'center', marginTop: 12 }}>
-              <span className="trend-tag trend-up" style={{ fontSize: 13, padding: '4px 12px', background: 'var(--color-primary-bg)', color: 'var(--color-primary)' }}>管理生活 →</span>
+            <div className="dash-trend-cta">
+              <span className="dash-trend-cta-pill is-primary">管理生活 →</span>
             </div>
           </div>
         </Link>
 
         {/* ====== 6. 最近动态（表格）====== */}
         <div className="dash-masonry-item dash-card">
-          <div className="dash-card-hd" style={{ paddingBottom: 16 }}>
+          <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-notif"><IconBell /></div>
             <div className="dash-card-title-area">
-              <h3 style={{ fontSize: 18 }}>最近动态</h3>
-              <span style={{ fontSize: 14 }}>实时活动记录</span>
+              <h3>最近动态</h3>
+              <span>实时活动记录</span>
             </div>
           </div>
           <div className="dash-card-bd">
             {timelineItems.length > 0 ? (
               <>
-                {/* 表头 */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(160px,auto) minmax(60px,auto) 1fr', gap: 16, padding: '8px 0', borderBottom: '1px solid var(--color-surface-3)' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink-mute)' }}>日期时间</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink-mute)' }}>类型</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink-mute)' }}>具体内容</span>
+                <div className="dash-timeline-grid dash-timeline-header">
+                  <span>日期时间</span>
+                  <span>类型</span>
+                  <span>具体内容</span>
                 </div>
-                {/* 数据行 */}
                 {timelineItems.map((item, i) => (
-                  <div key={i} style={{
-                    display: 'grid', gridTemplateColumns: 'minmax(160px,auto) minmax(60px,auto) 1fr', gap: 16,
-                    padding: '12px 0', borderBottom: i < timelineItems.length - 1 ? '1px solid var(--color-surface-3)' : 'none',
-                    alignItems: 'center',
-                  }}>
-                    <span style={{ fontSize: 13, color: 'var(--color-ink-secondary)', whiteSpace: 'nowrap' }}>{item.time}</span>
-                    <span style={{
-                      fontSize: 13, fontWeight: 500,
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      padding: '2px 10px', borderRadius: 10, width: 'fit-content',
-                      background: item.module === '通知' ? 'color-mix(in srgb,var(--color-primary) 10%,transparent)' : 'color-mix(in srgb,#f59e0b 8%,transparent)',
-                      color: item.module === '通知' ? 'var(--color-primary)' : '#b45309',
-                    }}>{item.module}</span>
-                    <span style={{ fontSize: 14, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</span>
+                  <div key={i} className="dash-timeline-grid dash-timeline-row">
+                    <span className="dash-timeline-cell-time">{item.time}</span>
+                    <span className={`dash-timeline-cell-module ${item.moduleClass}`}>{item.module}</span>
+                    <span className="dash-timeline-cell-title">{item.title}</span>
                   </div>
                 ))}
               </>
@@ -486,37 +453,37 @@ export default function Dashboard() {
 
         {/* ====== 7. 通知渠道状态 ====== */}
         <div className="dash-masonry-item dash-card">
-          <div className="dash-card-hd" style={{ paddingBottom: 16 }}>
+          <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-notif"><IconBell /></div>
             <div className="dash-card-title-area">
-              <h3 style={{ fontSize: 18 }}>通知中心</h3>
-              <span style={{ fontSize: 14 }}>渠道与日志状态</span>
+              <h3>通知中心</h3>
+              <span>渠道与日志状态</span>
             </div>
           </div>
           <div className="dash-card-bd">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
-              <div style={{ padding: '14px 16px', background: 'var(--color-surface-2)', borderRadius: 12, textAlign: 'center' }}>
-                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-primary)' }}>{summary.notifications.enabledChannels}</div>
-                <div style={{ fontSize: 14, color: 'var(--color-ink-mute)', marginTop: 4 }}>已启用渠道</div>
+            <div className="dash-notif-stats">
+              <div className="dash-notif-stat">
+                <div className="dash-notif-stat-value is-primary">{summary.notifications.enabledChannels}</div>
+                <div className="dash-notif-stat-label">已启用渠道</div>
               </div>
-              <div style={{ padding: '14px 16px', background: 'var(--color-surface-2)', borderRadius: 12, textAlign: 'center' }}>
-                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-ink)' }}>{summary.notifications.logCount}</div>
-                <div style={{ fontSize: 14, color: 'var(--color-ink-mute)', marginTop: 4 }}>最近日志数</div>
+              <div className="dash-notif-stat">
+                <div className="dash-notif-stat-value">{summary.notifications.logCount}</div>
+                <div className="dash-notif-stat-label">最近日志数</div>
               </div>
             </div>
-            <div style={{ borderTop: '1px solid var(--color-surface-3)', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 15 }}>
-                <span style={{ color: 'var(--color-ink-secondary)' }}>邮件通道</span>
+            <div className="dash-notif-channel-list">
+              <div className="dash-notif-channel-row">
+                <span className="dash-notif-channel-row-label">邮件通道</span>
                 <Tag tone={channelActivity.email ? 'green' : 'default'}>{channelActivity.email ? '有日志' : '静默'}</Tag>
-              </span>
-              <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 15 }}>
-                <span style={{ color: 'var(--color-ink-secondary)' }}>企业微信</span>
+              </div>
+              <div className="dash-notif-channel-row">
+                <span className="dash-notif-channel-row-label">企业微信</span>
                 <Tag tone={channelActivity.wechatWork ? 'green' : 'default'}>{channelActivity.wechatWork ? '有日志' : '静默'}</Tag>
-              </span>
-              <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 15 }}>
-                <span style={{ color: 'var(--color-ink-secondary)' }}>Webhook</span>
+              </div>
+              <div className="dash-notif-channel-row">
+                <span className="dash-notif-channel-row-label">Webhook</span>
                 <Tag tone={channelActivity.webhook ? 'green' : 'default'}>{channelActivity.webhook ? '有日志' : '静默'}</Tag>
-              </span>
+              </div>
             </div>
           </div>
         </div>
