@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { DatePickerField } from '../date';
@@ -121,7 +121,7 @@ export function FitnessWeightSection({
     {
       key: 'weight',
       title: '体重',
-      render: (_value: unknown, record: WeightRecord) => `${record.weight.toFixed(1)} kg`,
+      render: (_value: unknown, record: WeightRecord) => `${record.weight.toFixed(2)} kg`,
     },
     {
       key: 'height',
@@ -220,7 +220,7 @@ export function FitnessWeightSection({
             label="体重（kg）"
             type="number"
             min="1"
-            step="0.1"
+            step="0.01"
             value={form.weight}
             onChange={(event) => setForm((previous) => ({ ...previous, weight: event.target.value }))}
           />
@@ -235,7 +235,7 @@ export function FitnessWeightSection({
             label="体脂（%）"
             type="number"
             min="0"
-            step="0.1"
+            step="0.01"
             value={form.bodyFat}
             onChange={(event) => setForm((previous) => ({ ...previous, bodyFat: event.target.value }))}
           />
@@ -305,7 +305,7 @@ export function FitnessWeightSection({
               label="体重（kg）"
               type="number"
               min="1"
-              step="0.1"
+              step="0.01"
               value={editingForm.weight}
               onChange={(event) => setEditingForm((previous) => ({ ...previous, weight: event.target.value }))}
             />
@@ -320,7 +320,7 @@ export function FitnessWeightSection({
               label="体脂（%）"
               type="number"
               min="0"
-              step="0.1"
+              step="0.01"
               value={editingForm.bodyFat}
               onChange={(event) => setEditingForm((previous) => ({ ...previous, bodyFat: event.target.value }))}
             />
