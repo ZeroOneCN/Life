@@ -215,6 +215,17 @@ export default function Dashboard() {
     return items.sort((a, b) => b.sortKey - a.sortKey);
   }, [summary]);
 
+  /* 从最近日志中判断各渠道是否已配置 */
+  const channelStatus = useMemo(() => {
+    if (!summary) return { email: false, wechatWork: false, webhook: false };
+    const channels = new Set(summary.notifications.recentLogs.map((log) => log.channel));
+    return {
+      email: channels.has('email'),
+      wechatWork: channels.has('wechatWork'),
+      webhook: channels.has('webhook'),
+    };
+  }, [summary]);
+
   if (!summary) {
     return (
       <div className="page-stack dashboard-page">
@@ -231,16 +242,6 @@ export default function Dashboard() {
   const stepsNum = Number(h[0]?.value || 0);
   const pnlVal = Number(inv[0]?.value?.replace(/[^0-9.-]/g, '') || 0);
   const isPnlPositive = pnlVal >= 0;
-
-  /* 从最近日志中判断各渠道是否已配置 */
-  const channelStatus = useMemo(() => {
-    const channels = new Set(summary.notifications.recentLogs.map((log) => log.channel));
-    return {
-      email: channels.has('email'),
-      wechatWork: channels.has('wechatWork'),
-      webhook: channels.has('webhook'),
-    };
-  }, [summary]);
 
   return (
     <div className="page-stack dashboard-page">
