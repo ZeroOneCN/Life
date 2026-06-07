@@ -427,7 +427,7 @@ export function buildWeightTrend(records: WeightRecord[], days = FITNESS_DASHBOA
     return {
       date,
       label: dayjs(date).format('MM-DD'),
-      weight: Number(averageWeight.toFixed(1)),
+      weight: Number(averageWeight.toFixed(2)),
       bodyFat: Number(averageBodyFat.toFixed(1)),
     };
   });

@@ -137,7 +137,7 @@ export default function Dashboard() {
           agenda: raw.agenda,
           health: buildModule('健康中心', [
             { label: '今日步数', value: `${raw.health.stats.todayStepCount}`, helper: '' },
-            { label: '体重', value: raw.health.stats.latestWeight ? `${raw.health.stats.latestWeight}` : '-', helper: '' },
+            { label: '体重', value: raw.health.stats.latestWeight ? `${raw.health.stats.latestWeight.toFixed(2)}` : '-', helper: '' },
             { label: '净热量', value: raw.health.stats.todayCalorieNet ? `${raw.health.stats.todayCalorieNet} kcal` : '-', helper: '' },
             { label: '待体检', value: `${raw.health.stats.checkupPendingCount}项`, helper: '' },
             { label: '药品低库存', value: `${raw.health.stats.medicationLowStockCount}种`, helper: '' },

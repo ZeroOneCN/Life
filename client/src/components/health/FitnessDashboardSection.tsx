@@ -146,7 +146,7 @@ export function FitnessDashboardSection({
             },
             {
               label: '最新体重',
-              value: overview.latestWeightKg === null ? '-' : `${overview.latestWeightKg.toFixed(1)} kg`,
+              value: overview.latestWeightKg === null ? '-' : `${overview.latestWeightKg.toFixed(2)} kg`,
               helper: overview.bmi === null ? '暂无 BMI' : `BMI ${overview.bmi.toFixed(1)}`,
             },
             {
