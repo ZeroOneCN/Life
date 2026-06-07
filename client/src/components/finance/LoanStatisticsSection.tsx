@@ -36,7 +36,7 @@ const tooltipStyle = {
   boxShadow: 'var(--shadow-soft)',
 };
 
-const breakdownColors = ['#0f766e', '#ea580c', '#2563eb', '#7c3aed', '#ca8a04', '#dc2626'];
+const breakdownColors = [...CHART_CATEGORY_6];
 
 function ChartCard({
   title,

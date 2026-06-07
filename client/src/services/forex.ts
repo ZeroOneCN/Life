@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 
+import { CHART_CATEGORY_8, CHART_PNL, FOREX_INSTRUMENT } from '../lib/chartPalette';
 import type {
   ForexCalculationResult,
   ForexCalculatorPositionDraft,
@@ -38,11 +39,8 @@ export const FOREX_POINT_SIZES: Record<ForexInstrument, number> = {
   XAUUSD: 0.01,
   XAGUSD: 0.001,
 };
-export const FOREX_INSTRUMENT_COLORS: Record<ForexInstrument, string> = {
-  XAUUSD: '#f59e0b',
-  XAGUSD: '#5e6ad2',
-};
-export const FOREX_PNL_COLORS = ['#27a644', '#5e6ad2', '#f59e0b', '#e5484d'] as const;
+export const FOREX_INSTRUMENT_COLORS: Record<ForexInstrument, string> = FOREX_INSTRUMENT;
+export const FOREX_PNL_COLORS = [CHART_PNL.up, CHART_CATEGORY_8[0], CHART_CATEGORY_8[3], CHART_PNL.down] as const;
 
 function buildId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {

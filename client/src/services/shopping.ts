@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
 
+import { CHART_CATEGORY_8 } from '../lib/chartPalette';
 import type {
   ShoppingCurrencyMode,
   ShoppingImportInvalidRow,
@@ -26,16 +27,7 @@ export const SHOPPING_RECORD_PAGE_SIZE = 10;
 export const DEFAULT_USDT_RATE = 7;
 export const SHOPPING_ALL_LEDGERS = 'all';
 
-export const SHOPPING_PLATFORM_COLOR_PRESETS = [
-  '#5e6ad2',
-  '#1eaedb',
-  '#27a644',
-  '#f59e0b',
-  '#e5484d',
-  '#10b981',
-  '#c084fc',
-  '#f97316',
-] as const;
+export const SHOPPING_PLATFORM_COLOR_PRESETS = CHART_CATEGORY_8;
 
 function buildId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {

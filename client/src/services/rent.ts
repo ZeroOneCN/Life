@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 
+import { CHART_CATEGORY_8, RENT_COST } from '../lib/chartPalette';
 import type {
   RentChannel,
   RentChannelBreakdownPoint,
@@ -18,17 +19,8 @@ const DATE_TIME_FORMAT = 'YYYY-MM-DDTHH:mm';
 export const DEFAULT_RENT_USER_ID = 'user-001';
 export const RENT_RECORD_PAGE_SIZE = 10;
 export const RENT_ALL_CHANNELS = 'all';
-export const RENT_CHANNEL_COLORS = ['#5e6ad2', '#1eaedb', '#27a644', '#f59e0b', '#e5484d', '#10b981', '#f97316'] as const;
-export const RENT_COST_COLORS = {
-  rent: '#5e6ad2',
-  electricityFee: '#f59e0b',
-  waterFee: '#1eaedb',
-  gasFee: '#10b981',
-  agencyFee: '#e5484d',
-  cleaningFee: '#c084fc',
-  laundryFee: '#f97316',
-  serviceFee: '#27a644',
-} as const;
+export const RENT_CHANNEL_COLORS = CHART_CATEGORY_8;
+export const RENT_COST_COLORS = RENT_COST;
 
 function buildId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {

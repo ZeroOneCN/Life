@@ -14,6 +14,7 @@ import {
 
 import { EmptyState, SectionCard, StatGrid } from '../page';
 import { SelectField, Tag } from '../ui';
+import { CHART_CATEGORY_8, CHART_PNL } from '../../lib/chartPalette';
 import {
   buildSubscriptionCategoryBreakdown,
   buildSubscriptionExpiryTimeline,
@@ -81,8 +82,8 @@ export function SubscriptionDashboardSection({
     const manualCount = Math.max(0, activeRecords.length - autoCount);
 
     return [
-      { name: '自动续费', value: autoCount, color: '#5e6ad2' },
-      { name: '手动续费', value: manualCount, color: '#27a644' },
+      { name: '自动续费', value: autoCount, color: CHART_CATEGORY_8[0] },
+      { name: '手动续费', value: manualCount, color: CHART_PNL.up },
     ].filter((item) => item.value > 0);
   }, [records, settings.leadDays]);
 

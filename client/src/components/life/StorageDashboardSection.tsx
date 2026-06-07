@@ -3,6 +3,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 
 import { EmptyState, SectionCard } from '../page';
 import { buildApiErrorMessage } from '../../lib/api';
+import { CHART_CATEGORY_6 } from '../../lib/chartPalette';
 import { formatStorageMoney } from '../../services/storage';
 import { storageApi } from '../../services/storageApi';
 import type {

@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 
+import { CHART_DOSAGE } from '../lib/chartPalette';
 import type {
   MedicationDailySummary,
   MedicationOverviewSummary,
@@ -34,10 +35,10 @@ export const MEDICATION_REMINDER_META: Record<MedicationReminderTimeKey, { label
 export const MEDICATION_UNITS = ['片', '粒', '袋', '盒', '瓶'] as const;
 export const MEDICATION_CHANNELS = ['药店', '京东', '淘宝', '拼多多', '医院', '诊所'] as const;
 export const MEDICATION_TIME_COLORS: Record<MedicationReminderTimeKey | 'total', string> = {
-  breakfast: '#1eaedb',
-  lunch: '#27a644',
-  dinner: '#f59e0b',
-  total: '#5e6ad2',
+  breakfast: CHART_DOSAGE.breakfast,
+  lunch: CHART_DOSAGE.lunch,
+  dinner: CHART_DOSAGE.dinner,
+  total: CHART_DOSAGE.total,
 };
 
 function buildId() {

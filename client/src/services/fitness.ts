@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 
+import { CHART_EXERCISE, CHART_INTENSITY, CHART_MACRO, CHART_MEAL } from '../lib/chartPalette';
 import type {
   CalorieTrendPoint,
   CostTrendPoint,
@@ -31,25 +32,25 @@ export const FITNESS_RECORD_PAGE_SIZE = 10;
 export const FITNESS_DASHBOARD_DAYS = 30;
 
 export const MEAL_TYPE_META: Record<MealType, { label: string; color: string }> = {
-  breakfast: { label: '早餐', color: '#f0b90b' },
-  lunch: { label: '午餐', color: '#0ecb81' },
-  dinner: { label: '晚餐', color: '#f6465d' },
-  snack: { label: '加餐', color: '#1eaedb' },
+  breakfast: { label: '早餐', color: CHART_MEAL.breakfast },
+  lunch: { label: '午餐', color: CHART_MEAL.lunch },
+  dinner: { label: '晚餐', color: CHART_MEAL.dinner },
+  snack: { label: '加餐', color: CHART_MEAL.snack },
 };
 
 export const EXERCISE_TYPE_META: Record<ExerciseType, { label: string; color: string }> = {
-  cardio: { label: '有氧', color: '#f6465d' },
-  strength: { label: '力量', color: '#1eaedb' },
-  flexibility: { label: '柔韧', color: '#a855f7' },
+  cardio: { label: '有氧', color: CHART_EXERCISE.cardio },
+  strength: { label: '力量', color: CHART_EXERCISE.strength },
+  flexibility: { label: '柔韧', color: CHART_EXERCISE.flexibility },
 };
 
 export const INTENSITY_LEVEL_META: Record<IntensityLevel, { label: string; color: string }> = {
-  low: { label: '低', color: '#848e9c' },
-  medium: { label: '中', color: '#f0b90b' },
-  high: { label: '高', color: '#f6465d' },
+  low: { label: '低', color: CHART_INTENSITY.low },
+  medium: { label: '中', color: CHART_INTENSITY.medium },
+  high: { label: '高', color: CHART_INTENSITY.high },
 };
 
-export const MACRO_COLORS = ['#f0b90b', '#1eaedb', '#f6465d'];
+export const MACRO_COLORS = [CHART_MACRO.carb, CHART_MACRO.protein, CHART_MACRO.fat];
 
 function buildId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {

@@ -217,8 +217,8 @@ export function FitnessDashboardSection({
                       ]}
                     />
                     <Legend />
-                    <Line yAxisId="left" type="monotone" dataKey="weight" stroke="#f0b90b" strokeWidth={2.5} dot={false} name="体重" />
-                    <Line yAxisId="right" type="monotone" dataKey="bodyFat" stroke="#1eaedb" strokeWidth={2.5} dot={false} name="体脂" />
+                    <Line yAxisId="left" type="monotone" dataKey="weight" stroke={CHART_CATEGORY_8[3]} strokeWidth={2.5} dot={false} name="体重" />
+                    <Line yAxisId="right" type="monotone" dataKey="bodyFat" stroke={CHART_CATEGORY_8[1]} strokeWidth={2.5} dot={false} name="体脂" />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -273,11 +273,11 @@ export function FitnessDashboardSection({
                       contentStyle={tooltipStyle}
                       formatter={(value) => [`¥${Number(value ?? 0).toFixed(2)}`, '成本']}
                     />
-                    <Bar dataKey="cost" fill="#5e6ad2" radius={[6, 6, 0, 0]} name="成本">
+                    <Bar dataKey="cost" fill={CHART_CATEGORY_8[0]} radius={[6, 6, 0, 0]} name="成本">
                       {costTrendData.map((point) => (
                         <Cell
                           key={point.date}
-                          fill={point.cost > 40 ? '#f6465d' : '#5e6ad2'}
+                          fill={point.cost > 40 ? CHART_PNL.down : CHART_CATEGORY_8[0]}
                         />
                       ))}
                     </Bar>

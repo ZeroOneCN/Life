@@ -16,6 +16,7 @@ import {
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard, StatGrid } from '../page';
 import { Btn, Tag } from '../ui';
+import { CHART_CATEGORY_8, CHART_PNL } from '../../lib/chartPalette';
 import { apiPost } from '../../lib/api';
 import {
   buildForexDailyPnlTrend,
@@ -512,8 +513,8 @@ export function ForexDashboardSection({
                   <PieChart>
                     <Pie
                       data={[
-                        { name: '盈利', value: Math.max(0, winCount), color: '#27a644' },
-                        { name: '亏损', value: Math.max(0, lossCount), color: '#e5484d' },
+                        { name: '盈利', value: Math.max(0, winCount), color: CHART_PNL.up },
+                        { name: '亏损', value: Math.max(0, lossCount), color: CHART_PNL.down },
                       ]}
                       cx="50%"
                       cy="50%"
@@ -524,8 +525,8 @@ export function ForexDashboardSection({
                       stroke="none"
                     >
                       {[
-                        { name: '盈利', value: Math.max(0, winCount), color: '#27a644' },
-                        { name: '亏损', value: Math.max(0, lossCount), color: '#e5484d' },
+                        { name: '盈利', value: Math.max(0, winCount), color: CHART_PNL.up },
+                        { name: '亏损', value: Math.max(0, lossCount), color: CHART_PNL.down },
                       ].map((entry, index) => (
                         <Cell key={index} fill={entry.color} />
                       ))}

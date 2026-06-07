@@ -56,7 +56,7 @@ const TREND_ORDER: Record<(typeof TREND_SERIES)[number]['key'], number> = {
   total: 3,
 };
 
-const DOSAGE_SHARE_COLORS = ['#5e6ad2', '#1eaedb', '#27a644', '#f59e0b', '#e5484d', '#10b981', '#c084fc', '#f97316'];
+const DOSAGE_SHARE_COLORS = [...CHART_CATEGORY_8];
 
 function ChartCard({
   title,

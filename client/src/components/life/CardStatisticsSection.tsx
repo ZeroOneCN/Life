@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 
 import { EmptyState, SectionCard, StatGrid } from '../page';
+import { CHART_CATEGORY_8 } from '../../lib/chartPalette';
 import {
   buildLifeCardCarrierBreakdown,
   buildLifeCardMonthlyTrend,

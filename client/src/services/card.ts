@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 
+import { CHART_CATEGORY_8 } from '../lib/chartPalette';
 import type {
   CardTab,
   LifeCardBillDraft,
@@ -38,16 +39,7 @@ export const CARD_BALANCE_RANGE_OPTIONS = [
   { range: '50-100 元', min: 50, max: 100 },
   { range: '100 元以上', min: 100, max: Number.POSITIVE_INFINITY },
 ] as const;
-export const CARD_CHART_COLORS = [
-  '#5e6ad2',
-  '#1eaedb',
-  '#27a644',
-  '#f59e0b',
-  '#e5484d',
-  '#10b981',
-  '#0ea5e9',
-  '#f97316',
-] as const;
+export const CARD_CHART_COLORS = CHART_CATEGORY_8;
 
 function buildId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {

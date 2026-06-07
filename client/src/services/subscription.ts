@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 
+import { CHART_CATEGORY_8 } from '../lib/chartPalette';
 import type {
   SubscriptionBillingCycle,
   SubscriptionCategory,
@@ -19,16 +20,7 @@ const DATE_TIME_FORMAT = 'YYYY-MM-DDTHH:mm';
 
 export const SUBSCRIPTION_PAGE_SIZE = 10;
 export const SUBSCRIPTION_ALL_CATEGORIES = 'all';
-export const SUBSCRIPTION_CATEGORY_COLORS = [
-  '#5e6ad2',
-  '#1eaedb',
-  '#27a644',
-  '#f59e0b',
-  '#e5484d',
-  '#10b981',
-  '#f97316',
-  '#c084fc',
-] as const;
+export const SUBSCRIPTION_CATEGORY_COLORS = CHART_CATEGORY_8;
 
 function buildId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
