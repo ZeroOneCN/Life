@@ -47,6 +47,7 @@ import {
   type InvestmentTradeDraft,
   INVESTMENT_MARKET_CONFIG,
 } from '../../types/investment';
+import { CHART_CATEGORY_8 } from '../../lib/chartPalette';
 
 interface InvestmentTradePageProps {
   market: InvestmentMarket;
@@ -300,7 +301,7 @@ function DashboardView({
   trades: InvestmentTrade[];
   positions: ReturnType<typeof buildPositions>;
 }) {
-  const symbolColors = ['#5e6ad2', '#1eaedb', '#27a644', '#f59e0b', '#e5484d', '#10b981', '#a855f7', '#ec4899'];
+  const symbolColors = [...CHART_CATEGORY_8];
   const maxPnl = Math.max(...summary.symbolPnl.map((s) => Math.abs(s.pnl)), 1);
 
   if (trades.length === 0) {
@@ -901,7 +902,7 @@ function TradesView({
           {row.tags.length > 0 ? (
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 2 }}>
               {row.tags.map((tag) => (
-                <span key={tag} className="tag tag-blue" style={{ fontSize: 11, padding: '2px 8px' }}>{tag}</span>
+                <span key={tag} className="tag tag-blue tag-sm">{tag}</span>
               ))}
             </div>
           ) : null}
