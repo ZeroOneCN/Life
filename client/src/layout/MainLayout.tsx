@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { Btn, Modal } from '../components/ui';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { menuItems, routes } from '../config/navigation';
 import { useTheme } from '../hooks/useTheme';
 import { logout, useAuthState } from '../services/auth';
@@ -358,7 +359,9 @@ export default function MainLayout() {
           </div>
         </header>
         <main className="content">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
 
