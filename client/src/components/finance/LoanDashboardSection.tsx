@@ -63,7 +63,7 @@ export function LoanDashboardSection({
         />
 
         <div className="loan-dashboard-grid">
-          <div className="fitness-chart-card">
+          <div className="chart-card">
             <div className="fitness-chart-header">
               <strong>近期待还账单</strong>
               <span>按到期日从近到远排序，方便先处理最紧急的账单。</span>
@@ -108,7 +108,7 @@ export function LoanDashboardSection({
             )}
           </div>
 
-          <div className="fitness-chart-card">
+          <div className="chart-card">
             <div className="fitness-chart-header">
               <strong>平台负债分布</strong>
               <span>快速识别待还压力最大的贷款平台。</span>

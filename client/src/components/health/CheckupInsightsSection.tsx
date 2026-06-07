@@ -131,7 +131,7 @@ export function CheckupInsightsSection({
         </div>
 
         <div className="two-column-layout">
-          <div className="fitness-chart-card">
+          <div className="chart-card">
             <div className="fitness-chart-header">
               <strong>待复查列表</strong>
               <span>显示临近或逾期的异常/关注指标。</span>
@@ -182,7 +182,7 @@ export function CheckupInsightsSection({
             )}
           </div>
 
-          <div className="fitness-chart-card">
+          <div className="chart-card">
             <div className="fitness-chart-header">
               <strong>最近触发日志</strong>
               <span>只展示体检场景相关的发送和测试记录。</span>

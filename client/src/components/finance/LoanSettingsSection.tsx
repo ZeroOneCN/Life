@@ -155,7 +155,7 @@ export function LoanSettingsSection({
           />
         </div>
 
-        <div className="fitness-chart-card">
+        <div className="chart-card">
           <div className="fitness-chart-header">
             <strong>最近提醒日志</strong>
             <span>{loading ? '正在同步贷款提醒日志。' : '这里只展示贷款相关场景的最新提醒记录。'}</span>

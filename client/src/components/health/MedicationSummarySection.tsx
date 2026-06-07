@@ -171,7 +171,7 @@ export function MedicationSummarySection({
         </div>
 
         <div className="medication-summary-grid">
-          <div className="fitness-chart-card">
+          <div className="chart-card">
             <div className="fitness-chart-header">
               <strong>每日总结</strong>
               <span>当天总用量 {selectedDateTotal}，可以记录症状、观察和服药反馈。</span>
@@ -188,7 +188,7 @@ export function MedicationSummarySection({
             </div>
           </div>
 
-          <div className="fitness-chart-card">
+          <div className="chart-card">
             <div className="fitness-chart-header">
               <strong>本月已写摘要</strong>
               <span>快速查看当前月份下已经保存的用药总结。</span>
@@ -297,7 +297,7 @@ export function MedicationSummarySection({
         </div>
 
         <div className="two-column-layout">
-          <div className="fitness-chart-card">
+          <div className="chart-card">
             <div className="fitness-chart-header">
               <strong>库存估算列表</strong>
               <span>低库存、混合单位和缺失购药记录都会在这里汇总。</span>
@@ -379,7 +379,7 @@ export function MedicationSummarySection({
             ) : null}
           </div>
 
-          <div className="fitness-chart-card">
+          <div className="chart-card">
             <div className="fitness-chart-header">
               <strong>最近提醒日志</strong>
               <span>只展示 medication 模块自己的提醒发送记录。</span>
