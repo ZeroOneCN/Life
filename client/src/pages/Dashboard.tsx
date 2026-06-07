@@ -199,19 +199,20 @@ export default function Dashboard() {
   const timelineItems = useMemo(() => {
     if (!summary) return [];
     const items: Array<{ time: string; module: string; title: string; sortKey: number }> = [];
-    summary.notifications.recentLogs.slice(0, 5).forEach((log) => {
+    summary.notifications.recentLogs.slice(0, 6).forEach((log) => {
       const d = new Date(log.createdAt);
       const month = (d.getMonth() + 1).toString().padStart(2, '0');
       const day = d.getDate().toString().padStart(2, '0');
       const hour = d.getHours().toString().padStart(2, '0');
       const minute = d.getMinutes().toString().padStart(2, '0');
-      items.push({ time: `${month}-${day} ${hour}:${minute}`, module: '通知', title: log.title, sortKey: d.getTime() });
+      const second = d.getSeconds().toString().padStart(2, '0');
+      items.push({ time: `${month}-${day} ${hour}:${minute}:${second}`, module: '通知', title: log.title, sortKey: d.getTime() });
     });
-    summary.agenda.slice(0, 3).forEach((item) => {
+    summary.agenda.slice(0, 4).forEach((item) => {
       const sortKey = item.targetDate ? new Date(item.targetDate).getTime() : 0;
-      items.push({ time: item.targetDate ? item.targetDate.split('T')[0] : '-', module: item.module, title: item.title, sortKey });
+      items.push({ time: item.targetDate ? item.targetDate.replace('T', ' ').slice(0, 19) : '-', module: item.module, title: item.title, sortKey });
     });
-    return items.sort((a, b) => b.sortKey - a.sortKey).slice(0, 6);
+    return items.sort((a, b) => b.sortKey - a.sortKey);
   }, [summary]);
 
   if (!summary) {
@@ -228,9 +229,18 @@ export default function Dashboard() {
   const hasAgenda = summary.agenda.length > 0;
   const h = summary.health.metrics, f = summary.finance.metrics, l = summary.life.metrics, inv = summary.investment.metrics;
   const stepsNum = Number(h[0]?.value || 0);
-  const stepPercent = Math.min(100, Math.round(stepsNum / 100));
   const pnlVal = Number(inv[0]?.value?.replace(/[^0-9.-]/g, '') || 0);
   const isPnlPositive = pnlVal >= 0;
+
+  /* 从最近日志中判断各渠道是否已配置 */
+  const channelStatus = useMemo(() => {
+    const channels = new Set(summary.notifications.recentLogs.map((log) => log.channel));
+    return {
+      email: channels.has('email'),
+      wechatWork: channels.has('wechatWork'),
+      webhook: channels.has('webhook'),
+    };
+  }, [summary]);
 
   return (
     <div className="page-stack dashboard-page">
@@ -247,6 +257,38 @@ export default function Dashboard() {
 
       <div className="dash-masonry">
 
+        {/* ====== 0. 待办事项（顶部一行，全宽横跨）====== */}
+        {hasAgenda ? (
+          <div className="dash-masonry-item dash-card" style={{ breakInside: 'avoid-column', marginBottom: 24 }}>
+            <div className="dash-card-hd" style={{ paddingBottom: 16 }}>
+              <div className="dash-card-icon dash-bg-life"><IconTodo /></div>
+              <div className="dash-card-title-area">
+                <h3 style={{ fontSize: 18 }}>待处理事项</h3>
+                <span style={{ fontSize: 14 }}>共 {summary.agenda.length} 项需要关注</span>
+              </div>
+              <Link to="/life/todo?todoTab=tasks" style={{ textDecoration: 'none', color: 'var(--color-primary)', fontSize: 15, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                查看全部 →
+              </Link>
+            </div>
+            <div className="dash-card-bd">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {agendaInline.map((item) => (
+                  <Link key={item.id} to={item.href} style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
+                    borderRadius: 12, background: 'var(--color-surface-2)', border: '1px solid var(--color-hairline)',
+                    textDecoration: 'none', color: 'inherit', fontSize: 15,
+                    transition: 'all 0.15s',
+                  }}>
+                    <span style={{ lineHeight: 1, flexShrink: 0 }}>{item.dot}</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{item.title}</span>
+                    <span style={{ flexShrink: 0, color: 'var(--color-ink-mute)', fontSize: 13 }}>→</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {/* ====== 1. 健康中心（大模块，可点击跳转）====== */}
         <Link to="/health/step" className="dash-masonry-item dash-card dash-card-link">
           <div className="dash-card-hd" style={{ paddingBottom: 16 }}>
@@ -258,9 +300,9 @@ export default function Dashboard() {
             <span className="dash-arrow">→</span>
           </div>
           <div className="dash-card-bd">
-            {/* 步数大数字 */}
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 14, color: 'var(--color-ink-secondary)', marginBottom: 4 }}>今日步数</div>
+            {/* 步数大数字（无目标进度条） */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 14, color: 'var(--color-ink-secondary)', marginBottom: 6 }}>今日步数</div>
               <div style={{
                 fontSize: 48, fontWeight: 700, lineHeight: 1.1, letterSpacing: -1.5,
                 background: 'linear-gradient(135deg, var(--color-primary), #7c3aed)',
@@ -269,19 +311,16 @@ export default function Dashboard() {
                 {h[0]?.value?.toLocaleString() || '0'}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
-                <span style={{ fontSize: 15, color: 'var(--color-ink-secondary)' }}>目标 10,000 步</span>
-                <span style={{ fontSize: 15, fontWeight: 600, color: isPnlPositive ? '#059669' : '#dc2626' }}>{stepPercent}%</span>
-              </div>
-              <div className="dash-progress-bar" style={{ marginTop: 10 }}>
-                <div className="dash-progress-fill" style={{ width: `${stepPercent}%`, background: 'linear-gradient(90deg,var(--color-primary),#7c3aed)' }}></div>
+                <span style={{ fontSize: 15, color: 'var(--color-ink-secondary)' }}>今日已录入</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#059669' }}>{stepsNum.toLocaleString()} 步</span>
               </div>
             </div>
             {/* 指标网格 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               {h.slice(1).map((m, i) => (
-                <div key={i} style={{ padding: '12px 14px', background: 'var(--color-surface-2)', borderRadius: 12 }}>
-                  <div style={{ fontSize: 13, color: 'var(--color-ink-mute)', marginBottom: 4 }}>{m.label}</div>
-                  <div style={{ fontSize: 20, fontWeight: 700 }}>{m.value}</div>
+                <div key={i} style={{ padding: '14px 16px', background: 'var(--color-surface-2)', borderRadius: 12 }}>
+                  <div style={{ fontSize: 14, color: 'var(--color-ink-mute)', marginBottom: 6 }}>{m.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700 }}>{m.value}</div>
                 </div>
               ))}
             </div>
@@ -421,32 +460,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ====== 7. 待处理提醒条（条件渲染）====== */}
-        {hasAgenda ? (
-          <div className="dash-masonry-item dash-card">
-            <div className="dash-card-bd" style={{ padding: '20px 22px', background: 'color-mix(in srgb,#f59e0b 6%,var(--color-surface-2))', borderRadius: 16 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#92400e', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <IconWarning /> 待处理事项 ({summary.agenda.length})
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {agendaInline.map((item) => (
-                  <Link key={item.id} to={item.href} style={{
-                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px',
-                    borderRadius: 12, background: 'var(--color-canvas)', border: '1px solid var(--color-hairline)',
-                    textDecoration: 'none', color: 'inherit', fontSize: 15,
-                    transition: 'all 0.15s',
-                  }}>
-                    <span style={{ lineHeight: 1, flexShrink: 0 }}>{item.dot}</span>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</span>
-                    <span style={{ flexShrink: 0, color: 'var(--color-ink-mute)', fontSize: 13 }}>→</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        {/* ====== 8. 通知渠道状态 ====== */}
+        {/* ====== 7. 通知渠道状态 ====== */}
         <div className="dash-masonry-item dash-card">
           <div className="dash-card-hd" style={{ paddingBottom: 16 }}>
             <div className="dash-card-icon dash-bg-notif"><IconBell /></div>
@@ -469,15 +483,15 @@ export default function Dashboard() {
             <div style={{ borderTop: '1px solid var(--color-surface-3)', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
               <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 15 }}>
                 <span style={{ color: 'var(--color-ink-secondary)' }}>邮件通道</span>
-                <Tag tone="green">正常</Tag>
+                <Tag tone={channelStatus.email ? 'green' : 'default'}>{channelStatus.email ? '正常' : '未配置'}</Tag>
               </span>
               <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 15 }}>
                 <span style={{ color: 'var(--color-ink-secondary)' }}>企业微信</span>
-                <Tag tone="green">正常</Tag>
+                <Tag tone={channelStatus.wechatWork ? 'green' : 'default'}>{channelStatus.wechatWork ? '正常' : '未配置'}</Tag>
               </span>
               <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 15 }}>
                 <span style={{ color: 'var(--color-ink-secondary)' }}>Webhook</span>
-                <Tag tone="default">未配置</Tag>
+                <Tag tone={channelStatus.webhook ? 'green' : 'default'}>{channelStatus.webhook ? '已接入' : '未配置'}</Tag>
               </span>
             </div>
           </div>
