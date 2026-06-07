@@ -437,7 +437,7 @@ export default function Dashboard() {
           </div>
         </Link>
 
-        {/* ====== 6. 最近动态时间线 ====== */}
+        {/* ====== 6. 最近动态（表格）====== */}
         <div className="dash-masonry-item dash-card">
           <div className="dash-card-hd" style={{ paddingBottom: 16 }}>
             <div className="dash-card-icon dash-bg-notif"><IconBell /></div>
@@ -447,15 +447,34 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="dash-card-bd">
-            {timelineItems.length > 0 ? timelineItems.map((item, i) => (
-              <div key={i} className="dash-tl-item" style={{ paddingLeft: 18, paddingTop: 14, paddingBottom: 14 }}>
-                <span className="dash-tl-time" style={{ fontSize: 14, minWidth: 80, fontWeight: 500 }}>{item.time}</span>
-                <div className="dash-tl-body">
-                  <div className="dash-tl-title" style={{ fontSize: 15, fontWeight: 500 }}>{item.title}</div>
-                  <div className="dash-tl-module" style={{ fontSize: 13, marginTop: 4 }}>{item.module}</div>
+            {timelineItems.length > 0 ? (
+              <>
+                {/* 表头 */}
+                <div style={{ display: 'grid', gridTemplateColumns: '150px 70px 1fr', gap: 12, padding: '8px 4px', borderBottom: '1px solid var(--color-surface-3)' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink-mute)' }}>日期时间</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink-mute)' }}>类型</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink-mute)' }}>具体内容</span>
                 </div>
-              </div>
-            )) : (
+                {/* 数据行 */}
+                {timelineItems.map((item, i) => (
+                  <div key={i} style={{
+                    display: 'grid', gridTemplateColumns: '150px 70px 1fr', gap: 12,
+                    padding: '10px 4px', borderBottom: i < timelineItems.length - 1 ? '1px solid var(--color-surface-3)' : 'none',
+                    alignItems: 'center',
+                  }}>
+                    <span style={{ fontSize: 13, color: 'var(--color-ink-secondary)', whiteSpace: 'nowrap' }}>{item.time}</span>
+                    <span style={{
+                      fontSize: 13, fontWeight: 500,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '2px 10px', borderRadius: 10, width: 'fit-content',
+                      background: item.module === '通知' ? 'color-mix(in srgb,var(--color-primary) 10%,transparent)' : 'color-mix(in srgb,#f59e0b 8%,transparent)',
+                      color: item.module === '通知' ? 'var(--color-primary)' : '#b45309',
+                    }}>{item.module}</span>
+                    <span style={{ fontSize: 14, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</span>
+                  </div>
+                ))}
+              </>
+            ) : (
               <EmptyState title="暂无动态" description="当有新活动时会在这里显示" />
             )}
           </div>
