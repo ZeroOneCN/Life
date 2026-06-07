@@ -238,7 +238,7 @@ export function LoanStatisticsSection({
                 <ResponsiveContainer width="100%" height={320}>
                   <LineChart data={trendData}>
                     <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
+                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} interval="preserveStartEnd" minTickGap={16} padding={{ left: 8, right: 24 }} />
                     <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 12 }} />
                     <Tooltip
                       contentStyle={tooltipStyle}
