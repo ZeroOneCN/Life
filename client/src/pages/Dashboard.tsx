@@ -201,12 +201,13 @@ export default function Dashboard() {
     const items: Array<{ time: string; module: string; title: string; sortKey: number }> = [];
     summary.notifications.recentLogs.slice(0, 6).forEach((log) => {
       const d = new Date(log.createdAt);
+      const year = d.getFullYear();
       const month = (d.getMonth() + 1).toString().padStart(2, '0');
       const day = d.getDate().toString().padStart(2, '0');
       const hour = d.getHours().toString().padStart(2, '0');
       const minute = d.getMinutes().toString().padStart(2, '0');
       const second = d.getSeconds().toString().padStart(2, '0');
-      items.push({ time: `${month}-${day} ${hour}:${minute}:${second}`, module: '通知', title: log.title, sortKey: d.getTime() });
+      items.push({ time: `${year}-${month}-${day} ${hour}:${minute}:${second}`, module: '通知', title: log.title, sortKey: d.getTime() });
     });
     summary.agenda.slice(0, 4).forEach((item) => {
       const sortKey = item.targetDate ? new Date(item.targetDate).getTime() : 0;
