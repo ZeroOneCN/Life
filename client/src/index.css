@@ -652,36 +652,7 @@ textarea {
   margin-top: 10px;
   font-size: var(--fs-heading);
   letter-spacing: -0.04em;
-}
-
-/* ===== 中文显示修复：travel 页面相关元素使用支持 CJK 的字体栈 ===== */
-.stat-value,
-.data-table th,
-.data-table td,
-.travel-report-table th,
-.travel-report-table td,
-.travel-report-overview-card,
-.travel-report-overview-card span,
-.travel-report-overview-card strong,
-.travel-report-list-row,
-.travel-report-list-row strong,
-.travel-list-name,
-.travel-report-summary,
-.travel-amount-stack strong {
-  font-family: 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', 'Outfit', system-ui, sans-serif;
-}
-
-/* stat-value 包含中文时取消负字间距，避免中文挤在一起 */
-.stat-value:has(+ .stat-helper),
-.travel-report-overview-card strong,
-.travel-report-list-row strong,
-.travel-amount-stack strong {
-  letter-spacing: 0;
-}
-
-.data-table th,
-.travel-report-table th {
-  letter-spacing: 0;
+  font-family: var(--font-sans);
 }
 
 .stat-helper {
@@ -1408,6 +1379,7 @@ textarea {
   padding: 14px 12px;
   border-bottom: 1px solid var(--color-hairline);
   text-align: left;
+  font-family: var(--font-sans);
 }
 
 .data-table thead {
@@ -2784,6 +2756,7 @@ textarea {
   border-radius: 12px;
   background: var(--color-canvas);
   transition: box-shadow 0.2s ease, transform 0.2s ease;
+  font-family: var(--font-sans);
 }
 
 .travel-report-overview-card span {
@@ -2816,6 +2789,7 @@ textarea {
   padding: 7px 10px;
   border-radius: 8px;
   background: color-mix(in srgb, var(--color-surface-3) 70%, transparent);
+  font-family: var(--font-sans);
 }
 
 .travel-list-name {
@@ -2824,6 +2798,7 @@ textarea {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: var(--font-sans);
 }
 
 .travel-list-count {
