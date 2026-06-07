@@ -18,6 +18,36 @@ import { FinanceTravelImportBatchEntity } from './entities/finance-travel-import
 import { FinanceTravelPayChannelEntity } from './entities/finance-travel-pay-channel.entity';
 import { FinanceTravelSettingEntity } from './entities/finance-travel-setting.entity';
 
+/* 分类英文枚举 → 中文标签（与前端 CATEGORY_LABELS 保持一致） */
+const CATEGORY_LABELS: Record<string, string> = {
+  transport: '交通',
+  hotel: '住宿',
+  food: '餐饮',
+  ticket: '门票',
+  shopping: '购物',
+  other: '其他',
+};
+
+/* 中文旧值 → 英文枚举（兼容数据库中可能直接存中文的旧数据） */
+const CATEGORY_CHINESE_TO_ENUM: Record<string, string> = {
+  交通: 'transport',
+  住宿: 'hotel',
+  酒店: 'hotel',
+  餐饮: 'food',
+  美食: 'food',
+  门票: 'ticket',
+  购物: 'shopping',
+  其他: 'other',
+};
+
+function normalizeTravelCategoryLabel(value: string): string {
+  if (!value) return '其他';
+  if (CATEGORY_LABELS[value]) return CATEGORY_LABELS[value];
+  const enumValue = CATEGORY_CHINESE_TO_ENUM[value];
+  if (enumValue && CATEGORY_LABELS[enumValue]) return CATEGORY_LABELS[enumValue];
+  return value;
+}
+
 const bookSchema = z.object({
   userId: z.string().trim().optional(),
   name: z.string().trim().min(1).max(128),
@@ -178,25 +208,34 @@ function buildRecordKey(item: {
   ].join('|');
 }
 
-function buildSummary(records: FinanceTravelExpenseRecordEntity[]) {
+function buildSummary(records: FinanceTravelExpenseRecordEntity[], payChannels: Array<{ value: string; label: string }> = []) {
   const totalAmount = records.reduce((sum, item) => sum + Number(item.amount), 0);
   const totalSaved = records.reduce((sum, item) => sum + Number(item.discount_amount), 0);
   const paidAmount = totalAmount - totalSaved;
+  const channelLabelMap = new Map<string, string>(
+    payChannels.map((channel) => [channel.value.trim().toUpperCase(), channel.label]),
+  );
+  const resolvePayChannelLabel = (value: string) => {
+    const normalized = value.trim().toUpperCase();
+    return channelLabelMap.get(normalized) ?? value;
+  };
   const categoryBreakdown = new Map<string, { totalAmount: number; savedAmount: number; count: number }>();
   const channelBreakdown = new Map<string, { totalAmount: number; savedAmount: number; count: number }>();
 
   records.forEach((item) => {
-    const category = categoryBreakdown.get(item.category) ?? { totalAmount: 0, savedAmount: 0, count: 0 };
+    const categoryKey = normalizeTravelCategoryLabel(item.category);
+    const category = categoryBreakdown.get(categoryKey) ?? { totalAmount: 0, savedAmount: 0, count: 0 };
     category.totalAmount += Number(item.amount);
     category.savedAmount += Number(item.discount_amount);
     category.count += 1;
-    categoryBreakdown.set(item.category, category);
+    categoryBreakdown.set(categoryKey, category);
 
-    const channel = channelBreakdown.get(item.pay_channel) ?? { totalAmount: 0, savedAmount: 0, count: 0 };
+    const channelKey = resolvePayChannelLabel(item.pay_channel);
+    const channel = channelBreakdown.get(channelKey) ?? { totalAmount: 0, savedAmount: 0, count: 0 };
     channel.totalAmount += Number(item.amount);
     channel.savedAmount += Number(item.discount_amount);
     channel.count += 1;
-    channelBreakdown.set(item.pay_channel, channel);
+    channelBreakdown.set(channelKey, channel);
   });
 
   return {
@@ -432,11 +471,13 @@ export function createTravelRouter() {
     const authUserId = requireAuthUser(request);
     const userId = String(request.query.userId ?? authUserId);
     const bookId = String(request.query.bookId ?? 'all');
-    const repository = appDataSource.getRepository(FinanceTravelExpenseRecordEntity);
-    const records = (await repository.find({ where: { user_id: userId } }))
-      .filter((item) => bookId === 'all' || item.book_id === bookId);
+    const [records, payChannels] = await Promise.all([
+      appDataSource.getRepository(FinanceTravelExpenseRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(FinanceTravelPayChannelEntity).find(),
+    ]);
+    const scopedRecords = records.filter((item) => bookId === 'all' || item.book_id === bookId);
 
-    response.json(successResponse(buildSummary(records)));
+    response.json(successResponse(buildSummary(scopedRecords, payChannels)));
   }));
 
   router.get('/daily-trend', asyncHandler(async (request: AuthenticatedRequest, response) => {
@@ -480,11 +521,12 @@ export function createTravelRouter() {
     const grouped = new Map<string, { totalAmount: number; savedAmount: number; count: number }>();
 
     records.forEach((item) => {
-      const current = grouped.get(item.category) ?? { totalAmount: 0, savedAmount: 0, count: 0 };
+      const name = normalizeTravelCategoryLabel(item.category);
+      const current = grouped.get(name) ?? { totalAmount: 0, savedAmount: 0, count: 0 };
       current.totalAmount += Number(item.amount);
       current.savedAmount += Number(item.discount_amount);
       current.count += 1;
-      grouped.set(item.category, current);
+      grouped.set(name, current);
     });
 
     const items = Array.from(grouped.entries())
@@ -504,17 +546,23 @@ export function createTravelRouter() {
     const authUserId = requireAuthUser(request);
     const userId = String(request.query.userId ?? authUserId);
     const bookId = String(request.query.bookId ?? 'all');
-    const repository = appDataSource.getRepository(FinanceTravelExpenseRecordEntity);
-    const records = (await repository.find({ where: { user_id: userId } }))
-      .filter((item) => bookId === 'all' || item.book_id === bookId);
+    const [records, payChannels] = await Promise.all([
+      appDataSource.getRepository(FinanceTravelExpenseRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(FinanceTravelPayChannelEntity).find(),
+    ]);
+    const scopedRecords = records.filter((item) => bookId === 'all' || item.book_id === bookId);
+    const channelLabelMap = new Map<string, string>(
+      payChannels.map((channel) => [channel.value.trim().toUpperCase(), channel.label]),
+    );
     const grouped = new Map<string, { totalAmount: number; savedAmount: number; count: number }>();
 
-    records.forEach((item) => {
-      const current = grouped.get(item.pay_channel) ?? { totalAmount: 0, savedAmount: 0, count: 0 };
+    scopedRecords.forEach((item) => {
+      const name = channelLabelMap.get(item.pay_channel.trim().toUpperCase()) ?? item.pay_channel;
+      const current = grouped.get(name) ?? { totalAmount: 0, savedAmount: 0, count: 0 };
       current.totalAmount += Number(item.amount);
       current.savedAmount += Number(item.discount_amount);
       current.count += 1;
-      grouped.set(item.pay_channel, current);
+      grouped.set(name, current);
     });
 
     const items = Array.from(grouped.entries())
@@ -560,16 +608,18 @@ export function createTravelRouter() {
     const authUserId = requireAuthUser(request);
     const userId = String(request.query.userId ?? authUserId);
     const bookId = String(request.query.bookId ?? '');
-    const [book, records] = await Promise.all([
+    const [book, records, payChannels] = await Promise.all([
       appDataSource.getRepository(FinanceTravelBookEntity).findOne({ where: { id: bookId, user_id: userId } }),
       appDataSource.getRepository(FinanceTravelExpenseRecordEntity).find({ where: { user_id: userId, book_id: bookId } }),
+      appDataSource.getRepository(FinanceTravelPayChannelEntity).find(),
     ]);
 
     response.json(successResponse({
       book: book ? mapBook(book) : null,
-      summary: buildSummary(records),
+      summary: buildSummary(records, payChannels),
       records: records.map(mapRecord),
       generatedAt: dayjs().format('YYYY-MM-DD HH:mm'),
+      payChannels: payChannels.map(mapPayChannel),
     }));
   }));
 
@@ -731,14 +781,15 @@ export function createTravelRouter() {
     const authUserId = requireAuthUser(request);
     const payload = validateBody(exportSchema, request.body);
     const userId = payload.userId ?? authUserId;
-    const [book, records] = await Promise.all([
+    const [book, records, payChannels] = await Promise.all([
       appDataSource.getRepository(FinanceTravelBookEntity).findOne({ where: { id: payload.bookId, user_id: userId } }),
       appDataSource.getRepository(FinanceTravelExpenseRecordEntity).find({ where: { user_id: userId, book_id: payload.bookId } }),
+      appDataSource.getRepository(FinanceTravelPayChannelEntity).find(),
     ]);
 
     const report = {
       book: book ? mapBook(book) : null,
-      summary: buildSummary(records),
+      summary: buildSummary(records, payChannels),
       records: records.map(mapRecord),
       generatedAt: dayjs().format('YYYY-MM-DD HH:mm'),
     };
