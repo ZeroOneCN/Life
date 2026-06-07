@@ -1333,17 +1333,20 @@ textarea {
 .tag {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
+  padding: 6px 14px;
   border-radius: 9999px;
-  font-size: var(--fs-overline);
-  font-weight: 400;
-  letter-spacing: 0.06px;
-  text-transform: uppercase;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
 }
 
 .tag-green {
   background: var(--color-success-bg);
   color: #16a34a;
+  font-weight: 600;
+  font-size: var(--fs-body);
+  padding: 6px 14px;
 }
 
 .tag-orange {
@@ -1357,11 +1360,17 @@ textarea {
 .tag-blue {
   background: var(--color-primary-soft);
   color: var(--color-primary);
+  font-weight: 600;
+  font-size: var(--fs-body);
+  padding: 6px 14px;
 }
 
 .tag-red {
   background: var(--color-danger-bg);
   color: #e11d48;
+  font-weight: 600;
+  font-size: var(--fs-body);
+  padding: 6px 14px;
 }
 
 .table-wrap {
