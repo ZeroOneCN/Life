@@ -6,6 +6,7 @@ import { buildApiErrorMessage } from '../../lib/api';
 import {
   fetchDeepseekUsage,
   type DeepseekBalanceInfo,
+  type DeepseekLocalUsage,
   type DeepseekUsageSnapshot,
 } from '../../services/deepseekUsageApi';
 
@@ -24,6 +25,91 @@ function formatAmount(value: number, currency: string) {
 
 function formatTimestamp(iso: string) {
   return dayjs(iso).format('YYYY-MM-DD HH:mm:ss');
+}
+
+function formatRelativeTime(iso: string | null): string {
+  if (!iso) return '尚未调用';
+  const target = dayjs(iso);
+  const diffMinutes = dayjs().diff(target, 'minute');
+  if (diffMinutes < 1) return '刚刚';
+  if (diffMinutes < 60) return `${diffMinutes} 分钟前`;
+  const diffHours = dayjs().diff(target, 'hour');
+  if (diffHours < 24) return `${diffHours} 小时前`;
+  const diffDays = dayjs().diff(target, 'day');
+  if (diffDays < 30) return `${diffDays} 天前`;
+  return target.format('YYYY-MM-DD HH:mm');
+}
+
+function formatTokenCount(value: number): string {
+  if (value >= 10000) {
+    return `${(value / 10000).toFixed(2)} 万`;
+  }
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(2)}k`;
+  }
+  return value.toString();
+}
+
+function formatCost(value: number): string {
+  if (value >= 1) {
+    return `¥${value.toFixed(2)}`;
+  }
+  if (value >= 0.01) {
+    return `¥${value.toFixed(4)}`;
+  }
+  return `¥${value.toFixed(6)}`;
+}
+
+function renderLocalUsage(local: DeepseekLocalUsage) {
+  if (local.totalCalls === 0) {
+    return (
+      <div className="deepseek-usage-empty">
+        <Tag tone="default">暂无记录</Tag>
+        <strong>本站 AI 助理还未发起过请求</strong>
+        <span>在右下角 AI 助理里开始一次对话，组件就会自动汇总累计 / 今日的 Token 消耗。</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="deepseek-usage-grid deepseek-usage-local-grid">
+      <div className="deepseek-usage-cell">
+        <span className="deepseek-usage-cell-label">累计请求</span>
+        <strong className="deepseek-usage-cell-value">{local.totalCalls} 次</strong>
+        <span className="deepseek-usage-cell-helper">
+          共发出 {local.totalRequests} 次 DeepSeek HTTP 调用（含多轮工具调用）
+        </span>
+      </div>
+      <div className="deepseek-usage-cell">
+        <span className="deepseek-usage-cell-label">累计 Token</span>
+        <strong className="deepseek-usage-cell-value">{formatTokenCount(local.totalTokens)}</strong>
+        <span className="deepseek-usage-cell-helper">
+          输入 {formatTokenCount(local.totalPromptTokens)} · 输出 {formatTokenCount(local.totalCompletionTokens)}
+        </span>
+      </div>
+      <div className="deepseek-usage-cell">
+        <span className="deepseek-usage-cell-label">今日 Token</span>
+        <strong className="deepseek-usage-cell-value">{formatTokenCount(local.todayTokens)}</strong>
+        <span className="deepseek-usage-cell-helper">
+          今日 {local.todayCalls} 次对话
+        </span>
+      </div>
+      <div className="deepseek-usage-cell">
+        <span className="deepseek-usage-cell-label">估算花费</span>
+        <strong className="deepseek-usage-cell-value">{formatCost(local.estimatedCost)}</strong>
+        <span className="deepseek-usage-cell-helper">
+          按 0.001 元 / 1k tokens 粗算
+        </span>
+      </div>
+      <div className="deepseek-usage-cell deepseek-usage-cell-wide">
+        <span className="deepseek-usage-cell-label">最后调用</span>
+        <strong className="deepseek-usage-cell-value">{formatRelativeTime(local.lastCalledAt)}</strong>
+        <span className="deepseek-usage-cell-helper">
+          数据来自本站 assistant-usage-logs 表，按用户隔离累计
+        </span>
+      </div>
+    </div>
+  );
 }
 
 function pickPrimaryBalance(balances: DeepseekBalanceInfo[]): DeepseekBalanceInfo | null {
@@ -144,54 +230,68 @@ export function DeepseekUsageWidget() {
 
     return (
       <div className="deepseek-usage-body">
-        <div className="deepseek-usage-headline">
-          <div className="deepseek-usage-headline-label">账户余额</div>
-          <div className="deepseek-usage-headline-value">
-            {formatAmount(primary.totalBalance, primary.currency)}
+        <div className="deepseek-usage-section">
+          <div className="deepseek-usage-section-head">
+            <h4>官方账户余额</h4>
+            <span>来自 DeepSeek /user/balance</span>
           </div>
-          <div className="deepseek-usage-headline-meta">
-            币种：{primary.currency} · 刷新于 {formatTimestamp(snapshot.fetchedAt)}
+          <div className="deepseek-usage-headline">
+            <div className="deepseek-usage-headline-label">账户余额</div>
+            <div className="deepseek-usage-headline-value">
+              {formatAmount(primary.totalBalance, primary.currency)}
+            </div>
+            <div className="deepseek-usage-headline-meta">
+              币种：{primary.currency} · 刷新于 {formatTimestamp(snapshot.fetchedAt)}
+            </div>
           </div>
+
+          <div className="deepseek-usage-grid">
+            <div className="deepseek-usage-cell">
+              <span className="deepseek-usage-cell-label">赠送余额</span>
+              <strong className="deepseek-usage-cell-value">
+                {primary.grantedBalance !== null
+                  ? formatAmount(primary.grantedBalance, primary.currency)
+                  : '-'}
+              </strong>
+              <span className="deepseek-usage-cell-helper">平台赠送，可用于 AI 助理</span>
+            </div>
+            <div className="deepseek-usage-cell">
+              <span className="deepseek-usage-cell-label">充值余额</span>
+              <strong className="deepseek-usage-cell-value">
+                {primary.toppedUpBalance !== null
+                  ? formatAmount(primary.toppedUpBalance, primary.currency)
+                  : '-'}
+              </strong>
+              <span className="deepseek-usage-cell-helper">自助充值到账部分</span>
+            </div>
+            <div className="deepseek-usage-cell">
+              <span className="deepseek-usage-cell-label">币种</span>
+              <strong className="deepseek-usage-cell-value">{primary.currency}</strong>
+              <span className="deepseek-usage-cell-helper">DeepSeek 账户基础币种</span>
+            </div>
+          </div>
+
+          {snapshot.balances.length > 1 ? (
+            <div className="deepseek-usage-extra">
+              <span>其他币种余额：</span>
+              {snapshot.balances
+                .filter((item) => item.currency !== primary.currency)
+                .map((item) => (
+                  <Tag key={item.currency} tone="default">
+                    {item.currency} · {formatAmount(item.totalBalance, item.currency)}
+                  </Tag>
+                ))}
+            </div>
+          ) : null}
         </div>
 
-        <div className="deepseek-usage-grid">
-          <div className="deepseek-usage-cell">
-            <span className="deepseek-usage-cell-label">赠送余额</span>
-            <strong className="deepseek-usage-cell-value">
-              {primary.grantedBalance !== null
-                ? formatAmount(primary.grantedBalance, primary.currency)
-                : '-'}
-            </strong>
-            <span className="deepseek-usage-cell-helper">平台赠送，可用于 AI 助理</span>
+        <div className="deepseek-usage-section">
+          <div className="deepseek-usage-section-head">
+            <h4>本站 AI 助理请求</h4>
+            <span>按当前登录用户从 /assistant/chat 累计</span>
           </div>
-          <div className="deepseek-usage-cell">
-            <span className="deepseek-usage-cell-label">充值余额</span>
-            <strong className="deepseek-usage-cell-value">
-              {primary.toppedUpBalance !== null
-                ? formatAmount(primary.toppedUpBalance, primary.currency)
-                : '-'}
-            </strong>
-            <span className="deepseek-usage-cell-helper">自助充值到账部分</span>
-          </div>
-          <div className="deepseek-usage-cell">
-            <span className="deepseek-usage-cell-label">币种</span>
-            <strong className="deepseek-usage-cell-value">{primary.currency}</strong>
-            <span className="deepseek-usage-cell-helper">DeepSeek 账户基础币种</span>
-          </div>
+          {renderLocalUsage(snapshot.local)}
         </div>
-
-        {snapshot.balances.length > 1 ? (
-          <div className="deepseek-usage-extra">
-            <span>其他币种余额：</span>
-            {snapshot.balances
-              .filter((item) => item.currency !== primary.currency)
-              .map((item) => (
-                <Tag key={item.currency} tone="default">
-                  {item.currency} · {formatAmount(item.totalBalance, item.currency)}
-                </Tag>
-              ))}
-          </div>
-        ) : null}
       </div>
     );
   };

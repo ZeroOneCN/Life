@@ -3482,6 +3482,50 @@ textarea {
   min-width: 152px;
 }
 
+.rent-entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.rent-entry-module {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface-2, var(--color-surface-1));
+}
+
+.rent-entry-module + .rent-entry-module {
+  margin-top: 0;
+}
+
+.rent-entry-module-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--color-hairline);
+}
+
+.rent-entry-module-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-ink);
+  letter-spacing: 0.02em;
+}
+
+.rent-entry-module-head span {
+  font-size: 12px;
+  color: var(--color-ink-mute);
+  line-height: 1.5;
+}
+
 .rent-cost-overview-layout {
   display: grid;
   grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
@@ -4000,7 +4044,48 @@ textarea {
 .deepseek-usage-body {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
+}
+
+.deepseek-usage-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface-1, var(--color-surface-2));
+}
+
+.deepseek-usage-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--color-hairline);
+}
+
+.deepseek-usage-section-head h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink);
+  letter-spacing: 0.02em;
+}
+
+.deepseek-usage-section-head span {
+  font-size: 12px;
+  color: var(--color-ink-mute);
+}
+
+.deepseek-usage-cell-wide {
+  grid-column: 1 / -1;
+}
+
+.deepseek-usage-local-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .deepseek-usage-headline {

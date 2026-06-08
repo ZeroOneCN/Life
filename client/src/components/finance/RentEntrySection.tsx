@@ -251,113 +251,137 @@ export function RentEntrySection({
           保存成功后会自动回到住房记录列表，并保留完整的渠道快照与成本统计。
         </div>
 
-        <form onSubmit={(event) => { event.preventDefault(); handleSave(); }}>
-        <div className="rent-entry-grid rent-entry-grid-primary">
-          <div className="rent-entry-cell rent-entry-cell-address">
-            <Field
-              label="住房地址"
-              value={form.address}
-              onChange={(event) => setForm((previous) => ({ ...previous, address: event.target.value }))}
-              placeholder="例如：上海市浦东新区锦绣路 1888 弄 8 号 1202"
-            />
+        <form className="rent-entry-form" onSubmit={(event) => { event.preventDefault(); handleSave(); }}>
+          <div className="rent-entry-module">
+            <div className="rent-entry-module-head">
+              <h3>基础信息</h3>
+              <span>住房地址、用户、渠道与入住 / 退租日期</span>
+            </div>
+            <div className="rent-entry-grid rent-entry-grid-primary">
+              <div className="rent-entry-cell rent-entry-cell-address">
+                <Field
+                  label="住房地址"
+                  value={form.address}
+                  onChange={(event) => setForm((previous) => ({ ...previous, address: event.target.value }))}
+                  placeholder="例如：上海市浦东新区锦绣路 1888 弄 8 号 1202"
+                />
+              </div>
+
+              <div className="rent-entry-cell">
+                <Field
+                  label="当前录入用户"
+                  value={currentUserLabel}
+                  disabled
+                />
+              </div>
+
+              <div className="rent-entry-cell">
+                <SelectField
+                  label="租房渠道"
+                  value={form.channelId}
+                  onChange={(event) => setForm((previous) => ({ ...previous, channelId: event.target.value }))}
+                >
+                  {availableChannels.map((channel) => (
+                    <option key={channel.id} value={channel.id}>{channel.name}</option>
+                  ))}
+                </SelectField>
+              </div>
+
+              <div className="rent-entry-cell">
+                <DatePickerField
+                  label="入住日期"
+                  value={form.moveInDate}
+                  onChange={(value) => setForm((previous) => ({ ...previous, moveInDate: value }))}
+                  clearable={false}
+                />
+              </div>
+
+              <div className="rent-entry-cell">
+                <DatePickerField
+                  label="退租日期"
+                  value={form.moveOutDate}
+                  onChange={(value) => setForm((previous) => ({ ...previous, moveOutDate: value }))}
+                  placeholder="未退租可留空"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="rent-entry-cell">
-            <Field
-              label="当前录入用户"
-              value={currentUserLabel}
-              disabled
-            />
-          </div>
-
-          <div className="rent-entry-cell">
-            <SelectField
-              label="租房渠道"
-              value={form.channelId}
-              onChange={(event) => setForm((previous) => ({ ...previous, channelId: event.target.value }))}
-            >
-              {availableChannels.map((channel) => (
-                <option key={channel.id} value={channel.id}>{channel.name}</option>
+          <div className="rent-entry-module">
+            <div className="rent-entry-module-head">
+              <h3>费用明细</h3>
+              <span>房租、押金和水电等杂费，押金仅展示不计入总成本</span>
+            </div>
+            <div className="rent-cost-grid">
+              {[
+                ['房租', 'rent'],
+                ['押金', 'deposit'],
+                ['电费', 'electricityFee'],
+                ['水费', 'waterFee'],
+                ['燃气费', 'gasFee'],
+                ['中介费', 'agencyFee'],
+                ['保洁费', 'cleaningFee'],
+                ['洗衣费', 'laundryFee'],
+                ['服务费', 'serviceFee'],
+              ].map(([label, key]) => (
+                <Field
+                  key={key}
+                  label={label}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form[key as keyof RentFormState] as string}
+                  onChange={(event) => setForm((previous) => ({ ...previous, [key]: event.target.value }))}
+                  placeholder="0"
+                />
               ))}
-            </SelectField>
+            </div>
           </div>
 
-          <div className="rent-entry-cell">
-            <DatePickerField
-              label="入住日期"
-              value={form.moveInDate}
-              onChange={(value) => setForm((previous) => ({ ...previous, moveInDate: value }))}
-              clearable={false}
+          <div className="rent-entry-module">
+            <div className="rent-entry-module-head">
+              <h3>备注</h3>
+              <span>补充房屋朝向、物业、地铁距离、退租原因等信息</span>
+            </div>
+            <div className="rent-entry-grid rent-entry-grid-secondary">
+              <div className="rent-entry-cell rent-entry-cell-full">
+                <TextArea
+                  label="备注"
+                  value={form.notes}
+                  onChange={(event) => setForm((previous) => ({ ...previous, notes: event.target.value }))}
+                  placeholder="记录房屋朝向、物业、地铁距离、退租原因等补充信息"
+                  rows={3}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="rent-entry-module">
+            <div className="rent-entry-module-head">
+              <h3>实时计算</h3>
+              <span>根据当前表单内容自动汇总居住天数和成本</span>
+            </div>
+            <StatGrid
+              className="rent-summary-grid"
+              items={[
+                {
+                  label: '居住天数',
+                  value: `${preview.stayDays} 天`,
+                  helper: preview.occupancyStatus === 'active' ? '当前按今天作为在住截止日计算' : '按退租日计算',
+                },
+                { label: '总成本', value: formatRentAmount(preview.totalCost), helper: '不含押金' },
+                { label: '单日成本', value: formatRentAmount(preview.dailyCost) },
+                { label: '折算月租', value: formatRentAmount(preview.monthlyRent) },
+                { label: '折算季度租金', value: formatRentAmount(preview.quarterlyRent) },
+                { label: '押金展示', value: formatRentAmount(Number(form.deposit || 0)), helper: '仅展示，不参与成本统计' },
+              ]}
             />
           </div>
 
-          <div className="rent-entry-cell">
-            <DatePickerField
-              label="退租日期"
-              value={form.moveOutDate}
-              onChange={(value) => setForm((previous) => ({ ...previous, moveOutDate: value }))}
-              placeholder="未退租可留空"
-            />
+          <div className="rent-form-actions">
+            <Btn tone="secondary" onClick={handleReset}>清空表单</Btn>
+            <Btn tone="primary" type="submit">{editingRecord ? '保存住房记录' : '新增住房记录'}</Btn>
           </div>
-        </div>
-
-        <div className="rent-cost-grid">
-          {[
-            ['房租', 'rent'],
-            ['押金', 'deposit'],
-            ['电费', 'electricityFee'],
-            ['水费', 'waterFee'],
-            ['燃气费', 'gasFee'],
-            ['中介费', 'agencyFee'],
-            ['保洁费', 'cleaningFee'],
-            ['洗衣费', 'laundryFee'],
-            ['服务费', 'serviceFee'],
-          ].map(([label, key]) => (
-            <Field
-              key={key}
-              label={label}
-              type="number"
-              min="0"
-              step="0.01"
-              value={form[key as keyof RentFormState] as string}
-              onChange={(event) => setForm((previous) => ({ ...previous, [key]: event.target.value }))}
-              placeholder="0"
-            />
-          ))}
-        </div>
-
-        <div className="rent-entry-grid rent-entry-grid-secondary">
-          <div className="rent-entry-cell rent-entry-cell-full">
-            <TextArea
-              label="备注"
-              value={form.notes}
-              onChange={(event) => setForm((previous) => ({ ...previous, notes: event.target.value }))}
-              placeholder="记录房屋朝向、物业、地铁距离、退租原因等补充信息"
-              rows={3}
-            />
-          </div>
-        </div>
-
-        <StatGrid
-          className="rent-summary-grid"
-          items={[
-            {
-              label: '居住天数',
-              value: `${preview.stayDays} 天`,
-              helper: preview.occupancyStatus === 'active' ? '当前按今天作为在住截止日计算' : '按退租日计算',
-            },
-            { label: '总成本', value: formatRentAmount(preview.totalCost), helper: '不含押金' },
-            { label: '单日成本', value: formatRentAmount(preview.dailyCost) },
-            { label: '折算月租', value: formatRentAmount(preview.monthlyRent) },
-            { label: '折算季度租金', value: formatRentAmount(preview.quarterlyRent) },
-            { label: '押金展示', value: formatRentAmount(Number(form.deposit || 0)), helper: '仅展示，不参与成本统计' },
-          ]}
-        />
-
-        <div className="rent-form-actions">
-          <Btn tone="secondary" onClick={handleReset}>清空表单</Btn>
-          <Btn tone="primary" type="submit">{editingRecord ? '保存住房记录' : '新增住房记录'}</Btn>
-        </div>
         </form>
       </div>
 

@@ -129,6 +129,7 @@ const SEVERITY_DOT_CLASS: Record<string, string> = {
 
 export default function Dashboard() {
   const [summary, setSummary] = useState<DashboardPageSummary | null>(null);
+  const [netPnlRaw, setNetPnlRaw] = useState<number>(0);
   const [loadingError, setLoadingError] = useState<string>('');
 
   useEffect(() => {
@@ -142,6 +143,7 @@ export default function Dashboard() {
           title, subtitle: '', metrics, chartTitle: '', chartDescription: '', chartKind, chartData: [], listTitle: '', listDescription: '', listItems: [],
         });
 
+        setNetPnlRaw(raw.investment.stats.netPnl);
         setSummary({
           overviewCards: raw.overviewCards.map((item) => ({ id: item.key, label: item.label, value: String(item.value), helper: '' })),
           agenda: raw.agenda,
@@ -256,9 +258,8 @@ export default function Dashboard() {
   const hasAgenda = summary.agenda.length > 0;
   const h = summary.health.metrics, f = summary.finance.metrics, l = summary.life.metrics, inv = summary.investment.metrics;
   const stepsNum = Number(h[0]?.value || 0);
-  /* PNL 字符串形如 "+123" / "-123" / "0"，判断首字符判断正负 */
-  const pnlRaw = inv[0]?.value ?? '0';
-  const isPnlPositive = !pnlRaw.startsWith('-');
+  /* 净收益符号：0 视为正（不显示红色亏损） */
+  const isPnlPositive = netPnlRaw >= 0;
 
   return (
     <div className="page-stack dashboard-page">

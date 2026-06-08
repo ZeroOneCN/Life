@@ -1,14 +1,14 @@
-feat(assistant): AI 智能助理 (方案A 浮动按钮) + DeepSeek function calling
+feat(rent+investment+deepseek): entry 模块分组 / 投资红绿色 / Token 本站统计
 
-- server assistant.tools.ts: 4 个工具 query_finance/health/investment/life 跨 5/4/2/3 个模块聚合真实数据
-- server assistant.router.ts: /assistant/chat 走 DeepSeek tool_choice=auto；多次 tool_calls 循环调用；记录工具调用日志
-- 前端 AssistantLauncher.tsx (浮动按钮 + 聊天面板) 接入 MainLayout
-  - 用户消息历史 (最多 20 条)
-  - 推荐问题快捷按钮
-  - 工具调用结果显示为绿色 Tag
-  - 简易 Markdown 渲染
-  - 关闭 / 清空 / 自动滚动 / Enter 发送
-- assistantApi.ts: /assistant/chat POST
-- assistant.types.ts: AssistantChatMessage / ToolCallLog / ChatResponse 类型
-- 浮动按钮 + 面板 CSS
-- build / tsc 通过
+* finance/rent?rentTab=entry 拆分为「基础信息 / 费用明细 / 备注 / 实时计算」4 个模块
+  - 新增 .rent-entry-module + .rent-entry-module-head 样式（虚线分隔、surface-2 背景）
+  - 4 个模块视觉分组清晰，按钮区域独立
+* dashboard 投资中心净收益颜色修复
+  - isPnlPositive 改用 netPnlRaw 数值判断（>= 0 绿色 / < 0 红色）
+  - 之前基于 formatted 字符串前缀判定，被 ±¥ Unicode 字符坑了
+* DeepSeek Token 消耗组件增加「本站 AI 助理请求」统计
+  - 新增 SystemAssistantUsageLogEntity + assistant-usage.service
+  - /assistant/chat 每次调用按 1 字符 ≈ 0.6 token 估算 prompt/completion，异步落库
+  - /assistant/usage 同时返回官方余额 + 本站累计 / 今日统计
+  - 前端分两块：「官方账户余额」+「本站 AI 助理请求」（含累计 token / 今日 token / 估算花费 / 最后调用）
+* 删除误提交的 .git-commit-msg.txt

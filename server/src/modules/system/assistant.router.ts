@@ -8,6 +8,11 @@ import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
 import { requireAuthUser } from '../../shared/http/request';
 import { successResponse } from '../../shared/http/response';
 import { validateBody } from '../../shared/http/validation';
+import {
+  estimateConversationTokens,
+  getAssistantUsageStats,
+  recordAssistantUsage,
+} from './assistant-usage.service';
 import { ASSISTANT_TOOLS, handleAssistantToolCall } from './assistant.tools';
 
 function buildSystemPrompt() {
@@ -209,8 +214,10 @@ export function createAssistantRouter() {
       try {
         let reply = await callDeepSeek(conversation);
         let safety = 0;
+        let totalRequests = 1;
         while (reply?.tool_calls && reply.tool_calls.length && safety < 4) {
           safety += 1;
+          totalRequests += 1;
           conversation.push({
             role: 'assistant',
             content: reply.content,
@@ -244,11 +251,30 @@ export function createAssistantRouter() {
           reply = await callDeepSeek(conversation);
         }
 
+        /* 估算本次会话的 token 消耗并入库（异步，不阻塞响应） */
+        const tokens = estimateConversationTokens(conversation);
+        recordAssistantUsage({
+          userId,
+          scene: 'chat',
+          requestCount: totalRequests,
+          prompt: tokens.prompt,
+          completion: tokens.completion,
+          status: 'success',
+        });
+
         response.json(successResponse({
           content: reply?.content || '已收到你的问题，但 AI 暂未给出回答。',
           toolCalls: toolCallsLog,
         }));
       } catch (error) {
+        recordAssistantUsage({
+          userId,
+          scene: 'chat',
+          requestCount: 1,
+          prompt: estimateConversationTokens(conversation).prompt,
+          completion: 0,
+          status: 'error',
+        });
         response.json(successResponse({
           content: `## AI 调用失败\n\n${String(error)}\n\n请检查 DEEPSEEK_API_KEY 或网络连接。`,
           toolCalls: toolCallsLog,
@@ -259,14 +285,17 @@ export function createAssistantRouter() {
 
   /**
    * GET /assistant/usage
-   * 查询 DeepSeek 账户余额，供个人中心小组件使用。
-   * 返回 DeepSeek 官方 `/user/balance` 端点数据，包含 total_balance / granted_balance / topped_up_balance。
+   * 查询 DeepSeek 账户余额 + 本站 AI 助理请求消耗统计，供个人中心小组件使用。
    */
   router.get(
     '/usage',
-    asyncHandler(async (_request: AuthenticatedRequest, response) => {
-      const snapshot = await fetchDeepSeekBalance();
-      response.json(successResponse(snapshot));
+    asyncHandler(async (request: AuthenticatedRequest, response) => {
+      const userId = requireAuthUser(request);
+      const [snapshot, local] = await Promise.all([
+        fetchDeepSeekBalance(),
+        getAssistantUsageStats(userId),
+      ]);
+      response.json(successResponse({ ...snapshot, local }));
     }),
   );
 
