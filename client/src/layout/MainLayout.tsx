@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { Btn, Modal } from '../components/ui';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { AssistantLauncher } from '../components/shared/AssistantLauncher';
 import { menuItems, routes } from '../config/navigation';
 import { useTheme } from '../hooks/useTheme';
 import { logout, useAuthState } from '../services/auth';
@@ -387,6 +388,8 @@ export default function MainLayout() {
       >
         <p className="subtle-text">退出后需要重新登录，当前会话不会继续保留。</p>
       </Modal>
+
+      <AssistantLauncher />
     </div>
   );
 }

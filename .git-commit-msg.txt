@@ -1,0 +1,14 @@
+feat(assistant): AI 智能助理 (方案A 浮动按钮) + DeepSeek function calling
+
+- server assistant.tools.ts: 4 个工具 query_finance/health/investment/life 跨 5/4/2/3 个模块聚合真实数据
+- server assistant.router.ts: /assistant/chat 走 DeepSeek tool_choice=auto；多次 tool_calls 循环调用；记录工具调用日志
+- 前端 AssistantLauncher.tsx (浮动按钮 + 聊天面板) 接入 MainLayout
+  - 用户消息历史 (最多 20 条)
+  - 推荐问题快捷按钮
+  - 工具调用结果显示为绿色 Tag
+  - 简易 Markdown 渲染
+  - 关闭 / 清空 / 自动滚动 / Enter 发送
+- assistantApi.ts: /assistant/chat POST
+- assistant.types.ts: AssistantChatMessage / ToolCallLog / ChatResponse 类型
+- 浮动按钮 + 面板 CSS
+- build / tsc 通过
