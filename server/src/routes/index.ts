@@ -17,6 +17,7 @@ import { createMedicationRouter } from '../modules/health/medication.router';
 import { createCheckupRouter } from '../modules/health/checkup.router';
 import { createForexRouter } from '../modules/investment/forex.router';
 import { createAnalysisRouter } from '../modules/system/analysis.router';
+import { createFinanceReportRouter } from '../modules/finance/finance-report.router';
 import { requireJwtAuth } from '../shared/http/auth-middleware';
 import { asyncHandler } from '../shared/http/async-handler';
 import { successResponse } from '../shared/http/response';
@@ -48,6 +49,7 @@ export function createApiRouter() {
   router.use('/health/checkup', createCheckupRouter());
   router.use('/investment/forex', createForexRouter());
   router.use('/analysis', createAnalysisRouter());
+  router.use('/finance/report', createFinanceReportRouter());
 
   return router;
 }

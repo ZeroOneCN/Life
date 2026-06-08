@@ -10182,3 +10182,147 @@ select:focus-visible {
   gap: 12px;
   justify-content: center;
 }
+.finance-report-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.4fr 1.1fr;
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .finance-report-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.finance-report-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.finance-report-card h4 {
+  margin: 0;
+  font-size: var(--fs-body);
+  color: var(--color-ink-secondary);
+}
+
+.finance-report-module-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.finance-report-module-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--fs-body);
+}
+
+.finance-report-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  overflow: hidden;
+}
+
+.finance-report-bar-fill {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 0.2s ease;
+}
+
+.finance-report-module-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-overline);
+  color: var(--color-ink-secondary);
+}
+
+.finance-report-top-list {
+  list-style: decimal;
+  padding-left: 18px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.finance-report-top-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.finance-report-top-title {
+  margin-top: 4px;
+  font-size: var(--fs-body);
+}
+
+.finance-report-top-meta {
+  font-size: var(--fs-overline);
+  color: var(--color-ink-secondary);
+  display: flex;
+  gap: 12px;
+}
+
+.finance-report-year {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.finance-report-year-bars {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 8px;
+  height: 220px;
+  padding: 12px 4px 0;
+  align-items: end;
+}
+
+@media (max-width: 1100px) {
+  .finance-report-year-bars {
+    grid-template-columns: repeat(6, 1fr);
+    height: auto;
+  }
+}
+
+.finance-report-year-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.finance-report-year-bar-track {
+  width: 22px;
+  height: 140px;
+  background: var(--color-surface-2);
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.finance-report-year-bar-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-primary);
+  transition: height 0.2s ease;
+}
+
+.finance-report-year-bar-value {
+  font-size: var(--fs-overline);
+  color: var(--color-ink-secondary);
+}
+
+.finance-report-year-bar-label {
+  font-size: var(--fs-overline);
+  color: var(--color-ink-tertiary);
+}
