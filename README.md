@@ -9,12 +9,14 @@
 - [项目概览](#项目概览)
   - [核心特性](#核心特性)
   - [技术栈](#技术栈)
+- [近期新增](#近期新增)
 - [业务模块](#业务模块)
   - [健康中心](#健康中心)
   - [财务中心](#财务中心)
   - [生活中心](#生活中心)
   - [投资中心](#投资中心)
   - [通知中心](#通知中心)
+  - [智能助理](#智能助理)
   - [仪表盘首页](#仪表盘首页)
 - [项目结构](#项目结构)
 - [路由清单](#路由清单)
@@ -43,8 +45,9 @@ LifeOS 是一个前后端分离的全栈 Web 应用，采用 **React 18 + TypeSc
 
 ### 核心特性
 
-- **多模块业务覆盖**：健康中心（步数/健身/体检/用药）、财务中心（购物/旅行/贷款/订阅/房租）、生活中心（物品/号卡/待办）、投资中心（外汇）
+- **多模块业务覆盖**：健康中心（步数/健身/体检/用药）、财务中心（购物/旅行/贷款/订阅/房租/汇率换算/月度报告）、生活中心（物品/号卡/待办/重复任务）、投资中心（外汇）
 - **统一通知中心**：支持邮件、企业微信、Webhook 三种通知渠道，按业务场景灵活绑定，含发送日志管理
+- **AI 智能助理**：浮动聊天按钮 + DeepSeek function calling（覆盖财务/健康/投资/生活 4 大模块）
 - **JWT 安全认证**：基于 Passport-JWT 的无状态会话；首次访问自动开放管理员注册引导，注册通道关闭后仅支持登录
 - **Stripe 设计体系**：参考 Stripe 设计语言构建的专业界面，Indigo 主色调，Outfit 字体，亮色/暗色主题切换
 - **响应式布局**：桌面端侧边栏 + 移动端自适应，960px 以下自动回退单列
@@ -52,6 +55,19 @@ LifeOS 是一个前后端分离的全栈 Web 应用，采用 **React 18 + TypeSc
 - **懒加载 + 进度条**：所有页面通过 `lazyWithProgress` 包裹，配合 NProgress 顶部进度条
 - **数据导入导出**：支持 Excel（xlsx）+ CSV 双向导入导出（购物、旅行、健身、卡片账单等场景）
 - **代码分层清晰**：前端 service / 后端 router + entity + DTO 严格分层；前后端均要求 JSDoc 注释
+
+---
+
+## 近期新增
+
+| 模块 | 能力 | 说明 |
+|------|------|------|
+| 重复任务 | `recurrence_type` (none/daily/weekly/monthly) + `recurrence_config` JSON | 待办完成后自动按规则生成下一次（`computeNextRecurrenceDate` 工具） |
+| 月度/年度财务报告 | `/finance/report/monthly` `/finance/report/yearly` | 跨 5 模块（购物/旅行/贷款/订阅/房租）自动聚合收入/支出/分类占比/同比环比/Top 3 支出；每月 1 号 9 点后由 scheduler 推送月报到通知中心 |
+| AI 智能助理（方案 A） | 全局浮动聊天按钮 + `/assistant/chat` | DeepSeek `tool_choice=auto` 多次 `tool_calls` 循环，4 个 tool：query_finance / query_health / query_investment / query_life |
+| 旅行账本升级 | `status` (planning/ongoing/completed/archived) + `currency` + `budget` + `archived_at` | 旅行结束可「标记完成 / 归档」；后端 followup-scheduler 会在 end_date 距今 ≥ 30 天时推 `travel.followup` 通知；前端 TravelBooksSection 顶部展示归档建议 |
+| 汇率换算 | `/finance/exchange-rate/latest` `/convert` | 调 Exchange Rate API v6，1h 进程内缓存 + USD 桥梁折算 + FALLBACK_RATES 离线表；前端 `CurrencyConverter` 嵌入旅行页 |
+| 订阅到期 Dashboard 卡片 | `/dashboard/summary` 增加 `upcomingSubscriptions` | 7 天内到期的订阅按 daysLeft 排序，自动续费徽标；过期/即将到期高亮 |
 
 ### 技术栈
 
@@ -92,10 +108,12 @@ LifeOS 是一个前后端分离的全栈 Web 应用，采用 **React 18 + TypeSc
 | 模块 | 关键能力 |
 |------|----------|
 | 网上购物 | 商品记录 + 平台管理 + 分类账本；Excel 导入导出；账本切换上下文 |
-| 旅行游玩 | 行程预订 + 费用记录 + 排行榜 + 支出报表；多币种结算 |
+| 旅行游玩 | 行程预订 + 费用记录 + 排行榜 + 支出报表；**多币种结算** + **账本状态机（planning/ongoing/completed/archived）** + **30 天后归档建议** + **汇率换算工具** |
 | 贷款还款 | 平台管理 + 还款计划 + 账单追踪 + 统计面板 |
-| 服务订阅 | 分类管理 + 记录跟踪 + 设置 + 周期管理 |
+| 服务订阅 | 分类管理 + 记录跟踪 + 设置 + 周期管理；**提前 3 天 / 当天 / 已逾期 三档提醒**（scheduler 自动） |
 | 房租水电 | 渠道管理 + 缴费记录 + 月度/年度成本统计 |
+| 月度/年度报告 | 跨 5 模块聚合（购物/旅行/贷款/订阅/房租）→ 收入/支出/分类占比/Top 3 支出/同比环比；每月 1 号 9 点后由 scheduler 推送月报到通知中心 |
+| 汇率换算 | Exchange Rate API v6 实时拉取 + 1h 内存缓存 + USD 桥梁折算 + FALLBACK_RATES 离线表 |
 
 ### 生活中心
 
@@ -103,7 +121,7 @@ LifeOS 是一个前后端分离的全栈 Web 应用，采用 **React 18 + TypeSc
 |------|----------|
 | 物品追踪 | 物品归档 + 存放位置 + 设置；归档/恢复机制 |
 | 号卡中心 | 号卡管理 + 充值记录 + 账单导入；运营商分类 |
-| 待办事项 | 任务 CRUD + 日志 + 回收站；软删除 + 恢复 |
+| 待办事项 | 任务 CRUD + 日志 + 回收站；软删除 + 恢复；**重复任务（daily/weekly/monthly）** |
 
 ### 投资中心
 
@@ -122,7 +140,16 @@ LifeOS 是一个前后端分离的全栈 Web 应用，采用 **React 18 + TypeSc
 - **场景绑定**：每个业务场景可独立绑定多个通知渠道
 - **测试发送**：渠道配置后可立即测试连通性
 - **日志管理**：所有发送记录统一存储，支持清空
-- **接入的业务场景**：服药提醒、低库存提醒等
+- **接入的业务场景**：服药提醒、低库存提醒、旅行归档跟进（`travel.followup`）、订阅续费提醒（`subscription.renewal_upcoming` / `subscription.expired`）、月度财务报告（`finance.report.monthly`）
+
+### 智能助理
+
+基于 DeepSeek 的全栈自然语言助理：
+
+- **接入方式**：方案 A — 全局浮动聊天按钮（`AssistantLauncher`），任何页面右下角一键唤起
+- **数据来源**：4 个 function calling tool — `query_finance`（5 模块）/ `query_health`（步数/体重/运动/用药）/ `query_investment`（外汇交易/资金流水）/ `query_life`（待办/物品/卡片）
+- **调用链路**：`POST /assistant/chat` → DeepSeek `tool_choice=auto` → 循环 `tool_calls` → 工具结果回传 → 最终自然语言回复（最多 4 轮）
+- **典型问题**：「我这个月购物花了多少？」「最近 7 天步数趋势如何？」「盈亏比最高的交易是什么？」
 
 ### 仪表盘首页
 
@@ -131,6 +158,7 @@ LifeOS 是一个前后端分离的全栈 Web 应用，采用 **React 18 + TypeSc
 - 顶部 PageHeader + 待办速览（最近动态聚合）
 - 健康中心卡片：体重、累计步数、活跃药品、待办体检
 - 财务中心卡片：待还贷款、订阅数、累计购物、活跃旅行
+- **即将到期订阅卡片**：7 天内按 daysLeft 排序，过期/即将到期高亮
 - 投资中心卡片：净资金、净收益、胜率、当前持仓
 - 生活中心卡片：储物数、待办数、号卡数
 - 通知中心卡片：已启用渠道、最近日志数、渠道静默状态
@@ -145,15 +173,17 @@ LifeOS 是一个前后端分离的全栈 Web 应用，采用 **React 18 + TypeSc
 LifeOS/
 ├── client/                          # 前端应用（React + Vite）
 │   ├── src/
-│   │   ├── components/             # 公共组件 + 业务子组件
+│   │   ├── components/
 │   │   │   ├── ui.tsx              # 基础 UI（Btn/Field/Tag/Table/Modal/Tabs/StatGrid）
 │   │   │   ├── page.tsx            # 页面级容器（PageHeader/SectionCard/StatGrid）
 │   │   │   ├── ErrorBoundary.tsx   # 错误边界
 │   │   │   ├── ProtectedRoute.tsx  # 路由守卫
 │   │   │   ├── RouteLoadingFallback.tsx
 │   │   │   ├── Notification*.tsx   # 通知相关组件
+│   │   │   ├── shared/
+│   │   │   │   └── AssistantLauncher.tsx  # 浮动 AI 智能助理按钮 + 聊天面板
 │   │   │   ├── date/               # 原生日期选择器
-│   │   │   ├── finance/            # 财务模块子组件（~20 个）
+│   │   │   ├── finance/            # 财务模块子组件（~20 个，含 CurrencyConverter）
 │   │   │   ├── health/             # 健康模块子组件（~15 个）
 │   │   │   ├── investment/         # 投资模块子组件
 │   │   │   └── life/               # 生活模块子组件（~13 个）
@@ -169,14 +199,14 @@ LifeOS/
 │   │   │   ├── auth/Login.tsx
 │   │   │   ├── Dashboard.tsx       # 首页
 │   │   │   ├── health/             # 4 个
-│   │   │   ├── finance/            # 5 个
+│   │   │   ├── finance/            # 6 个（含 FinanceReport）
 │   │   │   ├── life/               # 3 个
 │   │   │   ├── investment/         # 4 个
 │   │   │   ├── notifications/
 │   │   │   ├── settings/
 │   │   │   └── shared/             # 占位页等
-│   │   ├── services/               # API 调用 + 本地业务逻辑（~20 个）
-│   │   ├── types/                  # TypeScript 类型定义（~20 个）
+│   │   ├── services/               # API 调用 + 本地业务逻辑（~22 个，含 travel/todo recurrence、exchangeRateApi、financeReportApi、assistantApi）
+│   │   ├── types/                  # TypeScript 类型定义（~22 个，含 travel/todo recurrence、exchangeRate、financeReport、assistant、dashboard 扩展）
 │   │   ├── utils/                  # lazyWithProgress / storage
 │   │   ├── App.tsx                 # 路由 + Provider
 │   │   ├── main.tsx                # DOM 挂载
@@ -199,11 +229,11 @@ LifeOS/
 │   │   │   └── migrations/         # 迁移文件
 │   │   ├── modules/                # 业务模块
 │   │   │   ├── health/             # 步数 / 健身 / 用药 / 体检
-│   │   │   ├── finance/            # 贷款 / 房租 / 购物 / 订阅 / 旅行
+│   │   │   ├── finance/            # 贷款 / 房租 / 购物 / 订阅 / 旅行 / 汇率 / 月度报告 + 跟进调度器
 │   │   │   ├── investment/         # 外汇
-│   │   │   ├── life/               # 号卡 / 储物 / 待办
+│   │   │   ├── life/               # 号卡 / 储物 / 待办（recurrence 规则）
 │   │   │   ├── notifications/      # 通知中心
-│   │   │   └── system/             # 认证 / 仪表盘 / 健康探针 / 智能分析
+│   │   │   └── system/             # 认证 / 仪表盘 / 健康探针 / 智能分析 / **智能助理（assistant.router + assistant.tools）**
 │   │   ├── routes/
 │   │   │   └── index.ts            # 路由注册中心
 │   │   └── shared/                 # 共享基础设施
@@ -241,6 +271,7 @@ LifeOS/
 | `/finance/loan` | 贷款还款 | 财务中心 | ✓ |
 | `/finance/subscription` | 服务订阅 | 财务中心 | ✓ |
 | `/finance/rent` | 房租水电 | 财务中心 | ✓ |
+| `/finance/report` | 财务月报/年报 | 财务中心 | ✓ |
 | `/life/storage` | 物品追踪 | 生活中心 | ✓ |
 | `/life/card` | 号卡中心 | 生活中心 | ✓ |
 | `/life/todo` | 待办事项 | 生活中心 | ✓ |
@@ -258,7 +289,8 @@ LifeOS/
 |------|------|------|
 | 认证 | `/auth` | 登录 / 注册 / 刷新 / 登出 / 当前用户 |
 | 系统 | `/system/health` | 健康探针（无需鉴权） |
-| 仪表盘 | `/dashboard` | 跨模块聚合摘要 |
+| 仪表盘 | `/dashboard` | 跨模块聚合摘要（含 `upcomingSubscriptions` 7 天内到期订阅） |
+| 智能助理 | `/assistant` | DeepSeek function calling 多轮 tool 循环 |
 | 智能分析 | `/analysis` | AI 分析接口（DeepSeek） |
 | 通知中心 | `/notifications` | 渠道 / 场景 / 模板 / 日志 |
 | 健康-步数 | `/health/step` | 步数记录 / 设置 |
@@ -269,9 +301,11 @@ LifeOS/
 | 财务-房租 | `/finance/rent` | 渠道 / 记录 / 设置 |
 | 财务-购物 | `/finance/shopping` | 平台 / 账本 / 记录 / 导入 |
 | 财务-订阅 | `/finance/subscription` | 分类 / 记录 / 设置 |
-| 财务-旅行 | `/finance/travel` | 书 / 详情 / 排行榜 / 报表 |
+| 财务-旅行 | `/finance/travel` | 书（含 complete/archive 状态机 + archive-suggestions）/ 详情 / 排行榜 / 报表 |
+| 财务-汇率 | `/finance/exchange-rate` | latest / convert（1h 缓存 + USD 桥梁 + 离线表） |
+| 财务-报告 | `/finance/report` | monthly / yearly / notify（跨 5 模块聚合） |
 | 投资-外汇 | `/investment/forex` | 交易 / 资金流水 / 设置 |
-| 生活-待办 | `/life/todo` | 任务 / 日志 / 回收站 |
+| 生活-待办 | `/life/todo` | 任务（含 `recurrence_type` + `recurrence_config` 重复规则）/ 日志 / 回收站 |
 | 生活-储物 | `/life/storage` | 物品 / 归档 / 设置 |
 | 生活-号卡 | `/life/card` | 号卡 / 充值 / 账单 |
 
@@ -292,9 +326,9 @@ LifeOS/
 | 财务-房租 | `finance_rent_channel` / `finance_rent_record` / `finance_rent_setting` | 渠道 / 记录 |
 | 财务-购物 | `finance_shopping_platform` / `finance_shopping_ledger` / `finance_shopping_record` / `finance_shopping_import_batch` / `finance_shopping_setting` | 平台 / 账本 / 记录 / 导入批次 |
 | 财务-订阅 | `finance_subscription_category` / `finance_subscription_record` / `finance_subscription_setting` | 分类 / 记录 |
-| 财务-旅行 | `finance_travel_book` / `finance_travel_expense_record` / `finance_travel_pay_channel` / `finance_travel_import_batch` / `finance_travel_setting` | 书 / 费用 / 支付渠道 |
+| 财务-旅行 | `finance_travel_book` / `finance_travel_expense_record` / `finance_travel_pay_channel` / `finance_travel_import_batch` / `finance_travel_setting` | 书（含 status/currency/budget/archived_at）/ 费用 / 支付渠道 |
 | 投资-外汇 | `investment_forex_trade_record` / `investment_forex_capital_flow` / `investment_forex_import_batch` / `investment_forex_setting` | 交易 / 资金流水 |
-| 生活-待办 | `life_todo_task` / `life_todo_setting` | 任务（软删除） |
+| 生活-待办 | `life_todo_task` / `life_todo_setting` | 任务（软删除；`recurrence_type` + `recurrence_config` 控制重复规则） |
 | 生活-储物 | `life_storage_item` / `life_storage_setting` | 物品 |
 | 生活-号卡 | `life_card_record` / `life_card_carrier` / `life_card_recharge_record` / `life_card_bill_record` / `life_card_bill_import_batch` / `life_card_setting` | 号卡 / 运营商 / 充值 / 账单 |
 | 通知 | `notification_center_channel` / `notification_center_scene` / `notification_center_scene_channel` / `notification_center_template` / `notification_center_log` | 渠道 / 场景 / 绑定 / 模板 / 日志 |
@@ -361,8 +395,10 @@ cd client && npm run dev
 | `SMTP_USER` | 否 | - | SMTP 用户名 |
 | `SMTP_PASS` | 否 | - | SMTP 密码 |
 | `SMTP_FROM` | 否 | - | 发件人邮箱 |
-| `DEEPSEEK_API_KEY` | 否 | - | DeepSeek AI 接口密钥（智能分析模块） |
+| `DEEPSEEK_API_KEY` | 否 | - | DeepSeek AI 接口密钥（智能分析 + 智能助理） |
 | `DEEPSEEK_BASE_URL` | 否 | https://api.deepseek.com | DeepSeek API 基础 URL |
+| `EXCHANGE_RATE_API_KEY` | 否 | - | Exchange Rate API v6 密钥（`/finance/exchange-rate`）；未配置时自动回退到离线 FALLBACK_RATES |
+| `EXCHANGE_RATE_API_BASE_URL` | 否 | https://v6.exchangerate-api.com | Exchange Rate API 基础 URL |
 
 ### 生产构建与部署
 
@@ -444,21 +480,27 @@ page (页面主组件)
 - `GET  /api/auth/me` — 当前用户信息
 
 ### 仪表盘
-- `GET /api/dashboard/summary` — 跨模块聚合摘要（首页用）
+- `GET /api/dashboard/summary` — 跨模块聚合摘要（首页用；含 7 天内到期订阅 `upcomingSubscriptions`）
 
-### 健康-步数
-- `GET    /api/health/step/records` — 列表
-- `POST   /api/health/step/records` — 新增
-- `PATCH  /api/health/step/records/:id` — 更新
-- `DELETE /api/health/step/records/:id` — 删除
-- `GET    /api/health/step/settings` / `PUT .../settings` — 设置
-
-### 健康-健身 / 用药 / 体检
-- 各模块均有 CRUD + 设置端点，结构类似
+### 智能助理
+- `POST /api/assistant/chat` — DeepSeek function calling 多轮 tool 循环
 
 ### 财务-贷款 / 房租 / 购物 / 订阅 / 旅行
 - 各模块均有 CRUD + 设置端点
 - 购物、旅行支持 Excel 导入导出（multipart/form-data）
+- 旅行新增状态机端点：
+  - `POST /api/finance/travel/books/:id/complete` — 标记完成
+  - `POST /api/finance/travel/books/:id/archive` — 归档
+  - `GET  /api/finance/travel/archive/suggestions` — 结束 30 天以上未归档的行程
+
+### 财务-汇率换算
+- `GET /api/finance/exchange-rate/latest?base=USD&symbols=CNY,EUR` — 实时汇率（1h 进程内缓存 + USD 桥梁 + 离线表）
+- `GET /api/finance/exchange-rate/convert?from=USD&to=CNY&amount=100` — 换算
+
+### 财务-月度/年度 报告
+- `GET /api/finance/report/monthly?month=YYYY-MM` — 单月报告
+- `GET /api/finance/report/yearly?year=YYYY` — 年度报告
+- `POST /api/finance/report/notify` — 主动推送月报到通知中心
 
 ### 投资-外汇
 - `GET /api/investment/forex/trades` / `POST` / `PATCH` / `DELETE`
@@ -542,6 +584,7 @@ page (页面主组件)
 - **测试**：当前未配置测试框架（计划引入 Vitest / Jest + Supertest）
 - **国际化**：界面为中文，i18n 框架未集成
 - **CI/CD**：无自动化流水线（计划加入 GitHub Actions）
+- **汇率数据源**：当前只接 Exchange Rate API v6，未配置时只能使用离线 FALLBACK_RATES（5 基础 × 9 货币）
 
 ---
 
