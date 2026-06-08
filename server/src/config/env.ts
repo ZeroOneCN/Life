@@ -22,6 +22,10 @@ const envSchema = z.object({
   SMTP_USER: z.string().min(1).default(''),
   SMTP_PASS: z.string().default(''),
   SMTP_FROM: z.string().min(1).default('noreply@example.com'),
+  DEEPSEEK_API_KEY: z.string().min(0).default(''),
+  DEEPSEEK_BASE_URL: z.string().min(1).default('https://api.deepseek.com'),
+  EXCHANGE_RATE_API_KEY: z.string().min(0).default(''),
+  EXCHANGE_RATE_API_BASE_URL: z.string().min(1).default('https://v6.exchangerate-api.com/v6'),
 });
 
 const parsedEnv = envSchema.parse(process.env);

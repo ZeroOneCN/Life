@@ -7,7 +7,7 @@ export interface TodoListParams {
   page?: number;
   page_size?: number;
   keyword?: string;
-  status?: 'all' | 'active' | 'completed' | 'overdue' | 'daily';
+  status?: 'all' | 'active' | 'completed' | 'overdue' | 'daily' | 'recurring';
   priority?: 'all' | 'high' | 'medium' | 'low';
   tag?: string;
   dueStartDate?: string;

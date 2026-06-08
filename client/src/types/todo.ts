@@ -2,6 +2,13 @@ export type TodoTab = 'tasks' | 'settings' | 'logs' | 'trash';
 
 export type TodoPriority = 'high' | 'medium' | 'low';
 
+export type TodoRecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly';
+
+export interface TodoRecurrenceConfig {
+  weekdays?: number[];
+  dayOfMonth?: number;
+}
+
 export interface TodoTaskRecord {
   id: string;
   title: string;
@@ -9,7 +16,10 @@ export interface TodoTaskRecord {
   dueDate: string;
   priority: TodoPriority;
   tags: string[];
+  /** 兼容老数据，等价于 recurrenceType === 'daily'。 */
   isDaily: boolean;
+  recurrenceType: TodoRecurrenceType;
+  recurrenceConfig: TodoRecurrenceConfig | null;
   completed: boolean;
   completedAt: string;
   lastCompletedDate: string;
@@ -25,7 +35,10 @@ export interface TodoTaskDraft {
   dueDate?: string;
   priority?: TodoPriority;
   tags?: string[];
+  /** 兼容老数据：true 等价于 recurrenceType='daily'。 */
   isDaily?: boolean;
+  recurrenceType?: TodoRecurrenceType;
+  recurrenceConfig?: TodoRecurrenceConfig | null;
 }
 
 export interface TodoReminderSettings {
@@ -41,6 +54,9 @@ export interface TodoOverviewSummary {
   totalCount: number;
   activeCount: number;
   completedCount: number;
+  /** 全部重复任务数（daily/weekly/monthly）。 */
+  recurringCount: number;
+  /** 兼容老数据：仅每日重复任务数。 */
   dailyCount: number;
   highPriorityCount: number;
   mediumPriorityCount: number;

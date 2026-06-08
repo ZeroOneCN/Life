@@ -1,8 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import dayjs from 'dayjs';
-import { In } from 'typeorm';
-import { IsNull, Not } from 'typeorm';
+import { In, IsNull, Not } from 'typeorm';
 
 import { appDataSource } from '../../db/data-source';
 import { LifeTodoTaskEntity } from './entities/life-todo-task.entity';
@@ -18,6 +17,25 @@ import { parsePagination } from '../../shared/utils/pagination';
 import { normalizeText } from '../../shared/utils/text';
 import { normalizeDate } from '../../shared/utils/date';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
+import {
+  computeNextRecurrenceDate,
+  isRecurringType,
+  resolveRecurrenceType,
+} from './todo-recurrence';
+import type { LifeTodoRecurrenceConfig } from './entities/life-todo-task.entity';
+
+const recurrenceTypeSchema = z.enum(['none', 'daily', 'weekly', 'monthly']);
+
+const recurrenceConfigSchema = z
+  .object({
+    weekdays: z
+      .array(z.number().int().min(0).max(6))
+      .max(7)
+      .optional(),
+    dayOfMonth: z.number().int().min(1).max(31).optional(),
+  })
+  .optional()
+  .nullable();
 
 const taskSchemaBase = z.object({
   title: z.string().trim().min(1).max(255),
@@ -29,15 +47,17 @@ const taskSchemaBase = z.object({
   priority: z.enum(['high', 'medium', 'low']).optional().default('medium'),
   tags: z.array(z.string().trim().min(1)).optional().default([]),
   isDaily: z.boolean().optional().default(false),
+  recurrenceType: recurrenceTypeSchema.optional().default('none'),
+  recurrenceConfig: recurrenceConfigSchema,
   completed: z.boolean().optional(),
 });
 
 const taskSchema = taskSchemaBase.refine((data) => {
-  if (data.completed === true && !data.dueDate && data.isDaily) {
+  if (data.completed === true && !data.dueDate && (data.isDaily || data.recurrenceType !== 'none')) {
     return false;
   }
   return true;
-}, { message: '每日任务必须设置到期日期' });
+}, { message: '重复任务必须设置到期日期' });
 
 const settingsSchema = z.object({
   reminderEnabled: z.boolean().optional(),
@@ -70,7 +90,27 @@ const toggleCompletedSchema = z.object({
 
 const settingService = new BaseUserSettingService(LifeTodoSettingEntity);
 
+function normalizeRecurrenceConfig(
+  config: LifeTodoRecurrenceConfig | null | undefined,
+): LifeTodoRecurrenceConfig | null {
+  if (!config) {
+    return null;
+  }
+  const result: LifeTodoRecurrenceConfig = {};
+  if (Array.isArray(config.weekdays)) {
+    const unique = [...new Set(config.weekdays.filter((value) => value >= 0 && value <= 6))];
+    if (unique.length) {
+      result.weekdays = unique.sort((left, right) => left - right);
+    }
+  }
+  if (typeof config.dayOfMonth === 'number' && config.dayOfMonth >= 1 && config.dayOfMonth <= 31) {
+    result.dayOfMonth = config.dayOfMonth;
+  }
+  return Object.keys(result).length ? result : null;
+}
+
 function mapTask(entity: LifeTodoTaskEntity) {
+  const recurrenceType = resolveRecurrenceType(entity.recurrence_type, entity.is_daily);
   return {
     id: entity.id,
     title: entity.title,
@@ -78,7 +118,9 @@ function mapTask(entity: LifeTodoTaskEntity) {
     dueDate: entity.due_date ? dayjs(entity.due_date).format('YYYY-MM-DD') : '',
     priority: entity.priority,
     tags: entity.tags_json ?? [],
-    isDaily: entity.is_daily,
+    isDaily: recurrenceType === 'daily',
+    recurrenceType,
+    recurrenceConfig: normalizeRecurrenceConfig(entity.recurrence_config),
     completed: entity.completed,
     completedAt: entity.completed_at ? dayjs(entity.completed_at).format('YYYY-MM-DD HH:mm:ss') : '',
     lastCompletedDate: entity.last_completed_date ? dayjs(entity.last_completed_date).format('YYYY-MM-DD') : '',
@@ -97,14 +139,18 @@ function buildTodoOverview(tasks: LifeTodoTaskEntity[]) {
       return summary;
     }
 
+    const recurrenceType = resolveRecurrenceType(task.recurrence_type, task.is_daily);
+    const recurring = isRecurringType(recurrenceType);
+
     summary.totalCount += 1;
-    if (task.completed) {
+    if (task.completed && !recurring) {
       summary.completedCount += 1;
-    } else {
+    } else if (!task.completed) {
       summary.activeCount += 1;
     }
-    if (task.is_daily) {
-      summary.dailyCount += 1;
+    if (recurring) {
+      summary.recurringCount += 1;
+      summary.dailyCount += recurrenceType === 'daily' ? 1 : 0;
     }
     if (task.priority === 'high') {
       summary.highPriorityCount += 1;
@@ -122,12 +168,17 @@ function buildTodoOverview(tasks: LifeTodoTaskEntity[]) {
     totalCount: 0,
     activeCount: 0,
     completedCount: 0,
+    recurringCount: 0,
     dailyCount: 0,
     highPriorityCount: 0,
     mediumPriorityCount: 0,
     lowPriorityCount: 0,
     dueTodayCount: 0,
   });
+}
+
+function isRecurringEntity(task: LifeTodoTaskEntity): boolean {
+  return isRecurringType(resolveRecurrenceType(task.recurrence_type, task.is_daily));
 }
 
 export function createTodoRouter() {
@@ -172,7 +223,10 @@ export function createTodoRouter() {
       }
 
       if (status !== 'all') {
-        if (status === 'daily' && !item.is_daily) {
+        if (status === 'daily' && resolveRecurrenceType(item.recurrence_type, item.is_daily) !== 'daily') {
+          return false;
+        }
+        if (status === 'recurring' && !isRecurringEntity(item)) {
           return false;
         }
         if (status === 'completed' && !item.completed) {
@@ -217,6 +271,12 @@ export function createTodoRouter() {
     const userId = requireAuthUser(request);
     const payload = validateBody(taskSchema, request.body);
     const repository = appDataSource.getRepository(LifeTodoTaskEntity);
+    const recurrenceType = payload.recurrenceType && payload.recurrenceType !== 'none'
+      ? payload.recurrenceType
+      : (payload.isDaily ? 'daily' : 'none');
+    const recurrenceConfig = isRecurringType(recurrenceType)
+      ? normalizeRecurrenceConfig(payload.recurrenceConfig ?? null)
+      : null;
     const item = await repository.save(repository.create({
       user_id: userId,
       title: payload.title,
@@ -224,7 +284,9 @@ export function createTodoRouter() {
       due_date: payload.dueDate ? normalizeDate(payload.dueDate) : null,
       priority: payload.priority,
       tags_json: payload.tags,
-      is_daily: payload.isDaily,
+      is_daily: recurrenceType === 'daily',
+      recurrence_type: recurrenceType,
+      recurrence_config: recurrenceConfig,
       completed: payload.completed ?? false,
       completed_at: payload.completed ? new Date() : null,
       last_completed_date: payload.completed ? dayjs().format('YYYY-MM-DD') : null,
@@ -255,6 +317,18 @@ export function createTodoRouter() {
     const wasCompleted = current.completed;
     const isNowCompleted = completed;
 
+    const previousRecurrenceType = resolveRecurrenceType(current.recurrence_type, current.is_daily);
+    const nextRecurrenceType = payload.recurrenceType !== undefined
+      ? payload.recurrenceType
+      : (payload.isDaily !== undefined
+        ? (payload.isDaily ? 'daily' : 'none')
+        : previousRecurrenceType);
+    const nextRecurrenceConfig = payload.recurrenceConfig !== undefined
+      ? normalizeRecurrenceConfig(payload.recurrenceConfig)
+      : (isRecurringType(nextRecurrenceType)
+        ? normalizeRecurrenceConfig(current.recurrence_config)
+        : null);
+
     const next = await repository.save({
       ...current,
       title: payload.title ?? current.title,
@@ -262,7 +336,11 @@ export function createTodoRouter() {
       due_date: payload.dueDate !== undefined ? (payload.dueDate ? normalizeDate(payload.dueDate) : null) : current.due_date,
       priority: payload.priority ?? current.priority,
       tags_json: payload.tags ?? current.tags_json,
-      is_daily: payload.isDaily ?? current.is_daily,
+      is_daily: payload.isDaily !== undefined
+        ? payload.isDaily
+        : (nextRecurrenceType === 'daily'),
+      recurrence_type: nextRecurrenceType,
+      recurrence_config: nextRecurrenceConfig,
       completed: isNowCompleted,
       completed_at: isNowCompleted
         ? (!wasCompleted ? new Date() : (current.completed_at ?? new Date()))
@@ -291,11 +369,40 @@ export function createTodoRouter() {
       throw new AppError('todo_task_not_found', 404, 404);
     }
 
+    const recurrenceType = resolveRecurrenceType(current.recurrence_type, current.is_daily);
+    const recurring = isRecurringType(recurrenceType);
+    const today = dayjs().format('YYYY-MM-DD');
+    const lastCompletedDate = current.last_completed_date
+      ? dayjs(current.last_completed_date).format('YYYY-MM-DD')
+      : null;
+
+    // 重复任务：完成即推进 due_date 到下一次，并清除当次完成态。
+    if (payload.completed && recurring) {
+      const baseDate = lastCompletedDate && lastCompletedDate >= today
+        ? lastCompletedDate
+        : (current.due_date ? dayjs(current.due_date).format('YYYY-MM-DD') : today);
+      const nextDate = computeNextRecurrenceDate(
+        recurrenceType,
+        current.recurrence_config,
+        baseDate,
+        null,
+      ) ?? today;
+      const next = await repository.save({
+        ...current,
+        completed: false,
+        completed_at: null,
+        last_completed_date: today,
+        due_date: nextDate,
+      });
+      response.json(successResponse(mapTask(next), 'toggle_todo_task_completed_success'));
+      return;
+    }
+
     const next = await repository.save({
       ...current,
       completed: payload.completed,
       completed_at: payload.completed ? new Date() : null,
-      last_completed_date: payload.completed ? dayjs().format('YYYY-MM-DD') : null,
+      last_completed_date: payload.completed ? today : current.last_completed_date,
     });
 
     response.json(successResponse(mapTask(next), 'toggle_todo_task_completed_success'));
@@ -396,15 +503,46 @@ export function createTodoRouter() {
     const userId = requireAuthUser(request);
     const payload = validateBody(batchCompleteSchema, request.body);
     const repository = appDataSource.getRepository(LifeTodoTaskEntity);
+    const today = dayjs().format('YYYY-MM-DD');
 
-    await repository.update({
-      user_id: userId,
-      id: In(payload.taskIds),
-    }, {
-      completed: true,
-      completed_at: new Date(),
-      last_completed_date: dayjs().format('YYYY-MM-DD'),
+    const matched = await repository.find({
+      where: {
+        user_id: userId,
+        id: In(payload.taskIds),
+      },
     });
+
+    for (const item of matched) {
+      const recurrenceType = resolveRecurrenceType(item.recurrence_type, item.is_daily);
+      if (isRecurringType(recurrenceType)) {
+        const lastCompletedDate = item.last_completed_date
+          ? dayjs(item.last_completed_date).format('YYYY-MM-DD')
+          : null;
+        const baseDate = lastCompletedDate && lastCompletedDate >= today
+          ? lastCompletedDate
+          : (item.due_date ? dayjs(item.due_date).format('YYYY-MM-DD') : today);
+        const nextDate = computeNextRecurrenceDate(
+          recurrenceType,
+          item.recurrence_config,
+          baseDate,
+          null,
+        ) ?? today;
+        await repository.save({
+          ...item,
+          completed: false,
+          completed_at: null,
+          last_completed_date: today,
+          due_date: nextDate,
+        });
+        continue;
+      }
+
+      await repository.update({ id: item.id }, {
+        completed: true,
+        completed_at: new Date(),
+        last_completed_date: today,
+      });
+    }
 
     response.json(successResponse({ ok: true }, 'batch_complete_todo_tasks_success'));
   }));

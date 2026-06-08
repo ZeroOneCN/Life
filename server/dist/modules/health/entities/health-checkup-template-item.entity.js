@@ -20,6 +20,10 @@ __decorate([
     __metadata("design:type", String)
 ], HealthCheckupTemplateItemEntity.prototype, "template_id", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], HealthCheckupTemplateItemEntity.prototype, "sort_order", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 128 }),
     __metadata("design:type", String)
 ], HealthCheckupTemplateItemEntity.prototype, "test_name", void 0);

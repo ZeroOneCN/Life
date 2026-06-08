@@ -16,6 +16,10 @@ let InvestmentForexTradeRecordEntity = class InvestmentForexTradeRecordEntity ex
 };
 exports.InvestmentForexTradeRecordEntity = InvestmentForexTradeRecordEntity;
 __decorate([
+    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], InvestmentForexTradeRecordEntity.prototype, "sort_order", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'date' }),
     __metadata("design:type", String)
 ], InvestmentForexTradeRecordEntity.prototype, "trade_date", void 0);

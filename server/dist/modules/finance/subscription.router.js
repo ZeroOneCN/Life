@@ -37,17 +37,17 @@ const categorySchema = zod_1.z.object({
     description: zod_1.z.string().optional().default(''),
 });
 const settingsSchema = zod_1.z.object({
-    recordsKeyword: zod_1.z.string().optional(),
-    recordsCategoryId: zod_1.z.string().optional(),
-    recordsStatus: zod_1.z.enum(['all', 'active', 'upcoming', 'expired']).optional(),
-    recordsAutoRenewFilter: zod_1.z.enum(['all', 'auto', 'manual']).optional(),
+    recordsKeyword: zod_1.z.string().optional().default(''),
+    recordsCategoryId: zod_1.z.string().optional().default('all'),
+    recordsStatus: zod_1.z.enum(['all', 'active', 'upcoming', 'expired']).optional().default('all'),
+    recordsAutoRenewFilter: zod_1.z.enum(['all', 'auto', 'manual']).optional().default('all'),
     recordsExpiryStartDate: zod_1.z.string().optional(),
     recordsExpiryEndDate: zod_1.z.string().optional(),
-    dashboardRangeDays: zod_1.z.union([zod_1.z.literal(90), zod_1.z.literal(180), zod_1.z.literal(365)]).optional(),
-    reminderEnabled: zod_1.z.boolean().optional(),
-    expiryDayReminderEnabled: zod_1.z.boolean().optional(),
-    leadDays: zod_1.z.number().int().min(0).max(90).optional(),
-    includeAutoRenewInReminders: zod_1.z.boolean().optional(),
+    dashboardRangeDays: zod_1.z.union([zod_1.z.literal(90), zod_1.z.literal(180), zod_1.z.literal(365)]).optional().default(90),
+    reminderEnabled: zod_1.z.boolean().optional().default(true),
+    expiryDayReminderEnabled: zod_1.z.boolean().optional().default(true),
+    leadDays: zod_1.z.number().int().min(0).max(90).optional().default(7),
+    includeAutoRenewInReminders: zod_1.z.boolean().optional().default(false),
 });
 const triggerReminderSchema = zod_1.z.object({
     title: zod_1.z.string().trim().min(1).max(255).optional(),

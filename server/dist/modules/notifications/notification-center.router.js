@@ -11,37 +11,93 @@ const response_1 = require("../../shared/http/response");
 const validation_1 = require("../../shared/http/validation");
 const notification_1 = require("../../shared/domain/notification");
 const pagination_1 = require("../../shared/utils/pagination");
+const notification_sender_1 = require("../../shared/services/notification-sender");
 const notification_center_channel_entity_1 = require("./entities/notification-center-channel.entity");
 const notification_center_log_entity_1 = require("./entities/notification-center-log.entity");
 const notification_center_scene_channel_entity_1 = require("./entities/notification-center-scene-channel.entity");
 const notification_center_scene_entity_1 = require("./entities/notification-center-scene.entity");
 const notification_center_template_entity_1 = require("./entities/notification-center-template.entity");
+const emailConfigSchema = zod_1.z.object({
+    recipient: zod_1.z.string().email('请输入有效的邮箱地址').optional(),
+    senderName: zod_1.z.string().trim().max(64).optional(),
+    webhookUrl: zod_1.z.string().optional(),
+    secret: zod_1.z.string().max(128).optional(),
+    notes: zod_1.z.string().max(500).optional(),
+});
+const webhookConfigSchema = zod_1.z.object({
+    recipient: zod_1.z.string().optional(),
+    senderName: zod_1.z.string().optional(),
+    webhookUrl: zod_1.z.string().url('请输入有效的 Webhook URL').optional(),
+    secret: zod_1.z.string().max(128).optional(),
+    notes: zod_1.z.string().max(500).optional(),
+});
+const wechatWorkConfigSchema = zod_1.z.object({
+    recipient: zod_1.z.string().optional(),
+    senderName: zod_1.z.string().optional(),
+    webhookUrl: zod_1.z.string().url('请输入有效的企业微信 Webhook URL').optional(),
+    secret: zod_1.z.string().max(128).optional(),
+    notes: zod_1.z.string().max(500).optional(),
+});
+const dingTalkConfigSchema = zod_1.z.object({
+    recipient: zod_1.z.string().optional(),
+    senderName: zod_1.z.string().optional(),
+    webhookUrl: zod_1.z.string().url('请输入有效的钉钉 Webhook URL').optional(),
+    secret: zod_1.z.string().max(128).optional(),
+    notes: zod_1.z.string().max(500).optional(),
+});
+const feishuConfigSchema = zod_1.z.object({
+    recipient: zod_1.z.string().optional(),
+    senderName: zod_1.z.string().optional(),
+    webhookUrl: zod_1.z.string().url('请输入有效的飞书 Webhook URL').optional(),
+    secret: zod_1.z.string().max(128).optional(),
+    notes: zod_1.z.string().max(500).optional(),
+});
+const telegramConfigSchema = zod_1.z.object({
+    recipient: zod_1.z.string().optional(),
+    senderName: zod_1.z.string().optional(),
+    webhookUrl: zod_1.z.string().optional(),
+    secret: zod_1.z.string().max(128).optional(),
+    notes: zod_1.z.string().max(500).optional(),
+});
+function validateChannelConfig(type, config) {
+    if (type === 'email')
+        return emailConfigSchema.parse(config ?? {});
+    if (type === 'wechatWork')
+        return wechatWorkConfigSchema.parse(config ?? {});
+    if (type === 'dingTalk')
+        return dingTalkConfigSchema.parse(config ?? {});
+    if (type === 'feishu')
+        return feishuConfigSchema.parse(config ?? {});
+    if (type === 'telegram')
+        return telegramConfigSchema.parse(config ?? {});
+    return webhookConfigSchema.parse(config ?? {});
+}
 const channelSchema = zod_1.z.object({
-    type: zod_1.z.enum(['email', 'wechatWork', 'webhook']),
+    type: zod_1.z.enum(['email', 'wechatWork', 'dingTalk', 'feishu', 'telegram', 'webhook']),
     label: zod_1.z.string().trim().min(1).max(64).optional(),
-    enabled: zod_1.z.boolean().optional(),
+    enabled: zod_1.z.coerce.boolean().optional(),
     status: zod_1.z.enum(['ready', 'incomplete', 'disabled']).optional(),
     config: zod_1.z.record(zod_1.z.any()).optional(),
 });
 const sceneSchema = zod_1.z.object({
-    enabled: zod_1.z.boolean().optional(),
-    channels: zod_1.z.array(zod_1.z.enum(['email', 'wechatWork', 'webhook'])).optional(),
-    label: zod_1.z.string().trim().min(1).max(128).optional(),
-    summary: zod_1.z.string().trim().min(1).max(255).optional(),
-    description: zod_1.z.string().trim().min(1).optional(),
+    enabled: zod_1.z.coerce.boolean().optional(),
+    channels: zod_1.z.array(zod_1.z.enum(['email', 'wechatWork', 'dingTalk', 'feishu', 'telegram', 'webhook'])).optional(),
+    label: zod_1.z.string().trim().max(128).optional(),
+    summary: zod_1.z.string().trim().max(255).optional(),
+    description: zod_1.z.string().trim().optional(),
 });
 const templateSchema = zod_1.z.object({
     title: zod_1.z.string().trim().min(1).max(255),
     body: zod_1.z.string().trim().min(1),
 });
 const testChannelSchema = zod_1.z.object({
-    channel: zod_1.z.enum(['email', 'wechatWork', 'webhook']),
+    channel: zod_1.z.enum(['email', 'wechatWork', 'dingTalk', 'feishu', 'telegram', 'webhook']),
     title: zod_1.z.string().trim().min(1).max(255).optional(),
 });
 const sendSceneSchema = zod_1.z.object({
     sceneId: zod_1.z.string().trim().min(1).max(64),
     message: zod_1.z.string().trim().min(1).optional(),
-    preferredChannels: zod_1.z.array(zod_1.z.enum(['email', 'wechatWork', 'webhook'])).optional(),
+    preferredChannels: zod_1.z.array(zod_1.z.enum(['email', 'wechatWork', 'dingTalk', 'feishu', 'telegram', 'webhook'])).optional(),
 });
 function normalizeChannelStatus(enabled, config, type) {
     if (!enabled) {
@@ -50,6 +106,9 @@ function normalizeChannelStatus(enabled, config, type) {
     if (type === 'email') {
         return config?.recipient ? 'ready' : 'incomplete';
     }
+    if (type === 'telegram') {
+        return (config?.recipient && config?.webhookUrl) ? 'ready' : 'incomplete';
+    }
     return config?.webhookUrl ? 'ready' : 'incomplete';
 }
 function createNotificationCenterRouter() {
@@ -57,10 +116,24 @@ function createNotificationCenterRouter() {
     router.get('/channels', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);
         const repository = data_source_1.appDataSource.getRepository(notification_center_channel_entity_1.NotificationCenterChannelEntity);
-        const items = await repository.find({
+        let items = await repository.find({
             where: { user_id: userId },
             order: { channel_type: 'ASC' },
         });
+        const ALL_CHANNEL_SEEDS = [
+            { channel_type: 'email', label: '邮件通知', enabled: false, status: 'disabled', config_json: null },
+            { channel_type: 'wechatWork', label: '企业微信', enabled: false, status: 'disabled', config_json: null },
+            { channel_type: 'dingTalk', label: '钉钉', enabled: false, status: 'disabled', config_json: null },
+            { channel_type: 'feishu', label: '飞书', enabled: false, status: 'disabled', config_json: null },
+            { channel_type: 'telegram', label: 'Telegram', enabled: false, status: 'disabled', config_json: null },
+            { channel_type: 'webhook', label: 'Webhook', enabled: false, status: 'disabled', config_json: null },
+        ];
+        const existingTypes = new Set(items.map((item) => item.channel_type));
+        const missing = ALL_CHANNEL_SEEDS.filter((seed) => !existingTypes.has(seed.channel_type));
+        if (missing.length > 0) {
+            const added = await repository.save(missing.map((d) => repository.create({ user_id: userId, ...d })));
+            items = [...items, ...added];
+        }
         response.json((0, response_1.successResponse)((0, response_1.buildListData)(items)));
     }));
     router.post('/channels', (0, async_handler_1.asyncHandler)(async (request, response) => {
@@ -103,7 +176,7 @@ function createNotificationCenterRouter() {
         const userId = (0, request_1.requireAuthUser)(request);
         const sceneRepo = data_source_1.appDataSource.getRepository(notification_center_scene_entity_1.NotificationCenterSceneEntity);
         const relationRepo = data_source_1.appDataSource.getRepository(notification_center_scene_channel_entity_1.NotificationCenterSceneChannelEntity);
-        const [scenes, relations] = await Promise.all([
+        let [scenes, relations] = await Promise.all([
             sceneRepo.find({
                 where: { user_id: userId },
                 order: { scene_id: 'ASC' },
@@ -112,6 +185,23 @@ function createNotificationCenterRouter() {
                 where: { user_id: userId },
             }),
         ]);
+        if (scenes.length === 0) {
+            const defaults = [
+                { scene_id: 'todo.reminder', label: '待办提醒', enabled: false, summary: '', description: '' },
+                { scene_id: 'card.balance_low', label: '号卡低余额提醒', enabled: false, summary: '', description: '' },
+                { scene_id: 'card.billing_upcoming', label: '号卡账单日前提醒', enabled: false, summary: '', description: '' },
+                { scene_id: 'loan.repayment_upcoming', label: '贷款还款提醒', enabled: false, summary: '', description: '' },
+                { scene_id: 'loan.repayment_overdue', label: '贷款逾期提醒', enabled: false, summary: '', description: '' },
+                { scene_id: 'checkup.followup_reminder', label: '体检复查提醒', enabled: false, summary: '', description: '' },
+                { scene_id: 'checkup.abnormal_alert', label: '体检异常提醒', enabled: false, summary: '', description: '' },
+                { scene_id: 'medication.dose_reminder', label: '服药提醒', enabled: false, summary: '', description: '' },
+                { scene_id: 'medication.stock_low', label: '低库存提醒', enabled: false, summary: '', description: '' },
+                { scene_id: 'subscription.renewal_upcoming', label: '订阅即将到期', enabled: false, summary: '', description: '' },
+                { scene_id: 'subscription.expired', label: '订阅到期或逾期', enabled: false, summary: '', description: '' },
+            ];
+            scenes = await sceneRepo.save(defaults.map((d) => sceneRepo.create({ user_id: userId, ...d })));
+            relations = [];
+        }
         const items = scenes.map((scene) => ({
             ...scene,
             channels: relations
@@ -161,10 +251,26 @@ function createNotificationCenterRouter() {
     router.get('/templates', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);
         const repository = data_source_1.appDataSource.getRepository(notification_center_template_entity_1.NotificationCenterTemplateEntity);
-        const items = await repository.find({
+        let items = await repository.find({
             where: { user_id: userId },
             order: { scene_id: 'ASC' },
         });
+        if (items.length === 0) {
+            const defaults = [
+                { scene_id: 'todo.reminder', title: '', body: '' },
+                { scene_id: 'card.balance_low', title: '', body: '' },
+                { scene_id: 'card.billing_upcoming', title: '', body: '' },
+                { scene_id: 'loan.repayment_upcoming', title: '', body: '' },
+                { scene_id: 'loan.repayment_overdue', title: '', body: '' },
+                { scene_id: 'checkup.followup_reminder', title: '', body: '' },
+                { scene_id: 'checkup.abnormal_alert', title: '', body: '' },
+                { scene_id: 'medication.dose_reminder', title: '', body: '' },
+                { scene_id: 'medication.stock_low', title: '', body: '' },
+                { scene_id: 'subscription.renewal_upcoming', title: '', body: '' },
+                { scene_id: 'subscription.expired', title: '', body: '' },
+            ];
+            items = await repository.save(defaults.map((d) => repository.create({ user_id: userId, ...d })));
+        }
         response.json((0, response_1.successResponse)((0, response_1.buildListData)(items)));
     }));
     router.patch('/templates/:id', (0, async_handler_1.asyncHandler)(async (request, response) => {
@@ -214,6 +320,12 @@ function createNotificationCenterRouter() {
             .filter((item) => !channel || item.channel === channel);
         response.json((0, response_1.successResponse)((0, response_1.buildListData)(filtered.slice(skip, skip + pageSize), page, pageSize, filtered.length)));
     }));
+    router.delete('/logs', (0, async_handler_1.asyncHandler)(async (request, response) => {
+        const userId = (0, request_1.requireAuthUser)(request);
+        const logRepo = data_source_1.appDataSource.getRepository(notification_center_log_entity_1.NotificationCenterLogEntity);
+        await logRepo.delete({ user_id: userId });
+        response.json((0, response_1.successResponse)(null, 'notification_logs_cleared'));
+    }));
     router.post('/actions/test-channel', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);
         const payload = (0, validation_1.validateBody)(testChannelSchema, request.body);
@@ -222,23 +334,217 @@ function createNotificationCenterRouter() {
         const channel = await channelRepo.findOne({
             where: { user_id: userId, channel_type: payload.channel },
         });
-        const success = Boolean(channel?.enabled);
         const channelLabel = channel?.label ?? payload.channel;
-        const message = success
-            ? `${channelLabel} 测试发送已记录。`
-            : `${channelLabel} 未启用或配置不完整，测试发送已跳过。`;
+        const title = payload.title ?? '通知中心测试发送';
+        const config = channel?.config_json;
+        if (!channel?.enabled) {
+            const logEntry = await logRepo.save(logRepo.create({
+                user_id: userId,
+                channel: payload.channel,
+                scene_id: null,
+                kind: 'test',
+                status: 'error',
+                title,
+                message: `${channelLabel} 未启用或配置不完整，测试发送已跳过。`,
+            }));
+            response.json((0, response_1.successResponse)({
+                success: false,
+                message: `${channelLabel} 未启用或配置不完整，测试发送已跳过。`,
+                logEntry,
+            }, 'test_notification_channel_success'));
+            return;
+        }
+        let sendResult;
+        if (payload.channel === 'email') {
+            const recipient = config?.recipient;
+            if (!recipient) {
+                const logEntry = await logRepo.save(logRepo.create({
+                    user_id: userId,
+                    channel: payload.channel,
+                    scene_id: null,
+                    kind: 'test',
+                    status: 'error',
+                    title,
+                    message: '邮件地址未配置',
+                }));
+                response.json((0, response_1.successResponse)({
+                    success: false,
+                    message: '邮件地址未配置',
+                    logEntry,
+                }, 'test_notification_channel_success'));
+                return;
+            }
+            sendResult = await (0, notification_sender_1.sendEmail)({
+                to: recipient,
+                subject: title,
+                text: '这是一封来自 LifeOS 通知中心的测试邮件。',
+            });
+        }
+        else if (payload.channel === 'wechatWork') {
+            const webhookUrl = config?.webhookUrl;
+            if (!webhookUrl) {
+                const logEntry = await logRepo.save(logRepo.create({
+                    user_id: userId,
+                    channel: payload.channel,
+                    scene_id: null,
+                    kind: 'test',
+                    status: 'error',
+                    title,
+                    message: '企业微信 Webhook 地址未配置',
+                }));
+                response.json((0, response_1.successResponse)({
+                    success: false,
+                    message: '企业微信 Webhook 地址未配置',
+                    logEntry,
+                }, 'test_notification_channel_success'));
+                return;
+            }
+            sendResult = await (0, notification_sender_1.sendWechatWorkWebhook)({
+                webhookUrl,
+                content: `${title}\n这是一条来自 LifeOS 通知中心的测试消息。`,
+            });
+        }
+        else if (payload.channel === 'dingTalk') {
+            const webhookUrl = config?.webhookUrl;
+            const secret = config?.secret;
+            if (!webhookUrl) {
+                const logEntry = await logRepo.save(logRepo.create({
+                    user_id: userId,
+                    channel: payload.channel,
+                    scene_id: null,
+                    kind: 'test',
+                    status: 'error',
+                    title,
+                    message: '钉钉 Webhook 地址未配置',
+                }));
+                response.json((0, response_1.successResponse)({
+                    success: false,
+                    message: '钉钉 Webhook 地址未配置',
+                    logEntry,
+                }, 'test_notification_channel_success'));
+                return;
+            }
+            sendResult = await (0, notification_sender_1.sendDingTalkWebhook)({
+                webhookUrl,
+                secret,
+                content: `${title}\n这是一条来自 LifeOS 通知中心的测试消息。`,
+            });
+        }
+        else if (payload.channel === 'feishu') {
+            const webhookUrl = config?.webhookUrl;
+            const secret = config?.secret;
+            if (!webhookUrl) {
+                const logEntry = await logRepo.save(logRepo.create({
+                    user_id: userId,
+                    channel: payload.channel,
+                    scene_id: null,
+                    kind: 'test',
+                    status: 'error',
+                    title,
+                    message: '飞书 Webhook 地址未配置',
+                }));
+                response.json((0, response_1.successResponse)({
+                    success: false,
+                    message: '飞书 Webhook 地址未配置',
+                    logEntry,
+                }, 'test_notification_channel_success'));
+                return;
+            }
+            sendResult = await (0, notification_sender_1.sendFeishuWebhook)({
+                webhookUrl,
+                secret,
+                content: `${title}\n这是一条来自 LifeOS 通知中心的测试消息。`,
+            });
+        }
+        else if (payload.channel === 'telegram') {
+            const botToken = config?.recipient;
+            const chatId = config?.webhookUrl;
+            if (!botToken || !chatId) {
+                const logEntry = await logRepo.save(logRepo.create({
+                    user_id: userId,
+                    channel: payload.channel,
+                    scene_id: null,
+                    kind: 'test',
+                    status: 'error',
+                    title,
+                    message: 'Telegram Bot Token 或 Chat ID 未配置',
+                }));
+                response.json((0, response_1.successResponse)({
+                    success: false,
+                    message: 'Telegram Bot Token 或 Chat ID 未配置',
+                    logEntry,
+                }, 'test_notification_channel_success'));
+                return;
+            }
+            sendResult = await (0, notification_sender_1.sendTelegramMessage)({
+                botToken,
+                chatId,
+                text: `${title}\n这是一条来自 LifeOS 通知中心的测试消息。`,
+            });
+        }
+        else if (payload.channel === 'webhook') {
+            const webhookUrl = config?.webhookUrl;
+            const secret = config?.secret;
+            if (!webhookUrl) {
+                const logEntry = await logRepo.save(logRepo.create({
+                    user_id: userId,
+                    channel: payload.channel,
+                    scene_id: null,
+                    kind: 'test',
+                    status: 'error',
+                    title,
+                    message: 'Webhook URL 未配置',
+                }));
+                response.json((0, response_1.successResponse)({
+                    success: false,
+                    message: 'Webhook URL 未配置',
+                    logEntry,
+                }, 'test_notification_channel_success'));
+                return;
+            }
+            sendResult = await (0, notification_sender_1.sendWebhook)({
+                url: webhookUrl,
+                secret,
+                payload: {
+                    title,
+                    message: '这是一条来自 LifeOS 通知中心的测试消息。',
+                    timestamp: new Date().toISOString(),
+                },
+            });
+        }
+        else {
+            const logEntry = await logRepo.save(logRepo.create({
+                user_id: userId,
+                channel: payload.channel,
+                scene_id: null,
+                kind: 'test',
+                status: 'error',
+                title,
+                message: '不支持的通知渠道类型',
+            }));
+            response.json((0, response_1.successResponse)({
+                success: false,
+                message: '不支持的通知渠道类型',
+                logEntry,
+            }, 'test_notification_channel_success'));
+            return;
+        }
         const logEntry = await logRepo.save(logRepo.create({
             user_id: userId,
             channel: payload.channel,
             scene_id: null,
             kind: 'test',
-            status: success ? 'success' : 'error',
-            title: payload.title ?? '通知中心测试发送',
-            message,
+            status: sendResult.success ? 'success' : 'error',
+            title,
+            message: sendResult.success
+                ? `${channelLabel} 测试发送成功`
+                : `${channelLabel} 测试发送失败: ${sendResult.error}`,
         }));
         response.json((0, response_1.successResponse)({
-            success,
-            message,
+            success: sendResult.success,
+            message: sendResult.success
+                ? `${channelLabel} 测试发送成功`
+                : `${channelLabel} 测试发送失败: ${sendResult.error}`,
             logEntry,
         }, 'test_notification_channel_success'));
     }));

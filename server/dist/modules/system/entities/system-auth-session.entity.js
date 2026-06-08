@@ -28,7 +28,7 @@ __decorate([
     __metadata("design:type", Date)
 ], SystemAuthSessionEntity.prototype, "expires_at", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 128, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
     __metadata("design:type", Object)
 ], SystemAuthSessionEntity.prototype, "device_name", void 0);
 __decorate([

@@ -6,10 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createStorageRouter = createStorageRouter;
 const express_1 = require("express");
 const zod_1 = require("zod");
+const typeorm_1 = require("typeorm");
 const dayjs_1 = __importDefault(require("dayjs"));
 const data_source_1 = require("../../db/data-source");
 const life_storage_item_entity_1 = require("./entities/life-storage-item.entity");
 const life_storage_setting_entity_1 = require("./entities/life-storage-setting.entity");
+const finance_shopping_record_entity_1 = require("../finance/entities/finance-shopping-record.entity");
 const async_handler_1 = require("../../shared/http/async-handler");
 const request_1 = require("../../shared/http/request");
 const response_1 = require("../../shared/http/response");
@@ -22,7 +24,11 @@ const itemSchema = zod_1.z.object({
     itemName: zod_1.z.string().trim().min(1).max(255),
     purchasePrice: zod_1.z.number().positive(),
     purchaseDate: zod_1.z.string().min(1),
-    endDate: zod_1.z.string().optional().default(''),
+    endDate: zod_1.z.string().refine((val) => {
+        if (!val || val.trim() === '')
+            return true;
+        return (0, dayjs_1.default)(val, 'YYYY-MM-DD', true).isValid() || (0, dayjs_1.default)(val, 'YYYY/MM/DD', true).isValid();
+    }, { message: 'endDate 格式无效，应为 YYYY-MM-DD 或 YYYY/MM/DD' }).optional().default(''),
     notes: zod_1.z.string().optional().default(''),
 });
 const settingsSchema = zod_1.z.object({
@@ -32,10 +38,17 @@ const settingsSchema = zod_1.z.object({
 });
 const archiveSchema = zod_1.z.object({
     itemId: zod_1.z.string().min(1),
-    endDate: zod_1.z.string().optional(),
+    endDate: zod_1.z.string().refine((val) => {
+        if (!val || val.trim() === '')
+            return true;
+        return (0, dayjs_1.default)(val, 'YYYY-MM-DD', true).isValid() || (0, dayjs_1.default)(val, 'YYYY/MM/DD', true).isValid();
+    }, { message: 'endDate 格式无效，应为 YYYY-MM-DD 或 YYYY/MM/DD' }).optional(),
 });
 const restoreSchema = zod_1.z.object({
     itemId: zod_1.z.string().min(1),
+});
+const importFromShoppingSchema = zod_1.z.object({
+    shoppingRecordIds: zod_1.z.array(zod_1.z.string().min(1)).min(1),
 });
 const settingService = new base_user_setting_service_1.BaseUserSettingService(life_storage_setting_entity_1.LifeStorageSettingEntity);
 function mapStorageItem(entity) {
@@ -48,6 +61,8 @@ function mapStorageItem(entity) {
         notes: entity.notes,
         status: entity.status,
         archivedAt: entity.archived_at?.toISOString() ?? '',
+        source: entity.source ?? 'manual',
+        shoppingRecordId: entity.shopping_record_id ?? '',
         createdAt: entity.created_at.toISOString(),
         updatedAt: entity.updated_at.toISOString(),
     };
@@ -117,10 +132,13 @@ function createStorageRouter() {
         const { page, pageSize, skip } = (0, pagination_1.parsePagination)(request.query);
         const keyword = String(request.query.keyword ?? '').trim().toLowerCase();
         const status = String(request.query.status ?? '').trim();
+        const source = String(request.query.source ?? '').trim();
         const purchaseStartDate = String(request.query.purchaseStartDate ?? '').trim();
         const purchaseEndDate = String(request.query.purchaseEndDate ?? '').trim();
         const minPrice = Number(request.query.minPrice ?? '');
         const maxPrice = Number(request.query.maxPrice ?? '');
+        const validMinPrice = Number.isFinite(minPrice) && minPrice >= 0 ? minPrice : null;
+        const validMaxPrice = Number.isFinite(maxPrice) && maxPrice > 0 ? maxPrice : null;
         const repository = data_source_1.appDataSource.getRepository(life_storage_item_entity_1.LifeStorageItemEntity);
         const items = await repository.find({
             where: {
@@ -132,6 +150,9 @@ function createStorageRouter() {
         });
         const filtered = items.filter((item) => {
             if (status && status !== 'all' && item.status !== status) {
+                return false;
+            }
+            if (source && source !== 'all' && item.source !== source) {
                 return false;
             }
             if (keyword) {
@@ -146,10 +167,10 @@ function createStorageRouter() {
             if (purchaseEndDate && (0, dayjs_1.default)(item.purchase_date).isAfter(purchaseEndDate, 'day')) {
                 return false;
             }
-            if (Number.isFinite(minPrice) && Number(item.purchase_price) < minPrice) {
+            if (validMinPrice !== null && Number(item.purchase_price) < validMinPrice) {
                 return false;
             }
-            if (Number.isFinite(maxPrice) && Number(item.purchase_price) > maxPrice) {
+            if (validMaxPrice !== null && Number(item.purchase_price) > validMaxPrice) {
                 return false;
             }
             return true;
@@ -187,6 +208,13 @@ function createStorageRouter() {
         if (!current) {
             throw new app_error_1.AppError('storage_item_not_found', 404, 404);
         }
+        if (current.source === 'shopping') {
+            const allowedFields = ['endDate', 'notes'];
+            const attemptedChanges = Object.keys(payload).filter((key) => !allowedFields.includes(key));
+            if (attemptedChanges.length > 0) {
+                throw new app_error_1.AppError('shopping_source_item_restricted', 400, 400, '购物来源物品只能修改结束日期和备注');
+            }
+        }
         const purchaseDate = payload.purchaseDate ? (0, date_1.normalizeDate)(payload.purchaseDate) : current.purchase_date;
         const endDate = payload.endDate !== undefined
             ? (payload.endDate ? (0, date_1.normalizeDate)(payload.endDate, purchaseDate) : null)
@@ -216,7 +244,22 @@ function createStorageRouter() {
         if (!current) {
             throw new app_error_1.AppError('storage_item_not_found', 404, 404);
         }
+        const shoppingRecordId = current.shopping_record_id;
         await repository.remove(current);
+        if (shoppingRecordId && current.source === 'shopping') {
+            try {
+                const shoppingRepo = data_source_1.appDataSource.getRepository(finance_shopping_record_entity_1.FinanceShoppingRecordEntity);
+                const shoppingRecord = await shoppingRepo.findOne({
+                    where: { id: shoppingRecordId, user_id: userId },
+                });
+                if (shoppingRecord) {
+                    await shoppingRepo.remove(shoppingRecord);
+                }
+            }
+            catch (error) {
+                console.error('联动删除购物记录失败:', error);
+            }
+        }
         response.json((0, response_1.successResponse)({ ok: true }, 'delete_storage_item_success'));
     }));
     router.get('/overview', (0, async_handler_1.asyncHandler)(async (request, response) => {
@@ -326,6 +369,64 @@ function createStorageRouter() {
             archived_at: null,
         });
         response.json((0, response_1.successResponse)(mapStorageItem(next), 'restore_storage_item_success'));
+    }));
+    router.post('/actions/import-from-shopping', (0, async_handler_1.asyncHandler)(async (request, response) => {
+        const userId = (0, request_1.requireAuthUser)(request);
+        const payload = (0, validation_1.validateBody)(importFromShoppingSchema, request.body);
+        const { shoppingRecordIds } = payload;
+        const shoppingRepo = data_source_1.appDataSource.getRepository(finance_shopping_record_entity_1.FinanceShoppingRecordEntity);
+        const storageRepo = data_source_1.appDataSource.getRepository(life_storage_item_entity_1.LifeStorageItemEntity);
+        const shoppingRecords = await shoppingRepo.findByIds(shoppingRecordIds);
+        if (shoppingRecords.length === 0) {
+            throw new app_error_1.AppError('shopping_records_not_found', 404, 404);
+        }
+        const existingImported = await storageRepo.find({
+            where: {
+                user_id: userId,
+                shopping_record_id: (0, typeorm_1.In)(shoppingRecordIds),
+            },
+        });
+        const existingShoppingRecordIds = new Set(existingImported.map((item) => item.shopping_record_id).filter(Boolean));
+        let importedCount = 0;
+        let duplicateCount = 0;
+        const importedItems = [];
+        const toSave = [];
+        for (const record of shoppingRecords) {
+            if (existingShoppingRecordIds.has(record.id)) {
+                duplicateCount += 1;
+                continue;
+            }
+            const notes = [
+                '来自购物记录',
+                `平台: ${record.platform}`,
+                record.order_no ? `订单号: ${record.order_no}` : '',
+                record.spec ? `规格: ${record.spec}` : '',
+                record.note ? `备注: ${record.note}` : '',
+            ].filter(Boolean).join(' | ');
+            const item = storageRepo.create({
+                user_id: userId,
+                item_name: record.item_name,
+                purchase_price: record.price,
+                purchase_date: record.date,
+                end_date: null,
+                notes,
+                status: 'active',
+                archived_at: null,
+                source: 'shopping',
+                shopping_record_id: record.id,
+            });
+            toSave.push(item);
+            importedCount += 1;
+        }
+        if (toSave.length > 0) {
+            const savedItems = await storageRepo.save(toSave);
+            importedItems.push(...savedItems);
+        }
+        response.json((0, response_1.successResponse)({
+            importedCount,
+            duplicateCount,
+            items: importedItems.map(mapStorageItem),
+        }, 'import_from_shopping_success'));
     }));
     return router;
 }

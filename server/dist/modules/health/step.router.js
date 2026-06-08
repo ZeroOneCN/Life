@@ -25,7 +25,7 @@ const recordSchema = zod_1.z.object({
     recordTime: zod_1.z.string().min(1),
 });
 const settingsSchema = zod_1.z.object({
-    strideLength: zod_1.z.number().min(0.1).optional(),
+    strideLength: zod_1.z.number().min(0.3).max(2.0).optional(),
     activeUserId: zod_1.z.string().optional(),
     statsUserId: zod_1.z.string().optional(),
     recordsUserId: zod_1.z.string().optional(),
@@ -96,7 +96,7 @@ function createStepRouter() {
             .andWhere(hour !== null ? 'r.hour = :hour' : 'r.hour IS NULL', hour !== null ? { hour } : {})
             .getOne();
         if (existing) {
-            throw new app_error_1.AppError('step_record_duplicate', 409, 409);
+            throw new app_error_1.AppError('该日期已有步数记录，请检查后重新录入', 409, 409);
         }
         const item = await repository.save(repository.create({
             user_id: userId,

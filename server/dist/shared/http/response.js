@@ -15,5 +15,6 @@ function buildListData(items, page = 1, pageSize = items.length || 10, total = i
         page,
         page_size: pageSize,
         total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
     };
 }

@@ -20,6 +20,16 @@ const envSchema = zod_1.z.object({
     DB_DATABASE: zod_1.z.string().min(1).default('lifeos'),
     DB_SYNCHRONIZE: zod_1.z.string().optional(),
     DB_AUTO_BOOTSTRAP: zod_1.z.string().optional(),
+    SMTP_HOST: zod_1.z.string().min(1).default('smtp.example.com'),
+    SMTP_PORT: zod_1.z.coerce.number().int().positive().default(587),
+    SMTP_SECURE: zod_1.z.string().optional(),
+    SMTP_USER: zod_1.z.string().min(1).default(''),
+    SMTP_PASS: zod_1.z.string().default(''),
+    SMTP_FROM: zod_1.z.string().min(1).default('noreply@example.com'),
+    DEEPSEEK_API_KEY: zod_1.z.string().min(0).default(''),
+    DEEPSEEK_BASE_URL: zod_1.z.string().min(1).default('https://api.deepseek.com'),
+    EXCHANGE_RATE_API_KEY: zod_1.z.string().min(0).default(''),
+    EXCHANGE_RATE_API_BASE_URL: zod_1.z.string().min(1).default('https://v6.exchangerate-api.com/v6'),
 });
 const parsedEnv = envSchema.parse(process.env);
 const isProduction = parsedEnv.NODE_ENV === 'production';
@@ -31,4 +41,5 @@ exports.env = {
     DB_AUTO_BOOTSTRAP: parsedEnv.DB_AUTO_BOOTSTRAP === undefined
         ? !isProduction
         : parsedEnv.DB_AUTO_BOOTSTRAP === 'true',
+    SMTP_SECURE: parsedEnv.SMTP_SECURE === 'true',
 };

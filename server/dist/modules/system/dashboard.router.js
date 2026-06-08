@@ -28,19 +28,47 @@ const life_todo_task_entity_1 = require("../life/entities/life-todo-task.entity"
 const notification_center_channel_entity_1 = require("../notifications/entities/notification-center-channel.entity");
 const notification_center_log_entity_1 = require("../notifications/entities/notification-center-log.entity");
 const notification_center_scene_entity_1 = require("../notifications/entities/notification-center-scene.entity");
+const dashboardCache = new Map();
+const CACHE_TTL_MS = 30000;
+function getCachedData(key) {
+    const entry = dashboardCache.get(key);
+    if (!entry)
+        return null;
+    if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+        dashboardCache.delete(key);
+        return null;
+    }
+    return entry.data;
+}
+function setCachedData(key, data) {
+    dashboardCache.set(key, { data, timestamp: Date.now() });
+}
+/** 容器型单位（盒/瓶），与单次服用量（片/粒/袋）不可直接相减 */
+const CONTAINER_UNITS = new Set(['盒', '瓶']);
 function calculateMedicationLowStockCount(records, purchases, thresholds, defaultThreshold = 3) {
     const usedMap = new Map();
     const purchasedMap = new Map();
+    const unitMap = new Map(); // 记录每种药品的采购单位
     const thresholdMap = new Map(thresholds.map((item) => [item.medicine_name, Number(item.threshold)]));
     records.forEach((record) => {
-        usedMap.set(record.medicine_name, (usedMap.get(record.medicine_name) ?? 0) + Number(record.breakfast) + Number(record.lunch) + Number(record.dinner));
+        const key = record.medicine_name.trim().toLowerCase();
+        usedMap.set(key, (usedMap.get(key) ?? 0) + Number(record.breakfast) + Number(record.lunch) + Number(record.dinner));
     });
     purchases.forEach((purchase) => {
-        purchasedMap.set(purchase.medicine_name, (purchasedMap.get(purchase.medicine_name) ?? 0) + Number(purchase.quantity));
+        const key = purchase.medicine_name.trim().toLowerCase();
+        purchasedMap.set(key, (purchasedMap.get(key) ?? 0) + Number(purchase.quantity));
+        unitMap.set(key, (unitMap.get(key) ?? purchase.unit));
     });
     return Array.from(new Set([...usedMap.keys(), ...purchasedMap.keys()]))
         .filter((name) => {
-        const remaining = (purchasedMap.get(name) ?? 0) - (usedMap.get(name) ?? 0);
+        const purchased = purchasedMap.get(name) ?? 0;
+        const used = usedMap.get(name) ?? 0;
+        const unit = unitMap.get(name);
+        /* 容器型单位（盒/瓶）不参与跨单位扣减，视为库存充足 */
+        if (unit && CONTAINER_UNITS.has(unit)) {
+            return false;
+        }
+        const remaining = purchased - used;
         return remaining <= (thresholdMap.get(name) ?? defaultThreshold);
     }).length;
 }
@@ -72,7 +100,7 @@ function buildAgendaItems(input) {
         .filter((task) => !task.completed && !task.trashed_at)
         .forEach((task) => {
         const targetDate = task.due_date ?? '';
-        const due = targetDate ? (0, dayjs_1.default)(targetDate).startOf('day') : null;
+        const due = targetDate && (0, dayjs_1.default)(targetDate).isValid() ? (0, dayjs_1.default)(targetDate).startOf('day') : null;
         let severity = task.priority === 'high' ? 'high' : task.priority === 'medium' ? 'medium' : 'low';
         if (due && due.isBefore(today)) {
             severity = 'high';
@@ -88,6 +116,8 @@ function buildAgendaItems(input) {
         });
     });
     input.subscriptions.forEach((record) => {
+        if (!record.end_date || !(0, dayjs_1.default)(record.end_date).isValid())
+            return;
         const diff = (0, dayjs_1.default)(record.end_date).startOf('day').diff(today, 'day');
         if (diff <= 7) {
             agenda.push({
@@ -104,6 +134,8 @@ function buildAgendaItems(input) {
     input.loans
         .filter((bill) => !bill.is_paid)
         .forEach((bill) => {
+        if (!bill.due_date || !(0, dayjs_1.default)(bill.due_date).isValid())
+            return;
         const diff = (0, dayjs_1.default)(bill.due_date).startOf('day').diff(today, 'day');
         if (diff <= 7) {
             agenda.push({
@@ -133,6 +165,8 @@ function buildAgendaItems(input) {
     input.checkups
         .filter((record) => record.follow_up_date && (record.status === 'abnormal' || record.status === 'attention'))
         .forEach((record) => {
+        if (!record.follow_up_date || !(0, dayjs_1.default)(record.follow_up_date).isValid())
+            return;
         const diff = (0, dayjs_1.default)(record.follow_up_date).startOf('day').diff(today, 'day');
         if (diff <= 7) {
             agenda.push({
@@ -175,6 +209,12 @@ function createDashboardRouter() {
     const router = (0, express_1.Router)();
     router.get('/summary', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);
+        const cacheKey = `dashboard-summary-${userId}`;
+        const cached = getCachedData(cacheKey);
+        if (cached) {
+            response.json((0, response_1.successResponse)(cached, 'dashboard_summary'));
+            return;
+        }
         const [todos, subscriptions, loans, cards, storageItems, logs, scenes, channels, stepRecords, fitnessDietRecords, fitnessExerciseRecords, fitnessWeightRecords, medicationRecords, medicationPurchases, medicationThresholds, checkups, forexTrades, forexCapitalFlows,] = await Promise.all([
             data_source_1.appDataSource.getRepository(life_todo_task_entity_1.LifeTodoTaskEntity).find({ where: { user_id: userId } }),
             data_source_1.appDataSource.getRepository(finance_subscription_record_entity_1.FinanceSubscriptionRecordEntity).find({ where: { user_id: userId } }),
@@ -196,17 +236,24 @@ function createDashboardRouter() {
             data_source_1.appDataSource.getRepository(investment_forex_capital_flow_entity_1.InvestmentForexCapitalFlowEntity).find({ where: { user_id: userId } }),
         ]);
         const pendingTodos = todos.filter((task) => !task.completed && !task.trashed_at).length;
-        const dueTodayTodos = todos.filter((task) => !task.completed && !task.trashed_at && task.due_date && (0, dayjs_1.default)(task.due_date).isSame((0, dayjs_1.default)(), 'day')).length;
+        const dueTodayTodos = todos.filter((task) => !task.completed && !task.trashed_at && task.due_date && (0, dayjs_1.default)(task.due_date).isValid() && (0, dayjs_1.default)(task.due_date).isSame((0, dayjs_1.default)(), 'day')).length;
         const activeStorageCount = storageItems.filter((item) => item.status === 'active').length;
         const lowBalanceCards = cards.filter((card) => Number(card.balance) <= 10).length;
-        const overdueLoans = loans.filter((bill) => !bill.is_paid && (0, dayjs_1.default)(bill.due_date).isBefore((0, dayjs_1.default)(), 'day')).length;
+        const overdueLoans = loans.filter((bill) => !bill.is_paid && bill.due_date && (0, dayjs_1.default)(bill.due_date).isValid() && (0, dayjs_1.default)(bill.due_date).isBefore((0, dayjs_1.default)(), 'day')).length;
         const upcomingSubscriptions = subscriptions.filter((record) => {
+            if (!record.end_date || !(0, dayjs_1.default)(record.end_date).isValid())
+                return false;
             const diff = (0, dayjs_1.default)(record.end_date).startOf('day').diff((0, dayjs_1.default)().startOf('day'), 'day');
             return diff >= 0 && diff <= 7;
         }).length;
-        const stepToday = stepRecords.filter((item) => (0, dayjs_1.default)(item.record_time).isSame((0, dayjs_1.default)(), 'day')).reduce((sum, item) => sum + item.steps, 0);
+        const stepToday = stepRecords.filter((item) => {
+            if (!item.record_time)
+                return false;
+            const recordDate = (0, dayjs_1.default)(item.record_time);
+            return recordDate.isValid() && recordDate.isSame((0, dayjs_1.default)(), 'day');
+        }).reduce((max, item) => Math.max(max, item.steps || 0), 0);
         const lowMedicationCount = calculateMedicationLowStockCount(medicationRecords, medicationPurchases, medicationThresholds);
-        const dueCheckups = checkups.filter((record) => record.follow_up_date && (0, dayjs_1.default)(record.follow_up_date).diff((0, dayjs_1.default)(), 'day') <= 7).length;
+        const dueCheckups = checkups.filter((record) => record.follow_up_date && (0, dayjs_1.default)(record.follow_up_date).isValid() && (0, dayjs_1.default)(record.follow_up_date).diff((0, dayjs_1.default)(), 'day') <= 7).length;
         const forexSummary = buildForexSummary(forexTrades, forexCapitalFlows);
         const agenda = buildAgendaItems({
             todos,
@@ -227,7 +274,7 @@ function createDashboardRouter() {
                 return sum + (Number(item.cycle_price) / 12);
             return sum;
         }, 0);
-        response.json((0, response_1.successResponse)({
+        const result = {
             overviewCards: [
                 { key: 'modules', label: '已接入模块数', value: 17 },
                 { key: 'scenes', label: '启用通知场景数', value: scenes.filter((scene) => scene.enabled).length },
@@ -243,18 +290,25 @@ function createDashboardRouter() {
                 title: '健康中心摘要',
                 stats: {
                     todayStepCount: stepToday,
-                    latestWeight: fitnessWeightRecords.sort((a, b) => (0, dayjs_1.default)(b.date).valueOf() - (0, dayjs_1.default)(a.date).valueOf())[0]?.weight ?? null,
-                    todayCalorieNet: Number((fitnessDietRecords.filter((item) => item.date === (0, dayjs_1.default)().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories), 0)
-                        - fitnessExerciseRecords.filter((item) => item.date === (0, dayjs_1.default)().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories), 0)).toFixed(1)),
+                    latestWeight: Number(fitnessWeightRecords.filter((item) => item.date && (0, dayjs_1.default)(item.date).isValid()).sort((a, b) => (0, dayjs_1.default)(b.date).valueOf() - (0, dayjs_1.default)(a.date).valueOf())[0]?.weight) || null,
+                    todayCalorieNet: Number((fitnessDietRecords.filter((item) => item.date === (0, dayjs_1.default)().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories || 0), 0)
+                        - fitnessExerciseRecords.filter((item) => item.date === (0, dayjs_1.default)().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories || 0), 0)).toFixed(1)),
                     checkupPendingCount: dueCheckups,
                     medicationLowStockCount: lowMedicationCount,
                 },
                 trend: Array.from({ length: 7 }, (_, index) => {
                     const date = (0, dayjs_1.default)().subtract(6 - index, 'day');
+                    const dateStr = date.format('YYYY-MM-DD');
+                    const steps = stepRecords.filter((item) => {
+                        if (!item.record_time)
+                            return false;
+                        const recordDate = (0, dayjs_1.default)(item.record_time);
+                        return recordDate.isValid() && recordDate.format('YYYY-MM-DD') === dateStr;
+                    }).reduce((max, item) => Math.max(max, item.steps || 0), 0);
                     return {
-                        date: date.format('YYYY-MM-DD'),
+                        date: dateStr,
                         label: date.format('MM-DD'),
-                        steps: stepRecords.filter((item) => (0, dayjs_1.default)(item.record_time).isSame(date, 'day')).reduce((sum, item) => sum + item.steps, 0),
+                        steps,
                     };
                 }),
             },
@@ -264,15 +318,15 @@ function createDashboardRouter() {
                     upcomingSubscriptionCount: upcomingSubscriptions,
                     overdueLoanCount: overdueLoans,
                     activeSubscriptionCount: subscriptions.length,
-                    totalUnpaidLoanAmount: Number(loans.filter((bill) => !bill.is_paid).reduce((sum, item) => sum + Number(item.amount), 0).toFixed(2)),
+                    totalUnpaidLoanAmount: Number(loans.filter((bill) => !bill.is_paid).reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)),
                 },
                 trend: Array.from({ length: 6 }, (_, index) => {
                     const month = (0, dayjs_1.default)().subtract(5 - index, 'month').format('YYYY-MM');
                     return {
                         month,
                         label: (0, dayjs_1.default)(`${month}-01`).format('MM月'),
-                        subscriptionCount: subscriptions.filter((item) => (0, dayjs_1.default)(item.end_date).format('YYYY-MM') === month).length,
-                        loanAmount: Number(loans.filter((item) => item.billing_month === month).reduce((sum, bill) => sum + Number(bill.amount), 0).toFixed(2)),
+                        subscriptionCount: subscriptions.filter((item) => item.end_date && (0, dayjs_1.default)(item.end_date).isValid() && (0, dayjs_1.default)(item.end_date).format('YYYY-MM') === month).length,
+                        loanAmount: Number(loans.filter((item) => item.billing_month === month).reduce((sum, bill) => sum + Number(bill.amount || 0), 0).toFixed(2)),
                     };
                 }),
             },
@@ -300,17 +354,17 @@ function createDashboardRouter() {
                 },
                 trend: Array.from({ length: 7 }, (_, index) => {
                     const date = (0, dayjs_1.default)().subtract(6 - index, 'day');
+                    const dateStr = date.format('YYYY-MM-DD');
                     const scoped = forexTrades.filter((item) => {
-                        if (!item.trade_date) {
+                        if (!item.trade_date)
                             return false;
-                        }
                         const tradeDate = (0, dayjs_1.default)(item.trade_date);
-                        return tradeDate.isValid() && tradeDate.year() >= 2000 && tradeDate.year() <= 2100 && tradeDate.isSame(date, 'day');
+                        return tradeDate.isValid() && tradeDate.year() >= 2000 && tradeDate.year() <= 2100 && tradeDate.format('YYYY-MM-DD') === dateStr;
                     });
                     return {
-                        date: date.format('YYYY-MM-DD'),
+                        date: dateStr,
                         label: date.format('MM-DD'),
-                        netPnl: Number(scoped.reduce((sum, item) => sum + Number(item.pnl) + Number(item.commission), 0).toFixed(2)),
+                        netPnl: Number(scoped.reduce((sum, item) => sum + Number(item.pnl || 0) + Number(item.commission || 0), 0).toFixed(2)),
                         tradeCount: scoped.length,
                     };
                 }),
@@ -321,7 +375,9 @@ function createDashboardRouter() {
                 recentLogs: logs,
                 hottestSceneId: logs[0]?.scene_id ?? '',
             },
-        }));
+        };
+        setCachedData(cacheKey, result);
+        response.json((0, response_1.successResponse)(result, 'dashboard_summary'));
     }));
     router.get('/agenda', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);
@@ -362,7 +418,7 @@ function createDashboardRouter() {
             title: '健康中心摘要',
             stats: {
                 todayStepCount: stepRecords.filter((item) => (0, dayjs_1.default)(item.record_time).isSame((0, dayjs_1.default)(), 'day')).reduce((sum, item) => sum + item.steps, 0),
-                latestWeight: weightRecords.sort((a, b) => (0, dayjs_1.default)(b.date).valueOf() - (0, dayjs_1.default)(a.date).valueOf())[0]?.weight ?? null,
+                latestWeight: Number(weightRecords.sort((a, b) => (0, dayjs_1.default)(b.date).valueOf() - (0, dayjs_1.default)(a.date).valueOf())[0]?.weight) || null,
                 todayCalorieNet: Number((dietRecords.filter((item) => item.date === (0, dayjs_1.default)().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories), 0)
                     - exerciseRecords.filter((item) => item.date === (0, dayjs_1.default)().format('YYYY-MM-DD')).reduce((sum, item) => sum + Number(item.calories), 0)).toFixed(1)),
                 checkupPendingCount: checkups.filter((record) => record.follow_up_date && (0, dayjs_1.default)(record.follow_up_date).diff((0, dayjs_1.default)(), 'day') <= 7).length,

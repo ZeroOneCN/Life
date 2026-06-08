@@ -2,6 +2,18 @@ import { Column, Entity } from 'typeorm';
 
 import { UserScopedEntity } from '../../../shared/persistence/user-scoped.entity';
 
+/**
+ * 重复任务配置：存储于 recurrence_config（JSON）字段。
+ * - weekly.weekdays：1=周一 ... 7=周日（与 dayjs().day() 保持一致，0=周日）
+ * - monthly.dayOfMonth：1-31；月末超出当月最大天数则顺延到月底
+ */
+export type LifeTodoRecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly';
+
+export interface LifeTodoRecurrenceConfig {
+  weekdays?: number[];
+  dayOfMonth?: number;
+}
+
 @Entity('life_todo_task')
 export class LifeTodoTaskEntity extends UserScopedEntity {
   @Column({ type: 'varchar', length: 255 })
@@ -21,6 +33,12 @@ export class LifeTodoTaskEntity extends UserScopedEntity {
 
   @Column({ type: 'tinyint', width: 1, default: 0 })
   is_daily!: boolean;
+
+  @Column({ type: 'varchar', length: 16, default: 'none' })
+  recurrence_type!: LifeTodoRecurrenceType;
+
+  @Column({ type: 'json', nullable: true })
+  recurrence_config!: LifeTodoRecurrenceConfig | null;
 
   @Column({ type: 'tinyint', width: 1, default: 0 })
   completed!: boolean;

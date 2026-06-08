@@ -43,6 +43,14 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'datetime', nullable: true }),
     __metadata("design:type", Object)
 ], LifeStorageItemEntity.prototype, "archived_at", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 20, default: 'manual' }),
+    __metadata("design:type", String)
+], LifeStorageItemEntity.prototype, "source", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 36, nullable: true }),
+    __metadata("design:type", Object)
+], LifeStorageItemEntity.prototype, "shopping_record_id", void 0);
 exports.LifeStorageItemEntity = LifeStorageItemEntity = __decorate([
     (0, typeorm_1.Entity)('life_storage_item')
 ], LifeStorageItemEntity);

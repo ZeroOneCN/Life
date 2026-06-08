@@ -4,9 +4,24 @@ import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
 import { Btn, Checkbox, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
 import { buildApiErrorMessage } from '../../lib/api';
-import { TODO_PRIORITY_TAG_TONES, getTodoPriorityLabel, getTodoStatusLabel, renderTodoMarkdownPreview } from '../../services/todo';
+import {
+  TODO_PRIORITY_TAG_TONES,
+  TODO_RECURRENCE_LABELS,
+  TODO_WEEKDAY_LABELS,
+  getTodoPriorityLabel,
+  getTodoRecurrenceSummary,
+  getTodoStatusLabel,
+  isRecurringTodoTask,
+  renderTodoMarkdownPreview,
+} from '../../services/todo';
 import { todoApi } from '../../services/todoApi';
-import type { TodoPriority, TodoTaskDraft, TodoTaskRecord } from '../../types/todo';
+import type {
+  TodoPriority,
+  TodoRecurrenceConfig,
+  TodoRecurrenceType,
+  TodoTaskDraft,
+  TodoTaskRecord,
+} from '../../types/todo';
 
 interface TodoTasksSectionProps {
   showToast: (message: string, type?: 'success' | 'error') => void;
@@ -18,6 +33,9 @@ interface TaskFormState {
   dueDate: string;
   priority: TodoPriority;
   tagsText: string;
+  recurrenceType: TodoRecurrenceType;
+  recurrenceWeekdays: number[];
+  recurrenceDayOfMonth: number;
   isDaily: boolean;
 }
 
@@ -25,7 +43,10 @@ interface TaskEditFormState extends TaskFormState {
   descriptionMarkdown: string;
 }
 
+type StatusFilter = 'all' | 'active' | 'completed' | 'overdue' | 'daily' | 'recurring';
+
 const PAGE_SIZE = 10;
+const DEFAULT_WEEKDAYS: number[] = [];
 
 function parseTags(tagsText: string) {
   return tagsText
@@ -35,12 +56,32 @@ function parseTags(tagsText: string) {
     .filter((item, index, list) => list.indexOf(item) === index);
 }
 
+function clampDayOfMonth(value: number) {
+  if (!Number.isFinite(value)) {
+    return 1;
+  }
+  return Math.max(1, Math.min(31, Math.round(value)));
+}
+
+function buildRecurrenceConfig(form: TaskFormState): TodoRecurrenceConfig | null {
+  if (form.recurrenceType === 'weekly') {
+    return form.recurrenceWeekdays.length ? { weekdays: [...form.recurrenceWeekdays].sort((left, right) => left - right) } : null;
+  }
+  if (form.recurrenceType === 'monthly') {
+    return { dayOfMonth: clampDayOfMonth(form.recurrenceDayOfMonth) };
+  }
+  return null;
+}
+
 function createDefaultTaskFormState(): TaskFormState {
   return {
     title: '',
     dueDate: '',
     priority: 'medium',
     tagsText: '',
+    recurrenceType: 'none',
+    recurrenceWeekdays: DEFAULT_WEEKDAYS,
+    recurrenceDayOfMonth: new Date().getDate(),
     isDaily: false,
   };
 }
@@ -53,12 +94,18 @@ function createDefaultTaskEditFormState(): TaskEditFormState {
 }
 
 function buildEditFormState(task: TodoTaskRecord): TaskEditFormState {
+  const recurrenceType = task.recurrenceType === 'none' && task.isDaily
+    ? 'daily'
+    : task.recurrenceType;
   return {
     title: task.title,
     dueDate: task.dueDate,
     priority: task.priority,
     tagsText: task.tags.join(', '),
-    isDaily: task.isDaily,
+    recurrenceType,
+    recurrenceWeekdays: task.recurrenceConfig?.weekdays ? [...task.recurrenceConfig.weekdays] : DEFAULT_WEEKDAYS,
+    recurrenceDayOfMonth: clampDayOfMonth(task.recurrenceConfig?.dayOfMonth ?? new Date(task.dueDate || Date.now()).getDate()),
+    isDaily: recurrenceType === 'daily',
     descriptionMarkdown: task.descriptionMarkdown,
   };
 }
@@ -68,12 +115,15 @@ function parseDraft(form: TaskFormState | TaskEditFormState): TodoTaskDraft | nu
     return null;
   }
 
+  const recurrenceConfig = buildRecurrenceConfig(form);
   return {
     title: form.title.trim(),
     dueDate: form.dueDate,
     priority: form.priority,
     tags: parseTags(form.tagsText),
-    isDaily: form.isDaily,
+    recurrenceType: form.recurrenceType,
+    recurrenceConfig,
+    isDaily: form.recurrenceType === 'daily',
     descriptionMarkdown: 'descriptionMarkdown' in form ? form.descriptionMarkdown.trim() : '',
   };
 }
@@ -89,7 +139,77 @@ function getStatusTone(task: TodoTaskRecord): 'green' | 'orange' | 'red' | 'blue
     return 'red';
   }
 
-  return task.isDaily ? 'blue' : 'orange';
+  if (isRecurringTodoTask(task)) {
+    return 'blue';
+  }
+
+  return 'orange';
+}
+
+interface RecurrenceEditorProps {
+  value: TodoRecurrenceType;
+  weekdays: number[];
+  dayOfMonth: number;
+  onChange: (next: { recurrenceType: TodoRecurrenceType; weekdays: number[]; dayOfMonth: number }) => void;
+  disabled?: boolean;
+}
+
+function RecurrenceEditor({ value, weekdays, dayOfMonth, onChange, disabled }: RecurrenceEditorProps) {
+  const toggleWeekday = (weekday: number) => {
+    if (disabled) {
+      return;
+    }
+    if (weekdays.includes(weekday)) {
+      onChange({ recurrenceType: value, weekdays: weekdays.filter((item) => item !== weekday), dayOfMonth });
+      return;
+    }
+    onChange({ recurrenceType: value, weekdays: [...weekdays, weekday].sort((left, right) => left - right), dayOfMonth });
+  };
+
+  return (
+    <div className="todo-recurrence-editor">
+      <SelectField
+        label="重复规则"
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange({ recurrenceType: event.target.value as TodoRecurrenceType, weekdays, dayOfMonth })}
+      >
+        <option value="none">{TODO_RECURRENCE_LABELS.none}</option>
+        <option value="daily">{TODO_RECURRENCE_LABELS.daily}</option>
+        <option value="weekly">{TODO_RECURRENCE_LABELS.weekly}</option>
+        <option value="monthly">{TODO_RECURRENCE_LABELS.monthly}</option>
+      </SelectField>
+      {value === 'weekly' ? (
+        <div className="todo-recurrence-weekdays">
+          <span className="field-label">重复星期</span>
+          <div className="todo-recurrence-weekday-row">
+            {TODO_WEEKDAY_LABELS.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                className={`todo-recurrence-weekday-pill ${weekdays.includes(item.value) ? 'is-active' : ''}`}
+                onClick={() => toggleWeekday(item.value)}
+                disabled={disabled}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {value === 'monthly' ? (
+        <Field
+          label="每月几号"
+          type="number"
+          min={1}
+          max={31}
+          value={dayOfMonth ? String(dayOfMonth) : ''}
+          disabled={disabled}
+          onChange={(event) => onChange({ recurrenceType: value, weekdays, dayOfMonth: clampDayOfMonth(Number(event.target.value)) })}
+        />
+      ) : null}
+    </div>
+  );
 }
 
 export function TodoTasksSection({
@@ -98,7 +218,7 @@ export function TodoTasksSection({
 }: TodoTasksSectionProps) {
   const [form, setForm] = useState<TaskFormState>(createDefaultTaskFormState);
   const [keyword, setKeyword] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'overdue' | 'daily'>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [priorityFilter, setPriorityFilter] = useState<'all' | TodoPriority>('all');
   const [tagFilter, setTagFilter] = useState('all');
   const [dueStartDate, setDueStartDate] = useState('');
@@ -279,15 +399,18 @@ export function TodoTasksSection({
               clearable
               popoverStrategy="floating"
             />
-            <label className="todo-checkbox-field">
-              <span className="field-label">重复规则</span>
-              <Checkbox
-                checked={form.isDaily}
-                onChange={(checked) => setForm((current) => ({ ...current, isDaily: checked }))}
-              >
-                每日任务
-              </Checkbox>
-            </label>
+            <RecurrenceEditor
+              value={form.recurrenceType}
+              weekdays={form.recurrenceWeekdays}
+              dayOfMonth={form.recurrenceDayOfMonth}
+              onChange={({ recurrenceType, weekdays, dayOfMonth }) => setForm((current) => ({
+                ...current,
+                recurrenceType,
+                recurrenceWeekdays: weekdays,
+                recurrenceDayOfMonth: dayOfMonth,
+                isDaily: recurrenceType === 'daily',
+              }))}
+            />
             <SelectField
               label="优先级"
               value={form.priority}
@@ -329,12 +452,13 @@ export function TodoTasksSection({
               onChange={(event) => setKeyword(event.target.value)}
               placeholder="搜索标题、描述或标签"
             />
-            <SelectField label="状态" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}>
+            <SelectField label="状态" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}>
               <option value="all">全部状态</option>
               <option value="active">进行中</option>
               <option value="completed">已完成</option>
               <option value="overdue">已逾期</option>
               <option value="daily">每日任务</option>
+              <option value="recurring">重复任务</option>
             </SelectField>
             <SelectField label="优先级" value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value as typeof priorityFilter)}>
               <option value="all">全部优先级</option>
@@ -440,6 +564,9 @@ export function TodoTasksSection({
                   render: (_, row) => (
                     <div className="todo-task-title-cell">
                       <strong className={row.completed ? 'completed-text' : ''}>{row.title}</strong>
+                      {isRecurringTodoTask(row) ? (
+                        <Tag tone="blue">{getTodoRecurrenceSummary(row)}</Tag>
+                      ) : null}
                     </div>
                   ),
                 },
@@ -547,15 +674,18 @@ export function TodoTasksSection({
             <option value="medium">中优先级</option>
             <option value="low">低优先级</option>
           </SelectField>
-          <label className="todo-checkbox-field">
-            <span className="field-label">重复规则</span>
-            <Checkbox
-              checked={editingForm.isDaily}
-              onChange={(checked) => setEditingForm((current) => ({ ...current, isDaily: checked }))}
-            >
-              每日任务
-            </Checkbox>
-          </label>
+          <RecurrenceEditor
+            value={editingForm.recurrenceType}
+            weekdays={editingForm.recurrenceWeekdays}
+            dayOfMonth={editingForm.recurrenceDayOfMonth}
+            onChange={({ recurrenceType, weekdays, dayOfMonth }) => setEditingForm((current) => ({
+              ...current,
+              recurrenceType,
+              recurrenceWeekdays: weekdays,
+              recurrenceDayOfMonth: dayOfMonth,
+              isDaily: recurrenceType === 'daily',
+            }))}
+          />
           <Field
             label="标签"
             value={editingForm.tagsText}

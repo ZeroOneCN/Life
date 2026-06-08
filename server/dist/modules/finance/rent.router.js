@@ -42,10 +42,10 @@ const channelSchema = zod_1.z.object({
     name: zod_1.z.string().trim().min(1).max(128),
 });
 const settingsSchema = zod_1.z.object({
-    activeUserId: zod_1.z.string().optional(),
-    recordsUserId: zod_1.z.string().optional(),
-    statisticsUserId: zod_1.z.string().optional(),
-    editingRecordId: zod_1.z.string().optional(),
+    activeUserId: zod_1.z.string().optional().default(''),
+    recordsUserId: zod_1.z.string().optional().default(''),
+    statisticsUserId: zod_1.z.string().optional().default(''),
+    editingRecordId: zod_1.z.string().optional().default(''),
 });
 const settingService = new base_user_setting_service_1.BaseUserSettingService(finance_rent_setting_entity_1.FinanceRentSettingEntity);
 function mapChannel(entity) {
@@ -89,8 +89,8 @@ function mapRecord(entity) {
         address: entity.address,
         channelId: entity.channel_id,
         channelName: entity.channel_name,
-        moveInDate: entity.move_in_date,
-        moveOutDate: entity.move_out_date ?? '',
+        moveInDate: (0, dayjs_1.default)(entity.move_in_date).format('YYYY-MM-DD'),
+        moveOutDate: entity.move_out_date ? (0, dayjs_1.default)(entity.move_out_date).format('YYYY-MM-DD') : '',
         rent: Number(entity.rent),
         deposit: Number(entity.deposit),
         electricityFee: Number(entity.electricity_fee),

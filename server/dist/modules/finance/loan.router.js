@@ -47,11 +47,11 @@ const repaymentSchema = zod_1.z.object({
     notes: zod_1.z.string().optional().default(''),
 });
 const settingsSchema = zod_1.z.object({
-    repaymentReminderEnabled: zod_1.z.boolean().optional(),
-    overdueReminderEnabled: zod_1.z.boolean().optional(),
-    autoRepaymentOnMarkPaid: zod_1.z.boolean().optional(),
-    notificationFrequency: zod_1.z.enum(['daily', 'always']).optional(),
-    upcomingDays: zod_1.z.number().int().min(0).max(30).optional(),
+    repaymentReminderEnabled: zod_1.z.boolean().optional().default(true),
+    overdueReminderEnabled: zod_1.z.boolean().optional().default(true),
+    autoRepaymentOnMarkPaid: zod_1.z.boolean().optional().default(true),
+    notificationFrequency: zod_1.z.enum(['daily', 'always']).optional().default('daily'),
+    upcomingDays: zod_1.z.number().int().min(0).max(30).optional().default(7),
 });
 const markPaidSchema = zod_1.z.object({
     billId: zod_1.z.string().trim().min(1),
@@ -113,7 +113,7 @@ function mapRepayment(entity) {
         platformName: entity.platform_name,
         amount: Number(entity.amount),
         interest: Number(entity.interest),
-        repaymentDate: entity.repayment_date,
+        repaymentDate: (0, dayjs_1.default)(entity.repayment_date).format('YYYY-MM-DD'),
         notes: entity.notes,
         createdAt: entity.created_at.toISOString(),
         updatedAt: entity.updated_at.toISOString(),

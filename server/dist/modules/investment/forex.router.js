@@ -20,24 +20,29 @@ const investment_forex_capital_flow_entity_1 = require("./entities/investment-fo
 const investment_forex_import_batch_entity_1 = require("./entities/investment-forex-import-batch.entity");
 const investment_forex_setting_entity_1 = require("./entities/investment-forex-setting.entity");
 const investment_forex_trade_record_entity_1 = require("./entities/investment-forex-trade-record.entity");
-const tradeSchema = zod_1.z.object({
+const tradeSchemaBase = zod_1.z.object({
     tradeDate: zod_1.z.string().min(1),
     instrument: zod_1.z.enum(['XAUUSD', 'XAGUSD']),
     orderType: zod_1.z.enum(['buy', 'sell']),
-    openPrice: zod_1.z.number().positive(),
-    lotSize: zod_1.z.number().positive(),
-    commission: zod_1.z.number().optional(),
-    closePrice: zod_1.z.number().positive(),
-    pnl: zod_1.z.number().optional(),
+    openPrice: zod_1.z.number().positive().max(100000),
+    lotSize: zod_1.z.number().positive().max(1000),
+    commission: zod_1.z.number().min(-1e6).max(1e6).optional(),
+    closePrice: zod_1.z.number().positive().max(100000),
+    pnl: zod_1.z.number().min(-1e10).max(1e10).optional(),
     openTime: zod_1.z.string().trim().min(1),
     closeTime: zod_1.z.string().trim().min(1),
     holdTime: zod_1.z.string().optional().default(''),
     remark: zod_1.z.string().optional().default(''),
 });
+const tradeSchema = tradeSchemaBase.transform((data) => ({
+    ...data,
+    commission: data.commission ?? 0,
+    pnl: data.pnl ?? 0,
+}));
 const capitalFlowSchema = zod_1.z.object({
     flowDate: zod_1.z.string().min(1),
     flowType: zod_1.z.enum(['deposit', 'withdrawal']),
-    amount: zod_1.z.number().min(0),
+    amount: zod_1.z.number().min(0).max(1e10),
     remark: zod_1.z.string().optional().default(''),
 });
 const settingsSchema = zod_1.z.object({
@@ -47,17 +52,17 @@ const settingsSchema = zod_1.z.object({
     dashboardEndDate: zod_1.z.string().optional(),
 });
 const calculatorSchema = zod_1.z.object({
-    leverage: zod_1.z.number().min(1),
-    balance: zod_1.z.number().min(0),
+    leverage: zod_1.z.number().min(1).max(10000),
+    balance: zod_1.z.number().min(0).max(1e12),
     forcedLiquidationRatio: zod_1.z.number().min(0.1).max(1),
     positions: zod_1.z.array(zod_1.z.object({
         id: zod_1.z.string(),
         instrument: zod_1.z.enum(['XAUUSD', 'XAGUSD']),
         orderType: zod_1.z.enum(['buy', 'sell']),
-        openPrice: zod_1.z.number().positive(),
-        lotSize: zod_1.z.number().positive(),
-        closePrice: zod_1.z.number().positive().optional(),
-    })).default([]),
+        openPrice: zod_1.z.number().positive().max(100000),
+        lotSize: zod_1.z.number().positive().max(1000),
+        closePrice: zod_1.z.number().positive().max(100000).optional(),
+    })).max(100).default([]),
 });
 const importTradeSchema = zod_1.z.object({
     tradeDate: zod_1.z.string().optional(),
@@ -102,15 +107,32 @@ function toMoney(value, fallback = 0) {
     return Number.isFinite(parsed) ? Number(parsed.toFixed(2)) : fallback;
 }
 function calculateCommission(lotSize) {
+    if (!Number.isFinite(lotSize) || lotSize <= 0 || lotSize > 1000) {
+        return 0;
+    }
     return Number((-6 * lotSize).toFixed(2));
 }
 function calculatePnl(instrument, orderType, openPrice, closePrice, lotSize) {
+    if (!Number.isFinite(openPrice) || !Number.isFinite(closePrice) || !Number.isFinite(lotSize)) {
+        return 0;
+    }
+    if (openPrice <= 0 || closePrice <= 0 || lotSize <= 0) {
+        return 0;
+    }
+    if (openPrice > 100000 || closePrice > 100000 || lotSize > 1000) {
+        return 0;
+    }
     const diff = orderType === 'buy' ? closePrice - openPrice : openPrice - closePrice;
-    return Number((diff * lotSize * CONTRACT_UNITS[instrument]).toFixed(2));
+    const rawPnl = diff * lotSize * CONTRACT_UNITS[instrument];
+    if (!Number.isFinite(rawPnl)) {
+        return 0;
+    }
+    const clampedPnl = Math.max(-1e10, Math.min(1e10, rawPnl));
+    return Number(clampedPnl.toFixed(2));
 }
 function calculateHoldTime(openTime, closeTime) {
-    const start = (0, dayjs_1.default)(`2020-01-01T${normalizeTime(openTime, '')}`);
-    let end = (0, dayjs_1.default)(`2020-01-01T${normalizeTime(closeTime, '')}`);
+    const start = (0, dayjs_1.default)(`2020-01-01T${normalizeTime(openTime, '09:00')}`);
+    let end = (0, dayjs_1.default)(`2020-01-01T${normalizeTime(closeTime, '10:00')}`);
     if (end.isBefore(start)) {
         end = end.add(1, 'day');
     }
@@ -194,7 +216,7 @@ function buildSummary(trades, capitalFlows, startDate, endDate) {
         totalWithdrawal: Number(withdrawals.toFixed(2)),
         netCapital: Number(netCapital.toFixed(2)),
         equity: Number((netCapital + realizedNetPnl).toFixed(2)),
-        roi: netCapital > 0 ? realizedNetPnl / netCapital : 0,
+        roi: deposits > 0 ? realizedNetPnl / deposits : 0,
     };
 }
 function createForexRouter() {
@@ -205,7 +227,7 @@ function createForexRouter() {
         const repository = data_source_1.appDataSource.getRepository(investment_forex_trade_record_entity_1.InvestmentForexTradeRecordEntity);
         const [items, total] = await repository.findAndCount({
             where: { user_id: userId },
-            order: { trade_date: 'DESC', updated_at: 'DESC' },
+            order: { trade_date: 'DESC', created_at: 'DESC' },
             skip,
             take: pageSize,
         });
@@ -235,7 +257,7 @@ function createForexRouter() {
     router.patch('/trades/:id', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);
         const tradeId = String(request.params.id ?? '');
-        const payload = (0, validation_1.validateBody)(tradeSchema.partial(), request.body);
+        const payload = (0, validation_1.validateBody)(tradeSchemaBase.partial(), request.body);
         const repository = data_source_1.appDataSource.getRepository(investment_forex_trade_record_entity_1.InvestmentForexTradeRecordEntity);
         const current = await repository.findOne({
             where: { id: tradeId, user_id: userId },
@@ -491,7 +513,6 @@ function createForexRouter() {
         }, 'update_forex_settings_success'));
     }));
     router.post('/calculator', (0, async_handler_1.asyncHandler)(async (request, response) => {
-        (0, validation_1.validateBody)(zod_1.z.object({}), {});
         const payload = (0, validation_1.validateBody)(calculatorSchema, request.body);
         const positionsInput = payload.positions ?? [];
         const positions = positionsInput.map((position) => {
@@ -587,6 +608,7 @@ function createForexRouter() {
             importedCount += 1;
             toSave.push(repository.create({
                 user_id: userId,
+                sort_order: toSave.length,
                 trade_date: tradeDate,
                 instrument,
                 order_type: orderType,
@@ -628,6 +650,11 @@ function createForexRouter() {
         response.json((0, response_1.successResponse)({
             fileName: 'forex-import-template.json',
             headers: ['tradeDate', 'instrument', 'orderType', 'openPrice', 'lotSize', 'commission', 'closePrice', 'pnl', 'openTime', 'closeTime', 'holdTime', 'remark'],
+            formulas: {
+                G: '=-F2/0.01*0.06',
+                I: '=IF(OR(B2="XAUUSD",B2="XAGUSD"),IF(D2="buy",(H2-E2)*IF(B2="XAUUSD",100,5000)*F2,(E2-H2)*IF(B2="XAUUSD",100,5000)*F2),"")',
+                L: '=IF(K2-J2>=TIME(1,0,0),INT((K2-J2)*24)&"时"&MINUTE(K2-J2)&"分"&SECOND(K2-J2)&"秒",MINUTE(K2-J2)&"分"&SECOND(K2-J2)&"秒")',
+            },
             sample: {
                 tradeDate: (0, dayjs_1.default)().format('YYYY-MM-DD'),
                 instrument: 'XAUUSD',
@@ -639,7 +666,7 @@ function createForexRouter() {
                 pnl: 57,
                 openTime: '09:35',
                 closeTime: '11:10',
-                holdTime: '1小时 35分钟',
+                holdTime: '1时35分',
                 remark: '示例数据',
             },
         }));

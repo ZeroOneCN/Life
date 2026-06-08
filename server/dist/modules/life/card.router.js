@@ -81,7 +81,19 @@ const importBillRowSchema = zod_1.z.object({
     extraCharges: zod_1.z.union([zod_1.z.number(), zod_1.z.string()]).optional(),
     totalFee: zod_1.z.union([zod_1.z.number(), zod_1.z.string()]).optional(),
     note: zod_1.z.string().optional(),
-});
+}).refine((data) => {
+    const fields = ['monthlyFee', 'actualFee', 'extraCharges', 'totalFee'];
+    for (const field of fields) {
+        const val = data[field];
+        if (val !== undefined && val !== null && val !== '') {
+            const num = Number(val);
+            if (Number.isFinite(num) && num < 0) {
+                return false;
+            }
+        }
+    }
+    return true;
+}, { message: '数值字段不能为负数' });
 const importBillsSchema = zod_1.z.object({
     fileName: zod_1.z.string().trim().optional().default('card-bills-import.json'),
     rows: zod_1.z.array(importBillRowSchema).default([]),
@@ -258,15 +270,22 @@ function createCardRouter() {
     router.get('/cards', (0, async_handler_1.asyncHandler)(async (request, response) => {
         const userId = (0, request_1.requireAuthUser)(request);
         const { page, pageSize, skip } = (0, pagination_1.parsePagination)(request.query);
-        const keyword = String(request.query.keyword ?? '').trim().toLowerCase();
-        const carrierId = String(request.query.carrierId ?? '').trim();
-        const location = String(request.query.location ?? '').trim().toLowerCase();
-        const minBalance = Number(request.query.minBalance ?? '');
-        const maxBalance = Number(request.query.maxBalance ?? '');
+        const rawKeyword = request.query.keyword;
+        const rawCarrierId = request.query.carrierId;
+        const rawLocation = request.query.location;
+        const rawMinBalance = request.query.minBalance;
+        const rawMaxBalance = request.query.maxBalance;
+        const keyword = typeof rawKeyword === 'string' ? rawKeyword.trim().toLowerCase() : '';
+        const carrierId = typeof rawCarrierId === 'string' ? rawCarrierId.trim() : '';
+        const location = typeof rawLocation === 'string' ? rawLocation.trim().toLowerCase() : '';
+        const parsedMin = Number(rawMinBalance);
+        const parsedMax = Number(rawMaxBalance);
+        const minBalance = Number.isFinite(parsedMin) && parsedMin > 0 ? parsedMin : null;
+        const maxBalance = Number.isFinite(parsedMax) && parsedMax > 0 ? parsedMax : null;
         const repository = data_source_1.appDataSource.getRepository(life_card_record_entity_1.LifeCardRecordEntity);
         const items = await repository.find({
             where: { user_id: userId },
-            order: { updated_at: 'DESC' },
+            order: { activation_date: 'ASC', updated_at: 'DESC' },
         });
         const filtered = items.filter((item) => {
             if (keyword) {
@@ -275,16 +294,16 @@ function createCardRouter() {
                     return false;
                 }
             }
-            if (carrierId && item.carrier_id !== carrierId) {
+            if (carrierId && carrierId !== 'all' && item.carrier_id !== carrierId) {
                 return false;
             }
             if (location && !item.location.toLowerCase().includes(location)) {
                 return false;
             }
-            if (Number.isFinite(minBalance) && Number(item.balance) < minBalance) {
+            if (minBalance !== null && Number(item.balance) < minBalance) {
                 return false;
             }
-            if (Number.isFinite(maxBalance) && Number(item.balance) > maxBalance) {
+            if (maxBalance !== null && Number(item.balance) > maxBalance) {
                 return false;
             }
             return true;

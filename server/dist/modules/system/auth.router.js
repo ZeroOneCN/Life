@@ -154,7 +154,7 @@ function createAuthRouter() {
             session_token: sessionToken,
             refresh_token_hash: refreshTokenHash,
             expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            device_name: request.header('user-agent') ?? null,
+            device_name: (request.header('user-agent') ?? null)?.slice(0, 255) ?? null,
             ip_address: request.ip ?? null,
             revoked: false,
         }));

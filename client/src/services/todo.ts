@@ -5,6 +5,8 @@ import type {
   TodoOverviewSummary,
   TodoPageState,
   TodoPriority,
+  TodoRecurrenceConfig,
+  TodoRecurrenceType,
   TodoReminderPayload,
   TodoReminderSettings,
   TodoTaskDraft,
@@ -33,6 +35,21 @@ export const TODO_PRIORITY_TAG_TONES: Record<TodoPriority, 'red' | 'orange' | 'g
   medium: 'orange',
   low: 'green',
 };
+export const TODO_RECURRENCE_LABELS: Record<TodoRecurrenceType, string> = {
+  none: '不重复',
+  daily: '每日',
+  weekly: '每周',
+  monthly: '每月',
+};
+export const TODO_WEEKDAY_LABELS: Array<{ value: number; label: string }> = [
+  { value: 0, label: '周日' },
+  { value: 1, label: '周一' },
+  { value: 2, label: '周二' },
+  { value: 3, label: '周三' },
+  { value: 4, label: '周四' },
+  { value: 5, label: '周五' },
+  { value: 6, label: '周六' },
+];
 
 function buildId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -74,6 +91,38 @@ function normalizePriority(value: unknown): TodoPriority {
     default:
       return 'medium';
   }
+}
+
+function normalizeRecurrenceType(value: unknown): TodoRecurrenceType {
+  switch (value) {
+    case 'daily':
+    case 'weekly':
+    case 'monthly':
+      return value;
+    default:
+      return 'none';
+  }
+}
+
+function normalizeRecurrenceConfig(value: unknown): TodoRecurrenceConfig | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+  const result: TodoRecurrenceConfig = {};
+  const weekdays = (value as { weekdays?: unknown }).weekdays;
+  if (Array.isArray(weekdays)) {
+    const unique = [...new Set(weekdays
+      .map((item) => Number(item))
+      .filter((item) => Number.isInteger(item) && item >= 0 && item <= 6))];
+    if (unique.length) {
+      result.weekdays = unique.sort((left, right) => left - right);
+    }
+  }
+  const dayOfMonth = Number((value as { dayOfMonth?: unknown }).dayOfMonth);
+  if (Number.isInteger(dayOfMonth) && dayOfMonth >= 1 && dayOfMonth <= 31) {
+    result.dayOfMonth = dayOfMonth;
+  }
+  return Object.keys(result).length ? result : null;
 }
 
 function normalizeTags(value: unknown) {
@@ -137,6 +186,8 @@ function normalizeTask(record: Partial<TodoTaskRecord>, fallbackSortOrder = 0): 
   const createdDate = dayjs(createdAt).format(DATE_FORMAT);
   const completedAt = normalizeTrimmedValue(record.completedAt);
   const lastCompletedDate = normalizeDate(record.lastCompletedDate, '');
+  const recurrenceType = normalizeRecurrenceType(record.recurrenceType);
+  const isRecurring = recurrenceType !== 'none' || Boolean(record.isDaily);
   const normalizedTask: TodoTaskRecord = {
     id: record.id ?? buildId(),
     title: normalizeTrimmedValue(record.title, '未命名任务'),
@@ -144,7 +195,9 @@ function normalizeTask(record: Partial<TodoTaskRecord>, fallbackSortOrder = 0): 
     dueDate: normalizeDate(record.dueDate, ''),
     priority: normalizePriority(record.priority),
     tags: normalizeTags(record.tags),
-    isDaily: Boolean(record.isDaily),
+    isDaily: recurrenceType === 'daily' || (recurrenceType === 'none' && Boolean(record.isDaily)),
+    recurrenceType: recurrenceType === 'none' && record.isDaily ? 'daily' : recurrenceType,
+    recurrenceConfig: normalizeRecurrenceConfig(record.recurrenceConfig),
     completed: Boolean(record.completed),
     completedAt: completedAt ? normalizeTimestamp(completedAt, createdDate) : '',
     lastCompletedDate,
@@ -154,7 +207,7 @@ function normalizeTask(record: Partial<TodoTaskRecord>, fallbackSortOrder = 0): 
     updatedAt: normalizeTimestamp(record.updatedAt, createdDate),
   };
 
-  if (normalizedTask.isDaily && normalizedTask.completed) {
+  if (isRecurring && normalizedTask.completed) {
     const today = getStartOfToday();
     const completedDay = normalizedTask.lastCompletedDate
       ? dayjs(normalizedTask.lastCompletedDate).startOf('day')
@@ -219,6 +272,7 @@ function createInitialTasks() {
       dueDate: today.format(DATE_FORMAT),
       priority: 'high',
       tags: ['工作', '复盘'],
+      recurrenceType: 'none',
       isDaily: false,
       completed: false,
       sortOrder: 1,
@@ -232,6 +286,7 @@ function createInitialTasks() {
       dueDate: today.add(1, 'day').format(DATE_FORMAT),
       priority: 'medium',
       tags: ['财务'],
+      recurrenceType: 'none',
       isDaily: false,
       completed: false,
       sortOrder: 2,
@@ -245,6 +300,7 @@ function createInitialTasks() {
       dueDate: today.format(DATE_FORMAT),
       priority: 'low',
       tags: ['健康', '习惯'],
+      recurrenceType: 'daily',
       isDaily: true,
       completed: false,
       sortOrder: 3,
@@ -258,6 +314,7 @@ function createInitialTasks() {
       dueDate: today.subtract(1, 'day').format(DATE_FORMAT),
       priority: 'high',
       tags: ['健康'],
+      recurrenceType: 'none',
       isDaily: false,
       completed: false,
       sortOrder: 4,
@@ -271,6 +328,7 @@ function createInitialTasks() {
       dueDate: today.subtract(2, 'day').format(DATE_FORMAT),
       priority: 'medium',
       tags: ['生活'],
+      recurrenceType: 'none',
       isDaily: false,
       completed: true,
       completedAt: now,
@@ -299,6 +357,7 @@ export function migrateLegacyTodoState() {
       dueDate: parseLegacyRelativeDueDate(task.dueDate),
       priority: 'medium',
       tags: task.category ? [task.category] : [],
+      recurrenceType: 'none',
       isDaily: false,
       completed: task.completed,
       completedAt: task.completed ? now : '',
@@ -340,7 +399,8 @@ export function normalizeTodoPageState(state: TodoPageState | null | undefined):
 
 function buildTaskFromDraft(draft: TodoTaskDraft, partial?: Partial<TodoTaskRecord>) {
   const now = dayjs().format(DATE_TIME_FORMAT);
-
+  const recurrenceType = draft.recurrenceType
+    ?? (draft.isDaily ? 'daily' : 'none');
   return normalizeTask({
     ...partial,
     title: draft.title,
@@ -348,7 +408,9 @@ function buildTaskFromDraft(draft: TodoTaskDraft, partial?: Partial<TodoTaskReco
     dueDate: draft.dueDate ?? partial?.dueDate ?? '',
     priority: draft.priority ?? partial?.priority ?? 'medium',
     tags: draft.tags ?? partial?.tags ?? [],
-    isDaily: draft.isDaily ?? partial?.isDaily ?? false,
+    recurrenceType,
+    isDaily: recurrenceType === 'daily',
+    recurrenceConfig: draft.recurrenceConfig ?? partial?.recurrenceConfig ?? null,
     updatedAt: now,
     createdAt: partial?.createdAt ?? now,
   }, Number(partial?.sortOrder ?? 0));
@@ -431,6 +493,10 @@ export function batchTrashTodoTasks(tasks: TodoTaskRecord[], taskIds: string[]) 
   return taskIds.reduce((current, taskId) => trashTodoTask(current, taskId), tasks);
 }
 
+export function isRecurringTodoTask(task: TodoTaskRecord): boolean {
+  return task.recurrenceType === 'daily' || task.recurrenceType === 'weekly' || task.recurrenceType === 'monthly';
+}
+
 export function getTodoTaskStatus(task: TodoTaskRecord) {
   if (task.trashedAt) {
     return 'trashed' as const;
@@ -451,7 +517,7 @@ export function filterTodoTasks(
   tasks: TodoTaskRecord[],
   filter: {
     keyword?: string;
-    status?: 'all' | 'active' | 'completed' | 'overdue' | 'daily';
+    status?: 'all' | 'active' | 'completed' | 'overdue' | 'daily' | 'recurring';
     priority?: 'all' | TodoPriority;
     tag?: string;
     dueStartDate?: string;
@@ -482,7 +548,11 @@ export function filterTodoTasks(
 
     if (filter.status && filter.status !== 'all') {
       if (filter.status === 'daily') {
-        if (!task.isDaily) {
+        if (task.recurrenceType !== 'daily' && !(task.recurrenceType === 'none' && task.isDaily)) {
+          return false;
+        }
+      } else if (filter.status === 'recurring') {
+        if (!isRecurringTodoTask(task)) {
           return false;
         }
       } else if (getTodoTaskStatus(task) !== filter.status) {
@@ -522,16 +592,19 @@ export function buildTodoOverview(tasks: TodoTaskRecord[]): TodoOverviewSummary 
       return summary;
     }
 
+    const recurring = isRecurringTodoTask(task);
+
     summary.totalCount += 1;
 
-    if (task.completed) {
+    if (task.completed && !recurring) {
       summary.completedCount += 1;
-    } else {
+    } else if (!task.completed) {
       summary.activeCount += 1;
     }
 
-    if (task.isDaily) {
-      summary.dailyCount += 1;
+    if (recurring) {
+      summary.recurringCount += 1;
+      summary.dailyCount += task.recurrenceType === 'daily' ? 1 : 0;
     }
 
     if (task.priority === 'high') {
@@ -551,6 +624,7 @@ export function buildTodoOverview(tasks: TodoTaskRecord[]): TodoOverviewSummary 
     totalCount: 0,
     activeCount: 0,
     completedCount: 0,
+    recurringCount: 0,
     dailyCount: 0,
     highPriorityCount: 0,
     mediumPriorityCount: 0,
@@ -566,7 +640,7 @@ export function buildTodoReminderPayload(tasks: TodoTaskRecord[], settings: Todo
       return false;
     }
 
-    if (!settings.includeDailyTasks && task.isDaily) {
+    if (!settings.includeDailyTasks && isRecurringTodoTask(task)) {
       return false;
     }
 
@@ -766,6 +840,30 @@ export function getTodoPriorityLabel(priority: TodoPriority) {
   return TODO_PRIORITY_LABELS[priority];
 }
 
+/**
+ * 生成给人看的重复规则描述（卡片/列表用）。
+ */
+export function getTodoRecurrenceSummary(task: TodoTaskRecord): string {
+  if (task.recurrenceType === 'daily') {
+    return '每日';
+  }
+  if (task.recurrenceType === 'weekly') {
+    const weekdays = task.recurrenceConfig?.weekdays ?? [];
+    if (!weekdays.length) {
+      return '每周';
+    }
+    return `每周 ${weekdays
+      .sort((left, right) => left - right)
+      .map((value) => TODO_WEEKDAY_LABELS.find((item) => item.value === value)?.label ?? `周${value}`)
+      .join('、')}`;
+  }
+  if (task.recurrenceType === 'monthly') {
+    const day = task.recurrenceConfig?.dayOfMonth;
+    return day ? `每月 ${day} 日` : '每月';
+  }
+  return '';
+}
+
 export function getTodoStatusLabel(task: TodoTaskRecord) {
   const status = getTodoTaskStatus(task);
 
@@ -778,6 +876,12 @@ export function getTodoStatusLabel(task: TodoTaskRecord) {
       return '回收站';
     case 'active':
     default:
-      return task.isDaily ? '每日待办' : '进行中';
+      if (task.recurrenceType === 'daily') {
+        return '每日待办';
+      }
+      if (isRecurringTodoTask(task)) {
+        return '重复待办';
+      }
+      return '进行中';
   }
 }

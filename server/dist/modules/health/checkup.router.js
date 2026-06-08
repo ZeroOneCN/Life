@@ -27,17 +27,17 @@ const recordSchema = zod_1.z.object({
     testType: zod_1.z.string().trim().min(1).max(128),
     testName: zod_1.z.string().trim().min(1).max(128),
     value: zod_1.z.number(),
-    unit: zod_1.z.string().trim().min(1).max(64),
-    referenceRange: zod_1.z.string().trim().min(1).max(255),
+    unit: zod_1.z.string().trim().min(0).max(64),
+    referenceRange: zod_1.z.string().trim().min(0).max(255),
     notes: zod_1.z.string().optional().default(''),
     followUpDate: zod_1.z.string().optional().default(''),
-    status: zod_1.z.string().trim().optional(),
+    status: zod_1.z.enum(['normal', 'abnormal', 'attention', 'unknown']).optional(),
 });
 const templateItemSchema = zod_1.z.object({
     id: zod_1.z.string().optional(),
     testName: zod_1.z.string().trim().min(1).max(128),
-    unit: zod_1.z.string().trim().min(1).max(64),
-    referenceRange: zod_1.z.string().trim().min(1).max(255),
+    unit: zod_1.z.string().trim().max(64).default(''),
+    referenceRange: zod_1.z.string().trim().max(255).default(''),
 });
 const templateSchema = zod_1.z.object({
     userId: zod_1.z.string().trim().optional(),
@@ -50,7 +50,7 @@ const batchCreateSchema = zod_1.z.object({
     templateId: zod_1.z.string().trim().min(1),
     testDate: zod_1.z.string().min(1),
     followUpDate: zod_1.z.string().optional().default(''),
-    status: zod_1.z.string().trim().optional(),
+    status: zod_1.z.enum(['normal', 'abnormal', 'attention', 'unknown']).optional(),
 });
 const settingsSchema = zod_1.z.object({
     activeUserId: zod_1.z.string().optional(),
@@ -90,14 +90,14 @@ function mapRecord(entity) {
     return {
         id: entity.id,
         userId: entity.user_id,
-        testDate: entity.test_date,
+        testDate: (0, dayjs_1.default)(entity.test_date).format('YYYY-MM-DD'),
         testType: entity.test_type,
         testName: entity.test_name,
         value: Number(entity.value),
         unit: entity.unit,
         referenceRange: entity.reference_range,
         notes: entity.notes,
-        followUpDate: entity.follow_up_date ?? '',
+        followUpDate: entity.follow_up_date ? (0, dayjs_1.default)(entity.follow_up_date).format('YYYY-MM-DD') : '',
         status: entity.status,
         lastAbnormalAlertAt: entity.last_abnormal_alert_at?.toISOString() ?? '',
         lastFollowUpReminderAt: entity.last_follow_up_reminder_at?.toISOString() ?? '',
@@ -221,7 +221,7 @@ function createCheckupRouter() {
         const userId = String(request.query.userId ?? authUserId);
         const [templates, items] = await Promise.all([
             data_source_1.appDataSource.getRepository(health_checkup_template_entity_1.HealthCheckupTemplateEntity).find({ where: { user_id: userId }, order: { updated_at: 'DESC' } }),
-            data_source_1.appDataSource.getRepository(health_checkup_template_item_entity_1.HealthCheckupTemplateItemEntity).find(),
+            data_source_1.appDataSource.getRepository(health_checkup_template_item_entity_1.HealthCheckupTemplateItemEntity).find({ order: { sort_order: 'ASC' } }),
         ]);
         response.json((0, response_1.successResponse)((0, response_1.buildListData)(templates.map((template) => mapTemplate(template, items)))));
     }));
@@ -237,8 +237,9 @@ function createCheckupRouter() {
             test_type: payload.testType,
         }));
         const items = itemsInput.length
-            ? await itemRepo.save(itemsInput.map((item) => itemRepo.create({
+            ? await itemRepo.save(itemsInput.map((item, index) => itemRepo.create({
                 template_id: template.id,
+                sort_order: index,
                 test_name: item.testName,
                 unit: item.unit,
                 reference_range: item.referenceRange,
@@ -266,14 +267,15 @@ function createCheckupRouter() {
         });
         if (payload.items) {
             await itemRepo.delete({ template_id: current.id });
-            await itemRepo.save(payload.items.map((item) => itemRepo.create({
+            await itemRepo.save(payload.items.map((item, index) => itemRepo.create({
                 template_id: current.id,
+                sort_order: index,
                 test_name: item.testName,
                 unit: item.unit,
                 reference_range: item.referenceRange,
             })));
         }
-        const items = await itemRepo.find({ where: { template_id: current.id } });
+        const items = await itemRepo.find({ where: { template_id: current.id }, order: { sort_order: 'ASC' } });
         response.json((0, response_1.successResponse)(mapTemplate(template, items), 'update_checkup_template_success'));
     }));
     router.delete('/templates/:id', (0, async_handler_1.asyncHandler)(async (request, response) => {
@@ -303,7 +305,7 @@ function createCheckupRouter() {
         if (!template) {
             throw new app_error_1.AppError('checkup_template_not_found', 404, 404);
         }
-        const items = await itemRepo.find({ where: { template_id: template.id } });
+        const items = await itemRepo.find({ where: { template_id: template.id }, order: { sort_order: 'ASC' } });
         const status = payload.status ?? 'unknown';
         const created = await recordRepo.save(items.map((item) => recordRepo.create({
             user_id: payload.userId ?? authUserId,

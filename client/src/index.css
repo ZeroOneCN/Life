@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
 :root {
   /* Layout */
@@ -5859,8 +5859,53 @@ textarea {
 }
 
 .todo-entry-grid {
-  grid-template-columns: minmax(260px, 1.8fr) minmax(170px, 1fr) minmax(150px, 0.95fr) minmax(160px, 1fr) minmax(210px, 1.15fr) 152px;
+  grid-template-columns: minmax(260px, 1.8fr) minmax(170px, 1fr) minmax(220px, 1.4fr) minmax(150px, 0.95fr) minmax(160px, 1fr) 152px;
   align-items: end;
+}
+
+.todo-recurrence-editor {
+  display: grid;
+  gap: 8px;
+  align-content: end;
+}
+
+.todo-recurrence-weekdays {
+  display: grid;
+  gap: 6px;
+}
+
+.todo-recurrence-weekday-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.todo-recurrence-weekday-pill {
+  appearance: none;
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface-2);
+  color: var(--color-ink-secondary);
+  font-size: var(--fs-overline);
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.todo-recurrence-weekday-pill:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--color-primary) 32%, var(--color-hairline));
+  color: var(--color-primary);
+}
+
+.todo-recurrence-weekday-pill.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.todo-recurrence-weekday-pill:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .todo-filter-grid {

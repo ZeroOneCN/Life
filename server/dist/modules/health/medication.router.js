@@ -26,18 +26,18 @@ const recordSchema = zod_1.z.object({
     userId: zod_1.z.string().trim().optional(),
     date: zod_1.z.string().min(1),
     medicineName: zod_1.z.string().trim().min(1).max(128),
-    breakfast: zod_1.z.number().min(0).optional().default(0),
-    lunch: zod_1.z.number().min(0).optional().default(0),
-    dinner: zod_1.z.number().min(0).optional().default(0),
+    breakfast: zod_1.z.number().min(0).max(100).optional().default(0),
+    lunch: zod_1.z.number().min(0).max(100).optional().default(0),
+    dinner: zod_1.z.number().min(0).max(100).optional().default(0),
 });
 const purchaseSchema = zod_1.z.object({
     userId: zod_1.z.string().trim().optional(),
     purchaseDate: zod_1.z.string().min(1),
     medicineName: zod_1.z.string().trim().min(1).max(128),
-    quantity: zod_1.z.number().min(0),
+    quantity: zod_1.z.number().min(0).int().max(10000),
     unit: zod_1.z.string().trim().min(1).max(32),
-    unitPrice: zod_1.z.number().min(0),
-    totalPrice: zod_1.z.number().min(0).optional(),
+    unitPrice: zod_1.z.number().min(0).max(100000),
+    totalPrice: zod_1.z.number().min(0).max(1000000).optional(),
     channel: zod_1.z.string().trim().min(1).max(128),
 });
 const summarySchema = zod_1.z.object({
@@ -60,7 +60,7 @@ const settingsSchema = zod_1.z.object({
 });
 const thresholdSchema = zod_1.z.object({
     medicineName: zod_1.z.string().trim().min(1).max(128),
-    threshold: zod_1.z.number().min(0),
+    threshold: zod_1.z.number().min(0).int().max(1000),
 });
 const triggerSchema = zod_1.z.object({
     title: zod_1.z.string().trim().min(1).max(255).optional(),
@@ -71,7 +71,7 @@ function mapRecord(entity) {
     return {
         id: entity.id,
         userId: entity.user_id,
-        date: entity.date,
+        date: (0, dayjs_1.default)(entity.date).format('YYYY-MM-DD'),
         medicineName: entity.medicine_name,
         breakfast: Number(entity.breakfast),
         lunch: Number(entity.lunch),
@@ -84,7 +84,7 @@ function mapPurchase(entity) {
     return {
         id: entity.id,
         userId: entity.user_id,
-        purchaseDate: entity.purchase_date,
+        purchaseDate: (0, dayjs_1.default)(entity.purchase_date).format('YYYY-MM-DD'),
         medicineName: entity.medicine_name,
         quantity: Number(entity.quantity),
         unit: entity.unit,
@@ -99,61 +99,83 @@ function mapSummary(entity) {
     return {
         id: entity.id,
         userId: entity.user_id,
-        date: entity.date,
+        date: (0, dayjs_1.default)(entity.date).format('YYYY-MM-DD'),
         content: entity.content,
         createdAt: entity.created_at.toISOString(),
         updatedAt: entity.updated_at.toISOString(),
     };
 }
 function buildStockSummary(records, purchases, thresholds, defaultThreshold) {
-    const usedMap = new Map();
-    const purchasedMap = new Map();
     const thresholdMap = new Map(thresholds.map((item) => [item.medicine_name, Number(item.threshold)]));
-    records.forEach((record) => {
-        usedMap.set(record.medicine_name, (usedMap.get(record.medicine_name) ?? 0) + Number(record.breakfast) + Number(record.lunch) + Number(record.dinner));
-    });
-    purchases.forEach((purchase) => {
-        const current = purchasedMap.get(purchase.medicine_name) ?? { quantity: 0, unit: purchase.unit, mixedUnit: false };
-        current.quantity += Number(purchase.quantity);
-        current.mixedUnit = current.unit !== null && current.unit !== purchase.unit;
-        current.unit = current.mixedUnit ? null : purchase.unit;
-        purchasedMap.set(purchase.medicine_name, current);
-    });
-    const medicineNames = new Set([...usedMap.keys(), ...purchasedMap.keys()]);
+    const medicineNames = new Set([...records.map((r) => r.medicine_name), ...purchases.map((p) => p.medicine_name)]);
     return Array.from(medicineNames).map((medicineName) => {
-        const usedQuantity = Number((usedMap.get(medicineName) ?? 0).toFixed(1));
-        const purchased = purchasedMap.get(medicineName);
+        const medicineRecords = records.filter((r) => r.medicine_name === medicineName);
+        const medicinePurchases = purchases.filter((p) => p.medicine_name === medicineName);
         const threshold = thresholdMap.get(medicineName) ?? defaultThreshold;
-        if (!purchased) {
+        if (medicinePurchases.length === 0) {
+            const totalUsed = medicineRecords.reduce((sum, r) => sum + Number(r.breakfast) + Number(r.lunch) + Number(r.dinner), 0);
             return {
                 medicineName,
                 unit: null,
                 purchasedQuantity: 0,
-                usedQuantity,
+                usedQuantity: Number(totalUsed.toFixed(1)),
                 remainingQuantity: null,
                 threshold,
                 status: 'no_purchase',
                 note: '尚未记录该药品的采购信息。',
             };
         }
-        if (purchased.mixedUnit) {
+        const units = new Set(medicinePurchases.map((p) => p.unit));
+        if (units.size > 1) {
+            const totalPurchased = medicinePurchases.reduce((sum, p) => sum + Number(p.quantity), 0);
+            const totalUsed = medicineRecords.reduce((sum, r) => sum + Number(r.breakfast) + Number(r.lunch) + Number(r.dinner), 0);
             return {
                 medicineName,
                 unit: null,
-                purchasedQuantity: Number(purchased.quantity.toFixed(1)),
-                usedQuantity,
+                purchasedQuantity: Number(totalPurchased.toFixed(1)),
+                usedQuantity: Number(totalUsed.toFixed(1)),
                 remainingQuantity: null,
                 threshold,
                 status: 'mixed_unit',
                 note: '采购记录存在多个单位，暂不参与库存估算。',
             };
         }
-        const remaining = Number((purchased.quantity - usedQuantity).toFixed(1));
+        const sortedPurchases = [...medicinePurchases].sort((a, b) => (0, dayjs_1.default)(a.purchase_date).valueOf() - (0, dayjs_1.default)(b.purchase_date).valueOf());
+        const sortedRecords = [...medicineRecords].sort((a, b) => (0, dayjs_1.default)(a.date).valueOf() - (0, dayjs_1.default)(b.date).valueOf());
+        const unit = sortedPurchases[0]?.unit ?? null;
+        let totalPurchased = 0;
+        let totalUsed = 0;
+        let recordIndex = 0;
+        for (let pi = 0; pi < sortedPurchases.length; pi += 1) {
+            totalPurchased += Number(sortedPurchases[pi].quantity);
+            while (recordIndex < sortedRecords.length && (0, dayjs_1.default)(sortedRecords[recordIndex].date).format('YYYY-MM-DD') <= (0, dayjs_1.default)(sortedPurchases[pi].purchase_date).format('YYYY-MM-DD')) {
+                totalUsed += Number(sortedRecords[recordIndex].breakfast) + Number(sortedRecords[recordIndex].lunch) + Number(sortedRecords[recordIndex].dinner);
+                recordIndex += 1;
+            }
+        }
+        while (recordIndex < sortedRecords.length) {
+            totalUsed += Number(sortedRecords[recordIndex].breakfast) + Number(sortedRecords[recordIndex].lunch) + Number(sortedRecords[recordIndex].dinner);
+            recordIndex += 1;
+        }
+        const rawRemaining = totalPurchased - totalUsed;
+        if (rawRemaining < 0) {
+            return {
+                medicineName,
+                unit,
+                purchasedQuantity: Number(totalPurchased.toFixed(1)),
+                usedQuantity: Number(totalUsed.toFixed(1)),
+                remainingQuantity: 0,
+                threshold,
+                status: 'low',
+                note: '累计使用量已超过购买总量，库存可能已耗尽，请及时补货。',
+            };
+        }
+        const remaining = Number(rawRemaining.toFixed(1));
         return {
             medicineName,
-            unit: purchased.unit,
-            purchasedQuantity: Number(purchased.quantity.toFixed(1)),
-            usedQuantity,
+            unit,
+            purchasedQuantity: Number(totalPurchased.toFixed(1)),
+            usedQuantity: Number(totalUsed.toFixed(1)),
             remainingQuantity: remaining,
             threshold,
             status: remaining <= threshold ? 'low' : 'ok',
@@ -355,7 +377,7 @@ function createMedicationRouter() {
         ]);
         const today = (0, dayjs_1.default)().format('YYYY-MM-DD');
         const totalDosage = records.reduce((sum, item) => sum + Number(item.breakfast) + Number(item.lunch) + Number(item.dinner), 0);
-        const trackedDays = new Set(records.map((item) => item.date)).size;
+        const trackedDays = new Set(records.map((item) => (0, dayjs_1.default)(item.date).format('YYYY-MM-DD'))).size;
         response.json((0, response_1.successResponse)({
             totalRecords: records.length,
             totalDosage,
@@ -364,8 +386,8 @@ function createMedicationRouter() {
             activeMedicineCount: new Set(records.map((item) => item.medicine_name)).size,
             purchaseCount: purchases.length,
             totalPurchaseAmount: Number(purchases.reduce((sum, item) => sum + Number(item.total_price), 0).toFixed(2)),
-            latestRecordDate: records[0]?.date ?? null,
-            todayDosage: records.filter((item) => item.date === today).reduce((sum, item) => sum + Number(item.breakfast) + Number(item.lunch) + Number(item.dinner), 0),
+            latestRecordDate: records[0] ? (0, dayjs_1.default)(records[0].date).format('YYYY-MM-DD') : null,
+            todayDosage: records.filter((item) => (0, dayjs_1.default)(item.date).format('YYYY-MM-DD') === today).reduce((sum, item) => sum + Number(item.breakfast) + Number(item.lunch) + Number(item.dinner), 0),
         }));
     }));
     router.get('/analysis', (0, async_handler_1.asyncHandler)(async (request, response) => {

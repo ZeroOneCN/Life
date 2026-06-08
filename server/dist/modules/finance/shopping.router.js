@@ -21,6 +21,7 @@ const finance_shopping_ledger_entity_1 = require("./entities/finance-shopping-le
 const finance_shopping_platform_entity_1 = require("./entities/finance-shopping-platform.entity");
 const finance_shopping_record_entity_1 = require("./entities/finance-shopping-record.entity");
 const finance_shopping_setting_entity_1 = require("./entities/finance-shopping-setting.entity");
+const life_storage_item_entity_1 = require("../life/entities/life-storage-item.entity");
 const recordSchema = zod_1.z.object({
     userId: zod_1.z.string().trim().optional(),
     ledgerId: zod_1.z.string().trim().min(1),
@@ -38,7 +39,7 @@ const ledgerSchema = zod_1.z.object({
     description: zod_1.z.string().optional().default(''),
     startDate: zod_1.z.string().min(1),
     endDate: zod_1.z.string().optional().default(''),
-    isActive: zod_1.z.boolean().optional().default(false),
+    isActive: zod_1.z.coerce.boolean().optional(),
 });
 const platformSchema = zod_1.z.object({
     name: zod_1.z.string().trim().min(1).max(128),
@@ -46,14 +47,14 @@ const platformSchema = zod_1.z.object({
     isBuiltIn: zod_1.z.boolean().optional().default(false),
 });
 const settingsSchema = zod_1.z.object({
-    activeUserId: zod_1.z.string().optional(),
-    recordsUserId: zod_1.z.string().optional(),
-    dashboardUserId: zod_1.z.string().optional(),
-    activeLedgerId: zod_1.z.string().optional(),
-    recordsLedgerId: zod_1.z.string().optional(),
-    dashboardLedgerId: zod_1.z.string().optional(),
-    currencyMode: zod_1.z.string().optional(),
-    usdtRate: zod_1.z.number().optional(),
+    activeUserId: zod_1.z.string().optional().default(''),
+    recordsUserId: zod_1.z.string().optional().default(''),
+    dashboardUserId: zod_1.z.string().optional().default(''),
+    activeLedgerId: zod_1.z.string().optional().default(''),
+    recordsLedgerId: zod_1.z.string().optional().default('all'),
+    dashboardLedgerId: zod_1.z.string().optional().default('all'),
+    currencyMode: zod_1.z.enum(['CNY', 'USD', 'USDT']).optional().default('CNY'),
+    usdtRate: zod_1.z.number().min(0).optional().default(7.2),
 });
 const importRowSchema = zod_1.z.object({
     userId: zod_1.z.string().trim().optional(),
@@ -81,7 +82,7 @@ function mapRecord(entity) {
         id: entity.id,
         userId: entity.user_id,
         ledgerId: entity.ledger_id,
-        date: entity.date,
+        date: (0, dayjs_1.default)(entity.date).format('YYYY-MM-DD'),
         platform: entity.platform,
         itemName: entity.item_name,
         spec: entity.spec,
@@ -199,6 +200,22 @@ function createShoppingRouter() {
             throw new app_error_1.AppError('shopping_record_not_found', 404, 404);
         }
         await repository.remove(current);
+        try {
+            const storageRepo = data_source_1.appDataSource.getRepository(life_storage_item_entity_1.LifeStorageItemEntity);
+            const linkedStorageItems = await storageRepo.find({
+                where: {
+                    shopping_record_id: recordId,
+                    user_id: userId,
+                    source: 'shopping',
+                },
+            });
+            if (linkedStorageItems.length > 0) {
+                await storageRepo.remove(linkedStorageItems);
+            }
+        }
+        catch (error) {
+            console.error('联动删除物品追踪记录失败:', error);
+        }
         response.json((0, response_1.successResponse)({ ok: true }, 'delete_shopping_record_success'));
     }));
     router.get('/ledgers', (0, async_handler_1.asyncHandler)(async (_request, response) => {
@@ -222,7 +239,7 @@ function createShoppingRouter() {
             description: payload.description,
             start_date: (0, date_1.normalizeDate)(payload.startDate),
             end_date: payload.endDate ? (0, date_1.normalizeDate)(payload.endDate) : null,
-            is_active: payload.isActive,
+            is_active: payload.isActive ?? false,
         }));
         response.json((0, response_1.successResponse)(mapLedger(item), 'create_shopping_ledger_success'));
     }));
@@ -246,7 +263,7 @@ function createShoppingRouter() {
             description: payload.description ?? current.description,
             start_date: payload.startDate ? (0, date_1.normalizeDate)(payload.startDate) : current.start_date,
             end_date: payload.endDate !== undefined ? (payload.endDate ? (0, date_1.normalizeDate)(payload.endDate) : null) : current.end_date,
-            is_active: payload.isActive ?? current.is_active,
+            is_active: !!payload.isActive,
         });
         response.json((0, response_1.successResponse)(mapLedger(next), 'update_shopping_ledger_success'));
     }));

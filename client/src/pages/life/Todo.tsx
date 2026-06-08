@@ -23,6 +23,7 @@ const EMPTY_OVERVIEW: TodoOverviewSummary = {
   totalCount: 0,
   activeCount: 0,
   completedCount: 0,
+  recurringCount: 0,
   dailyCount: 0,
   highPriorityCount: 0,
   mediumPriorityCount: 0,
@@ -108,6 +109,7 @@ export default function TodoPage() {
           { label: '总任务数', value: `${overview.totalCount}` },
           { label: '进行中', value: `${overview.activeCount}` },
           { label: '已完成', value: `${overview.completedCount}` },
+          { label: '重复任务', value: `${overview.recurringCount}`, helper: `每日 ${overview.dailyCount} 项` },
           { label: '今日到期', value: `${overview.dueTodayCount}`, helper: `高${overview.highPriorityCount} / 中${overview.mediumPriorityCount} / 低${overview.lowPriorityCount}` },
         ]}
       />
