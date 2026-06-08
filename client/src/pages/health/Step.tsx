@@ -163,10 +163,16 @@ export default function StepPage() {
   const resetEntryState = (hour: StepHour) => {
     setStepsInput('');
 
-    // 全天 / 23 点保存完毕后都视作当天完成，跳转到次日 08:00
-    //   - hour === null：用户直接以"全天"模式提交
-    //   - hour === 23：用户提交 23 点步数 = 整天步数 = 全天完成
-    if (hour === null || hour === 23) {
+    // 23 点保存后：跳到全天模式（setSelectedHour(null) + recordTime = 今天结束）
+    if (hour === 23) {
+      setSelectedHour(null);
+      setRecordTime(getTodayEndDateTime());
+      focusStepsInput();
+      return;
+    }
+
+    // 全天保存后：跳到次日 08:00
+    if (hour === null) {
       setSelectedHour(8);
       const nextDay = dayjs().add(1, 'day').format('YYYY-MM-DDTHH:mm');
       setRecordTime(buildStepRecordTime(nextDay, 8));
