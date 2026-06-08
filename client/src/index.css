@@ -4080,46 +4080,93 @@ textarea {
   color: var(--color-ink-mute);
 }
 
-.deepseek-usage-cell-wide {
-  grid-column: 1 / -1;
-}
-
-.deepseek-usage-local-grid {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-}
-
-.deepseek-usage-headline {
+/* Hero 区域：水平布局，左侧大数字，右侧 meta pill */
+.deepseek-usage-hero {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 16px 18px;
+  align-items: stretch;
+  gap: 16px;
+  padding: 16px 20px;
   border-radius: 12px;
   background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 12%, transparent), color-mix(in srgb, var(--color-primary) 4%, transparent));
   border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
 
+.deepseek-usage-hero-main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.deepseek-usage-hero-side {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.deepseek-usage-hero-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface-1) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 14%, transparent);
+  font-size: 12px;
+  color: var(--color-ink-mute);
+  white-space: nowrap;
+}
+
+.deepseek-usage-hero-pill strong {
+  color: var(--color-ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Local hero 配色稍弱化（区别于官方账户） */
+.deepseek-usage-hero-local {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 8%, transparent), color-mix(in srgb, var(--color-primary) 2%, transparent));
+  border-color: color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
 .deepseek-usage-headline-label {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-ink-mute);
   letter-spacing: 0.04em;
 }
 
 .deepseek-usage-headline-value {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 600;
   color: var(--color-ink-strong, var(--color-ink));
   font-variant-numeric: tabular-nums;
+  line-height: 1.2;
 }
 
-.deepseek-usage-headline-meta {
+.deepseek-usage-headline-sub {
   font-size: 12px;
   color: var(--color-ink-mute);
+  font-variant-numeric: tabular-nums;
 }
 
 .deepseek-usage-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
+}
+
+.deepseek-usage-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 720px) {
+  .deepseek-usage-grid-3 {
+    grid-template-columns: 1fr;
+  }
 }
 
 .deepseek-usage-cell {
@@ -4148,6 +4195,7 @@ textarea {
 .deepseek-usage-cell-helper {
   font-size: 11px;
   color: var(--color-ink-tertiary);
+  line-height: 1.5;
 }
 
 .deepseek-usage-empty {
@@ -4203,8 +4251,16 @@ textarea {
 }
 
 @media (max-width: 720px) {
+  .deepseek-usage-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .deepseek-usage-hero-side {
+    align-items: flex-start;
+    width: 100%;
+  }
   .deepseek-usage-headline-value {
-    font-size: 24px;
+    font-size: 26px;
   }
 }
 

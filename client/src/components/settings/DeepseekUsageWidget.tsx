@@ -12,6 +12,11 @@ import {
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 
+/** 单次 DeepSeek-chat 输出 1 token 平均折算 0.000001 元 */
+const COST_PER_TOKEN = 0.000001;
+/** 1 元大约能买多少 token（官方 0.001 元/1k tokens） */
+const TOKENS_PER_CNY = 1_000_000;
+
 function formatAmount(value: number, currency: string) {
   const fixed = value.toFixed(2);
   if (currency === 'CNY' || currency === 'RMB' || currency === '人民币') {
@@ -40,79 +45,30 @@ function formatRelativeTime(iso: string | null): string {
   return target.format('YYYY-MM-DD HH:mm');
 }
 
-function formatTokenCount(value: number): string {
+function formatTokenCount(value: number, fractionDigits = 1): string {
   if (value >= 10000) {
     return `${(value / 10000).toFixed(2)} 万`;
   }
   if (value >= 1000) {
-    return `${(value / 1000).toFixed(2)}k`;
+    return `${(value / 1000).toFixed(fractionDigits)}k`;
   }
   return value.toString();
 }
 
 function formatCost(value: number): string {
-  if (value >= 1) {
-    return `¥${value.toFixed(2)}`;
-  }
-  if (value >= 0.01) {
-    return `¥${value.toFixed(4)}`;
-  }
+  if (value >= 1) return `¥${value.toFixed(2)}`;
+  if (value >= 0.01) return `¥${value.toFixed(4)}`;
   return `¥${value.toFixed(6)}`;
 }
 
-function renderLocalUsage(local: DeepseekLocalUsage) {
-  if (local.totalCalls === 0) {
-    return (
-      <div className="deepseek-usage-empty">
-        <Tag tone="default">暂无记录</Tag>
-        <strong>本站 AI 助理还未发起过请求</strong>
-        <span>
-          在右下角 AI 助理里开始一次对话，组件就会自动汇总累计 / 今日的 Token 消耗。
-          每 30 秒会自动刷新一次数据，也可以点击右上角「刷新」按钮立刻拉取。
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="deepseek-usage-grid deepseek-usage-local-grid">
-      <div className="deepseek-usage-cell">
-        <span className="deepseek-usage-cell-label">累计请求</span>
-        <strong className="deepseek-usage-cell-value">{local.totalCalls} 次</strong>
-        <span className="deepseek-usage-cell-helper">
-          共发出 {local.totalRequests} 次 DeepSeek HTTP 调用（含多轮工具调用）
-        </span>
-      </div>
-      <div className="deepseek-usage-cell">
-        <span className="deepseek-usage-cell-label">累计 Token</span>
-        <strong className="deepseek-usage-cell-value">{formatTokenCount(local.totalTokens)}</strong>
-        <span className="deepseek-usage-cell-helper">
-          输入 {formatTokenCount(local.totalPromptTokens)} · 输出 {formatTokenCount(local.totalCompletionTokens)}
-        </span>
-      </div>
-      <div className="deepseek-usage-cell">
-        <span className="deepseek-usage-cell-label">今日 Token</span>
-        <strong className="deepseek-usage-cell-value">{formatTokenCount(local.todayTokens)}</strong>
-        <span className="deepseek-usage-cell-helper">
-          今日 {local.todayCalls} 次对话
-        </span>
-      </div>
-      <div className="deepseek-usage-cell">
-        <span className="deepseek-usage-cell-label">估算花费</span>
-        <strong className="deepseek-usage-cell-value">{formatCost(local.estimatedCost)}</strong>
-        <span className="deepseek-usage-cell-helper">
-          按 0.001 元 / 1k tokens 粗算
-        </span>
-      </div>
-      <div className="deepseek-usage-cell deepseek-usage-cell-wide">
-        <span className="deepseek-usage-cell-label">最后调用</span>
-        <strong className="deepseek-usage-cell-value">{formatRelativeTime(local.lastCalledAt)}</strong>
-        <span className="deepseek-usage-cell-helper">
-          数据来自本站 assistant-usage-logs 表，按用户隔离累计
-        </span>
-      </div>
-    </div>
-  );
+/** 估算当前账户余额能支撑多少次轻量对话（按 ~2k token / 次） */
+function estimateRounds(totalBalance: number): string {
+  if (totalBalance <= 0) return '—';
+  const tokens = totalBalance / COST_PER_TOKEN;
+  const rounds = tokens / 2000;
+  if (rounds >= 10000) return `${(rounds / 10000).toFixed(1)} 万 次`;
+  if (rounds >= 1000) return `${(rounds / 1000).toFixed(1)}k 次`;
+  return `${Math.floor(rounds)} 次`;
 }
 
 function pickPrimaryBalance(balances: DeepseekBalanceInfo[]): DeepseekBalanceInfo | null {
@@ -127,6 +83,151 @@ function pickPrimaryBalance(balances: DeepseekBalanceInfo[]): DeepseekBalanceInf
     }
   }
   return balances[0];
+}
+
+function renderOfficialSection(primary: DeepseekBalanceInfo, fetchedAt: string, allBalances: DeepseekBalanceInfo[]) {
+  return (
+    <div className="deepseek-usage-section">
+      <div className="deepseek-usage-section-head">
+        <h4>官方账户余额</h4>
+        <span>来自 DeepSeek /user/balance</span>
+      </div>
+
+      <div className="deepseek-usage-hero">
+        <div className="deepseek-usage-hero-main">
+          <span className="deepseek-usage-headline-label">账户余额</span>
+          <div className="deepseek-usage-headline-value">
+            {formatAmount(primary.totalBalance, primary.currency)}
+          </div>
+        </div>
+        <div className="deepseek-usage-hero-side">
+          <div className="deepseek-usage-hero-pill">
+            <span>币种</span>
+            <strong>{primary.currency}</strong>
+          </div>
+          <div className="deepseek-usage-hero-pill">
+            <span>刷新于</span>
+            <strong>{formatTimestamp(fetchedAt)}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="deepseek-usage-grid deepseek-usage-grid-3">
+        <div className="deepseek-usage-cell">
+          <span className="deepseek-usage-cell-label">赠送余额</span>
+          <strong className="deepseek-usage-cell-value">
+            {primary.grantedBalance !== null
+              ? formatAmount(primary.grantedBalance, primary.currency)
+              : '—'}
+          </strong>
+          <span className="deepseek-usage-cell-helper">平台赠送，可用于 AI 助理</span>
+        </div>
+        <div className="deepseek-usage-cell">
+          <span className="deepseek-usage-cell-label">充值余额</span>
+          <strong className="deepseek-usage-cell-value">
+            {primary.toppedUpBalance !== null
+              ? formatAmount(primary.toppedUpBalance, primary.currency)
+              : '—'}
+          </strong>
+          <span className="deepseek-usage-cell-helper">自助充值到账部分</span>
+        </div>
+        <div className="deepseek-usage-cell">
+          <span className="deepseek-usage-cell-label">可调用次数</span>
+          <strong className="deepseek-usage-cell-value">
+            {estimateRounds(primary.totalBalance)}
+          </strong>
+          <span className="deepseek-usage-cell-helper">按 2k token / 次轻量对话估算</span>
+        </div>
+      </div>
+
+      {allBalances.length > 1 ? (
+        <div className="deepseek-usage-extra">
+          <span>其他币种余额：</span>
+          {allBalances
+            .filter((item) => item.currency !== primary.currency)
+            .map((item) => (
+              <Tag key={item.currency} tone="default">
+                {item.currency} · {formatAmount(item.totalBalance, item.currency)}
+              </Tag>
+            ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function renderLocalSection(local: DeepseekLocalUsage) {
+  if (local.totalCalls === 0) {
+    return (
+      <div className="deepseek-usage-section">
+        <div className="deepseek-usage-section-head">
+          <h4>本站 AI 助理请求</h4>
+          <span>按当前登录用户从 /assistant/chat 累计</span>
+        </div>
+        <div className="deepseek-usage-empty">
+          <Tag tone="default">暂无记录</Tag>
+          <strong>本站 AI 助理还未发起过请求</strong>
+          <span>
+            在右下角 AI 助理里开始一次对话，组件就会自动汇总累计 / 今日的 Token 消耗。
+            每 30 秒会自动刷新一次数据，也可以点击右上角「刷新」按钮立刻拉取。
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  const avgTokensPerCall = local.totalCalls > 0
+    ? Math.round(local.totalTokens / local.totalCalls)
+    : 0;
+
+  return (
+    <div className="deepseek-usage-section">
+      <div className="deepseek-usage-section-head">
+        <h4>本站 AI 助理请求</h4>
+        <span>按当前登录用户从 /assistant/chat 累计</span>
+      </div>
+
+      <div className="deepseek-usage-hero deepseek-usage-hero-local">
+        <div className="deepseek-usage-hero-main">
+          <span className="deepseek-usage-headline-label">累计 Token</span>
+          <div className="deepseek-usage-headline-value">
+            {formatTokenCount(local.totalTokens, 2)}
+          </div>
+          <span className="deepseek-usage-headline-sub">
+            输入 {formatTokenCount(local.totalPromptTokens)} · 输出 {formatTokenCount(local.totalCompletionTokens)}
+          </span>
+        </div>
+        <div className="deepseek-usage-hero-side">
+          <div className="deepseek-usage-hero-pill">
+            <span>累计请求</span>
+            <strong>{local.totalCalls} 次</strong>
+          </div>
+          <div className="deepseek-usage-hero-pill">
+            <span>最后调用</span>
+            <strong>{formatRelativeTime(local.lastCalledAt)}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="deepseek-usage-grid deepseek-usage-grid-3">
+        <div className="deepseek-usage-cell">
+          <span className="deepseek-usage-cell-label">今日 Token</span>
+          <strong className="deepseek-usage-cell-value">{formatTokenCount(local.todayTokens)}</strong>
+          <span className="deepseek-usage-cell-helper">今日 {local.todayCalls} 次对话</span>
+        </div>
+        <div className="deepseek-usage-cell">
+          <span className="deepseek-usage-cell-label">估算花费</span>
+          <strong className="deepseek-usage-cell-value">{formatCost(local.estimatedCost)}</strong>
+          <span className="deepseek-usage-cell-helper">按 0.001 元 / 1k tokens 粗算</span>
+        </div>
+        <div className="deepseek-usage-cell">
+          <span className="deepseek-usage-cell-label">平均每次</span>
+          <strong className="deepseek-usage-cell-value">{formatTokenCount(avgTokensPerCall)}</strong>
+          <span className="deepseek-usage-cell-helper">含工具调用的多轮 token</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function DeepseekUsageWidget() {
@@ -243,68 +344,8 @@ export function DeepseekUsageWidget() {
 
     return (
       <div className="deepseek-usage-body">
-        <div className="deepseek-usage-section">
-          <div className="deepseek-usage-section-head">
-            <h4>官方账户余额</h4>
-            <span>来自 DeepSeek /user/balance</span>
-          </div>
-          <div className="deepseek-usage-headline">
-            <div className="deepseek-usage-headline-label">账户余额</div>
-            <div className="deepseek-usage-headline-value">
-              {formatAmount(primary.totalBalance, primary.currency)}
-            </div>
-            <div className="deepseek-usage-headline-meta">
-              币种：{primary.currency} · 刷新于 {formatTimestamp(snapshot.fetchedAt)}
-            </div>
-          </div>
-
-          <div className="deepseek-usage-grid">
-            <div className="deepseek-usage-cell">
-              <span className="deepseek-usage-cell-label">赠送余额</span>
-              <strong className="deepseek-usage-cell-value">
-                {primary.grantedBalance !== null
-                  ? formatAmount(primary.grantedBalance, primary.currency)
-                  : '-'}
-              </strong>
-              <span className="deepseek-usage-cell-helper">平台赠送，可用于 AI 助理</span>
-            </div>
-            <div className="deepseek-usage-cell">
-              <span className="deepseek-usage-cell-label">充值余额</span>
-              <strong className="deepseek-usage-cell-value">
-                {primary.toppedUpBalance !== null
-                  ? formatAmount(primary.toppedUpBalance, primary.currency)
-                  : '-'}
-              </strong>
-              <span className="deepseek-usage-cell-helper">自助充值到账部分</span>
-            </div>
-            <div className="deepseek-usage-cell">
-              <span className="deepseek-usage-cell-label">币种</span>
-              <strong className="deepseek-usage-cell-value">{primary.currency}</strong>
-              <span className="deepseek-usage-cell-helper">DeepSeek 账户基础币种</span>
-            </div>
-          </div>
-
-          {snapshot.balances.length > 1 ? (
-            <div className="deepseek-usage-extra">
-              <span>其他币种余额：</span>
-              {snapshot.balances
-                .filter((item) => item.currency !== primary.currency)
-                .map((item) => (
-                  <Tag key={item.currency} tone="default">
-                    {item.currency} · {formatAmount(item.totalBalance, item.currency)}
-                  </Tag>
-                ))}
-            </div>
-          ) : null}
-        </div>
-
-        <div className="deepseek-usage-section">
-          <div className="deepseek-usage-section-head">
-            <h4>本站 AI 助理请求</h4>
-            <span>按当前登录用户从 /assistant/chat 累计</span>
-          </div>
-          {renderLocalUsage(snapshot.local)}
-        </div>
+        {renderOfficialSection(primary, snapshot.fetchedAt, snapshot.balances)}
+        {renderLocalSection(snapshot.local)}
       </div>
     );
   };
@@ -315,7 +356,7 @@ export function DeepseekUsageWidget() {
         <div>
           <h2 className="section-title">DeepSeek Token 消耗</h2>
           <p className="section-description">
-            实时拉取 DeepSeek 官方账户余额，用于预估 AI 助理的 Token 消耗与可用配额。
+            实时拉取 DeepSeek 官方账户余额，结合本站 AI 助理的请求统计预估 Token 消耗与可用配额。
           </p>
         </div>
         <Btn
