@@ -1,6 +1,15 @@
-style(deepseek-widget): 调大次级文字字号
+docs: 完整重写 README.md，移除目录
 
-* .deepseek-usage-section-head h4：14px → 15px
-* .deepseek-usage-section-head span：12px → 13px
-* .deepseek-usage-cell-label：12px → 13px
-* .deepseek-usage-cell-helper：11px → 12px
+* 去掉顶部「目录」清单，章节按阅读顺序自然展开
+* 新增「DeepSeek Token 消耗组件」独立章节：双分区布局、三层兜底机制、30s 自动轮询
+* 业务模块章节：
+  - 财务中心 - 房租水电补充 rent entry 模块化分组说明
+  - 通知中心 - 补充 scenes/templates 自动补齐机制 + skipped 日志带原因
+  - 智能助理 - 补充 Token 消耗记录 + 官方余额查询
+  - 仪表盘 - 补充「2 位小数」「绿正/红负」备注
+* 数据库表新增 `system_assistant_usage_logs` 实体
+* 数据契约约定补充「盈亏符号判定」原则（基于原始数值而非格式化字符串）
+* 故障排查表补充 DeepSeek Token 组件 0 数据 / 投资中心颜色错位两条
+* 技术栈增加 AI 服务（DeepSeek）一行；后端 API 表补充 `/assistant/usage`
+* 项目结构树更新：新增 settings/ 子目录、system/ 下 assistant-usage.service、notifications/ 标注自动补齐
+* 项目总数：~40 张表 → ~41 张表（+assistant_usage_logs）
