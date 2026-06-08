@@ -93,7 +93,290 @@ const sceneSchema = z.object({
 const templateSchema = z.object({
   title: z.string().trim().min(1).max(255),
   body: z.string().trim().min(1),
+  format: z.enum(['text', 'html']).optional(),
+  htmlBody: z.string().trim().max(65535).optional().nullable(),
 });
+
+/**
+ * 通知场景的默认元数据。第一次进入时一次性 seed，后续新加的 scene 也会自动补齐到已有用户。
+ */
+const SCENE_SEED: ReadonlyArray<{
+  scene_id: string;
+  label: string;
+  enabled: boolean;
+  summary: string;
+  description: string;
+}> = [
+  { scene_id: 'todo.reminder', label: '待办提醒', enabled: false, summary: '', description: '' },
+  { scene_id: 'card.balance_low', label: '号卡低余额提醒', enabled: false, summary: '', description: '' },
+  { scene_id: 'card.billing_upcoming', label: '号卡账单日前提醒', enabled: false, summary: '', description: '' },
+  { scene_id: 'loan.repayment_upcoming', label: '贷款还款提醒', enabled: false, summary: '', description: '' },
+  { scene_id: 'loan.repayment_overdue', label: '贷款逾期提醒', enabled: false, summary: '', description: '' },
+  { scene_id: 'checkup.followup_reminder', label: '体检复查提醒', enabled: false, summary: '', description: '' },
+  { scene_id: 'checkup.abnormal_alert', label: '体检异常提醒', enabled: false, summary: '', description: '' },
+  { scene_id: 'medication.dose_reminder', label: '服药提醒', enabled: false, summary: '', description: '' },
+  { scene_id: 'medication.stock_low', label: '低库存提醒', enabled: false, summary: '', description: '' },
+  { scene_id: 'subscription.renewal_upcoming', label: '订阅即将到期', enabled: false, summary: '', description: '' },
+  { scene_id: 'subscription.expired', label: '订阅到期或逾期', enabled: false, summary: '', description: '' },
+  { scene_id: 'finance.report.monthly', label: '月度财务报告', enabled: false, summary: '', description: '' },
+  { scene_id: 'travel.followup', label: '旅行归档跟进', enabled: false, summary: '', description: '' },
+];
+
+/**
+ * 通知模板的默认数据。每个场景对应一份富文本模板，可在通知中心模板编辑器中调整。
+ * 用 as const 保证 format 是字面量类型，与 entity 的 NotificationTemplateFormat 对齐。
+ */
+const TEMPLATE_SEED = [
+  {
+    scene_id: 'todo.reminder',
+    title: '⏰ 待办提醒：{{title}}',
+    body: '{{message}}\n\n截止：{{meta.dueDate}}\n优先级：{{meta.priority}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #f59e0b, #f97316); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 待办提醒</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">⏰ {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 8px;">{{message}}</p>
+    <table style="width: 100%; font-size: 13px; color: #475569; margin-top: 12px;">
+      <tr><td style="padding: 4px 0;">截止时间</td><td style="padding: 4px 0; font-weight: 600; color: #b45309;">{{meta.dueDate}}</td></tr>
+      <tr><td style="padding: 4px 0;">优先级</td><td style="padding: 4px 0;">{{meta.priority}}</td></tr>
+    </table>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'card.balance_low',
+    title: '💳 号卡余额不足：{{title}}',
+    body: '{{message}}\n\n当前余额：¥ {{meta.balance}}\n提醒阈值：¥ {{meta.threshold}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 号卡低余额</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">💳 {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">{{message}}</p>
+    <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 10px 14px; border-radius: 6px;">
+      <div style="font-size: 13px; color: #64748b;">当前余额</div>
+      <div style="font-size: 22px; font-weight: 700; color: #b91c1c;">¥ {{meta.balance}}</div>
+      <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">提醒阈值：¥ {{meta.threshold}}</div>
+    </div>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'card.billing_upcoming',
+    title: '📅 账单日临近：{{title}}',
+    body: '{{message}}\n\n账单日：{{meta.billingDate}}\n金额：¥ {{meta.amount}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 账单提醒</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">📅 {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">{{message}}</p>
+    <table style="width: 100%; font-size: 13px;">
+      <tr><td style="padding: 4px 0; color: #64748b;">账单日</td><td style="padding: 4px 0; font-weight: 600; text-align: right;">{{meta.billingDate}}</td></tr>
+      <tr><td style="padding: 4px 0; color: #64748b;">账单金额</td><td style="padding: 4px 0; font-weight: 600; text-align: right; color: #1d4ed8;">¥ {{meta.amount}}</td></tr>
+    </table>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'loan.repayment_upcoming',
+    title: '🏦 贷款还款提醒：{{title}}',
+    body: '{{message}}\n\n还款日：{{meta.dueDate}}\n金额：¥ {{meta.amount}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #0ea5e9, #0369a1); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 还款提醒</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">🏦 {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">{{message}}</p>
+    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+      <tr style="background: #f8fafc;"><td style="padding: 8px 12px; color: #64748b;">还款日</td><td style="padding: 8px 12px; font-weight: 600; text-align: right;">{{meta.dueDate}}</td></tr>
+      <tr><td style="padding: 8px 12px; color: #64748b;">还款金额</td><td style="padding: 8px 12px; font-weight: 600; text-align: right; color: #0369a1;">¥ {{meta.amount}}</td></tr>
+      <tr style="background: #f8fafc;"><td style="padding: 8px 12px; color: #64748b;">账户</td><td style="padding: 8px 12px; text-align: right;">{{meta.account}}</td></tr>
+    </table>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'loan.repayment_overdue',
+    title: '⚠️ 贷款已逾期：{{title}}',
+    body: '{{message}}\n\n逾期天数：{{meta.overdueDays}} 天\n金额：¥ {{meta.amount}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #b91c1c, #7f1d1d); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .9; letter-spacing: .08em;">LifeOS · 逾期警告</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">⚠️ {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">{{message}}</p>
+    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 10px 14px;">
+      <div style="font-size: 13px; color: #991b1b; font-weight: 600;">逾期 {{meta.overdueDays}} 天</div>
+      <div style="font-size: 22px; font-weight: 700; color: #7f1d1d; margin-top: 4px;">¥ {{meta.amount}}</div>
+    </div>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'checkup.followup_reminder',
+    title: '🩺 体检复查提醒：{{title}}',
+    body: '{{message}}\n\n复查日期：{{meta.followupDate}}\n项目：{{meta.items}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #14b8a6, #0f766e); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 体检复查</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">🩺 {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">{{message}}</p>
+    <div style="background: #f0fdfa; border-left: 4px solid #14b8a6; padding: 10px 14px; border-radius: 6px;">
+      <div style="font-size: 13px; color: #0f766e;">建议复查日期</div>
+      <div style="font-size: 18px; font-weight: 600; color: #134e4a; margin-top: 4px;">{{meta.followupDate}}</div>
+    </div>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'checkup.abnormal_alert',
+    title: '🚨 体检异常提醒：{{title}}',
+    body: '{{message}}\n\n异常指标：{{meta.abnormalItems}}\n建议：{{meta.advice}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #f43f5e, #be123c); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 体检异常</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">🚨 {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">{{message}}</p>
+    <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; padding: 10px 14px; font-size: 13px;">
+      <div style="color: #be123c; font-weight: 600;">异常指标</div>
+      <div style="color: #881337; margin-top: 4px;">{{meta.abnormalItems}}</div>
+      <div style="color: #be123c; font-weight: 600; margin-top: 10px;">建议</div>
+      <div style="color: #881337; margin-top: 4px;">{{meta.advice}}</div>
+    </div>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'medication.dose_reminder',
+    title: '💊 服药提醒：{{title}}',
+    body: '{{message}}\n\n药品：{{meta.drugName}}\n剂量：{{meta.dosage}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 服药提醒</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">💊 {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">{{message}}</p>
+    <div style="background: #f5f3ff; border-left: 4px solid #8b5cf6; padding: 10px 14px; border-radius: 6px;">
+      <div style="font-size: 13px; color: #6d28d9;">药品</div>
+      <div style="font-size: 16px; font-weight: 600; color: #4c1d95; margin-top: 4px;">{{meta.drugName}}</div>
+      <div style="font-size: 13px; color: #6d28d9; margin-top: 6px;">剂量：{{meta.dosage}}</div>
+    </div>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'medication.stock_low',
+    title: '📦 药品库存不足：{{title}}',
+    body: '{{message}}\n\n当前库存：{{meta.stock}}\n建议补货：{{meta.reorderSuggestion}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #f59e0b, #b45309); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 库存不足</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">📦 {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">{{message}}</p>
+    <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 10px 14px; font-size: 13px;">
+      <div style="color: #92400e;">当前库存：<strong style="color: #78350f;">{{meta.stock}}</strong></div>
+      <div style="color: #92400e; margin-top: 4px;">建议补货：{{meta.reorderSuggestion}}</div>
+    </div>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'subscription.renewal_upcoming',
+    title: '🔔 订阅即将续费：{{title}}',
+    body: '{{message}}\n\n续费日期：{{meta.renewalDate}}\n金额：¥ {{meta.amount}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #10b981, #047857); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 订阅续费</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">🔔 {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">{{message}}</p>
+    <table style="width: 100%; font-size: 13px;">
+      <tr><td style="padding: 4px 0; color: #64748b;">续费日期</td><td style="padding: 4px 0; font-weight: 600; text-align: right;">{{meta.renewalDate}}</td></tr>
+      <tr><td style="padding: 4px 0; color: #64748b;">续费金额</td><td style="padding: 4px 0; font-weight: 600; text-align: right; color: #047857;">¥ {{meta.amount}}</td></tr>
+    </table>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'subscription.expired',
+    title: '⏳ 订阅已到期：{{title}}',
+    body: '{{message}}\n\n到期日期：{{meta.expiredDate}}\n金额：¥ {{meta.amount}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #6b7280, #374151); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 订阅到期</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">⏳ {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">{{message}}</p>
+    <div style="background: #f3f4f6; border-left: 4px solid #6b7280; padding: 10px 14px; border-radius: 6px;">
+      <div style="font-size: 13px; color: #4b5563;">到期日期：{{meta.expiredDate}}</div>
+      <div style="font-size: 13px; color: #4b5563; margin-top: 4px;">未续费金额：¥ {{meta.amount}}</div>
+    </div>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'finance.report.monthly',
+    title: '📊 {{title}}',
+    body: '{{message}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 520px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; padding: 16px 22px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 财务月报</div>
+    <div style="font-size: 20px; font-weight: 600; margin-top: 4px;">📊 {{title}}</div>
+  </div>
+  <div style="padding: 18px 22px; color: #1f2937; line-height: 1.7;">
+    <pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: #f8fafc; border-radius: 8px; padding: 12px 14px; white-space: pre-wrap; font-size: 13px; color: #0f172a; margin: 0;">{{message}}</pre>
+    <div style="font-size: 11px; color: #94a3b8; margin-top: 10px;">生成时间：{{date}}</div>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'travel.followup',
+    title: '✈️ 旅行归档跟进：{{title}}',
+    body: '{{message}}\n\n旅行日期：{{meta.travelDate}}\n总花费：¥ {{meta.amount}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #0ea5e9, #1d4ed8); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 旅行归档</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">✈️ {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">{{message}}</p>
+    <table style="width: 100%; font-size: 13px;">
+      <tr><td style="padding: 4px 0; color: #64748b;">旅行日期</td><td style="padding: 4px 0; font-weight: 600; text-align: right;">{{meta.travelDate}}</td></tr>
+      <tr><td style="padding: 4px 0; color: #64748b;">总花费</td><td style="padding: 4px 0; font-weight: 600; text-align: right; color: #1d4ed8;">¥ {{meta.amount}}</td></tr>
+    </table>
+  </div>
+</div>`,
+  },
+] as const;
 
 const testChannelSchema = z.object({
   channel: z.enum(['email', 'wechatWork', 'dingTalk', 'feishu', 'telegram', 'webhook']),
@@ -213,23 +496,21 @@ export function createNotificationCenterRouter() {
     ]);
 
     if (scenes.length === 0) {
-      const defaults = [
-        { scene_id: 'todo.reminder', label: '待办提醒', enabled: false, summary: '', description: '' },
-        { scene_id: 'card.balance_low', label: '号卡低余额提醒', enabled: false, summary: '', description: '' },
-        { scene_id: 'card.billing_upcoming', label: '号卡账单日前提醒', enabled: false, summary: '', description: '' },
-        { scene_id: 'loan.repayment_upcoming', label: '贷款还款提醒', enabled: false, summary: '', description: '' },
-        { scene_id: 'loan.repayment_overdue', label: '贷款逾期提醒', enabled: false, summary: '', description: '' },
-        { scene_id: 'checkup.followup_reminder', label: '体检复查提醒', enabled: false, summary: '', description: '' },
-        { scene_id: 'checkup.abnormal_alert', label: '体检异常提醒', enabled: false, summary: '', description: '' },
-        { scene_id: 'medication.dose_reminder', label: '服药提醒', enabled: false, summary: '', description: '' },
-        { scene_id: 'medication.stock_low', label: '低库存提醒', enabled: false, summary: '', description: '' },
-        { scene_id: 'subscription.renewal_upcoming', label: '订阅即将到期', enabled: false, summary: '', description: '' },
-        { scene_id: 'subscription.expired', label: '订阅到期或逾期', enabled: false, summary: '', description: '' },
-      ];
       scenes = await sceneRepo.save(
-        defaults.map((d) => sceneRepo.create({ user_id: userId, ...d })),
+        SCENE_SEED.map((d) => sceneRepo.create({ user_id: userId, ...d })),
       );
       relations = [];
+    } else {
+      // 用户已有场景记录，但可能在历史版本中遗漏了部分 seed 场景（如新增的 finance.report.monthly、travel.followup）。
+      // 自动补齐缺失的 seed 场景，避免出现"代码里能 push 但前端看不见"的情况。
+      const existingIds = new Set(scenes.map((scene) => scene.scene_id));
+      const missing = SCENE_SEED.filter((seed) => !existingIds.has(seed.scene_id));
+      if (missing.length > 0) {
+        const created = await sceneRepo.save(
+          missing.map((d) => sceneRepo.create({ user_id: userId, ...d })),
+        );
+        scenes = [...scenes, ...created].sort((left, right) => String(left.scene_id).localeCompare(String(right.scene_id)));
+      }
     }
 
     const items = scenes.map((scene) => ({
@@ -295,22 +576,20 @@ export function createNotificationCenterRouter() {
       order: { scene_id: 'ASC' },
     });
 
+    // 用户已有模板但可能遗漏了新增 seed（如 finance.report.monthly / travel.followup），
+    // 自动补齐缺失的模板，避免前端"通知模板"tab 看不全。
+    const existingIds = new Set(items.map((item) => item.scene_id));
+    const missing = TEMPLATE_SEED.filter((seed) => !existingIds.has(seed.scene_id));
+    if (missing.length > 0) {
+      const created = await repository.save(
+        missing.map((d) => repository.create({ user_id: userId, ...d })),
+      );
+      items = [...items, ...created].sort((left, right) => String(left.scene_id).localeCompare(String(right.scene_id)));
+    }
+
     if (items.length === 0) {
-      const defaults = [
-        { scene_id: 'todo.reminder', title: '', body: '' },
-        { scene_id: 'card.balance_low', title: '', body: '' },
-        { scene_id: 'card.billing_upcoming', title: '', body: '' },
-        { scene_id: 'loan.repayment_upcoming', title: '', body: '' },
-        { scene_id: 'loan.repayment_overdue', title: '', body: '' },
-        { scene_id: 'checkup.followup_reminder', title: '', body: '' },
-        { scene_id: 'checkup.abnormal_alert', title: '', body: '' },
-        { scene_id: 'medication.dose_reminder', title: '', body: '' },
-        { scene_id: 'medication.stock_low', title: '', body: '' },
-        { scene_id: 'subscription.renewal_upcoming', title: '', body: '' },
-        { scene_id: 'subscription.expired', title: '', body: '' },
-      ];
       items = await repository.save(
-        defaults.map((d) => repository.create({ user_id: userId, ...d })),
+        TEMPLATE_SEED.map((d) => repository.create({ user_id: userId, ...d })),
       );
     }
 
@@ -334,6 +613,8 @@ export function createNotificationCenterRouter() {
       ...current,
       title: payload.title,
       body: payload.body,
+      format: payload.format ?? current.format ?? 'text',
+      html_body: payload.htmlBody !== undefined ? payload.htmlBody : current.html_body,
     });
 
     response.json(successResponse(next, 'update_notification_template_success'));

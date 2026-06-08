@@ -221,12 +221,18 @@ export function TravelBooksSection({
         const status = target?.status ?? 'ongoing';
         const canComplete = status !== 'completed' && status !== 'archived';
         const canArchive = status !== 'archived';
+        const isActive = row.bookId === activeBookId;
         return (
-          <div className="fitness-row-actions">
-            <Btn tone={row.bookId === activeBookId ? 'primary' : 'secondary'} onClick={() => onActiveBookChange(row.bookId)}>
-              {row.bookId === activeBookId ? '当前账本' : '切换为当前'}
+          <div className="travel-book-row-actions">
+            <Btn
+              className="btn-sm"
+              tone={isActive ? 'primary' : 'secondary'}
+              onClick={() => onActiveBookChange(row.bookId)}
+            >
+              {isActive ? '已激活' : '激活'}
             </Btn>
             <Btn
+              className="btn-sm"
               tone="secondary"
               onClick={() => {
                 if (!target) {
@@ -239,6 +245,7 @@ export function TravelBooksSection({
               编辑
             </Btn>
             <Btn
+              className="btn-sm"
               tone="ghost"
               disabled={!canComplete}
               onClick={() => {
@@ -248,9 +255,10 @@ export function TravelBooksSection({
                 setPendingCompleteBook(target);
               }}
             >
-              标记完成
+              完成
             </Btn>
             <Btn
+              className="btn-sm"
               tone="ghost"
               disabled={!canArchive}
               onClick={() => {
@@ -263,6 +271,7 @@ export function TravelBooksSection({
               归档
             </Btn>
             <Btn
+              className="btn-sm"
               tone="danger"
               onClick={() => setPendingDeleteBook(target ?? null)}
             >

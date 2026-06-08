@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import { PageHeader, SectionCard } from '../../components/page';
 import { Btn, Field, PillTabs, Tag, Toast, useToastState } from '../../components/ui';
+import { DeepseekUsageWidget } from '../../components/settings/DeepseekUsageWidget';
 import { buildApiErrorMessage, getApiFieldErrors } from '../../lib/api';
 import { changePassword, updateAuthProfile, useAuthState } from '../../services/auth';
 
@@ -247,6 +248,8 @@ export default function ProfileSettingsPage() {
           </form>
         </SectionCard>
       ) : null}
+
+      {tab === 'profile' ? <DeepseekUsageWidget /> : null}
 
       {tab === 'security' ? (
         <SectionCard

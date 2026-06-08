@@ -59,8 +59,8 @@ interface RawDashboardSummaryResponse {
   };
 }
 
-function formatMoney(value: number) { return `¥${value.toFixed(0)}`; }
-function formatSignedMoney(value: number) { return `${value >= 0 ? '+' : ''}${value.toFixed(0)}`; }
+function formatMoney(value: number) { return `¥${value.toFixed(2)}`; }
+function formatSignedMoney(value: number) { return `${value >= 0 ? '+' : '−'}¥${Math.abs(value).toFixed(2)}`; }
 function formatPercent(value: number) { return `${(value * 100).toFixed(1)}%`; }
 
 const IconSteps = () => (

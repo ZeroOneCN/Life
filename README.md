@@ -46,7 +46,7 @@ LifeOS 是一个前后端分离的全栈 Web 应用，采用 **React 18 + TypeSc
 ### 核心特性
 
 - **多模块业务覆盖**：健康中心（步数/健身/体检/用药）、财务中心（购物/旅行/贷款/订阅/房租/汇率换算/月度报告）、生活中心（物品/号卡/待办/重复任务）、投资中心（外汇）
-- **统一通知中心**：支持邮件、企业微信、Webhook 三种通知渠道，按业务场景灵活绑定，含发送日志管理
+- **统一通知中心**：支持邮件、企业微信、钉钉、飞书、Telegram、Webhook 等通知渠道，按业务场景灵活绑定，按场景可设置 HTML 富文本模板，含发送日志管理
 - **AI 智能助理**：浮动聊天按钮 + DeepSeek function calling（覆盖财务/健康/投资/生活 4 大模块）
 - **JWT 安全认证**：基于 Passport-JWT 的无状态会话；首次访问自动开放管理员注册引导，注册通道关闭后仅支持登录
 - **Stripe 设计体系**：参考 Stripe 设计语言构建的专业界面，Indigo 主色调，Outfit 字体，亮色/暗色主题切换
@@ -136,9 +136,10 @@ LifeOS 是一个前后端分离的全栈 Web 应用，采用 **React 18 + TypeSc
 
 统一的告警与提醒基础设施：
 
-- **三种渠道**：邮件（SMTP）、企业微信（Webhook）、自定义 Webhook
+- **多种渠道**：邮件（SMTP）、企业微信（Webhook）、钉钉、飞书、Telegram、自定义 Webhook
 - **场景绑定**：每个业务场景可独立绑定多个通知渠道
 - **测试发送**：渠道配置后可立即测试连通性
+- **按场景 HTML 模板**：每个通知场景可独立设置纯文本 / HTML 两种格式的标题与正文模板，支持 `{{title}}` / `{{message}}` / `{{date}}` / `{{userId}}` / `{{meta.xxx}}` 插值；HTML 模板会同时下发到邮件正文、企业微信/钉钉/飞书的 Markdown 模式、Telegram（HTML 模式）和 Webhook（`payload.html` 字段），让富文本通知在各渠道都好看
 - **日志管理**：所有发送记录统一存储，支持清空
 - **接入的业务场景**：服药提醒、低库存提醒、旅行归档跟进（`travel.followup`）、订阅续费提醒（`subscription.renewal_upcoming` / `subscription.expired`）、月度财务报告（`finance.report.monthly`）
 

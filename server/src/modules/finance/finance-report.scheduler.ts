@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import { env } from '../../config/env';
 import { appDataSource } from '../../db/data-source';
 import { SystemUserAccountEntity } from '../system/entities/system-user-account.entity';
-import { NotificationCenterLogEntity } from '../notifications/entities/notification-center-log.entity';
+import { sendNotificationSceneLogs } from '../../shared/domain/notification';
 import {
   buildMonthlyReport,
   buildMonthlyReportMessage,
@@ -24,17 +24,25 @@ function describeMonth(month: string) {
 async function pushMonthlyReportForUser(userId: string, month: string) {
   const report = await buildMonthlyReport(userId, month);
   const message = buildMonthlyReportMessage(report);
-  const logRepo = appDataSource.getRepository(NotificationCenterLogEntity);
-  await logRepo.save(logRepo.create({
-    user_id: userId,
-    channel: 'email',
-    scene_id: 'finance.report.monthly',
-    kind: 'scene',
-    status: 'success',
-    title: `财务月报 · ${describeMonth(month)}`,
+  const title = `财务月报 · ${describeMonth(month)}`;
+
+  // 真正下发到所有已绑定渠道，让用户能在企业微信 / 邮件 / Webhook 收到富文本月报
+  return sendNotificationSceneLogs({
+    userId,
+    sceneId: 'finance.report.monthly',
+    title,
     message,
-  }));
-  return report;
+    meta: {
+      month: report.month,
+      startDate: report.startDate,
+      endDate: report.endDate,
+      totalExpense: report.totalExpense,
+      monthOverMonthChange: report.monthOverMonthChange,
+      monthOverMonthChangePercent: report.monthOverMonthChangePercent,
+      yearOverYearChange: report.yearOverYearChange,
+      yearOverYearChangePercent: report.yearOverYearChangePercent,
+    },
+  });
 }
 
 function setupScheduler() {

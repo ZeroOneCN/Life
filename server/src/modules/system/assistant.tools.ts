@@ -135,9 +135,10 @@ async function queryFinance(userId: string, filters: QueryFilters) {
   };
 
   const recent = [
-    ...shopping.slice(0, filters.limit ?? 5).map((row) => ({ module: 'shopping', title: row.item_name, amount: toNumber(row.price), date: row.date })),
-    ...travel.slice(0, filters.limit ?? 5).map((row) => ({ module: 'travel', title: row.title, amount: toNumber(row.amount), date: row.date })),
-    ...loan.slice(0, filters.limit ?? 5).map((row) => ({ module: 'loan', title: row.platform_name, amount: toNumber(row.amount) + toNumber(row.interest), date: row.repayment_date })),
+    ...shopping.map((row) => ({ module: 'shopping', title: row.item_name, amount: toNumber(row.price), date: row.date })),
+    ...travel.map((row) => ({ module: 'travel', title: row.title, amount: toNumber(row.amount), date: row.date })),
+    ...loan.map((row) => ({ module: 'loan', title: row.platform_name, amount: toNumber(row.amount) + toNumber(row.interest), date: row.repayment_date })),
+    ...subscription.map((row) => ({ module: 'subscription', title: `${row.service_name}·${row.plan_name}`, amount: toNumber(row.cycle_price), date: row.start_date })),
   ]
     .filter((row) => !moduleFilter || row.module === moduleFilter)
     .sort((left, right) => String(right.date).localeCompare(String(left.date)))
@@ -156,10 +157,29 @@ async function queryHealth(userId: string, filters: QueryFilters) {
   const { start, end } = resolveRange(filters);
   const type = filters.module;
 
-  const [steps, weights, exercises, medications] = await Promise.all([
-    type === undefined || type === 'step'
-      ? appDataSource.getRepository(HealthStepRecordEntity).find({ where: { user_id: userId, record_time: Between(`${start} 00:00:00`, `${end} 23:59:59`) as unknown as Date } })
-      : Promise.resolve([] as HealthStepRecordEntity[]),
+  const stepRepo = appDataSource.getRepository(HealthStepRecordEntity);
+  const stepRows = await stepRepo
+    .createQueryBuilder('s')
+    .select('DATE(s.record_time)', 'date')
+    .addSelect('MAX(s.steps)', 'dailyMaxSteps')
+    .addSelect('COUNT(*)', 'recordCount')
+    .where('s.user_id = :userId', { userId })
+    .andWhere('s.record_time BETWEEN :startTs AND :endTs', {
+      startTs: `${start} 00:00:00`,
+      endTs: `${end} 23:59:59`,
+    })
+    .groupBy('DATE(s.record_time)')
+    .orderBy('DATE(s.record_time)', 'ASC')
+    .getRawMany<{ date: string; dailyMaxSteps: string | number; recordCount: string | number }>();
+
+  const stepDailyTotals = stepRows.map((row) => ({
+    date: typeof row.date === 'string' ? row.date : dayjs(row.date as unknown as Date).format('YYYY-MM-DD'),
+    steps: Number(row.dailyMaxSteps) || 0,
+    recordCount: Number(row.recordCount) || 0,
+  }));
+  const stepSum = stepDailyTotals.reduce((sum, row) => sum + row.steps, 0);
+
+  const [weights, exercises, medications] = await Promise.all([
     type === undefined || type === 'weight'
       ? appDataSource.getRepository(HealthFitnessWeightRecordEntity).find({ where: { user_id: userId, date: Between(start, end) } })
       : Promise.resolve([] as HealthFitnessWeightRecordEntity[]),
@@ -171,8 +191,7 @@ async function queryHealth(userId: string, filters: QueryFilters) {
       : Promise.resolve([] as HealthMedicationRecordEntity[]),
   ]);
 
-  const stepSum = steps.reduce((sum, row) => sum + toNumber(row.steps), 0);
-  const weightLatest = weights.sort((left, right) => String(right.date).localeCompare(String(left.date)))[0];
+  const weightLatest = [...weights].sort((left, right) => String(right.date).localeCompare(String(left.date)))[0];
   const exerciseDuration = exercises.reduce((sum, row) => sum + toNumber(row.duration), 0);
   const exerciseCalorie = exercises.reduce((sum, row) => sum + toNumber(row.calories), 0);
   const medicationCount = medications.length;
@@ -181,9 +200,12 @@ async function queryHealth(userId: string, filters: QueryFilters) {
     range: { start, end },
     summary: {
       step: {
-        count: steps.length,
+        recordCount: stepRows.reduce((sum, row) => sum + (Number(row.recordCount) || 0), 0),
+        activeDays: stepDailyTotals.length,
         totalSteps: Math.round(stepSum),
-        averageSteps: steps.length ? Math.round(stepSum / steps.length) : 0,
+        averageDailySteps: stepDailyTotals.length ? Math.round(stepSum / stepDailyTotals.length) : 0,
+        // 暴露每日 max(steps) 序列，方便模型解释单日峰值
+        daily: stepDailyTotals,
       },
       weight: weightLatest
         ? {
@@ -201,36 +223,80 @@ async function queryHealth(userId: string, filters: QueryFilters) {
         count: medicationCount,
       },
     },
-    hint: '步数 / 运动时长 / 消耗为指定区间累计；体重取区间内最新一次；用药为服药次数。',
+    hint: '步数每日取 MAX(steps) 后求和（与 /api/health/step/summary 一致口径），避免同一日多条记录重复累加；体重取区间内最新一次；运动 / 用药为区间累计。',
   };
 }
 
 async function queryInvestment(userId: string, filters: QueryFilters) {
   const { start, end } = resolveRange(filters);
   const [trades, capital] = await Promise.all([
-    appDataSource.getRepository(InvestmentForexTradeRecordEntity).find({ where: { user_id: userId, trade_date: Between(start, end) } }),
-    appDataSource.getRepository(InvestmentForexCapitalFlowEntity).find({ where: { user_id: userId, flow_date: Between(start, end) } }),
+    appDataSource.getRepository(InvestmentForexTradeRecordEntity).find({ where: { user_id: userId } }),
+    appDataSource.getRepository(InvestmentForexCapitalFlowEntity).find({ where: { user_id: userId } }),
   ]);
 
-  const wins = trades.filter((row) => toNumber(row.pnl) > 0);
-  const losses = trades.filter((row) => toNumber(row.pnl) < 0);
-  const totalPnl = trades.reduce((sum, row) => sum + toNumber(row.pnl) + toNumber(row.commission), 0);
-  const totalDeposit = capital.filter((row) => row.flow_type === 'deposit').reduce((sum, row) => sum + toNumber(row.amount), 0);
-  const totalWithdraw = capital.filter((row) => row.flow_type === 'withdraw').reduce((sum, row) => sum + toNumber(row.amount), 0);
+  // 与 /api/investment/forex/dashboard-summary 完全一致：先按区间筛选，再算汇总
+  const inRangeTrades = trades.filter((row) => {
+    if (!row.trade_date) return false;
+    const parsed = dayjs(row.trade_date);
+    if (!parsed.isValid()) return false;
+    return (!start || !parsed.isBefore(start, 'day')) && (!end || !parsed.isAfter(end, 'day'));
+  });
+  const inRangeFlows = capital.filter((row) => {
+    if (!row.flow_date) return false;
+    const parsed = dayjs(row.flow_date);
+    if (!parsed.isValid()) return false;
+    return (!start || !parsed.isBefore(start, 'day')) && (!end || !parsed.isAfter(end, 'day'));
+  });
+
+  const winners = inRangeTrades.filter((row) => toNumber(row.pnl) > 0);
+  const losers = inRangeTrades.filter((row) => toNumber(row.pnl) < 0);
+  const grossPnl = inRangeTrades.reduce((sum, row) => sum + toNumber(row.pnl), 0);
+  const totalCommission = inRangeTrades.reduce((sum, row) => sum + toNumber(row.commission), 0);
+  const realizedNetPnl = grossPnl + totalCommission;
+  const totalDeposit = inRangeFlows.filter((row) => row.flow_type === 'deposit').reduce((sum, row) => sum + toNumber(row.amount), 0);
+  const totalWithdraw = inRangeFlows.filter((row) => row.flow_type === 'withdrawal').reduce((sum, row) => sum + toNumber(row.amount), 0);
+  const netCapital = totalDeposit - totalWithdraw;
+  const avgWin = winners.length ? winners.reduce((sum, row) => sum + toNumber(row.pnl), 0) / winners.length : 0;
+  const avgLoss = losers.length ? losers.reduce((sum, row) => sum + toNumber(row.pnl), 0) / losers.length : 0;
+  const profitFactor = avgLoss !== 0 ? Math.abs(avgWin / avgLoss) : (avgWin > 0 ? Infinity : 0);
+
+  const recentTrades = [...inRangeTrades]
+    .sort((left, right) => String(right.trade_date).localeCompare(String(left.trade_date)))
+    .slice(0, 5)
+    .map((row) => ({
+      tradeDate: row.trade_date,
+      instrument: row.instrument,
+      orderType: row.order_type,
+      lotSize: toNumber(row.lot_size),
+      pnl: toNumber(row.pnl),
+      commission: toNumber(row.commission),
+    }));
 
   return {
     range: { start, end },
     summary: {
-      tradeCount: trades.length,
-      winCount: wins.length,
-      lossCount: losses.length,
-      winRate: trades.length ? Number((wins.length / trades.length).toFixed(4)) : 0,
-      totalPnl: Number(totalPnl.toFixed(2)),
-      totalCommission: Number(trades.reduce((sum, row) => sum + toNumber(row.commission), 0).toFixed(2)),
+      tradeCount: inRangeTrades.length,
+      winCount: winners.length,
+      lossCount: losers.length,
+      winRate: inRangeTrades.length ? Number((winners.length / inRangeTrades.length).toFixed(4)) : 0,
+      longCount: inRangeTrades.filter((row) => row.order_type === 'buy').length,
+      shortCount: inRangeTrades.filter((row) => row.order_type === 'sell').length,
+      xauCount: inRangeTrades.filter((row) => row.instrument === 'XAUUSD').length,
+      xagCount: inRangeTrades.filter((row) => row.instrument === 'XAGUSD').length,
+      grossPnl: Number(grossPnl.toFixed(2)),
+      totalCommission: Number(totalCommission.toFixed(2)),
+      realizedNetPnl: Number(realizedNetPnl.toFixed(2)),
+      avgWin: Number(avgWin.toFixed(2)),
+      avgLoss: Number(avgLoss.toFixed(2)),
+      profitFactor: Number.isFinite(profitFactor) ? Number(profitFactor.toFixed(2)) : profitFactor,
       totalDeposit: Number(totalDeposit.toFixed(2)),
-      totalWithdraw: Number(totalWithdraw.toFixed(2)),
+      totalWithdrawal: Number(totalWithdraw.toFixed(2)),
+      netCapital: Number(netCapital.toFixed(2)),
+      equity: Number((netCapital + realizedNetPnl).toFixed(2)),
+      roi: totalDeposit > 0 ? Number((realizedNetPnl / totalDeposit).toFixed(4)) : 0,
     },
-    hint: '外汇交易为 XAUUSD / XAGUSD；盈亏 = pnl + commission；入金/出金为资本流水。',
+    recentTrades,
+    hint: '数据源与 /api/investment/forex/dashboard-summary 一致（数据库真实流水），盈亏 = 毛 pnl + 手续费（手续费为负数）；盈亏比 profitFactor = |avgWin / avgLoss|。',
   };
 }
 

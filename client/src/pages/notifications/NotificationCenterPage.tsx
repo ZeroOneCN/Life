@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { NotificationChannelCard } from '../../components/NotificationChannelCard';
 import { NotificationLogTable } from '../../components/NotificationLogTable';
+import { NotificationTemplateEditor } from '../../components/notifications/NotificationTemplateEditor';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Btn, Checkbox, DeleteModal, PillTabs, Switch, Tag, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -21,6 +22,7 @@ const tabOptions = [
   { value: 'overview', label: '总览' },
   { value: 'channels', label: '渠道配置' },
   { value: 'scenes', label: '场景绑定' },
+  { value: 'templates', label: '通知模板' },
   { value: 'logs', label: '通知日志' },
 ] as const;
 
@@ -41,6 +43,7 @@ export default function NotificationCenterPage() {
   const [logPage, setLogPage] = useState(1);
   const [logTotalPages, setLogTotalPages] = useState(1);
   const [paginatedLogs, setPaginatedLogs] = useState<NotificationLogEntry[]>([]);
+  const [activeTemplateSceneId, setActiveTemplateSceneId] = useState<NotificationSceneId | null>(null);
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
@@ -79,17 +82,22 @@ export default function NotificationCenterPage() {
   const metrics = useMemo(() => {
     const channels = Object.values(notificationState.channels);
     const scenes = Object.values(notificationState.scenes);
+    const templates = Object.values(notificationState.templates);
 
     return {
       enabledChannels: channels.filter((item) => item.enabled).length,
       enabledScenes: scenes.filter((item) => item.enabled).length,
       readyChannels: channels.filter((item) => item.status === 'ready').length,
       exceptionCount: channels.filter((item) => item.enabled && item.status !== 'ready').length,
+      htmlTemplateCount: templates.filter((item) => item.format === 'html').length,
     };
-  }, [notificationState.channels, notificationState.scenes]);
+  }, [notificationState.channels, notificationState.scenes, notificationState.templates]);
 
   const sceneList = Object.values(notificationState.scenes);
   const latestLogs = notificationState.logs.slice(0, 5);
+  const currentTemplateSceneId: NotificationSceneId | null = activeTemplateSceneId ?? sceneList[0]?.id ?? null;
+  const currentTemplateScene = currentTemplateSceneId ? notificationState.scenes[currentTemplateSceneId] : null;
+  const currentTemplate = currentTemplateSceneId ? notificationState.templates[currentTemplateSceneId] : null;
 
   const toggleSceneChannel = async (sceneId: NotificationSceneId, channel: NotificationChannelType) => {
     const current = notificationState.scenes[sceneId];
@@ -109,7 +117,7 @@ export default function NotificationCenterPage() {
     <div className="page-stack">
       <PageHeader
         title="通知中心"
-        subtitle="统一配置通知渠道、业务场景和发送日志。所有业务提醒都从这里出发，不再经过浏览器本地业务存储。"
+        subtitle="统一配置通知渠道、业务场景、HTML 模板和发送日志。所有业务提醒都从这里出发，不再经过浏览器本地业务存储。"
         actions={<Tag tone="blue">{loading ? '同步中' : '后端已接入'}</Tag>}
       />
 
@@ -127,6 +135,7 @@ export default function NotificationCenterPage() {
               { label: '就绪渠道数', value: `${metrics.readyChannels}` },
               { label: '启用场景数', value: `${metrics.enabledScenes}` },
               { label: '异常状态数', value: `${metrics.exceptionCount}` },
+              { label: 'HTML 模板数', value: `${metrics.htmlTemplateCount}` },
             ]}
           />
           <div className="quick-actions-row">
@@ -148,13 +157,15 @@ export default function NotificationCenterPage() {
                 showToast(buildApiErrorMessage(error, '测试发送失败。'), 'error');
               }
             }}>测试发送</Btn>
+            <Btn tone="ghost" onClick={() => setTab('templates')}>前往模板编辑</Btn>
           </div>
           <div className="page-stack">
               <SectionCard title="统一发送说明" description="当前已经切到后端通知中心，日志、模板、场景和渠道都以数据库为准。">
               <div className="bullet-list">
                 <div className="bullet-item"><span className="bullet-dot" />所有测试发送和业务提醒都会写入统一日志。</div>
                 <div className="bullet-item"><span className="bullet-dot" />业务页面只维护触发规则，不再各自保存通知状态。</div>
-                <div className="bullet-item"><span className="bullet-dot" />默认场景、模板和渠道说明由 seed 提供，而不是前端写死。</div>
+                <div className="bullet-item"><span className="bullet-dot" />支持每个场景独立设置 HTML 模板，企业微信 / 钉钉 / 飞书 / Telegram / Webhook / 邮件均可收到富文本通知。</div>
+                <div className="bullet-item"><span className="bullet-dot" />HTML 模板支持 <code>{'{{title}}'}</code> / <code>{'{{message}}'}</code> / <code>{'{{date}}'}</code> / <code>{'{{userId}}'}</code> / <code>{'{{meta.xxx}}'}</code> 占位符，由调用方注入。</div>
               </div>
             </SectionCard>
             <SectionCard title="最近发送记录" description="便于快速确认通知中心是否正常工作。">
@@ -237,6 +248,52 @@ export default function NotificationCenterPage() {
               </div>
             </SectionCard>
           ))}
+        </div>
+      ) : null}
+
+      {tab === 'templates' ? (
+        <div className="nt-template-layout">
+          <div className="nt-template-sidebar">
+            <div className="nt-template-sidebar-title">通知场景</div>
+            <div className="nt-template-sidebar-hint">选择场景以编辑对应的标题与正文模板。HTML 模板将下发到所有渠道。</div>
+            <ul className="nt-template-list">
+              {sceneList.map((scene) => {
+                const template = notificationState.templates[scene.id];
+                const isActive = currentTemplateSceneId === scene.id;
+                return (
+                  <li key={scene.id}>
+                    <button
+                      type="button"
+                      className={`nt-template-item ${isActive ? 'is-active' : ''}`}
+                      onClick={() => setActiveTemplateSceneId(scene.id)}
+                    >
+                      <span className="nt-template-item-name">{scene.label}</span>
+                      <span className="nt-template-item-meta">
+                        <Tag tone={template?.format === 'html' ? 'blue' : 'default'}>
+                          {template?.format === 'html' ? 'HTML' : '文本'}
+                        </Tag>
+                        {template?.title ? <span className="nt-template-item-title">{template.title}</span> : <span className="nt-template-item-empty">未配置</span>}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <div className="nt-template-content">
+            {currentTemplateScene && currentTemplate ? (
+              <NotificationTemplateEditor
+                key={currentTemplateScene.id}
+                scene={currentTemplateScene}
+                template={currentTemplate}
+                onSaved={() => showToast(`${currentTemplateScene.label} 模板已保存。`)}
+              />
+            ) : (
+              <SectionCard title="未选择场景" description="请在左侧选择一个通知场景开始编辑模板。">
+                <div className="empty-state">尚无场景，请先启用业务模块触发器。</div>
+              </SectionCard>
+            )}
+          </div>
         </div>
       ) : null}
 

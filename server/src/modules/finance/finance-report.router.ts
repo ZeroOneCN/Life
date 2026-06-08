@@ -11,13 +11,12 @@ import { successResponse } from '../../shared/http/response';
 import { validateBody } from '../../shared/http/validation';
 import { normalizeMonth } from '../../shared/utils/date';
 import { normalizeText } from '../../shared/utils/text';
+import { sendNotificationSceneLogs } from '../../shared/domain/notification';
 import { FinanceShoppingRecordEntity } from '../finance/entities/finance-shopping-record.entity';
 import { FinanceTravelExpenseRecordEntity } from '../finance/entities/finance-travel-expense-record.entity';
 import { FinanceLoanRepaymentEntity } from '../finance/entities/finance-loan-repayment.entity';
 import { FinanceSubscriptionRecordEntity } from '../finance/entities/finance-subscription-record.entity';
 import { FinanceRentRecordEntity } from '../finance/entities/finance-rent-record.entity';
-import { NotificationCenterLogEntity } from '../notifications/entities/notification-center-log.entity';
-import { SystemUserAccountEntity } from '../system/entities/system-user-account.entity';
 import { startFinanceMonthlyReportScheduler } from './finance-report.scheduler';
 import { startFinanceFollowupScheduler } from './finance-followup.scheduler';
 
@@ -479,17 +478,28 @@ export function createFinanceReportRouter() {
     const payload = validateBody(notifySchema, request.body);
     const month = normalizeMonth(payload.month || undefined);
     const report = await buildMonthlyReport(userId, month);
-    const logRepo = appDataSource.getRepository(NotificationCenterLogEntity);
-    const log = await logRepo.save(logRepo.create({
-      user_id: userId,
-      channel: 'email',
-      scene_id: 'finance.report.monthly',
-      kind: 'scene',
-      status: 'success',
-      title: payload.title ?? `财务月报 · ${describeMonth(month)}`,
-      message: buildMonthlyReportMessage(report),
-    }));
-    response.json(successResponse({ log, report }, 'push_finance_monthly_report_success'));
+    const message = buildMonthlyReportMessage(report);
+    const title = payload.title ?? `财务月报 · ${describeMonth(month)}`;
+
+    // 真正下发到所有已绑定渠道（email / 企业微信 / 钉钉 / 飞书 / Telegram / Webhook）
+    const logs = await sendNotificationSceneLogs({
+      userId,
+      sceneId: 'finance.report.monthly',
+      title,
+      message,
+      meta: {
+        month: report.month,
+        startDate: report.startDate,
+        endDate: report.endDate,
+        totalExpense: report.totalExpense,
+        monthOverMonthChange: report.monthOverMonthChange,
+        monthOverMonthChangePercent: report.monthOverMonthChangePercent,
+        yearOverYearChange: report.yearOverYearChange,
+        yearOverYearChangePercent: report.yearOverYearChangePercent,
+      },
+    });
+
+    response.json(successResponse({ logs, report }, 'push_finance_monthly_report_success'));
   }));
 
   return router;

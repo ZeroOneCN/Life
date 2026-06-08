@@ -22,6 +22,20 @@ export interface FinanceReportTopExpense {
   category?: string;
 }
 
+export interface FinanceReportPushLog {
+  id: string;
+  channel: string;
+  status: 'success' | 'skipped' | 'error';
+  title: string;
+  message: string;
+  sceneId: string;
+}
+
+export interface FinanceReportPushResult {
+  logs: FinanceReportPushLog[];
+  report: FinanceMonthlyReport;
+}
+
 export interface FinanceMonthlyReport {
   month: string;
   startDate: string;

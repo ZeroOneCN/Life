@@ -13,6 +13,8 @@ export type NotificationSceneId =
   | 'subscription.renewal_upcoming'
   | 'subscription.expired';
 
+export type NotificationTemplateFormat = 'text' | 'html';
+
 export interface NotificationChannelConfig {
   type: NotificationChannelType;
   label: string;
@@ -39,6 +41,10 @@ export interface NotificationTemplate {
   sceneId: NotificationSceneId;
   title: string;
   body: string;
+  /** 模板格式：text 走纯文本，html 走富文本 */
+  format: NotificationTemplateFormat;
+  /** HTML 模板正文，仅在 format=html 时生效，支持 {{title}} / {{message}} / {{date}} / {{userId}} / {{meta.xxx}} 插值 */
+  htmlBody: string;
 }
 
 export interface NotificationLogEntry {

@@ -145,17 +145,17 @@ const emptyState: NotificationCenterState = {
     },
   },
   templates: {
-    'todo.reminder': { sceneId: 'todo.reminder', title: '', body: '' },
-    'card.balance_low': { sceneId: 'card.balance_low', title: '', body: '' },
-    'card.billing_upcoming': { sceneId: 'card.billing_upcoming', title: '', body: '' },
-    'loan.repayment_upcoming': { sceneId: 'loan.repayment_upcoming', title: '', body: '' },
-    'loan.repayment_overdue': { sceneId: 'loan.repayment_overdue', title: '', body: '' },
-    'checkup.followup_reminder': { sceneId: 'checkup.followup_reminder', title: '', body: '' },
-    'checkup.abnormal_alert': { sceneId: 'checkup.abnormal_alert', title: '', body: '' },
-    'medication.dose_reminder': { sceneId: 'medication.dose_reminder', title: '', body: '' },
-    'medication.stock_low': { sceneId: 'medication.stock_low', title: '', body: '' },
-    'subscription.renewal_upcoming': { sceneId: 'subscription.renewal_upcoming', title: '', body: '' },
-    'subscription.expired': { sceneId: 'subscription.expired', title: '', body: '' },
+    'todo.reminder': { sceneId: 'todo.reminder', title: '', body: '', format: 'text', htmlBody: '' },
+    'card.balance_low': { sceneId: 'card.balance_low', title: '', body: '', format: 'text', htmlBody: '' },
+    'card.billing_upcoming': { sceneId: 'card.billing_upcoming', title: '', body: '', format: 'text', htmlBody: '' },
+    'loan.repayment_upcoming': { sceneId: 'loan.repayment_upcoming', title: '', body: '', format: 'text', htmlBody: '' },
+    'loan.repayment_overdue': { sceneId: 'loan.repayment_overdue', title: '', body: '', format: 'text', htmlBody: '' },
+    'checkup.followup_reminder': { sceneId: 'checkup.followup_reminder', title: '', body: '', format: 'text', htmlBody: '' },
+    'checkup.abnormal_alert': { sceneId: 'checkup.abnormal_alert', title: '', body: '', format: 'text', htmlBody: '' },
+    'medication.dose_reminder': { sceneId: 'medication.dose_reminder', title: '', body: '', format: 'text', htmlBody: '' },
+    'medication.stock_low': { sceneId: 'medication.stock_low', title: '', body: '', format: 'text', htmlBody: '' },
+    'subscription.renewal_upcoming': { sceneId: 'subscription.renewal_upcoming', title: '', body: '', format: 'text', htmlBody: '' },
+    'subscription.expired': { sceneId: 'subscription.expired', title: '', body: '', format: 'text', htmlBody: '' },
   },
   logs: [],
 };
@@ -212,11 +212,15 @@ function normalizeTemplate(raw: {
   scene_id: NotificationSceneId;
   title: string;
   body: string;
+  format?: 'text' | 'html' | null;
+  html_body?: string | null;
 }) {
   return {
     sceneId: raw.scene_id,
     title: raw.title,
     body: raw.body,
+    format: raw.format === 'html' ? 'html' : 'text',
+    htmlBody: typeof raw.html_body === 'string' ? raw.html_body : '',
   } satisfies NotificationTemplate;
 }
 
@@ -274,6 +278,8 @@ export async function hydrateNotificationCenterState() {
       scene_id: NotificationSceneId;
       title: string;
       body: string;
+      format?: 'text' | 'html' | null;
+      html_body?: string | null;
     }>>('/notifications/templates'),
     apiGet<PaginatedResponse<{
       id: string;
@@ -391,6 +397,8 @@ export async function updateTemplateConfig(
   await apiPatch(`/notifications/templates/${sceneId}`, {
     title: patch.title ?? current.title,
     body: patch.body ?? current.body,
+    format: patch.format ?? current.format ?? 'text',
+    htmlBody: patch.htmlBody !== undefined ? patch.htmlBody : (current.htmlBody ?? ''),
   });
 
   await hydrateNotificationCenterState();

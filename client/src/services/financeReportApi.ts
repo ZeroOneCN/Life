@@ -2,6 +2,7 @@ import { apiGet, apiPost } from '../lib/api';
 import type {
   FinanceMonthlyReport,
   FinanceYearlyReport,
+  FinanceReportPushResult,
 } from '../types/financeReport';
 
 export const financeReportApi = {
@@ -14,7 +15,7 @@ export const financeReportApi = {
   },
 
   pushMonthly(month?: string, title?: string) {
-    return apiPost<{ log: { id: string }; report: FinanceMonthlyReport }>(
+    return apiPost<FinanceReportPushResult>(
       '/finance/report/notify',
       { month, title },
     );

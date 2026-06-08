@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import dayjs from 'dayjs';
+import type { DeepPartial } from 'typeorm';
 
 import { appDataSource } from '../../db/data-source';
 import { asyncHandler } from '../../shared/http/async-handler';
@@ -23,19 +24,26 @@ const tradeSchemaBase = z.object({
   orderType: z.enum(['buy', 'sell']),
   openPrice: z.number().positive().max(100000),
   lotSize: z.number().positive().max(1000),
-  commission: z.number().min(-1e6).max(1e6).optional(),
+  // commission / pnl 不写在前端表单时为 null，写入时 fallback 到 calculateCommission / calculatePnl；
+  // 显式填 0 也保留（用户可能确实想标 0）
+  commission: z.number().min(-1e6).max(1e6).nullable().optional(),
   closePrice: z.number().positive().max(100000),
-  pnl: z.number().min(-1e10).max(1e10).optional(),
+  pnl: z.number().min(-1e10).max(1e10).nullable().optional(),
   openTime: z.string().trim().min(1),
   closeTime: z.string().trim().min(1),
   holdTime: z.string().optional().default(''),
   remark: z.string().optional().default(''),
 });
 
-const tradeSchema = tradeSchemaBase.transform((data) => ({
+type TradeInput = z.infer<typeof tradeSchemaBase> & {
+  commission: number | null | undefined;
+  pnl: number | null | undefined;
+};
+
+const tradeSchema = tradeSchemaBase.transform((data): TradeInput => ({
   ...data,
-  commission: data.commission ?? 0,
-  pnl: data.pnl ?? 0,
+  commission: data.commission ?? null,
+  pnl: data.pnl ?? null,
 }));
 
 const capitalFlowSchema = z.object({
@@ -273,14 +281,20 @@ export function createForexRouter() {
       order_type: payload.orderType,
       open_price: payload.openPrice,
       lot_size: payload.lotSize,
-      commission: payload.commission ?? calculateCommission(payload.lotSize),
+      // commission 未提供（null）时 fallback 到 -6*lotSize，避免前端遗漏导致净盈亏算大；
+      // 显式填 0/-6 等都尊重用户输入
+      commission: payload.commission !== null && payload.commission !== undefined
+        ? payload.commission
+        : calculateCommission(payload.lotSize),
       close_price: payload.closePrice,
-      pnl: payload.pnl ?? calculatePnl(payload.instrument, payload.orderType, payload.openPrice, payload.closePrice, payload.lotSize),
+      pnl: payload.pnl !== null && payload.pnl !== undefined
+        ? payload.pnl
+        : calculatePnl(payload.instrument, payload.orderType, payload.openPrice, payload.closePrice, payload.lotSize),
       open_time: normalizeTime(payload.openTime, '09:00'),
       close_time: normalizeTime(payload.closeTime, '10:00'),
       hold_time: payload.holdTime || calculateHoldTime(payload.openTime, payload.closeTime),
       remark: payload.remark,
-    }));
+    } as DeepPartial<InvestmentForexTradeRecordEntity>));
 
     response.json(successResponse(mapTrade(item), 'create_forex_trade_success'));
   }));
@@ -313,9 +327,13 @@ export function createForexRouter() {
       order_type: nextOrderType,
       open_price: nextOpenPrice,
       lot_size: nextLotSize,
-      commission: payload.commission ?? calculateCommission(nextLotSize),
+      commission: payload.commission !== null && payload.commission !== undefined
+        ? payload.commission
+        : calculateCommission(nextLotSize),
       close_price: nextClosePrice,
-      pnl: payload.pnl ?? calculatePnl(nextInstrument, nextOrderType, nextOpenPrice, nextClosePrice, nextLotSize),
+      pnl: payload.pnl !== null && payload.pnl !== undefined
+        ? payload.pnl
+        : calculatePnl(nextInstrument, nextOrderType, nextOpenPrice, nextClosePrice, nextLotSize),
       open_time: nextOpenTime,
       close_time: nextCloseTime,
       hold_time: payload.holdTime ?? calculateHoldTime(nextOpenTime, nextCloseTime),

@@ -26,6 +26,21 @@ const TONE_MAP: Record<FinanceReportModuleKey, 'red' | 'orange' | 'green' | 'blu
   rent: 'default',
 };
 
+const channelLabels: Record<string, string> = {
+  email: '邮件',
+  wechatWork: '企业微信',
+  dingTalk: '钉钉',
+  feishu: '飞书',
+  telegram: 'Telegram',
+  webhook: 'Webhook',
+};
+
+const channelStatusLabels: Record<string, string> = {
+  success: '成功',
+  skipped: '已跳过',
+  error: '失败',
+};
+
 function formatMonth(month: string) {
   const [year, monthIndex] = month.split('-').map((value) => Number(value));
   if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) {
@@ -107,8 +122,23 @@ export default function FinanceReportPage() {
   const handlePush = async () => {
     setPushing(true);
     try {
-      await financeReportApi.pushMonthly(month, `财务月报 · ${formatMonth(month)}`);
-      showToast('月报已推送到通知中心。', 'success');
+      const result = await financeReportApi.pushMonthly(month, `财务月报 · ${formatMonth(month)}`);
+      const logs = result.logs ?? [];
+      const successCount = logs.filter((item) => item.status === 'success').length;
+      const skippedCount = logs.filter((item) => item.status === 'skipped').length;
+      const errorCount = logs.filter((item) => item.status === 'error').length;
+      const channelSummary = logs
+        .map((item) => `${channelLabels[item.channel] ?? item.channel}:${channelStatusLabels[item.status]}`)
+        .join(' / ');
+
+      if (logs.length === 0) {
+        showToast('月报已生成，但通知场景尚未配置渠道，请在通知中心 > 场景绑定添加渠道。', 'warning');
+      } else if (successCount === 0) {
+        showToast(`月报推送未真正下发：${channelSummary || '无渠道可用'}。请检查通知中心的渠道配置。`, 'error');
+      } else {
+        const detail = channelSummary ? `，渠道：${channelSummary}` : '';
+        showToast(`月报已远程推送到 ${successCount} 个渠道（跳过 ${skippedCount} / 失败 ${errorCount}）${detail}`, 'success');
+      }
     } catch (error) {
       showToast(buildApiErrorMessage(error, '月报推送失败。'), 'error');
     } finally {
