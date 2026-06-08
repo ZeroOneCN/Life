@@ -163,18 +163,18 @@ export default function StepPage() {
   const resetEntryState = (hour: StepHour) => {
     setStepsInput('');
 
-    // 23 点保存后：跳到全天模式（setSelectedHour(null) + recordTime = 今天结束）
+    // 23 点保存后：跳到全天模式（recordTime = 录入日期的结束，而非今天结束）
     if (hour === 23) {
       setSelectedHour(null);
-      setRecordTime(getTodayEndDateTime());
+      setRecordTime(buildStepRecordTime(recordTime, null));
       focusStepsInput();
       return;
     }
 
-    // 全天保存后：跳到次日 08:00
+    // 全天保存后：跳到录入日期的次日 08:00（不是今天的次日）
     if (hour === null) {
       setSelectedHour(8);
-      const nextDay = dayjs().add(1, 'day').format('YYYY-MM-DDTHH:mm');
+      const nextDay = dayjs(recordTime).add(1, 'day').format('YYYY-MM-DDTHH:mm');
       setRecordTime(buildStepRecordTime(nextDay, 8));
       focusStepsInput();
       return;
