@@ -238,12 +238,16 @@ export function DeleteModal({
   onConfirm,
   title,
   children,
+  confirmLabel = '确认删除',
+  confirmTone = 'danger-fill',
 }: {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
   title: ReactNode;
   children?: ReactNode;
+  confirmLabel?: string;
+  confirmTone?: 'danger-fill' | 'primary' | 'secondary' | 'danger';
 }) {
   return (
     <Modal
@@ -254,7 +258,7 @@ export function DeleteModal({
       footer={(
         <>
           <Btn tone="secondary" onClick={onClose}>取消</Btn>
-          <Btn tone="danger-fill" onClick={onConfirm}>确认删除</Btn>
+          <Btn tone={confirmTone} onClick={onConfirm}>{confirmLabel}</Btn>
         </>
       )}
     >

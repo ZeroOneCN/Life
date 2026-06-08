@@ -272,6 +272,8 @@ export default function LoanPage() {
         onClose={() => setPendingMarkPaidId(null)}
         onConfirm={confirmMarkPaid}
         title="确认标记为已还？"
+        confirmLabel="确认标记已还"
+        confirmTone="primary"
       >
         标记后账单状态将变为已还，此操作不可撤销。
       </DeleteModal>
