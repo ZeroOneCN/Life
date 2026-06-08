@@ -1,13 +1,6 @@
-refactor(deepseek-widget): 重新设计排版，hero + 3 列网格
+style(deepseek-widget): 调大次级文字字号
 
-* 旧布局问题：
-  - 官方账户余额大数字独占一行，下面 meta 隔太远
-  - 本地「最后调用」格用 grid-column: 1 / -1 占满整行但内容只占左侧 1/4，大量留白
-  - 视觉重心不稳
-* 新布局（dashboard 风格）：
-  - 两个 section 各自一个 hero 横向卡片：左大数字 + 右侧 pill 集合（币种/刷新时间 / 累计请求/最后调用）
-  - 3 列固定网格：赠送余额 / 充值余额 / 可调用次数、今日 Token / 估算花费 / 平均每次
-  - 移动端 (<720px) 自动堆叠为单列
-* 新增指标：
-  - 官方账户：可调用次数（按 2k token / 次估算）
-  - 本地请求：平均每次 token（含工具调用多轮）
+* .deepseek-usage-section-head h4：14px → 15px
+* .deepseek-usage-section-head span：12px → 13px
+* .deepseek-usage-cell-label：12px → 13px
+* .deepseek-usage-cell-helper：11px → 12px
