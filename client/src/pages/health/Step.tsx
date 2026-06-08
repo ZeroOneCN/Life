@@ -150,10 +150,9 @@ export default function StepPage() {
   }, [reload, showToast]);
 
   const handleSelectHour = (hour: StepHour) => {
-    // 选择 23 点时自动切换为全天模式
-    const targetHour = hour === 23 ? null : hour;
-    setSelectedHour(targetHour);
-    setRecordTime((previous) => buildStepRecordTime(previous || getTodayEndDateTime(), targetHour));
+    // 点击时段按钮只负责选中该时段（23 点不特殊处理，保持选中 23 点）
+    setSelectedHour(hour);
+    setRecordTime((previous) => buildStepRecordTime(previous || getTodayEndDateTime(), hour));
   };
 
   const handleRecordTimeChange = (value: string) => {
@@ -164,19 +163,13 @@ export default function StepPage() {
   const resetEntryState = (hour: StepHour) => {
     setStepsInput('');
 
-    if (hour === null) {
-      // 全天保存完毕后，跳转到次日 08:00
+    // 全天 / 23 点保存完毕后都视作当天完成，跳转到次日 08:00
+    //   - hour === null：用户直接以"全天"模式提交
+    //   - hour === 23：用户提交 23 点步数 = 整天步数 = 全天完成
+    if (hour === null || hour === 23) {
       setSelectedHour(8);
       const nextDay = dayjs().add(1, 'day').format('YYYY-MM-DDTHH:mm');
       setRecordTime(buildStepRecordTime(nextDay, 8));
-      focusStepsInput();
-      return;
-    }
-
-    // 23 点也自动跳转全天（兜底）
-    if (hour === 23) {
-      setSelectedHour(null);
-      setRecordTime(getTodayEndDateTime());
       focusStepsInput();
       return;
     }
