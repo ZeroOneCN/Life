@@ -1,8 +1,10 @@
 import dayjs from 'dayjs';
 
 import type {
+  TravelArchiveSuggestion,
   TravelBook,
   TravelBookDraft,
+  TravelBookStatus,
   TravelBookSummaryRow,
   TravelBreakdownPoint,
   TravelCategory,
@@ -19,6 +21,8 @@ import type {
   TravelSummaryStats,
 } from '../types/travel';
 
+export { TRAVEL_BOOK_STATUSES } from '../types/travel';
+
 const DATE_FORMAT = 'YYYY-MM-DD';
 const DATE_TIME_FORMAT = 'YYYY-MM-DDTHH:mm';
 const TIME_FORMAT = 'HH:mm';
@@ -26,6 +30,24 @@ const TIME_FORMAT = 'HH:mm';
 export const DEFAULT_TRAVEL_USER_ID = 'user-001';
 export const TRAVEL_ALL_BOOKS = 'all';
 export const TRAVEL_RECORD_PAGE_SIZE = 10;
+export const DEFAULT_TRAVEL_BOOK_STATUS: TravelBookStatus = 'ongoing';
+export const DEFAULT_TRAVEL_BOOK_CURRENCY = 'CNY';
+
+export const TRAVEL_BOOK_STATUS_LABELS: Record<TravelBookStatus, string> = {
+  planning: '计划中',
+  ongoing: '进行中',
+  completed: '已完成',
+  archived: '已归档',
+};
+
+export const TRAVEL_BOOK_STATUS_TONES: Record<TravelBookStatus, 'default' | 'blue' | 'green' | 'default'> = {
+  planning: 'blue',
+  ongoing: 'green',
+  completed: 'default',
+  archived: 'default',
+};
+
+export const TRAVEL_COMMON_CURRENCIES = ['CNY', 'USD', 'EUR', 'HKD', 'JPY', 'GBP', 'AUD', 'SGD', 'KRW', 'THB'];
 export const TRAVEL_DEFAULT_REPORT_COLUMNS: TravelReportColumnKey[] = [
   'date',
   'timeRange',
@@ -310,6 +332,10 @@ function createInitialBooks(): TravelBook[] {
       startDate: dayjs().subtract(18, 'day').format(DATE_FORMAT),
       endDate: dayjs().subtract(17, 'day').format(DATE_FORMAT),
       summary: '地铁与步行的组合最省心，热门景点最好提前预约，餐饮支出略高于预期。',
+      status: 'completed',
+      currency: 'CNY',
+      budget: 3000,
+      archivedAt: '',
       createdAt: now,
       updatedAt: now,
     },
@@ -321,6 +347,10 @@ function createInitialBooks(): TravelBook[] {
       startDate: dayjs().subtract(42, 'day').format(DATE_FORMAT),
       endDate: dayjs().subtract(39, 'day').format(DATE_FORMAT),
       summary: '住宿性价比不错，西湖周边餐饮波动较大，建议下次提前锁定交通。',
+      status: 'completed',
+      currency: 'CNY',
+      budget: 2500,
+      archivedAt: '',
       createdAt: now,
       updatedAt: now,
     },
@@ -332,6 +362,10 @@ function createInitialBooks(): TravelBook[] {
       startDate: dayjs().subtract(10, 'day').format(DATE_FORMAT),
       endDate: dayjs().subtract(7, 'day').format(DATE_FORMAT),
       summary: '餐饮体验很丰富，但网约车支出明显偏高，下次可以更多使用地铁。',
+      status: 'archived',
+      currency: 'CNY',
+      budget: 4000,
+      archivedAt: dayjs().subtract(5, 'day').format(DATE_TIME_FORMAT),
       createdAt: now,
       updatedAt: now,
     },
@@ -465,6 +499,10 @@ function createInitialRecords(): TravelExpenseRecord[] {
 
 function normalizeBook(book: Partial<TravelBook>, fallbackUserId: string): TravelBook {
   const startDate = normalizeDate(book.startDate);
+  const status = (book.status ?? DEFAULT_TRAVEL_BOOK_STATUS) as TravelBookStatus;
+  const currency = (book.currency || DEFAULT_TRAVEL_BOOK_CURRENCY).toUpperCase();
+  const budgetValue = Number(book.budget);
+  const budget = Number.isFinite(budgetValue) && budgetValue >= 0 ? budgetValue : null;
 
   return {
     id: book.id ?? buildId(),
@@ -474,6 +512,10 @@ function normalizeBook(book: Partial<TravelBook>, fallbackUserId: string): Trave
     startDate,
     endDate: book.endDate ? normalizeDate(book.endDate) : '',
     summary: normalizeTrimmedValue(book.summary),
+    status,
+    currency,
+    budget,
+    archivedAt: book.archivedAt ? normalizeTimestamp(book.archivedAt, startDate) : '',
     createdAt: normalizeTimestamp(book.createdAt, startDate),
     updatedAt: normalizeTimestamp(book.updatedAt, startDate),
   };
@@ -676,6 +718,8 @@ export function filterTravelRecords(records: TravelExpenseRecord[], userId: stri
 
 export function createTravelBook(books: TravelBook[], draft: TravelBookDraft) {
   const now = dayjs().format(DATE_TIME_FORMAT);
+  const status = draft.status ?? DEFAULT_TRAVEL_BOOK_STATUS;
+  const currency = (draft.currency ?? DEFAULT_TRAVEL_BOOK_CURRENCY).toUpperCase();
 
   return sortBooks([
     {
@@ -686,6 +730,10 @@ export function createTravelBook(books: TravelBook[], draft: TravelBookDraft) {
       startDate: normalizeDate(draft.startDate),
       endDate: draft.endDate ? normalizeDate(draft.endDate) : '',
       summary: draft.summary?.trim() ?? '',
+      status,
+      currency,
+      budget: typeof draft.budget === 'number' && Number.isFinite(draft.budget) ? draft.budget : null,
+      archivedAt: status === 'archived' ? now : '',
       createdAt: now,
       updatedAt: now,
     },
@@ -694,20 +742,64 @@ export function createTravelBook(books: TravelBook[], draft: TravelBookDraft) {
 }
 
 export function updateTravelBook(books: TravelBook[], id: string, draft: TravelBookDraft) {
-  return sortBooks(books.map((book) => (
-    book.id === id
-      ? {
-        ...book,
-        userId: normalizeTravelUserId(draft.userId),
-        name: draft.name.trim(),
-        description: draft.description?.trim() ?? '',
-        startDate: normalizeDate(draft.startDate),
-        endDate: draft.endDate ? normalizeDate(draft.endDate) : '',
-        summary: draft.summary?.trim() ?? '',
-        updatedAt: dayjs().format(DATE_TIME_FORMAT),
-      }
-      : book
-  )));
+  return sortBooks(books.map((book) => {
+    if (book.id !== id) {
+      return book;
+    }
+
+    const nextStatus = draft.status ?? book.status;
+    const nextArchivedAt = nextStatus === 'archived'
+      ? (book.archivedAt || dayjs().format(DATE_TIME_FORMAT))
+      : (draft.status === 'archived' ? dayjs().format(DATE_TIME_FORMAT) : book.archivedAt);
+
+    return {
+      ...book,
+      userId: normalizeTravelUserId(draft.userId),
+      name: draft.name.trim(),
+      description: draft.description?.trim() ?? '',
+      startDate: normalizeDate(draft.startDate),
+      endDate: draft.endDate ? normalizeDate(draft.endDate) : '',
+      summary: draft.summary?.trim() ?? '',
+      status: nextStatus,
+      currency: (draft.currency ?? book.currency).toUpperCase(),
+      budget: typeof draft.budget === 'number' ? draft.budget : book.budget,
+      archivedAt: draft.status !== undefined ? nextArchivedAt : book.archivedAt,
+      updatedAt: dayjs().format(DATE_TIME_FORMAT),
+    };
+  }));
+}
+
+export function completeTravelBook(books: TravelBook[], id: string) {
+  return sortBooks(books.map((book) => book.id === id
+    ? {
+      ...book,
+      status: 'completed' as TravelBookStatus,
+      endDate: book.endDate || dayjs().format('YYYY-MM-DD'),
+      updatedAt: dayjs().format(DATE_TIME_FORMAT),
+    }
+    : book));
+}
+
+export function archiveTravelBook(books: TravelBook[], id: string) {
+  return sortBooks(books.map((book) => book.id === id
+    ? {
+      ...book,
+      status: 'archived' as TravelBookStatus,
+      archivedAt: book.archivedAt || dayjs().format(DATE_TIME_FORMAT),
+      updatedAt: dayjs().format(DATE_TIME_FORMAT),
+    }
+    : book));
+}
+
+export function mergeTravelBooks(existing: TravelBook[], incoming: TravelBook[]): TravelBook[] {
+  const map = new Map<string, TravelBook>();
+  existing.forEach((book) => map.set(book.id, book));
+  incoming.forEach((book) => map.set(book.id, book));
+  return sortBooks(Array.from(map.values()));
+}
+
+export function sortArchiveSuggestions(items: TravelArchiveSuggestion[]): TravelArchiveSuggestion[] {
+  return [...items].sort((left, right) => right.daysAfterEnd - left.daysAfterEnd);
 }
 
 export function deleteTravelBook(books: TravelBook[], id: string) {
@@ -1062,6 +1154,10 @@ function buildImportedRecord(
         startDate: date,
         endDate: date,
         summary: '',
+        status: DEFAULT_TRAVEL_BOOK_STATUS,
+        currency: DEFAULT_TRAVEL_BOOK_CURRENCY,
+        budget: null,
+        archivedAt: '',
         createdAt: now,
         updatedAt: now,
       };

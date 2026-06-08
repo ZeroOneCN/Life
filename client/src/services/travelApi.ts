@@ -1,6 +1,7 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api';
 import type { PaginatedResponse } from '../types/api';
 import type {
+  TravelArchiveSuggestion,
   TravelBook,
   TravelBookDraft,
   TravelBreakdownPoint,
@@ -39,6 +40,18 @@ export const travelApi = {
 
   deleteBook(bookId: string) {
     return apiDelete<{ ok: true }>(`/finance/travel/books/${bookId}`);
+  },
+
+  completeBook(bookId: string) {
+    return apiPost<TravelBook, Record<string, never>>(`/finance/travel/books/${bookId}/complete`, {});
+  },
+
+  archiveBook(bookId: string) {
+    return apiPost<TravelBook, Record<string, never>>(`/finance/travel/books/${bookId}/archive`, {});
+  },
+
+  getArchiveSuggestions() {
+    return apiGet<TravelArchiveSuggestion[]>('/finance/travel/archive/suggestions');
   },
 
   listRecords(params?: { page?: number; page_size?: number; userId?: string; bookId?: string; keyword?: string }) {

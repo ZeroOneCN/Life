@@ -18,6 +18,17 @@ export interface DashboardAgendaItem {
   href: string;
 }
 
+export interface DashboardUpcomingSubscription {
+  id: string;
+  serviceName: string;
+  planName: string;
+  cyclePrice: number;
+  currency: string;
+  endDate: string;
+  autoRenew: boolean;
+  daysLeft: number;
+}
+
 export interface DashboardSnapshotMetric {
   label: string;
   value: string;
@@ -70,5 +81,6 @@ export interface DashboardPageSummary {
   life: DashboardModuleSnapshot;
   investment: DashboardModuleSnapshot;
   notifications: DashboardNotificationSnapshot;
+  upcomingSubscriptions: DashboardUpcomingSubscription[];
   connectedModuleCount: number;
 }

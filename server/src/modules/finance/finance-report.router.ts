@@ -19,6 +19,7 @@ import { FinanceRentRecordEntity } from '../finance/entities/finance-rent-record
 import { NotificationCenterLogEntity } from '../notifications/entities/notification-center-log.entity';
 import { SystemUserAccountEntity } from '../system/entities/system-user-account.entity';
 import { startFinanceMonthlyReportScheduler } from './finance-report.scheduler';
+import { startFinanceFollowupScheduler } from './finance-followup.scheduler';
 
 const monthQuerySchema = z.object({
   month: z.string().optional(),
@@ -452,6 +453,7 @@ export function buildMonthlyReportMessage(report: MonthlyReportSummary) {
 
 export function createFinanceReportRouter() {
   startFinanceMonthlyReportScheduler();
+  startFinanceFollowupScheduler();
   const router = Router();
 
   router.get('/monthly', asyncHandler(async (request: AuthenticatedRequest, response) => {

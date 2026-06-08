@@ -10587,3 +10587,153 @@ select:focus-visible {
 .assistant-panel-input textarea:focus {
   outline: 2px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
+
+/* ====== 汇率换算 ====== */
+.currency-converter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.currency-converter-action {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+}
+
+.currency-converter-result {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: var(--color-surface-2);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.currency-converter-result strong {
+  font-size: var(--fs-h3);
+  color: var(--color-primary);
+}
+
+/* ====== 旅行归档建议 ====== */
+.travel-archive-suggestion {
+  border-left: 4px solid var(--color-warn, #f59e0b);
+}
+
+.travel-archive-suggestion-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.travel-archive-suggestion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.travel-archive-suggestion-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--color-surface-2);
+  border-radius: 8px;
+}
+
+.travel-archive-suggestion-item > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.travel-archive-suggestion-item strong {
+  font-size: var(--fs-body);
+}
+
+.travel-archive-suggestion-item .subtle-text {
+  font-size: var(--fs-caption);
+}
+
+/* ====== Dashboard 即将到期订阅 ====== */
+.dash-upcoming-sub-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dash-upcoming-sub-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--color-surface-2);
+  border-radius: 8px;
+}
+
+.dash-upcoming-sub-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dash-upcoming-sub-main strong {
+  font-size: var(--fs-body);
+  color: var(--color-text);
+}
+
+.dash-upcoming-sub-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.dash-upcoming-sub-days {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-primary-soft, rgba(96, 165, 250, 0.15));
+  color: var(--color-primary);
+}
+
+.dash-upcoming-sub-days.is-warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+.dash-upcoming-sub-days.is-expired {
+  background: rgba(220, 38, 38, 0.15);
+  color: #dc2626;
+}
+
+.dash-upcoming-sub-price {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+@media (max-width: 720px) {
+  .currency-converter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .currency-converter-action {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+  .dash-upcoming-sub-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dash-upcoming-sub-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

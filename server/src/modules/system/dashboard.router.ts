@@ -389,6 +389,24 @@ export function createDashboardRouter() {
           activeSubscriptionCount: subscriptions.length,
           totalUnpaidLoanAmount: Number(loans.filter((bill) => !bill.is_paid).reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)),
         },
+        upcomingSubscriptions: subscriptions
+          .filter((record) => {
+            if (!record.end_date || !dayjs(record.end_date).isValid()) return false;
+            const diff = dayjs(record.end_date).startOf('day').diff(dayjs().startOf('day'), 'day');
+            return diff >= 0 && diff <= 7;
+          })
+          .map((record) => ({
+            id: record.id,
+            serviceName: record.service_name,
+            planName: record.plan_name,
+            cyclePrice: Number(record.cycle_price),
+            currency: 'CNY',
+            endDate: record.end_date,
+            autoRenew: record.auto_renew,
+            daysLeft: dayjs(record.end_date).startOf('day').diff(dayjs().startOf('day'), 'day'),
+          }))
+          .sort((left, right) => left.daysLeft - right.daysLeft)
+          .slice(0, 5),
         trend: Array.from({ length: 6 }, (_, index) => {
           const month = dayjs().subtract(5 - index, 'month').format('YYYY-MM');
           return {

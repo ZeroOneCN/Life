@@ -2,6 +2,10 @@ export type TravelTab = 'books' | 'details' | 'stats' | 'leaderboard' | 'report'
 
 export type TravelCategory = 'transport' | 'hotel' | 'food' | 'ticket' | 'shopping' | 'other';
 
+export type TravelBookStatus = 'planning' | 'ongoing' | 'completed' | 'archived';
+
+export const TRAVEL_BOOK_STATUSES: TravelBookStatus[] = ['planning', 'ongoing', 'completed', 'archived'];
+
 export type TravelReportColumnKey =
   | 'date'
   | 'timeRange'
@@ -22,6 +26,10 @@ export interface TravelBook {
   startDate: string;
   endDate: string;
   summary: string;
+  status: TravelBookStatus;
+  currency: string;
+  budget: number | null;
+  archivedAt: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -33,6 +41,14 @@ export interface TravelBookDraft {
   startDate: string;
   endDate?: string;
   summary?: string;
+  status?: TravelBookStatus;
+  currency?: string;
+  budget?: number;
+}
+
+export interface TravelArchiveSuggestion {
+  book: TravelBook;
+  daysAfterEnd: number;
 }
 
 export interface TravelExpenseRecord {

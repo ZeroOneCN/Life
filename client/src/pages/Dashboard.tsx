@@ -30,6 +30,16 @@ interface RawDashboardSummaryResponse {
     title: string;
     stats: { upcomingSubscriptionCount: number; overdueLoanCount: number; activeSubscriptionCount: number; totalUnpaidLoanAmount: number };
     trend: Array<{ month: string; label: string; subscriptionCount: number; loanAmount: number }>;
+    upcomingSubscriptions: Array<{
+      id: string;
+      serviceName: string;
+      planName: string;
+      cyclePrice: number;
+      currency: string;
+      endDate: string;
+      autoRenew: boolean;
+      daysLeft: number;
+    }>;
   };
   life: {
     title: string;
@@ -170,6 +180,16 @@ export default function Dashboard() {
               kind: log.kind, status: log.status, title: log.title, message: log.message,
             })),
           },
+          upcomingSubscriptions: raw.finance.upcomingSubscriptions.map((item) => ({
+            id: item.id,
+            serviceName: item.serviceName,
+            planName: item.planName,
+            cyclePrice: item.cyclePrice,
+            currency: item.currency,
+            endDate: item.endDate,
+            autoRenew: item.autoRenew,
+            daysLeft: item.daysLeft,
+          })),
           connectedModuleCount: Number(raw.overviewCards.find((item) => item.key === 'modules')?.value ?? 0),
         });
         setLoadingError('');
@@ -396,6 +416,39 @@ export default function Dashboard() {
             </div>
           </div>
         </Link>
+
+        {/* ====== 4.5 即将到期订阅（7 天内）====== */}
+        {summary.upcomingSubscriptions.length > 0 ? (
+          <Link to="/finance/subscription?subscriptionTab=records" className="dash-masonry-item dash-card dash-card-link">
+            <div className="dash-card-hd is-tight">
+              <div className="dash-card-icon dash-bg-finance"><IconBell /></div>
+              <div className="dash-card-title-area">
+                <h3>即将到期订阅</h3>
+                <span>{summary.upcomingSubscriptions.length} 项订阅 7 天内到期</span>
+              </div>
+              <span className="dash-arrow">→</span>
+            </div>
+            <div className="dash-card-bd">
+              <div className="dash-upcoming-sub-list">
+                {summary.upcomingSubscriptions.map((sub) => (
+                  <div key={sub.id} className="dash-upcoming-sub-item">
+                    <div className="dash-upcoming-sub-main">
+                      <strong>{sub.serviceName}</strong>
+                      <span className="subtle-text">{sub.planName || '默认套餐'}{sub.autoRenew ? ' · 自动续费' : ' · 手动续费'}</span>
+                    </div>
+                    <div className="dash-upcoming-sub-meta">
+                      <span className={`dash-upcoming-sub-days ${sub.daysLeft <= 0 ? 'is-expired' : sub.daysLeft <= 3 ? 'is-warn' : ''}`}>
+                        {sub.daysLeft < 0 ? `逾期 ${Math.abs(sub.daysLeft)} 天` : sub.daysLeft === 0 ? '今日到期' : `${sub.daysLeft} 天后`}
+                      </span>
+                      <span className="subtle-text">{sub.endDate}</span>
+                      <span className="dash-upcoming-sub-price">¥{sub.cyclePrice.toFixed(2)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Link>
+        ) : null}
 
         {/* ====== 5. 生活中心（可点击跳转）====== */}
         <Link to="/life/todo?todoTab=tasks" className="dash-masonry-item dash-card dash-card-link">

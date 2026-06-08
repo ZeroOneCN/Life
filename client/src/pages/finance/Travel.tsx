@@ -5,6 +5,7 @@ import { TravelDetailsSection } from '../../components/finance/TravelDetailsSect
 import { TravelLeaderboardSection } from '../../components/finance/TravelLeaderboardSection';
 import { TravelReportSection } from '../../components/finance/TravelReportSection';
 import { TravelStatsSection } from '../../components/finance/TravelStatsSection';
+import { CurrencyConverter } from '../../components/finance/CurrencyConverter';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, SelectField, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -211,6 +212,9 @@ export default function TravelPage() {
             startDate: item.startDate,
             endDate: item.endDate,
             summary: item.summary,
+            status: item.status,
+            currency: item.currency,
+            budget: item.budget ?? undefined,
           }).then((createdItem) => createdItem.id);
           tempBookIdsRef.current.set(item.id, request);
           return request;
@@ -222,6 +226,9 @@ export default function TravelPage() {
           startDate: item.startDate,
           endDate: item.endDate,
           summary: item.summary,
+          status: item.status,
+          currency: item.currency,
+          budget: item.budget ?? undefined,
         })),
         ...deletedIds.map((id) => travelApi.deleteBook(id)),
       ]);
@@ -484,6 +491,8 @@ export default function TravelPage() {
           showToast={showToast}
         />
       ) : null}
+
+      <CurrencyConverter defaultFrom="USD" defaultTo="CNY" defaultAmount={100} />
 
       <Toast toast={toast} />
     </div>

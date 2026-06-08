@@ -55,6 +55,9 @@ const bookSchema = z.object({
   startDate: z.string().min(1),
   endDate: z.string().optional().default(''),
   summary: z.string().optional().default(''),
+  status: z.enum(['planning', 'ongoing', 'completed', 'archived']).optional().default('ongoing'),
+  currency: z.string().trim().min(2).max(8).optional().default('CNY'),
+  budget: z.number().min(0).optional(),
 });
 
 const recordSchema = z.object({
@@ -151,6 +154,10 @@ function mapBook(entity: FinanceTravelBookEntity) {
     startDate: dayjs(entity.start_date).format('YYYY-MM-DD'),
     endDate: entity.end_date ? dayjs(entity.end_date).format('YYYY-MM-DD') : '',
     summary: entity.summary,
+    status: entity.status ?? 'ongoing',
+    currency: entity.currency ?? 'CNY',
+    budget: entity.budget !== null && entity.budget !== undefined ? Number(entity.budget) : null,
+    archivedAt: entity.archived_at ? dayjs(entity.archived_at).format('YYYY-MM-DD HH:mm:ss') : '',
     createdAt: entity.created_at.toISOString(),
     updatedAt: entity.updated_at.toISOString(),
   };
@@ -274,6 +281,10 @@ export function createTravelRouter() {
       start_date: normalizeDate(payload.startDate),
       end_date: payload.endDate ? normalizeDate(payload.endDate) : null,
       summary: payload.summary,
+      status: payload.status,
+      currency: (payload.currency ?? 'CNY').toUpperCase(),
+      budget: payload.budget ?? null,
+      archived_at: payload.status === 'archived' ? new Date() : null,
     }));
 
     response.json(successResponse(mapBook(item), 'create_travel_book_success'));
@@ -292,6 +303,11 @@ export function createTravelRouter() {
       throw new AppError('travel_book_not_found', 404, 404);
     }
 
+    const nextStatus = payload.status ?? current.status;
+    const nextArchivedAt = nextStatus === 'archived'
+      ? (current.archived_at ?? new Date())
+      : (payload.status === 'archived' ? new Date() : null);
+
     const next = await repository.save({
       ...current,
       user_id: payload.userId ?? current.user_id,
@@ -300,9 +316,64 @@ export function createTravelRouter() {
       start_date: payload.startDate ? normalizeDate(payload.startDate) : current.start_date,
       end_date: payload.endDate !== undefined ? (payload.endDate ? normalizeDate(payload.endDate) : null) : current.end_date,
       summary: payload.summary ?? current.summary,
+      status: nextStatus,
+      currency: payload.currency ? payload.currency.toUpperCase() : current.currency,
+      budget: payload.budget !== undefined ? payload.budget : current.budget,
+      archived_at: payload.status !== undefined ? nextArchivedAt : current.archived_at,
     });
 
     response.json(successResponse(mapBook(next), 'update_travel_book_success'));
+  }));
+
+  router.post('/books/:id/complete', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const bookId = String(request.params.id ?? '');
+    const repository = appDataSource.getRepository(FinanceTravelBookEntity);
+    const current = await repository.findOne({ where: { id: bookId, user_id: userId } });
+    if (!current) {
+      throw new AppError('travel_book_not_found', 404, 404);
+    }
+    const next = await repository.save({
+      ...current,
+      status: 'completed',
+      end_date: current.end_date ?? dayjs().format('YYYY-MM-DD'),
+    });
+    response.json(successResponse(mapBook(next), 'complete_travel_book_success'));
+  }));
+
+  router.post('/books/:id/archive', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const bookId = String(request.params.id ?? '');
+    const repository = appDataSource.getRepository(FinanceTravelBookEntity);
+    const current = await repository.findOne({ where: { id: bookId, user_id: userId } });
+    if (!current) {
+      throw new AppError('travel_book_not_found', 404, 404);
+    }
+    const next = await repository.save({
+      ...current,
+      status: 'archived',
+      archived_at: current.archived_at ?? new Date(),
+    });
+    response.json(successResponse(mapBook(next), 'archive_travel_book_success'));
+  }));
+
+  router.get('/archive/suggestions', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const repository = appDataSource.getRepository(FinanceTravelBookEntity);
+    const items = await repository.find({ where: { user_id: userId } });
+    const today = dayjs().startOf('day');
+    const suggestions = items
+      .filter((item) => item.status !== 'archived' && item.end_date && dayjs(item.end_date).isBefore(today, 'day'))
+      .map((item) => {
+        const days = today.diff(dayjs(item.end_date), 'day');
+        return {
+          book: mapBook(item),
+          daysAfterEnd: days,
+        };
+      })
+      .filter((item) => item.daysAfterEnd >= 30)
+      .sort((left, right) => right.daysAfterEnd - left.daysAfterEnd);
+    response.json(successResponse(suggestions));
   }));
 
   router.delete('/books/:id', asyncHandler(async (request: AuthenticatedRequest, response) => {

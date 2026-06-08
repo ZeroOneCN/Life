@@ -3,11 +3,18 @@ import dayjs from 'dayjs';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, TextArea } from '../ui';
+import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
 import {
+  DEFAULT_TRAVEL_BOOK_CURRENCY,
+  DEFAULT_TRAVEL_BOOK_STATUS,
+  TRAVEL_BOOK_STATUSES,
+  TRAVEL_BOOK_STATUS_LABELS,
+  TRAVEL_COMMON_CURRENCIES,
   TRAVEL_RECORD_PAGE_SIZE,
+  archiveTravelBook,
   buildTravelBookSummaries,
   buildTravelImportTemplateWorkbook,
+  completeTravelBook,
   createTravelBook,
   deleteTravelBook,
   deleteTravelExpensesByBookId,
@@ -16,10 +23,21 @@ import {
   formatTravelDateRange,
   formatTravelDateTime,
   importTravelWorkbook,
+  mergeTravelBooks,
   normalizeTravelUserId,
+  sortArchiveSuggestions,
   updateTravelBook,
 } from '../../services/travel';
-import type { TravelBook, TravelBookDraft, TravelExpenseRecord, TravelImportResult, TravelPayChannel } from '../../types/travel';
+import { travelApi } from '../../services/travelApi';
+import type {
+  TravelArchiveSuggestion,
+  TravelBook,
+  TravelBookDraft,
+  TravelBookStatus,
+  TravelExpenseRecord,
+  TravelImportResult,
+  TravelPayChannel,
+} from '../../types/travel';
 
 interface TravelBooksSectionProps {
   currentUserLabel: string;
@@ -42,6 +60,9 @@ interface TravelBookFormState {
   startDate: string;
   endDate: string;
   summary: string;
+  status: TravelBookStatus;
+  currency: string;
+  budget: string;
 }
 
 function createDefaultFormState(activeUserId: string): TravelBookFormState {
@@ -52,6 +73,9 @@ function createDefaultFormState(activeUserId: string): TravelBookFormState {
     startDate: dayjs().format('YYYY-MM-DD'),
     endDate: dayjs().add(2, 'day').format('YYYY-MM-DD'),
     summary: '',
+    status: DEFAULT_TRAVEL_BOOK_STATUS,
+    currency: DEFAULT_TRAVEL_BOOK_CURRENCY,
+    budget: '',
   };
 }
 
@@ -63,6 +87,9 @@ function buildFormState(book: TravelBook): TravelBookFormState {
     startDate: book.startDate,
     endDate: book.endDate,
     summary: book.summary,
+    status: book.status ?? DEFAULT_TRAVEL_BOOK_STATUS,
+    currency: book.currency || DEFAULT_TRAVEL_BOOK_CURRENCY,
+    budget: book.budget !== null && book.budget !== undefined ? String(book.budget) : '',
   };
 }
 
@@ -77,6 +104,9 @@ function parseDraft(form: TravelBookFormState): TravelBookDraft | null {
     return null;
   }
 
+  const budgetNumber = form.budget.trim() ? Number(form.budget) : NaN;
+  const budget = Number.isFinite(budgetNumber) && budgetNumber >= 0 ? budgetNumber : undefined;
+
   return {
     userId,
     name: form.name.trim(),
@@ -84,8 +114,17 @@ function parseDraft(form: TravelBookFormState): TravelBookDraft | null {
     startDate: form.startDate,
     endDate: form.endDate,
     summary: form.summary.trim(),
+    status: form.status,
+    currency: (form.currency || DEFAULT_TRAVEL_BOOK_CURRENCY).toUpperCase(),
+    budget,
   };
 }
+
+const CURRENCY_OPTIONS = [...TRAVEL_COMMON_CURRENCIES];
+const STATUS_OPTIONS: Array<{ value: TravelBookStatus; label: string }> = (TRAVEL_BOOK_STATUSES as readonly TravelBookStatus[]).map((value) => ({
+  value,
+  label: TRAVEL_BOOK_STATUS_LABELS[value],
+}));
 
 export function TravelBooksSection({
   currentUserLabel,
@@ -104,10 +143,14 @@ export function TravelBooksSection({
   const [editingBook, setEditingBook] = useState<TravelBook | null>(null);
   const [editingForm, setEditingForm] = useState<TravelBookFormState>(() => createDefaultFormState(activeUserId));
   const [pendingDeleteBook, setPendingDeleteBook] = useState<TravelBook | null>(null);
+  const [pendingCompleteBook, setPendingCompleteBook] = useState<TravelBook | null>(null);
+  const [pendingArchiveBook, setPendingArchiveBook] = useState<TravelBook | null>(null);
   const [page, setPage] = useState(1);
   const [importOpen, setImportOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<TravelImportResult | null>(null);
+  const [archiveSuggestions, setArchiveSuggestions] = useState<TravelArchiveSuggestion[]>([]);
+  const [archiveSuggestionLoading, setArchiveSuggestionLoading] = useState(false);
 
   const bookSummaries = useMemo(
     () => buildTravelBookSummaries(books, records, activeUserId),
@@ -126,6 +169,23 @@ export function TravelBooksSection({
     }
   }, [page, totalPages]);
 
+  const refreshArchiveSuggestions = async () => {
+    setArchiveSuggestionLoading(true);
+    try {
+      const list = await travelApi.getArchiveSuggestions();
+      setArchiveSuggestions(sortArchiveSuggestions(list));
+    } catch (error) {
+      setArchiveSuggestions([]);
+      showToast(`归档建议加载失败：${String(error)}`, 'error');
+    } finally {
+      setArchiveSuggestionLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void refreshArchiveSuggestions();
+  }, []);
+
   const columns = useMemo(() => [
     { key: 'name', title: '行程账本', dataIndex: 'bookName' as const },
     { key: 'dateRange', title: '时间范围', dataIndex: 'dateRange' as const },
@@ -140,6 +200,15 @@ export function TravelBooksSection({
       render: (_value: unknown, row: (typeof pageBooks)[number]) => formatTravelAmount(row.totalPaidAmount),
     },
     {
+      key: 'status',
+      title: '状态',
+      render: (_value: unknown, row: (typeof pageBooks)[number]) => {
+        const book = books.find((item) => item.id === row.bookId);
+        const status = book?.status ?? 'ongoing';
+        return <Tag tone={status === 'ongoing' ? 'green' : status === 'planning' ? 'blue' : 'default'}>{TRAVEL_BOOK_STATUS_LABELS[status]}</Tag>;
+      },
+    },
+    {
       key: 'updatedAt',
       title: '最近更新',
       render: (_value: unknown, row: (typeof pageBooks)[number]) => formatTravelDateTime(row.updatedAt),
@@ -147,36 +216,61 @@ export function TravelBooksSection({
     {
       key: 'actions',
       title: '操作',
-      render: (_value: unknown, row: (typeof pageBooks)[number]) => (
-        <div className="fitness-row-actions">
-          <Btn tone={row.bookId === activeBookId ? 'primary' : 'secondary'} onClick={() => onActiveBookChange(row.bookId)}>
-            {row.bookId === activeBookId ? '当前账本' : '切换为当前'}
-          </Btn>
-          <Btn
-            tone="secondary"
-            onClick={() => {
-              const target = books.find((book) => book.id === row.bookId);
-              if (!target) {
-                return;
-              }
-
-              setEditingBook(target);
-              setEditingForm(buildFormState(target));
-            }}
-          >
-            编辑
-          </Btn>
-          <Btn
-            tone="danger"
-            onClick={() => {
-              const target = books.find((book) => book.id === row.bookId) ?? null;
-              setPendingDeleteBook(target);
-            }}
-          >
-            删除
-          </Btn>
-        </div>
-      ),
+      render: (_value: unknown, row: (typeof pageBooks)[number]) => {
+        const target = books.find((book) => book.id === row.bookId);
+        const status = target?.status ?? 'ongoing';
+        const canComplete = status !== 'completed' && status !== 'archived';
+        const canArchive = status !== 'archived';
+        return (
+          <div className="fitness-row-actions">
+            <Btn tone={row.bookId === activeBookId ? 'primary' : 'secondary'} onClick={() => onActiveBookChange(row.bookId)}>
+              {row.bookId === activeBookId ? '当前账本' : '切换为当前'}
+            </Btn>
+            <Btn
+              tone="secondary"
+              onClick={() => {
+                if (!target) {
+                  return;
+                }
+                setEditingBook(target);
+                setEditingForm(buildFormState(target));
+              }}
+            >
+              编辑
+            </Btn>
+            <Btn
+              tone="ghost"
+              disabled={!canComplete}
+              onClick={() => {
+                if (!target) {
+                  return;
+                }
+                setPendingCompleteBook(target);
+              }}
+            >
+              标记完成
+            </Btn>
+            <Btn
+              tone="ghost"
+              disabled={!canArchive}
+              onClick={() => {
+                if (!target) {
+                  return;
+                }
+                setPendingArchiveBook(target);
+              }}
+            >
+              归档
+            </Btn>
+            <Btn
+              tone="danger"
+              onClick={() => setPendingDeleteBook(target ?? null)}
+            >
+              删除
+            </Btn>
+          </div>
+        );
+      },
     },
   ], [activeBookId, books, onActiveBookChange, pageBooks]);
 
@@ -229,6 +323,59 @@ export function TravelBooksSection({
     setEditingBook(null);
     setEditingForm(createDefaultFormState(activeUserId));
     showToast('行程账本已更新。');
+  };
+
+  const confirmComplete = async () => {
+    if (!pendingCompleteBook) {
+      return;
+    }
+
+    const bookId = pendingCompleteBook.id;
+    const optimisticBooks = completeTravelBook(books, bookId);
+    onChangeBooks(() => optimisticBooks);
+    setPendingCompleteBook(null);
+    showToast('行程已标记完成。');
+
+    try {
+      const updated = await travelApi.completeBook(bookId);
+      onChangeBooks((previous) => mergeTravelBooks(previous, [updated]));
+    } catch (error) {
+      showToast(`完成状态保存失败：${String(error)}`, 'error');
+    }
+  };
+
+  const confirmArchive = async () => {
+    if (!pendingArchiveBook) {
+      return;
+    }
+
+    const bookId = pendingArchiveBook.id;
+    const optimisticBooks = archiveTravelBook(books, bookId);
+    onChangeBooks(() => optimisticBooks);
+    setPendingArchiveBook(null);
+    showToast('行程已归档。');
+    void refreshArchiveSuggestions();
+
+    try {
+      const updated = await travelApi.archiveBook(bookId);
+      onChangeBooks((previous) => mergeTravelBooks(previous, [updated]));
+    } catch (error) {
+      showToast(`归档保存失败：${String(error)}`, 'error');
+    }
+  };
+
+  const acceptArchiveSuggestion = async (book: TravelBook) => {
+    const optimisticBooks = archiveTravelBook(books, book.id);
+    onChangeBooks(() => optimisticBooks);
+    setArchiveSuggestions((previous) => previous.filter((item) => item.book.id !== book.id));
+    showToast(`「${book.name}」已归档。`);
+
+    try {
+      const updated = await travelApi.archiveBook(book.id);
+      onChangeBooks((previous) => mergeTravelBooks(previous, [updated]));
+    } catch (error) {
+      showToast(`归档保存失败：${String(error)}`, 'error');
+    }
   };
 
   const handleDownloadTemplate = async () => {
@@ -287,6 +434,36 @@ export function TravelBooksSection({
           切换当前账本后，明细录入、统计看板和报告导出都会联动更新。
         </div>
 
+        {archiveSuggestions.length > 0 ? (
+          <div className="callout callout-warn travel-archive-suggestion">
+            <div className="travel-archive-suggestion-title">
+              以下行程已结束 30 天以上，建议归档以保持账本整洁：
+            </div>
+            <div className="travel-archive-suggestion-list">
+              {archiveSuggestions.map((item) => (
+                <div key={item.book.id} className="travel-archive-suggestion-item">
+                  <div>
+                    <strong>{item.book.name}</strong>
+                    <span className="subtle-text">
+                      结束于 {item.book.endDate || '未填'} · 距今 {item.daysAfterEnd} 天
+                    </span>
+                  </div>
+                  <div className="inline-row">
+                    <Btn tone="ghost" onClick={() => void acceptArchiveSuggestion(item.book)}>立即归档</Btn>
+                    <Btn
+                      tone="secondary"
+                      onClick={() => setEditingBook(item.book)}
+                    >
+                      编辑
+                    </Btn>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {archiveSuggestionLoading ? <span className="subtle-text">归档建议同步中…</span> : null}
+          </div>
+        ) : null}
+
         <form className="travel-book-form-grid" onSubmit={(e) => { e.preventDefault(); handleCreate(); }}>
           <Field
             label="当前创建用户"
@@ -310,6 +487,33 @@ export function TravelBooksSection({
             value={form.endDate}
             onChange={(value) => setForm((previous) => ({ ...previous, endDate: value }))}
             placeholder="可选"
+          />
+          <SelectField
+            label="账本状态"
+            value={form.status}
+            onChange={(event) => setForm((previous) => ({ ...previous, status: event.target.value as TravelBookStatus }))}
+          >
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="账本币种"
+            value={form.currency}
+            onChange={(event) => setForm((previous) => ({ ...previous, currency: event.target.value.toUpperCase() }))}
+          >
+            {CURRENCY_OPTIONS.map((currency) => (
+              <option key={currency} value={currency}>{currency}</option>
+            ))}
+          </SelectField>
+          <Field
+            label="预算金额（可选）"
+            type="number"
+            min={0}
+            step={0.01}
+            value={form.budget}
+            onChange={(event) => setForm((previous) => ({ ...previous, budget: event.target.value }))}
+            placeholder="例如 5000"
           />
           <Field
             label="账本描述"
@@ -373,20 +577,47 @@ export function TravelBooksSection({
             />
             <div className="travel-book-modal-date-slot">
               <DatePickerField
-              label="开始日期"
-              value={editingForm.startDate}
-              onChange={(value) => setEditingForm((previous) => ({ ...previous, startDate: value }))}
-              clearable={false}
-            />
+                label="开始日期"
+                value={editingForm.startDate}
+                onChange={(value) => setEditingForm((previous) => ({ ...previous, startDate: value }))}
+                clearable={false}
+              />
             </div>
             <div className="travel-book-modal-date-slot travel-book-modal-date-slot-end">
               <DatePickerField
-              label="结束日期"
-              value={editingForm.endDate}
-              onChange={(value) => setEditingForm((previous) => ({ ...previous, endDate: value }))}
-              placeholder="可选"
-            />
+                label="结束日期"
+                value={editingForm.endDate}
+                onChange={(value) => setEditingForm((previous) => ({ ...previous, endDate: value }))}
+                placeholder="可选"
+              />
             </div>
+            <SelectField
+              label="账本状态"
+              value={editingForm.status}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, status: event.target.value as TravelBookStatus }))}
+            >
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </SelectField>
+            <SelectField
+              label="账本币种"
+              value={editingForm.currency}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, currency: event.target.value.toUpperCase() }))}
+            >
+              {CURRENCY_OPTIONS.map((currency) => (
+                <option key={currency} value={currency}>{currency}</option>
+              ))}
+            </SelectField>
+            <Field
+              label="预算金额（可选）"
+              type="number"
+              min={0}
+              step={0.01}
+              value={editingForm.budget}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, budget: event.target.value }))}
+              placeholder="例如 5000"
+            />
           </div>
           <Field
             label="账本描述"
@@ -428,6 +659,52 @@ export function TravelBooksSection({
       >
         删除账本后，关联的消费记录也会一起移除，排行榜、统计和报告都会同步更新。
       </DeleteModal>
+
+      <Modal
+        open={Boolean(pendingCompleteBook)}
+        onClose={() => setPendingCompleteBook(null)}
+        title={pendingCompleteBook ? `将「${pendingCompleteBook.name}」标记为完成？` : '标记完成'}
+        width={480}
+        footer={(
+          <>
+            <Btn tone="secondary" onClick={() => setPendingCompleteBook(null)}>取消</Btn>
+            <Btn tone="primary" onClick={() => void confirmComplete()}>确认完成</Btn>
+          </>
+        )}
+      >
+        <div className="page-stack">
+          <p className="subtle-text">
+            标记完成后会自动将结束日期补齐为今天（若未填写），并锁定状态为「已完成」。你可以稍后通过「归档」继续隐藏。
+          </p>
+          {pendingCompleteBook?.endDate ? (
+            <p className="subtle-text">当前结束日期：{pendingCompleteBook.endDate}</p>
+          ) : (
+            <p className="subtle-text">当前未填写结束日期，将自动补齐为今天。</p>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        open={Boolean(pendingArchiveBook)}
+        onClose={() => setPendingArchiveBook(null)}
+        title={pendingArchiveBook ? `归档「${pendingArchiveBook.name}」？` : '归档账本'}
+        width={480}
+        footer={(
+          <>
+            <Btn tone="secondary" onClick={() => setPendingArchiveBook(null)}>取消</Btn>
+            <Btn tone="primary" onClick={() => void confirmArchive()}>确认归档</Btn>
+          </>
+        )}
+      >
+        <div className="page-stack">
+          <p className="subtle-text">
+            归档后账本会从主列表中隐藏（通过状态筛选过滤），历史消费记录与统计数据仍然保留在排行榜和报告里。
+          </p>
+          {pendingArchiveBook?.archivedAt ? (
+            <p className="subtle-text">当前归档时间：{formatTravelDateTime(pendingArchiveBook.archivedAt)}</p>
+          ) : null}
+        </div>
+      </Modal>
 
       <Modal
         open={importOpen}
