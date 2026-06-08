@@ -1,14 +1,10 @@
-feat(rent+investment+deepseek): entry 模块分组 / 投资红绿色 / Token 本站统计
+fix(assistant-usage): 记录失败兜底 + 任何 chat 路径都入库
 
-* finance/rent?rentTab=entry 拆分为「基础信息 / 费用明细 / 备注 / 实时计算」4 个模块
-  - 新增 .rent-entry-module + .rent-entry-module-head 样式（虚线分隔、surface-2 背景）
-  - 4 个模块视觉分组清晰，按钮区域独立
-* dashboard 投资中心净收益颜色修复
-  - isPnlPositive 改用 netPnlRaw 数值判断（>= 0 绿色 / < 0 红色）
-  - 之前基于 formatted 字符串前缀判定，被 ±¥ Unicode 字符坑了
-* DeepSeek Token 消耗组件增加「本站 AI 助理请求」统计
-  - 新增 SystemAssistantUsageLogEntity + assistant-usage.service
-  - /assistant/chat 每次调用按 1 字符 ≈ 0.6 token 估算 prompt/completion，异步落库
-  - /assistant/usage 同时返回官方余额 + 本站累计 / 今日统计
-  - 前端分两块：「官方账户余额」+「本站 AI 助理请求」（含累计 token / 今日 token / 估算花费 / 最后调用）
-* 删除误提交的 .git-commit-msg.txt
+* /assistant/chat 所有分支（成功 / 失败 / DEEPSEEK_API_KEY 未配置）现在都会调用 recordAssistantUsage
+  - 未配置 API Key 时记 status=error，用户能在「本站 AI 助理请求」看到自己的尝试
+* recordAssistantUsage 增加 3 层兜底：
+  1) ensureAssistantUsageTable() 用 CREATE TABLE IF NOT EXISTS 幂等建表
+  2) Repository.insert 失败时回退到原生 SQL INSERT
+  3) 控制台输出成功/失败日志，方便排查
+* getAssistantUsageStats 任何阶段抛错都返回 EMPTY_STATS，避免组件因缺表而 500
+* 前端 widget 增加 30 秒自动轮询 + 优化空状态文案

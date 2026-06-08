@@ -66,7 +66,10 @@ function renderLocalUsage(local: DeepseekLocalUsage) {
       <div className="deepseek-usage-empty">
         <Tag tone="default">暂无记录</Tag>
         <strong>本站 AI 助理还未发起过请求</strong>
-        <span>在右下角 AI 助理里开始一次对话，组件就会自动汇总累计 / 今日的 Token 消耗。</span>
+        <span>
+          在右下角 AI 助理里开始一次对话，组件就会自动汇总累计 / 今日的 Token 消耗。
+          每 30 秒会自动刷新一次数据，也可以点击右上角「刷新」按钮立刻拉取。
+        </span>
       </div>
     );
   }
@@ -148,6 +151,16 @@ export function DeepseekUsageWidget() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  /* 30s 自动轮询，避免用户发完对话还要手动刷新 */
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      if (loadState !== 'loading') {
+        void load();
+      }
+    }, 30000);
+    return () => window.clearInterval(intervalId);
+  }, [load, loadState]);
 
   const handleRefresh = useCallback(async () => {
     await load();

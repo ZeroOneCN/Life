@@ -179,6 +179,20 @@ export function createAssistantRouter() {
       const payload = validateBody(chatSchema, request.body);
 
       if (!env.DEEPSEEK_API_KEY) {
+        /* 仍然记录一次「未启用」请求（status=error），方便组件看到本站确实收到过调用 */
+        const userMessages = payload.messages.filter((message) => message.role === 'user');
+        const fallbackPrompt = estimateConversationTokens(
+          userMessages.length > 0 ? userMessages : payload.messages,
+        );
+        recordAssistantUsage({
+          userId,
+          scene: 'chat',
+          requestCount: 0,
+          prompt: fallbackPrompt.prompt,
+          completion: 0,
+          status: 'error',
+        });
+
         response.json(successResponse({
           content: '## 暂未启用 AI 助理\n\n请在服务端 `.env` 中设置 `DEEPSEEK_API_KEY` 后重启服务。\n\n与此同时，你仍可使用各模块的独立查询。',
           toolCalls: [],
