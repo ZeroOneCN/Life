@@ -24,12 +24,54 @@ interface ChatBubble {
 const MAX_HISTORY = 20;
 const MAX_PERSISTED = 40;
 const STORAGE_KEY = 'lifeos-assistant-history-v1';
+const POSITION_STORAGE_KEY = 'lifeos-assistant-position-v1';
+
+const DEFAULT_POSITION = { right: 24, bottom: 24 };
+const FAB_SIZE = 56;
+const PANEL_WIDTH = 420;
+const PANEL_HEIGHT = 600;
+const PANEL_GAP = 12;
 
 function buildId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
   }
   return Math.random().toString(36).slice(2, 12);
+}
+
+interface AssistantPosition {
+  right: number;
+  bottom: number;
+}
+
+function loadPosition(): AssistantPosition {
+  if (typeof window === 'undefined') {
+    return DEFAULT_POSITION;
+  }
+  try {
+    const raw = window.localStorage.getItem(POSITION_STORAGE_KEY);
+    if (!raw) {
+      return DEFAULT_POSITION;
+    }
+    const parsed = JSON.parse(raw) as Partial<AssistantPosition>;
+    if (typeof parsed.right === 'number' && typeof parsed.bottom === 'number') {
+      return { right: parsed.right, bottom: parsed.bottom };
+    }
+  } catch (error) {
+    // 静默失败
+  }
+  return DEFAULT_POSITION;
+}
+
+function savePosition(position: AssistantPosition) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  try {
+    window.localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(position));
+  } catch (error) {
+    // 静默失败
+  }
 }
 
 function loadHistory(): ChatBubble[] {
@@ -254,6 +296,18 @@ export function AssistantLauncher() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [position, setPosition] = useState<AssistantPosition>(() => loadPosition());
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    startRight: number;
+    startBottom: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const fabDragRef = useRef<{ startX: number; startY: number; moved: boolean } | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const todayLabel = useMemo(() => dayjs().format('YYYY-MM-DD HH:mm'), []);
 
@@ -271,6 +325,72 @@ export function AssistantLauncher() {
   useEffect(() => {
     saveHistory(messages);
   }, [messages]);
+
+  useEffect(() => {
+    savePosition(position);
+  }, [position]);
+
+  const handleDragStart = (event: React.PointerEvent<HTMLElement>) => {
+    if (event.button !== 0) {
+      return;
+    }
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startRight: window.innerWidth - rect.right,
+      startBottom: window.innerHeight - rect.bottom,
+      width: rect.width,
+      height: rect.height,
+    };
+    setIsDragging(true);
+    try {
+      target.setPointerCapture(event.pointerId);
+    } catch (error) {
+      // 某些浏览器对非指针元素会抛错，忽略
+    }
+  };
+
+  useEffect(() => {
+    if (!isDragging) {
+      return;
+    }
+    const handleMove = (event: PointerEvent) => {
+      const drag = dragStateRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) {
+        return;
+      }
+      const deltaX = event.clientX - drag.startX;
+      const deltaY = event.clientY - drag.startY;
+      // 拖动方向 = 鼠标位移的反方向（因为 right/bottom 离屏幕边缘越远越大）
+      const nextRight = drag.startRight - deltaX;
+      const nextBottom = drag.startBottom - deltaY;
+      const maxRight = Math.max(0, window.innerWidth - drag.width);
+      const maxBottom = Math.max(0, window.innerHeight - drag.height);
+      setPosition({
+        right: Math.min(maxRight, Math.max(0, nextRight)),
+        bottom: Math.min(maxBottom, Math.max(0, nextBottom)),
+      });
+    };
+    const handleEnd = (event: PointerEvent) => {
+      const drag = dragStateRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) {
+        return;
+      }
+      dragStateRef.current = null;
+      setIsDragging(false);
+    };
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleEnd);
+    window.addEventListener('pointercancel', handleEnd);
+    return () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleEnd);
+      window.removeEventListener('pointercancel', handleEnd);
+    };
+  }, [isDragging]);
 
   const sendMessage = async (rawText: string) => {
     const text = rawText.trim();
@@ -333,11 +453,23 @@ export function AssistantLauncher() {
     setResetConfirmOpen(false);
   };
 
+  const launcherStyle = {
+    right: `${position.right}px`,
+    bottom: `${position.bottom}px`,
+  } as const;
+
   return (
-    <div className="assistant-launcher">
+    <div
+      className={`assistant-launcher ${isDragging ? 'is-dragging' : ''}`.trim()}
+      style={launcherStyle}
+    >
       {open ? (
         <div className="assistant-panel" role="dialog" aria-label="AI 智能助理">
-          <header className="assistant-panel-header">
+          <header
+            className="assistant-panel-header assistant-drag-handle"
+            onPointerDown={handleDragStart}
+            title="按住拖动 AI 助理"
+          >
             <div>
               <strong>AI 智能助理</strong>
               <span>调用真实数据 · 当前 {todayLabel}</span>
@@ -466,9 +598,47 @@ export function AssistantLauncher() {
 
       <button
         type="button"
-        className={`assistant-fab ${open ? 'is-open' : ''}`}
+        className={`assistant-fab ${open ? 'is-open' : ''}`.trim()}
         aria-label={open ? '关闭 AI 助理' : '打开 AI 助理'}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          if (fabDragRef.current?.moved) {
+            /* 拖动结束后阻止 click 切换面板 */
+            fabDragRef.current.moved = false;
+            return;
+          }
+          setOpen((value) => !value);
+        }}
+        onPointerDown={(event) => {
+          if (event.button !== 0) return;
+          fabDragRef.current = {
+            startX: event.clientX,
+            startY: event.clientY,
+            moved: false,
+          };
+        }}
+        onPointerMove={(event) => {
+          const drag = fabDragRef.current;
+          if (!drag || drag.moved) return;
+          if (Math.abs(event.clientX - drag.startX) > 4 || Math.abs(event.clientY - drag.startY) > 4) {
+            drag.moved = true;
+            /* 复用面板头部的 drag 逻辑：startX/startY 自动取当前 clientX/Y */
+            handleDragStart(event);
+          }
+        }}
+        onPointerUp={() => {
+          /* 拖动状态由 pointermove 设置为 true，click handler 会拦截 */
+          setTimeout(() => {
+            if (fabDragRef.current) {
+              fabDragRef.current.moved = false;
+            }
+          }, 0);
+        }}
+        onPointerCancel={() => {
+          if (fabDragRef.current) {
+            fabDragRef.current.moved = false;
+          }
+        }}
+        title="按住拖动 · 点击展开"
       >
         <span aria-hidden="true">{open ? '×' : '🤖'}</span>
         <span className="assistant-fab-tooltip">{open ? '关闭' : 'AI 助理'}</span>

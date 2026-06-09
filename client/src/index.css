@@ -11177,6 +11177,21 @@ select:focus-visible {
   right: 24px;
   bottom: 24px;
   z-index: 1200;
+  touch-action: none;
+  user-select: none;
+}
+
+.assistant-launcher.is-dragging,
+.assistant-launcher.is-dragging * {
+  cursor: grabbing !important;
+}
+
+.assistant-drag-handle {
+  cursor: grab;
+}
+
+.assistant-drag-handle:active {
+  cursor: grabbing;
 }
 
 .assistant-fab {
@@ -11190,11 +11205,12 @@ select:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  cursor: grab;
   font-size: 26px;
   box-shadow: 0 12px 28px rgba(83, 58, 253, 0.32);
   position: relative;
   transition: transform 0.18s ease;
+  touch-action: none;
 }
 
 .assistant-fab:hover {
@@ -11254,6 +11270,8 @@ select:focus-visible {
   border-bottom: 1px solid var(--color-hairline);
   background: var(--color-surface-2);
   color: var(--color-ink-primary);
+  cursor: grab;
+  touch-action: none;
 }
 
 .assistant-panel-header strong {

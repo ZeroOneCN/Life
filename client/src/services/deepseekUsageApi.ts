@@ -32,21 +32,19 @@ export interface DeepseekSceneUsage {
   lastCalledAt: string | null;
 }
 
-export interface DeepseekLocalUsageWithScenes extends DeepseekLocalUsage {
-  scenes: DeepseekSceneUsage[];
-}
-
 export type DeepseekUsageSnapshot =
   | {
       enabled: false;
       reason: string;
-      local: DeepseekLocalUsageWithScenes;
+      local: DeepseekLocalUsage;
+      scenes: DeepseekSceneUsage[];
     }
   | {
       enabled: true;
       ok: false;
       reason: string;
-      local: DeepseekLocalUsageWithScenes;
+      local: DeepseekLocalUsage;
+      scenes: DeepseekSceneUsage[];
     }
   | {
       enabled: true;
@@ -54,7 +52,8 @@ export type DeepseekUsageSnapshot =
       isAvailable: boolean;
       balances: DeepseekBalanceInfo[];
       fetchedAt: string;
-      local: DeepseekLocalUsageWithScenes;
+      local: DeepseekLocalUsage;
+      scenes: DeepseekSceneUsage[];
     };
 
 /**

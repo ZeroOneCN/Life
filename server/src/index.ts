@@ -4,6 +4,7 @@ import { createApp } from './app';
 import { env } from './config/env';
 import { ensureDatabaseSchema } from './db/bootstrap';
 import { appDataSource } from './db/data-source';
+import { ensureFitnessCacheTables } from './modules/health/fitness-ai.service';
 
 async function bootstrap() {
   try {
@@ -28,6 +29,9 @@ async function bootstrap() {
         'The server will stay online so /api/system/health can report bootstrap status.',
       );
     }
+
+    /* 兜底：确保食物/运动 AI 缓存表存在（即使 synchronize 未覆盖到这两个 entity） */
+    await ensureFitnessCacheTables();
 
     const app = createApp();
 

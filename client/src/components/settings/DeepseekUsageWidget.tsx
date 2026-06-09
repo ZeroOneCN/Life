@@ -391,7 +391,7 @@ export function DeepseekUsageWidget() {
       <div className="deepseek-usage-body">
         {renderOfficialSection(primary, snapshot.fetchedAt, snapshot.balances)}
         {renderLocalSection(snapshot.local)}
-        {renderSceneBreakdown(snapshot.local.scenes ?? [])}
+        {renderSceneBreakdown(snapshot.scenes ?? [])}
       </div>
     );
   };

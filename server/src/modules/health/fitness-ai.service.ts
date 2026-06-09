@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { z } from 'zod';
 
 import { env } from '../../config/env';
@@ -18,6 +20,53 @@ function normalizeKey(value: string): string {
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .slice(0, 128);
+}
+
+/**
+ * 兜底建表：当 TypeORM 实体未被注册（生产 synchronize 关闭 / 编译产物与源不同步）时，
+ * 直接用原生 SQL 建出食物/运动缓存表，确保 AI 写回不会因为「table not found」而失败。
+ */
+export async function ensureFitnessCacheTables(): Promise<void> {
+  if (!appDataSource.isInitialized) return;
+  try {
+    await appDataSource.manager.query(`
+      CREATE TABLE IF NOT EXISTS health_food_nutrition_cache (
+        id varchar(36) NOT NULL,
+        created_at datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+        updated_at datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+        deleted_at datetime(6) NULL,
+        food_key varchar(128) NOT NULL,
+        food_name varchar(128) NOT NULL,
+        calories_per_100g double NOT NULL DEFAULT 0,
+        protein_per_100g double NOT NULL DEFAULT 0,
+        carbs_per_100g double NOT NULL DEFAULT 0,
+        fat_per_100g double NOT NULL DEFAULT 0,
+        note varchar(255) NOT NULL DEFAULT '',
+        hit_count int NOT NULL DEFAULT 0,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_food_cache_key (food_key)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    await appDataSource.manager.query(`
+      CREATE TABLE IF NOT EXISTS health_exercise_calorie_cache (
+        id varchar(36) NOT NULL,
+        created_at datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+        updated_at datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+        deleted_at datetime(6) NULL,
+        exercise_key varchar(128) NOT NULL,
+        exercise_name varchar(128) NOT NULL,
+        suggested_duration_min double NOT NULL DEFAULT 0,
+        calories_per_min double NOT NULL DEFAULT 0,
+        suggested_type varchar(32) NOT NULL DEFAULT 'cardio',
+        suggested_intensity varchar(16) NOT NULL DEFAULT 'medium',
+        hit_count int NOT NULL DEFAULT 0,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_exercise_cache_key (exercise_key)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+  } catch (error) {
+    console.error('[fitness-cache] ensure tables failed:', error);
+  }
 }
 
 /**
@@ -116,6 +165,7 @@ export async function queryFoodNutrition(input: {
   }
 
   const repo = appDataSource.getRepository(HealthFoodNutritionCacheEntity);
+  await ensureFitnessCacheTables();
   const cached = await repo.findOne({ where: { food_key: key } });
   if (cached) {
     await repo.increment({ id: cached.id }, 'hit_count', 1);
@@ -143,6 +193,7 @@ export async function queryFoodNutrition(input: {
     // 写回缓存
     try {
       await repo.insert({
+        id: randomUUID(),
         food_key: key,
         food_name: foodName,
         calories_per_100g: parsed.calories,
@@ -152,6 +203,7 @@ export async function queryFoodNutrition(input: {
         note: parsed.note,
         hit_count: 1,
       });
+      console.log(`[fitness-cache] food saved: ${key}`);
     } catch (insertError) {
       // 并发场景下唯一索引可能冲突，忽略即可
       console.warn('[fitness-cache] food insert conflict (ignored):', insertError);
@@ -213,6 +265,7 @@ export async function queryExerciseCalorie(input: {
   }
 
   const repo = appDataSource.getRepository(HealthExerciseCalorieCacheEntity);
+  await ensureFitnessCacheTables();
   const cached = await repo.findOne({ where: { exercise_key: key } });
   if (cached) {
     await repo.increment({ id: cached.id }, 'hit_count', 1);
@@ -237,6 +290,7 @@ export async function queryExerciseCalorie(input: {
 
     try {
       await repo.insert({
+        id: randomUUID(),
         exercise_key: key,
         exercise_name: exerciseName,
         suggested_duration_min: parsed.suggestedDurationMin,
@@ -245,6 +299,7 @@ export async function queryExerciseCalorie(input: {
         suggested_intensity: parsed.suggestedIntensity,
         hit_count: 1,
       });
+      console.log(`[fitness-cache] exercise saved: ${key}`);
     } catch (insertError) {
       console.warn('[fitness-cache] exercise insert conflict (ignored):', insertError);
     }
