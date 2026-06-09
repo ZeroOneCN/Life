@@ -307,7 +307,7 @@ export function AssistantLauncher() {
     width: number;
     height: number;
   } | null>(null);
-  const fabDragRef = useRef<{ startX: number; startY: number; moved: boolean } | null>(null);
+  const fabDragRef = useRef<number | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const todayLabel = useMemo(() => dayjs().format('YYYY-MM-DD HH:mm'), []);
 
@@ -354,9 +354,8 @@ export function AssistantLauncher() {
   };
 
   useEffect(() => {
-    if (!isDragging) {
-      return;
-    }
+    /* 全局监听 pointermove/up：注册一次即可，避免 isDragging 切换时
+       漏掉从 pointerdown 之后的第一个 move 事件（React effect 是异步的）。 */
     const handleMove = (event: PointerEvent) => {
       const drag = dragStateRef.current;
       if (!drag || drag.pointerId !== event.pointerId) {
@@ -379,8 +378,15 @@ export function AssistantLauncher() {
       if (!drag || drag.pointerId !== event.pointerId) {
         return;
       }
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
+      const moved = Math.hypot(dx, dy) >= 4;
       dragStateRef.current = null;
       setIsDragging(false);
+      if (moved) {
+        /* 标记刚拖完：FAB 的 onClick 在 50ms 内会被拦截 */
+        fabDragRef.current = Date.now();
+      }
     };
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', handleEnd);
@@ -390,7 +396,7 @@ export function AssistantLauncher() {
       window.removeEventListener('pointerup', handleEnd);
       window.removeEventListener('pointercancel', handleEnd);
     };
-  }, [isDragging]);
+  }, []);
 
   const sendMessage = async (rawText: string) => {
     const text = rawText.trim();
@@ -601,42 +607,19 @@ export function AssistantLauncher() {
         className={`assistant-fab ${open ? 'is-open' : ''}`.trim()}
         aria-label={open ? '关闭 AI 助理' : '打开 AI 助理'}
         onClick={() => {
-          if (fabDragRef.current?.moved) {
-            /* 拖动结束后阻止 click 切换面板 */
-            fabDragRef.current.moved = false;
+          /* 拖动结束后阻止 click 切换面板；fabDragEndAt 距今 < 50ms 视为刚拖完 */
+          if (fabDragRef.current && Date.now() - fabDragRef.current < 50) {
+            fabDragRef.current = null;
             return;
           }
           setOpen((value) => !value);
         }}
         onPointerDown={(event) => {
           if (event.button !== 0) return;
-          fabDragRef.current = {
-            startX: event.clientX,
-            startY: event.clientY,
-            moved: false,
-          };
-        }}
-        onPointerMove={(event) => {
-          const drag = fabDragRef.current;
-          if (!drag || drag.moved) return;
-          if (Math.abs(event.clientX - drag.startX) > 4 || Math.abs(event.clientY - drag.startY) > 4) {
-            drag.moved = true;
-            /* 复用面板头部的 drag 逻辑：startX/startY 自动取当前 clientX/Y */
-            handleDragStart(event);
-          }
-        }}
-        onPointerUp={() => {
-          /* 拖动状态由 pointermove 设置为 true，click handler 会拦截 */
-          setTimeout(() => {
-            if (fabDragRef.current) {
-              fabDragRef.current.moved = false;
-            }
-          }, 0);
-        }}
-        onPointerCancel={() => {
-          if (fabDragRef.current) {
-            fabDragRef.current.moved = false;
-          }
+          /* pointerdown 时立即 setPointerCapture，之后 pointermove 即便离开元素也会继续触发。
+             距离判定放到 onPointerUp。 */
+          fabDragRef.current = null;
+          handleDragStart(event);
         }}
         title="按住拖动 · 点击展开"
       >
