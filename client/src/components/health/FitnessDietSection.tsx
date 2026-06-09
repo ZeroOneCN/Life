@@ -95,6 +95,7 @@ export function FitnessDietSection({
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [aiQuerying, setAiQuerying] = useState(false);
   const [aiHint, setAiHint] = useState<string>('');
+  const [aiSource, setAiSource] = useState<'cache' | 'ai' | null>(null);
 
   const filteredRecords = useMemo(() => {
     const byUser = filterRecordsByUserId(records, filterUserId);
@@ -205,6 +206,7 @@ export function FitnessDietSection({
     onChangeRecords((previous) => createDietRecord(previous, draft));
     setForm(defaultFormState());
     setAiHint('');
+    setAiSource(null);
     showToast('饮食记录已新增。');
   };
 
@@ -216,6 +218,7 @@ export function FitnessDietSection({
     }
     setAiQuerying(true);
     setAiHint('');
+    setAiSource(null);
     try {
       const info = await fetchFoodNutrition(foodName);
       const grams = Number(form.grams) || 100;
@@ -227,6 +230,7 @@ export function FitnessDietSection({
         carbs: (info.carbsPer100g * ratio).toFixed(1),
         fat: (info.fatPer100g * ratio).toFixed(1),
       }));
+      setAiSource(info.source);
       const sourceLabel = info.source === 'cache' ? '命中本地缓存' : 'AI 实时估算';
       setAiHint(`${sourceLabel}：100g 基准 ${info.caloriesPer100g.toFixed(0)} kcal · 蛋白 ${info.proteinPer100g.toFixed(1)}g${info.note ? ` · ${info.note}` : ''}`);
       showToast(`${foodName} 营养已自动填入（${sourceLabel}）。`, 'success');
@@ -281,25 +285,33 @@ export function FitnessDietSection({
               <option key={value} value={value}>{item.label}</option>
             ))}
           </SelectField>
-          <Field
-            label="食物名称"
-            placeholder="例如：鸡胸肉沙拉"
-            value={form.foodName}
-            onChange={(event) => setForm((previous) => ({ ...previous, foodName: event.target.value }))}
-          />
-          <div className="fitness-ai-cell">
+          <div className="fitness-name-ai-cell">
+            <Field
+              label="食物名称"
+              placeholder="例如：鸡胸肉沙拉"
+              value={form.foodName}
+              onChange={(event) => setForm((previous) => ({ ...previous, foodName: event.target.value }))}
+            />
             <Btn
               tone="secondary"
               type="button"
+              className="fitness-ai-btn"
               onClick={() => {
                 void handleAiQuery();
               }}
               disabled={aiQuerying || !form.foodName.trim()}
             >
-              {aiQuerying ? 'AI 估算中…' : 'AI 自动估算营养'}
+              {aiQuerying ? 'AI 估算中…' : 'AI 估算营养'}
             </Btn>
-            {aiHint ? <span className="fitness-ai-hint">{aiHint}</span> : null}
           </div>
+          {aiHint ? (
+            <div className="fitness-ai-result">
+              <span className={`fitness-ai-result-tag ${aiSource === 'cache' ? 'is-cache' : 'is-ai'}`.trim()}>
+                {aiSource === 'cache' ? '命中缓存' : 'AI 实时估算'}
+              </span>
+              <span className="fitness-ai-result-text">{aiHint}</span>
+            </div>
+          ) : null}
           <Field
             label="重量（g）"
             type="number"

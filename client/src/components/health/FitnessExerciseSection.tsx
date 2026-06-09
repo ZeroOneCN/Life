@@ -88,6 +88,7 @@ export function FitnessExerciseSection({
 
   const [aiQuerying, setAiQuerying] = useState(false);
   const [aiHint, setAiHint] = useState<string>('');
+  const [aiSource, setAiSource] = useState<'cache' | 'ai' | null>(null);
 
   const filteredRecords = useMemo(() => {
     const byUser = filterRecordsByUserId(records, filterUserId);
@@ -192,6 +193,7 @@ export function FitnessExerciseSection({
     onChangeRecords((previous) => createExerciseRecord(previous, draft));
     setForm(defaultFormState());
     setAiHint('');
+    setAiSource(null);
     showToast('运动记录已新增。');
   };
 
@@ -204,6 +206,8 @@ export function FitnessExerciseSection({
     }
 
     setAiQuerying(true);
+    setAiHint('');
+    setAiSource(null);
 
     try {
       const info = await fetchExerciseCalorie(exerciseName);
@@ -218,6 +222,7 @@ export function FitnessExerciseSection({
         exerciseType: info.suggestedType,
       }));
 
+      setAiSource(info.source);
       const sourceLabel = info.source === 'cache' ? '命中本地缓存' : 'AI 实时估算';
       setAiHint(`${sourceLabel}：${info.exerciseName} · ${info.caloriesPerMin.toFixed(1)} kcal/分钟 · 建议 ${safeDuration} 分钟 / ${totalCalories} kcal（${INTENSITY_LEVEL_META[info.suggestedIntensity].label}）`);
       showToast(`${exerciseName} 训练参数已自动填入（${sourceLabel}）。`, 'success');
@@ -272,21 +277,33 @@ export function FitnessExerciseSection({
               <option key={value} value={value}>{item.label}</option>
             ))}
           </SelectField>
-          <Field
-            label="运动名称"
-            placeholder="例如：跑步机间歇跑"
-            value={form.exerciseName}
-            onChange={(event) => setForm((previous) => ({ ...previous, exerciseName: event.target.value }))}
-          />
-          <div className="fitness-ai-cell">
-            <Btn tone="secondary" type="button"
-              onClick={() => { void handleAiQuery(); }}
+          <div className="fitness-name-ai-cell">
+            <Field
+              label="运动名称"
+              placeholder="例如：跑步机间歇跑"
+              value={form.exerciseName}
+              onChange={(event) => setForm((previous) => ({ ...previous, exerciseName: event.target.value }))}
+            />
+            <Btn
+              tone="secondary"
+              type="button"
+              className="fitness-ai-btn"
+              onClick={() => {
+                void handleAiQuery();
+              }}
               disabled={aiQuerying || !form.exerciseName.trim()}
             >
-              {aiQuerying ? 'AI 估算中…' : 'AI 自动估算消耗'}
+              {aiQuerying ? 'AI 估算中…' : 'AI 估算消耗'}
             </Btn>
-            {aiHint ? <span className="fitness-ai-hint">{aiHint}</span> : null}
           </div>
+          {aiHint ? (
+            <div className="fitness-ai-result">
+              <span className={`fitness-ai-result-tag ${aiSource === 'cache' ? 'is-cache' : 'is-ai'}`.trim()}>
+                {aiSource === 'cache' ? '命中缓存' : 'AI 实时估算'}
+              </span>
+              <span className="fitness-ai-result-text">{aiHint}</span>
+            </div>
+          ) : null}
           <Field
             label="训练时长（分钟）"
             type="number"
