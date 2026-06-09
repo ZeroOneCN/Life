@@ -236,3 +236,65 @@ export async function getAssistantUsageStats(userId: string): Promise<AssistantU
     return EMPTY_STATS;
   }
 }
+
+export interface AssistantSceneUsage {
+  scene: string;
+  totalCalls: number;
+  totalTokens: number;
+  estimatedCost: number;
+  lastCalledAt: string | null;
+}
+
+const SCENE_LABELS: Record<string, string> = {
+  'chat': 'AI 智能助理',
+  'fitness.food': '饮食营养查询',
+  'fitness.exercise': '运动消耗查询',
+};
+
+/**
+ * 查询用户最近 30 天按场景聚合的 AI 调用统计。
+ * 用于 DeepSeek Token 组件的「按场景分布」展示。
+ */
+export async function getAssistantUsageByScene(userId: string): Promise<AssistantSceneUsage[]> {
+  if (!userId) return [];
+  try {
+    if (!appDataSource.isInitialized) return [];
+    const tableReady = await ensureAssistantUsageTable();
+    if (!tableReady) return [];
+
+    const repo = appDataSource.getRepository(SystemAssistantUsageLogEntity);
+    const rows = await repo
+      .createQueryBuilder('row')
+      .select('row.scene', 'scene')
+      .addSelect('COUNT(*)', 'totalCalls')
+      .addSelect('COALESCE(SUM(row.prompt_tokens + row.completion_tokens), 0)', 'totalTokens')
+      .addSelect('COALESCE(SUM(row.estimated_cost), 0)', 'estimatedCost')
+      .addSelect('MAX(row.created_at)', 'lastCalledAt')
+      .where('row.user_id = :userId', { userId })
+      .andWhere('row.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)')
+      .groupBy('row.scene')
+      .orderBy('totalTokens', 'DESC')
+      .getRawMany<{
+        scene: string;
+        totalCalls: string;
+        totalTokens: string;
+        estimatedCost: string;
+        lastCalledAt: Date | string | null;
+      }>();
+
+    return rows.map((row) => ({
+      scene: row.scene,
+      totalCalls: Number(row.totalCalls),
+      totalTokens: Number(row.totalTokens),
+      estimatedCost: Number(row.estimatedCost),
+      lastCalledAt: row.lastCalledAt ? new Date(row.lastCalledAt).toISOString() : null,
+    }));
+  } catch (error) {
+    console.error('[assistant-usage] scene breakdown failed:', error);
+    return [];
+  }
+}
+
+export function getAssistantSceneLabel(scene: string): string {
+  return SCENE_LABELS[scene] ?? scene;
+}

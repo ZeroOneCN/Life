@@ -10,7 +10,9 @@ import { successResponse } from '../../shared/http/response';
 import { validateBody } from '../../shared/http/validation';
 import {
   estimateConversationTokens,
+  getAssistantUsageByScene,
   getAssistantUsageStats,
+  getAssistantSceneLabel,
   recordAssistantUsage,
 } from './assistant-usage.service';
 import { ASSISTANT_TOOLS, handleAssistantToolCall } from './assistant.tools';
@@ -305,11 +307,16 @@ export function createAssistantRouter() {
     '/usage',
     asyncHandler(async (request: AuthenticatedRequest, response) => {
       const userId = requireAuthUser(request);
-      const [snapshot, local] = await Promise.all([
+      const [snapshot, local, sceneBreakdown] = await Promise.all([
         fetchDeepSeekBalance(),
         getAssistantUsageStats(userId),
+        getAssistantUsageByScene(userId),
       ]);
-      response.json(successResponse({ ...snapshot, local }));
+      const scenes = sceneBreakdown.map((item) => ({
+        ...item,
+        label: getAssistantSceneLabel(item.scene),
+      }));
+      response.json(successResponse({ ...snapshot, local, scenes }));
     }),
   );
 

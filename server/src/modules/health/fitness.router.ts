@@ -13,6 +13,7 @@ import { parsePagination } from '../../shared/utils/pagination';
 import { normalizeDate } from '../../shared/utils/date';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { AppError } from '../../shared/errors/app-error';
+import { queryExerciseCalorie, queryFoodNutrition } from './fitness-ai.service';
 import { HealthFitnessDietRecordEntity } from './entities/health-fitness-diet-record.entity';
 import { HealthFitnessExerciseRecordEntity } from './entities/health-fitness-exercise-record.entity';
 import { HealthFitnessSettingEntity } from './entities/health-fitness-setting.entity';
@@ -495,6 +496,68 @@ export function createFitnessRouter() {
       defaultHeightCm: Number(settings.default_height_cm ?? 170),
     }, 'update_fitness_settings_success'));
   }));
+
+  /* ------------------------------------------------------------------ *
+   * AI 营养 / 运动消耗 查询（带本地缓存）
+   * ------------------------------------------------------------------ */
+
+  /**
+   * POST /api/health/fitness/ai/food
+   * 根据食物名称查询 100g 基准下的热量/蛋白/碳水/脂肪。
+   * 命中 health_food_nutrition_cache 直接返回；未命中调 DeepSeek 并写回缓存。
+   * 每次 AI 调用都会记录到 system_assistant_usage_logs（scene='fitness.food'）。
+   */
+  router.post(
+    '/ai/food',
+    asyncHandler(async (request: AuthenticatedRequest, response) => {
+      const userId = requireAuthUser(request);
+      const body = z
+        .object({
+          foodName: z.string().trim().min(1).max(128),
+        })
+        .parse(request.body ?? {});
+
+      try {
+        const result = await queryFoodNutrition({ userId, foodName: body.foodName });
+        response.json(successResponse(result));
+      } catch (error) {
+        response.status(422).json({
+          code: 422,
+          data: null,
+          message: error instanceof Error ? error.message : 'AI 营养查询失败',
+        });
+      }
+    }),
+  );
+
+  /**
+   * POST /api/health/fitness/ai/exercise
+   * 根据运动名称查询建议时长 / 每分钟消耗热量 / 分类 / 强度。
+   * 命中 health_exercise_calorie_cache 直接返回；未命中调 DeepSeek 并写回缓存。
+   * 每次 AI 调用都会记录到 system_assistant_usage_logs（scene='fitness.exercise'）。
+   */
+  router.post(
+    '/ai/exercise',
+    asyncHandler(async (request: AuthenticatedRequest, response) => {
+      const userId = requireAuthUser(request);
+      const body = z
+        .object({
+          exerciseName: z.string().trim().min(1).max(128),
+        })
+        .parse(request.body ?? {});
+
+      try {
+        const result = await queryExerciseCalorie({ userId, exerciseName: body.exerciseName });
+        response.json(successResponse(result));
+      } catch (error) {
+        response.status(422).json({
+          code: 422,
+          data: null,
+          message: error instanceof Error ? error.message : 'AI 运动查询失败',
+        });
+      }
+    }),
+  );
 
   return router;
 }

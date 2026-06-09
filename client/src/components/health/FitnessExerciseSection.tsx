@@ -14,6 +14,8 @@ import {
   normalizeFitnessUserId,
   updateExerciseRecord,
 } from '../../services/fitness';
+import { fetchExerciseCalorie } from '../../services/fitnessAiApi';
+import { buildApiErrorMessage } from '../../lib/api';
 import type { ExerciseRecord, ExerciseRecordDraft, ExerciseType, IntensityLevel } from '../../types/fitness';
 
 interface FitnessExerciseSectionProps {
@@ -83,6 +85,9 @@ export function FitnessExerciseSection({
   const [editingRecord, setEditingRecord] = useState<ExerciseRecord | null>(null);
   const [editingForm, setEditingForm] = useState<ExerciseFormState>(defaultFormState);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  const [aiQuerying, setAiQuerying] = useState(false);
+  const [aiHint, setAiHint] = useState<string>('');
 
   const filteredRecords = useMemo(() => {
     const byUser = filterRecordsByUserId(records, filterUserId);
@@ -186,7 +191,41 @@ export function FitnessExerciseSection({
 
     onChangeRecords((previous) => createExerciseRecord(previous, draft));
     setForm(defaultFormState());
+    setAiHint('');
     showToast('运动记录已新增。');
+  };
+
+  const handleAiQuery = async () => {
+    const exerciseName = form.exerciseName.trim();
+
+    if (!exerciseName) {
+      showToast('请先输入运动名称。', 'error');
+      return;
+    }
+
+    setAiQuerying(true);
+
+    try {
+      const info = await fetchExerciseCalorie(exerciseName);
+      const safeDuration = info.suggestedDurationMin > 0 ? info.suggestedDurationMin : 30;
+      const totalCalories = Math.round(info.caloriesPerMin * safeDuration);
+
+      setForm((previous) => ({
+        ...previous,
+        duration: String(safeDuration),
+        calories: String(totalCalories),
+        intensity: info.suggestedIntensity,
+        exerciseType: info.suggestedType,
+      }));
+
+      const sourceLabel = info.source === 'cache' ? '命中本地缓存' : 'AI 实时估算';
+      setAiHint(`${sourceLabel}：${info.exerciseName} · ${info.caloriesPerMin.toFixed(1)} kcal/分钟 · 建议 ${safeDuration} 分钟 / ${totalCalories} kcal（${INTENSITY_LEVEL_META[info.suggestedIntensity].label}）`);
+      showToast(`${exerciseName} 训练参数已自动填入（${sourceLabel}）。`, 'success');
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, 'AI 运动消耗查询失败，请检查网络或 DEEPSEEK_API_KEY 配置。'), 'error');
+    } finally {
+      setAiQuerying(false);
+    }
   };
 
   const handleSaveEdit = () => {
@@ -239,6 +278,15 @@ export function FitnessExerciseSection({
             value={form.exerciseName}
             onChange={(event) => setForm((previous) => ({ ...previous, exerciseName: event.target.value }))}
           />
+          <div className="fitness-ai-cell">
+            <Btn tone="secondary" type="button"
+              onClick={() => { void handleAiQuery(); }}
+              disabled={aiQuerying || !form.exerciseName.trim()}
+            >
+              {aiQuerying ? 'AI 估算中…' : 'AI 自动估算消耗'}
+            </Btn>
+            {aiHint ? <span className="fitness-ai-hint">{aiHint}</span> : null}
+          </div>
           <Field
             label="训练时长（分钟）"
             type="number"

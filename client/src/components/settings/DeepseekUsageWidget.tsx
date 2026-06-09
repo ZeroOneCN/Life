@@ -7,6 +7,7 @@ import {
   fetchDeepseekUsage,
   type DeepseekBalanceInfo,
   type DeepseekLocalUsage,
+  type DeepseekSceneUsage,
   type DeepseekUsageSnapshot,
 } from '../../services/deepseekUsageApi';
 
@@ -169,6 +170,7 @@ function renderLocalSection(local: DeepseekLocalUsage) {
           <strong>本站 AI 助理还未发起过请求</strong>
           <span>
             在右下角 AI 助理里开始一次对话，组件就会自动汇总累计 / 今日的 Token 消耗。
+            健康管理里的 AI 营养查询 / 运动消耗查询也会被计入「按场景调用统计」。
             每 30 秒会自动刷新一次数据，也可以点击右上角「刷新」按钮立刻拉取。
           </span>
         </div>
@@ -225,6 +227,49 @@ function renderLocalSection(local: DeepseekLocalUsage) {
           <strong className="deepseek-usage-cell-value">{formatTokenCount(avgTokensPerCall)}</strong>
           <span className="deepseek-usage-cell-helper">含工具调用的多轮 token</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function renderSceneBreakdown(scenes: DeepseekSceneUsage[]) {
+  if (!scenes || scenes.length === 0) {
+    return null;
+  }
+
+  const totalTokens = scenes.reduce((sum, item) => sum + item.totalTokens, 0);
+  const orderedScenes = [...scenes].sort((a, b) => b.totalTokens - a.totalTokens);
+
+  return (
+    <div className="deepseek-usage-section deepseek-usage-section-scenes">
+      <div className="deepseek-usage-section-head">
+        <h4>按场景调用统计</h4>
+        <span>覆盖 AI 智能助理、健身饮食/运动等站内 AI 调用</span>
+      </div>
+      <div className="deepseek-usage-scene-list">
+        {orderedScenes.map((scene) => {
+          const share = totalTokens > 0 ? Math.min(100, Math.round((scene.totalTokens / totalTokens) * 100)) : 0;
+          return (
+            <div key={scene.scene} className="deepseek-usage-scene-row">
+              <div className="deepseek-usage-scene-head">
+                <span className="deepseek-usage-scene-label">{scene.label}</span>
+                <span className="deepseek-usage-scene-stats">
+                  {scene.totalCalls} 次 · {formatTokenCount(scene.totalTokens, 1)} · {formatCost(scene.estimatedCost)}
+                </span>
+              </div>
+              <div className="deepseek-usage-scene-bar" aria-hidden="true">
+                <div
+                  className="deepseek-usage-scene-bar-fill"
+                  style={{ width: `${share}%` }}
+                />
+              </div>
+              <div className="deepseek-usage-scene-foot">
+                <span>Token 占比 {share}%</span>
+                <span>最后调用 {formatRelativeTime(scene.lastCalledAt)}</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -346,6 +391,7 @@ export function DeepseekUsageWidget() {
       <div className="deepseek-usage-body">
         {renderOfficialSection(primary, snapshot.fetchedAt, snapshot.balances)}
         {renderLocalSection(snapshot.local)}
+        {renderSceneBreakdown(snapshot.local.scenes ?? [])}
       </div>
     );
   };

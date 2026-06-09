@@ -1178,6 +1178,31 @@ textarea {
   align-self: end;
 }
 
+/* AI 自动估算按钮：放在输入行下方，按钮 + 提示文字一行 */
+.fitness-entry-grid > .fitness-ai-cell {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: -4px;
+}
+
+.fitness-ai-cell .fitness-ai-hint {
+  font-size: 12.5px;
+  color: var(--color-text-secondary, #6b7280);
+  line-height: 1.5;
+  flex: 1 1 auto;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .fitness-ai-cell {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 .fitness-dashboard-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4248,6 +4273,73 @@ textarea {
   align-items: center;
   font-size: 12px;
   color: var(--color-ink-mute);
+}
+
+/* 按场景调用统计 */
+.deepseek-usage-section-scenes {
+  border-top: 1px dashed var(--color-hairline, #e5e7eb);
+  padding-top: 14px;
+  margin-top: 4px;
+}
+
+.deepseek-usage-scene-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.deepseek-usage-scene-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-hairline, #e5e7eb);
+  border-radius: 10px;
+  background: var(--color-surface-soft, #f8fafc);
+}
+
+.deepseek-usage-scene-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.deepseek-usage-scene-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.deepseek-usage-scene-stats {
+  font-size: 12.5px;
+  color: var(--color-ink-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+.deepseek-usage-scene-bar {
+  position: relative;
+  height: 6px;
+  background: var(--color-hairline, #e5e7eb);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.deepseek-usage-scene-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.deepseek-usage-scene-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--color-ink-mute);
+  flex-wrap: wrap;
 }
 
 @media (max-width: 720px) {

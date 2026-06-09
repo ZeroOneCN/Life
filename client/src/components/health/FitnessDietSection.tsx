@@ -13,6 +13,8 @@ import {
   normalizeFitnessUserId,
   updateDietRecord,
 } from '../../services/fitness';
+import { fetchFoodNutrition } from '../../services/fitnessAiApi';
+import { buildApiErrorMessage } from '../../lib/api';
 import type { DietRecord, DietRecordDraft, MealType } from '../../types/fitness';
 
 interface FitnessDietSectionProps {
@@ -91,6 +93,8 @@ export function FitnessDietSection({
   const [editingRecord, setEditingRecord] = useState<DietRecord | null>(null);
   const [editingForm, setEditingForm] = useState<DietFormState>(defaultFormState);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [aiQuerying, setAiQuerying] = useState(false);
+  const [aiHint, setAiHint] = useState<string>('');
 
   const filteredRecords = useMemo(() => {
     const byUser = filterRecordsByUserId(records, filterUserId);
@@ -200,7 +204,37 @@ export function FitnessDietSection({
 
     onChangeRecords((previous) => createDietRecord(previous, draft));
     setForm(defaultFormState());
+    setAiHint('');
     showToast('饮食记录已新增。');
+  };
+
+  const handleAiQuery = async () => {
+    const foodName = form.foodName.trim();
+    if (!foodName) {
+      showToast('请先输入食物名称。', 'error');
+      return;
+    }
+    setAiQuerying(true);
+    setAiHint('');
+    try {
+      const info = await fetchFoodNutrition(foodName);
+      const grams = Number(form.grams) || 100;
+      const ratio = grams / 100;
+      setForm((previous) => ({
+        ...previous,
+        calories: (info.caloriesPer100g * ratio).toFixed(1),
+        protein: (info.proteinPer100g * ratio).toFixed(1),
+        carbs: (info.carbsPer100g * ratio).toFixed(1),
+        fat: (info.fatPer100g * ratio).toFixed(1),
+      }));
+      const sourceLabel = info.source === 'cache' ? '命中本地缓存' : 'AI 实时估算';
+      setAiHint(`${sourceLabel}：100g 基准 ${info.caloriesPer100g.toFixed(0)} kcal · 蛋白 ${info.proteinPer100g.toFixed(1)}g${info.note ? ` · ${info.note}` : ''}`);
+      showToast(`${foodName} 营养已自动填入（${sourceLabel}）。`, 'success');
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, 'AI 营养查询失败，请检查网络或 DEEPSEEK_API_KEY 配置。'), 'error');
+    } finally {
+      setAiQuerying(false);
+    }
   };
 
   const handleSaveEdit = () => {
@@ -253,6 +287,19 @@ export function FitnessDietSection({
             value={form.foodName}
             onChange={(event) => setForm((previous) => ({ ...previous, foodName: event.target.value }))}
           />
+          <div className="fitness-ai-cell">
+            <Btn
+              tone="secondary"
+              type="button"
+              onClick={() => {
+                void handleAiQuery();
+              }}
+              disabled={aiQuerying || !form.foodName.trim()}
+            >
+              {aiQuerying ? 'AI 估算中…' : 'AI 自动估算营养'}
+            </Btn>
+            {aiHint ? <span className="fitness-ai-hint">{aiHint}</span> : null}
+          </div>
           <Field
             label="重量（g）"
             type="number"
