@@ -129,10 +129,8 @@ function diffPercent(current: number, previous: number) {
 /**
  * 计算单条租房记录在指定月份的月度摊销费用。
  *
- * 费用分为两类：
- *   1. 固定月费（rent + service费）：每月重复发生，按当月在住天数比例折算
- *   2. 累计消耗（水电燃气中介保洁洗衣）：一次性或累计录入，先日均摊销再乘当月在住天
- * 押金不计入。
+ * 公式：总可摊销成本 ÷ 总居住天数 × 当月在住天数
+ * 其中总成本 = 房租 + 电费 + 水费 + 燃气 + 服务费 + 保洁费 + 洗衣费（不含押金和中介费）
  */
 function calculateRentMonthlyCost(
   row: FinanceRentRecordEntity,
@@ -151,30 +149,27 @@ function calculateRentMonthlyCost(
   }
 
   const overlapDays = Math.max(1, overlapEnd.diff(overlapStart, 'day') + 1);
-  const daysInMonth = monthEnd.date();
-  const ratio = overlapDays / daysInMonth;
 
-  // --- 类别1：固定月费，按当月在住比例折算 ---
-  const fixedMonthlyFees = toNumber(row.rent) + toNumber(row.service_fee);
-  const fixedCost = fixedMonthlyFees * ratio;
-
-  // --- 类别2：累计消耗，日均摊销后乘以当月在住天 ---
-  const totalConsumable = toNumber(row.electricity_fee)
-    + toNumber(row.water_fee)
-    + toNumber(row.gas_fee)
-    + toNumber(row.agency_fee)
-    + toNumber(row.cleaning_fee)
-    + toNumber(row.laundry_fee);
-
+  // 整个租期的总居住天数
   const totalEnd = moveOut || dayjs();
   const totalStayDays = Math.max(1, totalEnd.diff(moveIn, 'day') + 1);
 
-  let consumableCost = 0;
-  if (totalConsumable > 0 && totalStayDays > 0) {
-    consumableCost = (totalConsumable / totalStayDays) * overlapDays;
+  // 可摊销总成本 = 房租+电费+水费+燃气+服务费+保洁费+洗衣费（不含押金、中介费）
+  const totalCost = toNumber(row.rent)
+    + toNumber(row.electricity_fee)
+    + toNumber(row.water_fee)
+    + toNumber(row.gas_fee)
+    + toNumber(row.service_fee)
+    + toNumber(row.cleaning_fee)
+    + toNumber(row.laundry_fee);
+
+  if (totalCost <= 0) {
+    return 0;
   }
 
-  return round2(fixedCost + consumableCost);
+  // 日均成本 × 当月在住天数
+  const dailyCost = totalCost / totalStayDays;
+  return round2(dailyCost * overlapDays);
 }
 
 function describeMonth(month: string) {
