@@ -342,8 +342,8 @@ export function SelectField({ label, hint, children, className = '', ...rest }: 
 
 export function Tag({
   children,
-  tone = 'default',
-}: PropsWithChildren<{ tone?: 'default' | 'green' | 'orange' | 'blue' | 'red' }>) {
+  tone = 'pink',
+}: PropsWithChildren<{ tone?: 'default' | 'pink' | 'green' | 'orange' | 'blue' | 'red' }>) {
   return <span className={`tag tag-${tone}`}>{children}</span>;
 }
 

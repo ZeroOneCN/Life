@@ -1508,6 +1508,11 @@ textarea {
   color: var(--color-danger-strong);
 }
 
+.tag-pink {
+  background: #fdf2f8;
+  color: #be185d;
+}
+
 .tag-default {
   background: var(--color-surface-2, #f1f5f9);
   color: var(--color-ink-secondary, #273951);

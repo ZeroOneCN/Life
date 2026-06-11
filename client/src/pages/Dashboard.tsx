@@ -269,7 +269,7 @@ export default function Dashboard() {
         actions={(
           <div className="dashboard-header-tags">
             <Tag tone={hasAgenda ? 'orange' : 'green'}>{hasAgenda ? `${summary.agenda.length} 项待处理` : '全部正常'}</Tag>
-            <Tag tone="default">{summary.connectedModuleCount} 个模块已接入</Tag>
+            <Tag tone="pink">{summary.connectedModuleCount} 个模块已接入</Tag>
           </div>
         )}
       />
@@ -528,15 +528,15 @@ export default function Dashboard() {
             <div className="dash-notif-channel-list">
               <div className="dash-notif-channel-row">
                 <span className="dash-notif-channel-row-label">邮件通道</span>
-                <Tag tone={channelActivity.email ? 'green' : 'default'}>{channelActivity.email ? '有日志' : '静默'}</Tag>
+                <Tag tone={channelActivity.email ? 'green' : 'pink'}>{channelActivity.email ? '有日志' : '静默'}</Tag>
               </div>
               <div className="dash-notif-channel-row">
                 <span className="dash-notif-channel-row-label">企业微信</span>
-                <Tag tone={channelActivity.wechatWork ? 'green' : 'default'}>{channelActivity.wechatWork ? '有日志' : '静默'}</Tag>
+                <Tag tone={channelActivity.wechatWork ? 'green' : 'pink'}>{channelActivity.wechatWork ? '有日志' : '静默'}</Tag>
               </div>
               <div className="dash-notif-channel-row">
                 <span className="dash-notif-channel-row-label">Webhook</span>
-                <Tag tone={channelActivity.webhook ? 'green' : 'default'}>{channelActivity.webhook ? '有日志' : '静默'}</Tag>
+                <Tag tone={channelActivity.webhook ? 'green' : 'pink'}>{channelActivity.webhook ? '有日志' : '静默'}</Tag>
               </div>
             </div>
           </div>

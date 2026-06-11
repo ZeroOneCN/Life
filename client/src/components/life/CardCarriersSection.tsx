@@ -147,7 +147,7 @@ export function CardCarriersSection({
                   return (
                     <div className="card-tag-list">
                       <Tag tone="blue">号卡 {usage?.cardCount ?? 0}</Tag>
-                      <Tag tone="default">账单 {usage?.billCount ?? 0}</Tag>
+                      <Tag tone="pink">账单 {usage?.billCount ?? 0}</Tag>
                     </div>
                   );
                 },

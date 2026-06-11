@@ -168,7 +168,7 @@ export function ShoppingPlatformsSection({
                   </div>
                 </div>
                 <div className="shopping-platform-card-meta">
-                  {platform.isBuiltIn ? <Tag tone="blue">系统预置</Tag> : <Tag tone="default">自定义平台</Tag>}
+                  {platform.isBuiltIn ? <Tag tone="blue">系统预置</Tag> : <Tag tone="pink">自定义平台</Tag>}
                   <span className="subtle-text">{summary.count} 条记录</span>
                 </div>
                 <strong className="shopping-platform-card-amount">

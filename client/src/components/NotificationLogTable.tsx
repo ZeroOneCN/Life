@@ -44,7 +44,7 @@ export function NotificationLogTable({
             title: '类型',
             dataIndex: 'kind',
             width: 96,
-            render: (value) => <Tag tone="default">{value === 'test' ? '测试' : '场景'}</Tag>,
+            render: (value) => <Tag tone="pink">{value === 'test' ? '测试' : '场景'}</Tag>,
           },
           {
             key: 'status',

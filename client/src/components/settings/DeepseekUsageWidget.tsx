@@ -147,7 +147,7 @@ function renderOfficialSection(primary: DeepseekBalanceInfo, fetchedAt: string, 
           {allBalances
             .filter((item) => item.currency !== primary.currency)
             .map((item) => (
-              <Tag key={item.currency} tone="default">
+              <Tag key={item.currency} tone="pink">
                 {item.currency} · {formatAmount(item.totalBalance, item.currency)}
               </Tag>
             ))}
@@ -166,7 +166,7 @@ function renderLocalSection(local: DeepseekLocalUsage) {
           <span>按当前登录用户从 /assistant/chat 累计</span>
         </div>
         <div className="deepseek-usage-empty">
-          <Tag tone="default">暂无记录</Tag>
+          <Tag tone="pink">暂无记录</Tag>
           <strong>本站 AI 助理还未发起过请求</strong>
           <span>
             在右下角 AI 助理里开始一次对话，组件就会自动汇总累计 / 今日的 Token 消耗。
@@ -379,7 +379,7 @@ export function DeepseekUsageWidget() {
       return (
         <div className="deepseek-usage-body">
           <div className="deepseek-usage-empty">
-            <Tag tone="default">无余额</Tag>
+            <Tag tone="pink">无余额</Tag>
             <strong>DeepSeek 接口未返回余额数据</strong>
             <span>刷新时间：{formatTimestamp(snapshot.fetchedAt)}</span>
           </div>
