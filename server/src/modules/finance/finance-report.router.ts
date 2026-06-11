@@ -128,7 +128,11 @@ function diffPercent(current: number, previous: number) {
 
 /**
  * 计算单条租房记录在指定月份的月度摊销费用。
- * 房租 + 水电燃气等按月在住天数比例摊销，一次性费用（中介费）不计入月报。
+ *
+ * 核心思路：房租记录中的 rent/水电/杂费 是整个租期的累计总额，
+ * 需要先算出「日均成本 = 总可摊销成本 ÷ 总居住天数」，
+ * 再乘以该月在住天数，得到当月应计入月报的金额。
+ * 押金和一次性中介费不计入。
  */
 function calculateRentMonthlyCost(
   row: FinanceRentRecordEntity,
@@ -147,11 +151,13 @@ function calculateRentMonthlyCost(
   }
 
   const overlapDays = Math.max(1, overlapEnd.diff(overlapStart, 'day') + 1);
-  const daysInMonth = monthEnd.date(); // 当月总天数
-  const ratio = overlapDays / daysInMonth;
 
-  // 月度可摊销费用 = 房租 + 水电气保洁洗衣服务费（不含押金和一次性中介费）
-  const monthlyCost = toNumber(row.rent)
+  // 整个租期的总居住天数
+  const totalEnd = moveOut || dayjs();
+  const totalStayDays = Math.max(1, totalEnd.diff(moveIn, 'day') + 1);
+
+  // 可摊销总成本 = 房租 + 水电气保洁洗衣服务费（不含押金、中介费）
+  const totalCost = toNumber(row.rent)
     + toNumber(row.electricity_fee)
     + toNumber(row.water_fee)
     + toNumber(row.gas_fee)
@@ -159,7 +165,13 @@ function calculateRentMonthlyCost(
     + toNumber(row.laundry_fee)
     + toNumber(row.service_fee);
 
-  return round2(monthlyCost * ratio);
+  if (totalCost <= 0 || totalStayDays <= 0) {
+    return 0;
+  }
+
+  // 日均成本 × 当月在住天数 = 当月应计支出
+  const dailyCost = totalCost / totalStayDays;
+  return round2(dailyCost * overlapDays);
 }
 
 function describeMonth(month: string) {
