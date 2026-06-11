@@ -463,6 +463,7 @@ export default function TravelPage() {
       {tab === 'leaderboard' ? (
         <TravelLeaderboardSection
           userId={settings.leaderboardUserId}
+          userLabel={currentUserLabel}
           books={books}
           records={records}
           onUserIdChange={() => {
