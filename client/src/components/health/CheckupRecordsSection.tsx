@@ -23,7 +23,6 @@ import {
 import type { CheckupRecord, CheckupRecordDraft, CheckupStatus } from '../../types/checkup';
 
 interface CheckupRecordsSectionProps {
-  currentUserLabel: string;
   activeUserId: string;
   filterUserId: string;
   trendUserId: string;
@@ -114,7 +113,6 @@ function parseDraft(form: RecordFormState, userId: string): CheckupRecordDraft |
 }
 
 export function CheckupRecordsSection({
-  currentUserLabel,
   activeUserId,
   filterUserId,
   trendUserId,

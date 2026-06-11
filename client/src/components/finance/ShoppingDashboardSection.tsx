@@ -105,13 +105,6 @@ export function ShoppingDashboardSection({
     >
       <div className="page-stack">
         <div className="shopping-filter-grid shopping-filter-grid-dashboard">
-          <Field
-            label="看板用户 ID"
-            value={userId}
-            onChange={(event) => onUserIdChange(event.target.value)}
-            placeholder="留空查看全部用户"
-            hint="趋势、平台结构和账本摘要都会按这里的用户维度刷新。"
-          />
           <SelectField
             label="看板账本"
             value={ledgerId}

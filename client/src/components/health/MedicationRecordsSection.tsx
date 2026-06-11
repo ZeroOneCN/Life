@@ -15,7 +15,6 @@ import {
 import type { MedicationRecord, MedicationRecordDraft } from '../../types/medication';
 
 interface MedicationRecordsSectionProps {
-  currentUserLabel: string;
   activeUserId: string;
   filterUserId: string;
   records: MedicationRecord[];
@@ -81,7 +80,6 @@ function parseDraft(form: MedicationRecordFormState, userId: string): Medication
 }
 
 export function MedicationRecordsSection({
-  currentUserLabel,
   activeUserId,
   filterUserId,
   records,
@@ -173,7 +171,7 @@ export function MedicationRecordsSection({
         </div>
       ),
     },
-  ], [currentUserLabel]);
+  ], []);
 
   const handleCreate = () => {
     const draft = parseDraft(form, activeUserId);

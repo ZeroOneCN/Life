@@ -7,7 +7,6 @@ import type { StepHour } from '../../types/health';
 import { SectionCard } from '../page';
 
 interface StepEntryFormProps {
-  currentUserLabel: string;
   stepsInput: string;
   selectedHour: StepHour;
   recordTime: string;
@@ -31,7 +30,6 @@ function getEntryDescription(hour: StepHour) {
 }
 
 export function StepEntryForm({
-  currentUserLabel,
   stepsInput,
   selectedHour,
   recordTime,

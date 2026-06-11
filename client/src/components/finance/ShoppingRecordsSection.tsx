@@ -17,7 +17,6 @@ import {
 import type { ShoppingCurrencyMode, ShoppingLedger, ShoppingPlatform, ShoppingRecord, ShoppingRecordDraft } from '../../types/shopping';
 
 interface ShoppingRecordsSectionProps {
-  currentUserLabel: string;
   activeUserId: string;
   activeLedgerId: string;
   filterUserId: string;
@@ -108,7 +107,6 @@ function parseDraft(form: ShoppingFormState): ShoppingRecordDraft | null {
 }
 
 export function ShoppingRecordsSection({
-  currentUserLabel,
   activeUserId,
   activeLedgerId,
   filterUserId,

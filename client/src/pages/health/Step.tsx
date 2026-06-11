@@ -55,7 +55,6 @@ function getQuickRecordTime(hour: StepHour, previousDay = false) {
 
 export default function StepPage() {
   const authState = useAuthState();
-  const currentUserLabel = getAuthUserDisplayName(authState.session?.user, '当前登录用户');
   const [settings, setSettings] = useState<StepPageState['settings']>(EMPTY_SETTINGS);
   const [summary, setSummary] = useState({
     totalRecords: 0,
@@ -200,11 +199,6 @@ export default function StepPage() {
   const handleCreateRecord = () => {
     const steps = Number(stepsInput);
 
-    if (!settings.activeUserId.trim()) {
-      showToast('请先填写录入用户。', 'error');
-      return;
-    }
-
     if (!Number.isFinite(steps) || steps < 0) {
       showToast('请输入有效的步数。', 'error');
       return;
@@ -256,7 +250,6 @@ export default function StepPage() {
       />
 
       <StepEntryForm
-        currentUserLabel={currentUserLabel}
         stepsInput={stepsInput}
         selectedHour={selectedHour}
         recordTime={recordTime}

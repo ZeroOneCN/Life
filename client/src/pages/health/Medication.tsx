@@ -65,7 +65,6 @@ function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
 
 export default function MedicationPage() {
   const authState = useAuthState();
-  const currentUserLabel = getAuthUserDisplayName(authState.session?.user, '当前登录用户');
   const [tab, setTab] = usePageTab<MedicationTab>('records', TAB_OPTIONS.map((item) => item.value), 'medicationTab');
   const [records, setRecords] = useState<MedicationRecord[]>([]);
   const [purchases, setPurchases] = useState<MedicationPurchaseRecord[]>([]);
@@ -263,7 +262,6 @@ export default function MedicationPage() {
 
       {tab === 'records' ? (
         <MedicationRecordsSection
-          currentUserLabel={currentUserLabel}
           activeUserId={settings.activeUserId}
           filterUserId={settings.recordsUserId}
           records={records}
@@ -289,7 +287,6 @@ export default function MedicationPage() {
 
       {tab === 'purchases' ? (
         <MedicationPurchasesSection
-          currentUserLabel={currentUserLabel}
           activeUserId={settings.activeUserId}
           filterUserId={settings.purchaseUserId}
           purchases={purchases}

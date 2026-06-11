@@ -19,7 +19,6 @@ import { buildApiErrorMessage } from '../../lib/api';
 import type { ExerciseRecord, ExerciseRecordDraft, ExerciseType, IntensityLevel } from '../../types/fitness';
 
 interface FitnessExerciseSectionProps {
-  currentUserLabel: string;
   activeUserId: string;
   filterUserId: string;
   records: ExerciseRecord[];
@@ -71,7 +70,6 @@ function parseDraft(form: ExerciseFormState, userId: string): ExerciseRecordDraf
 }
 
 export function FitnessExerciseSection({
-  currentUserLabel,
   activeUserId,
   filterUserId,
   records,

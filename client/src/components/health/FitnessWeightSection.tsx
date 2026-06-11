@@ -16,7 +16,6 @@ import {
 import type { WeightRecord, WeightRecordDraft } from '../../types/fitness';
 
 interface FitnessWeightSectionProps {
-  currentUserLabel: string;
   activeUserId: string;
   filterUserId: string;
   defaultHeightCm: number;
@@ -65,7 +64,6 @@ function parseDraft(form: WeightFormState, userId: string): WeightRecordDraft | 
 }
 
 export function FitnessWeightSection({
-  currentUserLabel,
   activeUserId,
   filterUserId,
   defaultHeightCm,

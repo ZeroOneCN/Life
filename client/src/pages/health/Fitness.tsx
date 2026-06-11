@@ -62,7 +62,6 @@ function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
 
 export default function FitnessPage() {
   const authState = useAuthState();
-  const currentUserLabel = getAuthUserDisplayName(authState.session?.user, '当前登录用户');
   const [activeTab, setActiveTab] = usePageTab<FitnessTab>('diet', TAB_OPTIONS.map((item) => item.value), 'fitnessTab');
   const [dietRecords, setDietRecords] = useState<DietRecord[]>([]);
   const [exerciseRecords, setExerciseRecords] = useState<ExerciseRecord[]>([]);
@@ -189,7 +188,6 @@ export default function FitnessPage() {
 
       {activeTab === 'diet' ? (
         <FitnessDietSection
-          currentUserLabel={currentUserLabel}
           activeUserId={settings.activeUserId}
           filterUserId={settings.dietFilterUserId}
           records={dietRecords}
@@ -215,7 +213,6 @@ export default function FitnessPage() {
 
       {activeTab === 'exercise' ? (
         <FitnessExerciseSection
-          currentUserLabel={currentUserLabel}
           activeUserId={settings.activeUserId}
           filterUserId={settings.exerciseFilterUserId}
           records={exerciseRecords}
@@ -241,7 +238,6 @@ export default function FitnessPage() {
 
       {activeTab === 'shopping' ? (
         <FitnessShoppingSection
-          currentUserLabel={currentUserLabel}
           activeUserId={settings.activeUserId}
           filterUserId={settings.shoppingFilterUserId}
           records={shoppingRecords}
@@ -267,7 +263,6 @@ export default function FitnessPage() {
 
       {activeTab === 'weight' ? (
         <FitnessWeightSection
-          currentUserLabel={currentUserLabel}
           activeUserId={settings.activeUserId}
           filterUserId={settings.weightFilterUserId}
           defaultHeightCm={settings.defaultHeightCm ?? 170}

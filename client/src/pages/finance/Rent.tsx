@@ -291,7 +291,6 @@ export default function RentPage() {
 
       {tab === 'records' ? (
         <RentRecordsSection
-          currentUserLabel={activeUserLabel}
           activeUserId={settings.activeUserId}
           filterUserId={settings.recordsUserId}
           records={records}
@@ -316,7 +315,6 @@ export default function RentPage() {
 
       {tab === 'entry' ? (
         <RentEntrySection
-          currentUserLabel={activeUserLabel}
           activeUserId={settings.activeUserId}
           editingRecordId={settings.editingRecordId}
           records={records}
@@ -345,7 +343,6 @@ export default function RentPage() {
 
       {tab === 'channels' ? (
         <RentChannelsSection
-          currentUserLabel={activeUserLabel}
           activeUserId={settings.activeUserId}
           records={records}
           channels={channels}

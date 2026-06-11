@@ -15,7 +15,6 @@ import {
 import type { FitnessShoppingRecord, FitnessShoppingRecordDraft } from '../../types/fitness';
 
 interface FitnessShoppingSectionProps {
-  currentUserLabel: string;
   activeUserId: string;
   filterUserId: string;
   records: FitnessShoppingRecord[];
@@ -68,7 +67,6 @@ function parseDraft(form: ShoppingFormState, userId: string): FitnessShoppingRec
 }
 
 export function FitnessShoppingSection({
-  currentUserLabel,
   activeUserId,
   filterUserId,
   records,

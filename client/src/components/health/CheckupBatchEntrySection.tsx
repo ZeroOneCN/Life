@@ -16,7 +16,6 @@ interface BatchRowState {
 }
 
 interface CheckupBatchEntrySectionProps {
-  currentUserLabel: string;
   activeUserId: string;
   templates: CheckupTemplate[];
   preferredTemplateId?: string | null;
@@ -37,7 +36,6 @@ function createRow(seed?: Partial<BatchRowState>): BatchRowState {
 }
 
 export function CheckupBatchEntrySection({
-  currentUserLabel,
   activeUserId,
   templates,
   preferredTemplateId,

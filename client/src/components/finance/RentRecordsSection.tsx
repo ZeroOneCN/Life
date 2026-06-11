@@ -15,7 +15,6 @@ import {
 import type { RentChannel, RentHousingRecord } from '../../types/rent';
 
 interface RentRecordsSectionProps {
-  currentUserLabel: string;
   activeUserId: string;
   filterUserId: string;
   records: RentHousingRecord[];
@@ -40,7 +39,6 @@ function getOccupancyLabel(value: 'all' | 'active' | 'ended') {
 }
 
 export function RentRecordsSection({
-  currentUserLabel,
   activeUserId,
   filterUserId,
   records,
@@ -161,7 +159,6 @@ export function RentRecordsSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前列表默认跟随用户 <strong>{currentUserLabel}</strong>。
           押金会保留展示，但不会混入总成本、单日成本和渠道统计。
         </div>
 

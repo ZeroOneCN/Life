@@ -86,7 +86,6 @@ function hydrateSettings(
 export default function TravelPage() {
   const authState = useAuthState();
   const currentUserId = authState.session?.user.id ?? '';
-  const currentUserLabel = getAuthUserDisplayName(authState.session?.user, '当前登录用户');
   const [tab, setTab] = usePageTab<TravelTab>('books', TAB_OPTIONS.map((item) => item.value), 'travelTab');
   const [books, setBooks] = useState<TravelBook[]>([]);
   const [records, setRecords] = useState<TravelExpenseRecord[]>([]);
@@ -396,7 +395,6 @@ export default function TravelPage() {
 
       {tab === 'books' ? (
         <TravelBooksSection
-          currentUserLabel={currentUserLabel}
           activeUserId={settings.activeUserId}
           activeBookId={activeBook?.id ?? ''}
           books={books}
@@ -418,7 +416,6 @@ export default function TravelPage() {
 
       {tab === 'details' ? (
         <TravelDetailsSection
-          currentUserLabel={currentUserLabel}
           activeUserId={settings.activeUserId}
           activeBookId={activeBook?.id ?? ''}
           detailsBookId={settings.detailsBookId}

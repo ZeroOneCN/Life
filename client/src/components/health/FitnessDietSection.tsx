@@ -18,7 +18,6 @@ import { buildApiErrorMessage } from '../../lib/api';
 import type { DietRecord, DietRecordDraft, MealType } from '../../types/fitness';
 
 interface FitnessDietSectionProps {
-  currentUserLabel: string;
   activeUserId: string;
   filterUserId: string;
   records: DietRecord[];
@@ -79,7 +78,6 @@ function parseDraft(form: DietFormState, userId: string): DietRecordDraft | null
 }
 
 export function FitnessDietSection({
-  currentUserLabel,
   activeUserId,
   filterUserId,
   records,

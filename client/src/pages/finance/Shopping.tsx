@@ -49,7 +49,6 @@ function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
 
 export default function ShoppingPage() {
   const authState = useAuthState();
-  const currentUserLabel = getAuthUserDisplayName(authState.session?.user, '当前登录用户');
   const [tab, setTab] = usePageTab<ShoppingTab>('records', TAB_OPTIONS.map((item) => item.value), 'shoppingTab');
   const [records, setRecords] = useState<ShoppingRecord[]>([]);
   const [ledgers, setLedgers] = useState<ShoppingLedger[]>([]);
@@ -263,7 +262,6 @@ export default function ShoppingPage() {
 
       {tab === 'records' ? (
         <ShoppingRecordsSection
-          currentUserLabel={currentUserLabel}
           activeUserId={settings.activeUserId}
           activeLedgerId={settings.activeLedgerId}
           filterUserId={settings.recordsUserId}

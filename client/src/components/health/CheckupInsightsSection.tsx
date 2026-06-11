@@ -15,7 +15,6 @@ import type { CheckupPageState, CheckupRecord } from '../../types/checkup';
 
 interface CheckupInsightsSectionProps {
   records: CheckupRecord[];
-  userLabel?: string;
   settings: CheckupPageState['settings'];
   onSettingsChange: (patch: Partial<CheckupPageState['settings']>) => void;
   onReminderToggle: (checked: boolean) => void;
@@ -55,13 +54,6 @@ export function CheckupInsightsSection({
     >
       <div className="page-stack">
         <div className="checkup-filter-grid">
-          <Field
-            label="分析用户 ID"
-            value={settings.insightUserId}
-            onChange={(event) => onSettingsChange({ insightUserId: event.target.value })}
-            placeholder="留空查看全部用户"
-            hint="分析卡片、复查列表和提醒扫描都以这里的用户维度为准。"
-          />
           <Field
             label="提前提醒天数"
             type="number"

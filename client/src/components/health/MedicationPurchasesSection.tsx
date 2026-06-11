@@ -17,7 +17,6 @@ import {
 import type { MedicationPurchaseDraft, MedicationPurchaseRecord } from '../../types/medication';
 
 interface MedicationPurchasesSectionProps {
-  currentUserLabel: string;
   activeUserId: string;
   filterUserId: string;
   purchases: MedicationPurchaseRecord[];
@@ -98,7 +97,6 @@ function inferTotalPrice(quantity: string, unitPrice: string) {
 }
 
 export function MedicationPurchasesSection({
-  currentUserLabel,
   activeUserId,
   filterUserId,
   purchases,
@@ -196,7 +194,7 @@ export function MedicationPurchasesSection({
         </div>
       ),
     },
-  ], [currentUserLabel]);
+  ], []);
 
   const handleCreate = () => {
     const draft = parseDraft(form, activeUserId);

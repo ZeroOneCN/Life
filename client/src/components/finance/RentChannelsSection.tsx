@@ -13,7 +13,6 @@ import {
 import type { RentChannel, RentChannelDraft, RentHousingRecord } from '../../types/rent';
 
 interface RentChannelsSectionProps {
-  currentUserLabel: string;
   activeUserId: string;
   records: RentHousingRecord[];
   channels: RentChannel[];
@@ -52,7 +51,6 @@ function parseDraft(form: ChannelFormState): RentChannelDraft | null {
 }
 
 export function RentChannelsSection({
-  currentUserLabel,
   activeUserId,
   records,
   channels,
@@ -111,7 +109,7 @@ export function RentChannelsSection({
         </div>
       ),
     },
-  ], [currentUserLabel, usageMap]);
+  ], [usageMap]);
 
   const handleCreate = () => {
     const draft = parseDraft(form);
