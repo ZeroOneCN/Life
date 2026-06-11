@@ -3480,6 +3480,18 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.rent-detail-grid .callout {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.rent-cost-grid .callout {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
 .rent-statistics-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }

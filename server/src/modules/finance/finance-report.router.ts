@@ -126,6 +126,42 @@ function diffPercent(current: number, previous: number) {
   return (current - previous) / previous;
 }
 
+/**
+ * 计算单条租房记录在指定月份的月度摊销费用。
+ * 房租 + 水电燃气等按月在住天数比例摊销，一次性费用（中介费）不计入月报。
+ */
+function calculateRentMonthlyCost(
+  row: FinanceRentRecordEntity,
+  monthStart: dayjs.Dayjs,
+  monthEnd: dayjs.Dayjs,
+): number {
+  const moveIn = dayjs(row.move_in_date);
+  const moveOut = row.move_out_date ? dayjs(row.move_out_date) : null;
+
+  // 租期与报告月的交集：max(入住日, 月初) ~ min(退租日或月末, 月末)
+  const overlapStart = moveIn.isAfter(monthStart) ? moveIn : monthStart;
+  const overlapEnd = moveOut && moveOut.isBefore(monthEnd) ? moveOut : monthEnd;
+
+  if (overlapEnd.isBefore(overlapStart, 'day')) {
+    return 0; // 该月无在住时间
+  }
+
+  const overlapDays = Math.max(1, overlapEnd.diff(overlapStart, 'day') + 1);
+  const daysInMonth = monthEnd.date(); // 当月总天数
+  const ratio = overlapDays / daysInMonth;
+
+  // 月度可摊销费用 = 房租 + 水电气保洁洗衣服务费（不含押金和一次性中介费）
+  const monthlyCost = toNumber(row.rent)
+    + toNumber(row.electricity_fee)
+    + toNumber(row.water_fee)
+    + toNumber(row.gas_fee)
+    + toNumber(row.cleaning_fee)
+    + toNumber(row.laundry_fee)
+    + toNumber(row.service_fee);
+
+  return round2(monthlyCost * ratio);
+}
+
 function describeMonth(month: string) {
   const [year, monthIndex] = month.split('-').map((value) => Number(value));
   if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) {
@@ -139,6 +175,8 @@ export async function buildMonthlyReport(
   month: string,
 ): Promise<MonthlyReportSummary> {
   const { start, end } = rangeOfMonth(month);
+  const monthStart = startOfMonth(month);
+  const monthEnd = endOfMonth(month);
   const dataSource = appDataSource;
 
   return dataSource.transaction(async (manager) => {
@@ -270,26 +308,19 @@ export async function buildMonthlyReport(
     }
 
     for (const row of rentRows) {
-      const total = toNumber(row.rent)
-        + toNumber(row.electricity_fee)
-        + toNumber(row.water_fee)
-        + toNumber(row.gas_fee)
-        + toNumber(row.agency_fee)
-        + toNumber(row.cleaning_fee)
-        + toNumber(row.laundry_fee)
-        + toNumber(row.service_fee);
-      moduleTotals.rent.amount += total;
+      const monthlyAmount = calculateRentMonthlyCost(row, monthStart, monthEnd);
+      moduleTotals.rent.amount += monthlyAmount;
       moduleTotals.rent.count += 1;
       const category = `房租·${row.channel_name || '未知渠道'}`;
       const current = categoryMap.get(category) ?? { amount: 0, count: 0 };
-      current.amount += total;
+      current.amount += monthlyAmount;
       current.count += 1;
       categoryMap.set(category, current);
       topCandidates.push({
         module: 'rent',
         title: row.address || '房租',
         date: dayjs(row.move_in_date).format('YYYY-MM-DD'),
-        amount: total,
+        amount: monthlyAmount,
         category,
       });
     }
@@ -351,6 +382,8 @@ export async function buildMonthlyReport(
  */
 export function totalExpenseForMonth(userId: string, month: string) {
   const { start, end } = rangeOfMonth(month);
+  const monthStart = startOfMonth(month);
+  const monthEnd = endOfMonth(month);
   const dataSource = appDataSource;
 
   return dataSource.transaction(async (manager) => {
@@ -386,15 +419,7 @@ export function totalExpenseForMonth(userId: string, month: string) {
       if (cycle === 'quarterly') return sum + price / 3;
       return sum + price;
     }, 0);
-    const rentSum = rentRows.reduce((sum, row) => sum
-      + toNumber(row.rent)
-      + toNumber(row.electricity_fee)
-      + toNumber(row.water_fee)
-      + toNumber(row.gas_fee)
-      + toNumber(row.agency_fee)
-      + toNumber(row.cleaning_fee)
-      + toNumber(row.laundry_fee)
-      + toNumber(row.service_fee), 0);
+    const rentSum = rentRows.reduce((sum, row) => sum + calculateRentMonthlyCost(row, monthStart, monthEnd), 0);
     return shoppingSum + travelSum + loanSum + subscriptionSum + rentSum;
   });
 }
