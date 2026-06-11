@@ -1,3 +1,4 @@
+import { In } from 'typeorm';
 import { Router } from 'express';
 import { z } from 'zod';
 
@@ -510,6 +511,16 @@ export function createNotificationCenterRouter() {
           missing.map((d) => sceneRepo.create({ user_id: userId, ...d })),
         );
         scenes = [...scenes, ...created].sort((left, right) => String(left.scene_id).localeCompare(String(right.scene_id)));
+      }
+
+      // 清理不在 SCENE_SEED 中的废弃场景（如历史遗留的外汇累计亏损预警、每日通知摘要等）
+      const validIds = new Set(SCENE_SEED.map((s) => s.scene_id));
+      const orphaned = scenes.filter((s) => !validIds.has(s.scene_id));
+      if (orphaned.length > 0) {
+        const orphanIds = orphaned.map((s) => s.id);
+        await relationRepo.delete({ user_id: userId, scene_id: In(orphaned.map((o) => o.scene_id)) });
+        await sceneRepo.delete(orphanIds);
+        scenes = scenes.filter((s) => validIds.has(s.scene_id));
       }
     }
 
