@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
+import argon2 from 'argon2';
 
 import { env } from '../../config/env';
 import { appDataSource } from '../../db/data-source';
@@ -46,9 +47,14 @@ const changePasswordSchema = z.object({
   confirmPassword: z.string().min(1),
 });
 
-/** 使用 MD5 对密码进行哈希（与数据库中已存储的密码格式一致） */
-function md5Hash(password: string): string {
-  return createHash('md5').update(password).digest('hex');
+/** 使用 argon2id 对密码进行哈希（与数据库中已存储的密码格式一致） */
+async function hashPassword(password: string): Promise<string> {
+  return argon2.hash(password);
+}
+
+/** 使用 argon2id 校验密码 */
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return argon2.verify(hash, password);
 }
 
 /** 使用 SHA-256 对 refresh token 进行哈希存储 */
@@ -124,7 +130,7 @@ export function createAuthRouter() {
       throw new AppError('account_already_exists', 409, 409);
     }
 
-    const passwordHash = md5Hash(payload.password);
+    const passwordHash = await hashPassword(payload.password);
     const account = await accountRepo.save(accountRepo.create({
       username: payload.username,
       email: payload.email,
@@ -178,7 +184,7 @@ export function createAuthRouter() {
       throw new AppError('invalid_credentials', 401, 401);
     }
 
-    const matched = md5Hash(payload.password) === account.password_hash;
+    const matched = await verifyPassword(payload.password, account.password_hash);
     if (!matched) {
       throw new AppError('invalid_credentials', 401, 401);
     }
@@ -357,7 +363,7 @@ export function createAuthRouter() {
       id: userId,
     });
 
-    const passwordMatched = md5Hash(payload.currentPassword) === account.password_hash;
+    const passwordMatched = await verifyPassword(payload.currentPassword, account.password_hash);
     if (!passwordMatched) {
       throw new AppError('invalid_request', 400, 400, {
         fieldErrors: {
@@ -366,7 +372,7 @@ export function createAuthRouter() {
       });
     }
 
-    const passwordHash = md5Hash(payload.newPassword);
+    const passwordHash = await hashPassword(payload.newPassword);
     await accountRepo.save({
       ...account,
       password_hash: passwordHash,

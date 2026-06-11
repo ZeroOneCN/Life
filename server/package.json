@@ -14,6 +14,7 @@
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/db/data-source.ts"
   },
   "dependencies": {
+    "argon2": "^0.44.0",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.1",
     "cors": "^2.8.6",
