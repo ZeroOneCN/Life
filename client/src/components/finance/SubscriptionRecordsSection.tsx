@@ -395,7 +395,7 @@ export function SubscriptionRecordsSection({
                 {
                   key: 'autoRenew',
                   title: '自动续费',
-                  render: (_, row) => <Tag tone={row.autoRenew ? 'green' : 'pink'}>{row.autoRenew ? '自动' : '手动'}</Tag>,
+                  render: (_, row) => <Tag tone={row.autoRenew ? 'green' : 'default'}>{row.autoRenew ? '自动' : '手动'}</Tag>,
                 },
                 {
                   key: 'status',

@@ -297,7 +297,7 @@ export default function CardPage() {
         actions={(
           <div className="inline-row">
             <Tag tone="blue">低余额 {overview.lowBalanceCount} 张</Tag>
-            <Tag tone="pink">本月账单 {overview.currentMonthBillCount} 张</Tag>
+            <Tag tone="default">本月账单 {overview.currentMonthBillCount} 张</Tag>
           </div>
         )}
       />

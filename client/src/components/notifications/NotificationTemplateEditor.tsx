@@ -129,7 +129,7 @@ export function NotificationTemplateEditor({ scene, template, onSaved }: Notific
           </div>
         </div>
         <div className="nt-editor-actions">
-        <Tag tone={dirty ? 'orange' : 'pink'}>{dirty ? '未保存' : '已同步'}</Tag>
+        <Tag tone={dirty ? 'orange' : 'default'}>{dirty ? '未保存' : '已同步'}</Tag>
         <Btn tone="secondary" onClick={handleReset} disabled={!dirty || saving}>还原</Btn>
         <Btn onClick={handleSave} disabled={!dirty || saving}>{saving ? '保存中…' : '保存模板'}</Btn>
       </div>

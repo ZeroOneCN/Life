@@ -201,7 +201,7 @@ export function ShoppingLedgersSection({
                     <strong>{ledger.name}</strong>
                     <div className="shopping-ledger-card-meta">
                       <span>{ledger.startDate}{ledger.endDate ? ` - ${ledger.endDate}` : ' - 进行中'}</span>
-                      {ledger.isActive ? <Tag tone="green">活跃</Tag> : <Tag tone="pink">存档</Tag>}
+                      {ledger.isActive ? <Tag tone="green">活跃</Tag> : <Tag tone="default">存档</Tag>}
                     </div>
                   </div>
                   <div className="fitness-row-actions">

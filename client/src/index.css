@@ -1508,15 +1508,9 @@ textarea {
   color: var(--color-danger-strong);
 }
 
-.tag-pink {
+.tag-default {
   background: #fdf2f8;
   color: #be185d;
-}
-
-.tag-default {
-  background: var(--color-surface-2, #f1f5f9);
-  color: var(--color-ink-secondary, #273951);
-  border: 1px solid var(--color-hairline, #e2e8f0);
 }
 
 .tag-muted {

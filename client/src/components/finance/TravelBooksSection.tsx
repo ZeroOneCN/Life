@@ -205,7 +205,7 @@ export function TravelBooksSection({
       render: (_value: unknown, row: (typeof pageBooks)[number]) => {
         const book = books.find((item) => item.id === row.bookId);
         const status = book?.status ?? 'ongoing';
-        return <Tag tone={status === 'ongoing' ? 'green' : status === 'planning' ? 'blue' : 'pink'}>{TRAVEL_BOOK_STATUS_LABELS[status]}</Tag>;
+        return <Tag tone={status === 'ongoing' ? 'green' : status === 'planning' ? 'blue' : 'default'}>{TRAVEL_BOOK_STATUS_LABELS[status]}</Tag>;
       },
     },
     {
