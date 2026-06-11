@@ -461,7 +461,10 @@ export function LoanBillsSection({
               setPendingDeleteId(null);
               showToast('贷款账单已删除。');
             })
-            .catch(() => undefined)
+            .catch((error) => {
+              console.error('删除贷款账单失败:', error);
+              showToast('删除贷款账单失败，请重试。', 'error');
+            })
             .finally(() => {
               setSaving(false);
             });

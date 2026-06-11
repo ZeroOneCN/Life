@@ -11,11 +11,6 @@ async function seed() {
   const snapshot = await getSystemHealthSnapshot();
 
   await appDataSource.destroy();
-  // eslint-disable-next-line no-console
-  console.log(
-    `Seed completed. databaseReady=${snapshot.databaseReady} hasUsers=${snapshot.hasUsers} ` +
-    'No demo user is created by default.',
-  );
 }
 
 void seed();

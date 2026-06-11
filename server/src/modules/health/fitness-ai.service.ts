@@ -203,10 +203,8 @@ export async function queryFoodNutrition(input: {
         note: parsed.note,
         hit_count: 1,
       });
-      console.log(`[fitness-cache] food saved: ${key}`);
     } catch (insertError) {
       // 并发场景下唯一索引可能冲突，忽略即可
-      console.warn('[fitness-cache] food insert conflict (ignored):', insertError);
     }
 
     recordAssistantUsage({
@@ -299,9 +297,8 @@ export async function queryExerciseCalorie(input: {
         suggested_intensity: parsed.suggestedIntensity,
         hit_count: 1,
       });
-      console.log(`[fitness-cache] exercise saved: ${key}`);
     } catch (insertError) {
-      console.warn('[fitness-cache] exercise insert conflict (ignored):', insertError);
+      // 并发冲突忽略
     }
 
     recordAssistantUsage({

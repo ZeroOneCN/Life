@@ -1355,7 +1355,10 @@ function sanitizeColorMixInClone(doc: Document, root: HTMLElement) {
             rule.style.cssText = rule.style.cssText.replace(COLOR_MIX_RE, 'transparent');
           }
         }
-      } catch { }
+      } catch (error) {
+        // 跨域样式表访问 cssRules 可能抛出 SecurityError，静默处理
+        console.error('读取CSS规则失败:', error);
+      }
     }
     if (styleEl.textContent && styleEl.textContent.includes('color-mix')) {
       styleEl.textContent = styleEl.textContent.replace(COLOR_MIX_RE, 'transparent');
@@ -1375,7 +1378,10 @@ function sanitizeColorMixInClone(doc: Document, root: HTMLElement) {
         if (cs.getPropertyValue(prop).includes('color-mix')) {
           htmlEl.style.setProperty(prop, 'transparent', 'important');
         }
-      } catch { }
+      } catch (error) {
+        // getComputedStyle 访问某些属性可能抛出异常，静默处理
+        console.error('读取计算样式属性失败:', error);
+      }
     }
   }
 }

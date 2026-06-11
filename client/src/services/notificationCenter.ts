@@ -364,11 +364,32 @@ export async function updateChannelConfig(
     notes: patch.notes ?? current.notes ?? '',
   };
 
-  await apiPatch(`/notifications/channels/${channelId}`, {
-    label: patch.label ?? current.label,
-    enabled: patch.enabled ?? current.enabled,
-    config,
-  });
+  try {
+    await apiPatch(`/notifications/channels/${channelId}`, {
+      label: patch.label ?? current.label,
+      enabled: patch.enabled ?? current.enabled,
+      config,
+    });
+  } catch (error) {
+    // 如果缓存中的 channelId 已失效（如服务端去重删除了旧记录），
+    // 尝试重新 hydrate 获取正确的 ID 后重试一次
+    const status = (error as { response?: { status?: number } })?.response?.status;
+    if (status === 404 || status === 400) {
+      await hydrateNotificationCenterState();
+      const freshId = notificationChannelIdMap[type];
+      if (freshId && freshId !== channelId) {
+        await apiPatch(`/notifications/channels/${freshId}`, {
+          label: patch.label ?? current.label,
+          enabled: patch.enabled ?? current.enabled,
+          config,
+        });
+      } else {
+        throw error;
+      }
+    } else {
+      throw error;
+    }
+  }
 
   await hydrateNotificationCenterState();
 }

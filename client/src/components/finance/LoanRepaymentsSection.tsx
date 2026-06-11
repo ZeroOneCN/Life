@@ -447,7 +447,10 @@ export function LoanRepaymentsSection({
               setPendingDeleteId(null);
               showToast('还款记录已删除。');
             })
-            .catch(() => undefined)
+            .catch((error) => {
+              console.error('删除还款记录失败:', error);
+              showToast('删除还款记录失败，请重试。', 'error');
+            })
             .finally(() => {
               setSaving(false);
             });

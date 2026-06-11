@@ -129,7 +129,9 @@ export default function TravelPage() {
       void travelApi.updateSettings({
         activeUserId: currentUserId,
         leaderboardUserId: currentUserId,
-      }).catch(() => undefined);
+      }).catch((error) => {
+        console.error('更新旅行设置失败:', error);
+      });
     }
   }, [currentUserId]);
 

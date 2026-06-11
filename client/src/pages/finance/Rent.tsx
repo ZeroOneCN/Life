@@ -104,7 +104,9 @@ export default function RentPage() {
         activeUserId: currentUserId,
         recordsUserId: currentUserId,
         statisticsUserId: currentUserId,
-      }).catch(() => undefined);
+      }).catch((error) => {
+        console.error('更新租房设置失败:', error);
+      });
     }
   }, [currentUserId]);
 

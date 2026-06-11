@@ -417,6 +417,33 @@ export function createNotificationCenterRouter() {
       order: { channel_type: 'ASC' },
     });
 
+    // 按 channel_type 去重：同一类型保留 updated_at 最新的记录，删除多余的
+    const typeMap = new Map<string, typeof items[0]>();
+    const duplicateIds: string[] = [];
+    for (const item of items) {
+      const existing = typeMap.get(item.channel_type);
+      if (!existing) {
+        typeMap.set(item.channel_type, item);
+      } else {
+        // 保留较新的
+        if (
+          !existing.updated_at ||
+          (item.updated_at && new Date(item.updated_at) > new Date(existing.updated_at))
+        ) {
+          duplicateIds.push(existing.id);
+          typeMap.set(item.channel_type, item);
+        } else {
+          duplicateIds.push(item.id);
+        }
+      }
+    }
+    if (duplicateIds.length > 0) {
+      await repository.delete(duplicateIds);
+    }
+    items = Array.from(typeMap.values()).sort((a, b) =>
+      String(a.channel_type).localeCompare(String(b.channel_type)),
+    );
+
     const ALL_CHANNEL_SEEDS = [
       { channel_type: 'email', label: '邮件通知', enabled: false, status: 'disabled', config_json: null },
       { channel_type: 'wechatWork', label: '企业微信', enabled: false, status: 'disabled', config_json: null },
@@ -642,32 +669,32 @@ export function createNotificationCenterRouter() {
     const status = String(request.query.status ?? '').trim();
     const channel = String(request.query.channel ?? '').trim();
     const repository = appDataSource.getRepository(NotificationCenterLogEntity);
-    const allItems = await repository.find({
-      where: { user_id: userId },
-      order: { created_at: 'DESC' },
-    });
 
-    const filtered = allItems
-      .filter((item) => {
-        if (sceneId && item.scene_id !== sceneId) {
-          return false;
-        }
+    // 使用 QueryBuilder 在 DB 层完成过滤和分页，避免全表扫描
+    let query = repository
+      .createQueryBuilder('log')
+      .where('log.user_id = :userId', { userId });
 
-        if (sceneIds.length && (!item.scene_id || !sceneIds.includes(item.scene_id))) {
-          return false;
-        }
+    if (sceneId) {
+      query = query.andWhere('log.scene_id = :sceneId', { sceneId });
+    }
+    if (sceneIds.length > 0) {
+      query = query.andWhere('log.scene_id IN (:...sceneIds)', { sceneIds });
+    }
+    if (status) {
+      query = query.andWhere('log.status = :status', { status });
+    }
+    if (channel) {
+      query = query.andWhere('log.channel = :channel', { channel });
+    }
 
-        return true;
-      })
-      .filter((item) => !status || item.status === status)
-      .filter((item) => !channel || item.channel === channel);
+    const [items, total] = await query
+      .orderBy('log.created_at', 'DESC')
+      .skip(skip)
+      .take(pageSize)
+      .getManyAndCount();
 
-    response.json(successResponse(buildListData(
-      filtered.slice(skip, skip + pageSize),
-      page,
-      pageSize,
-      filtered.length,
-    )));
+    response.json(successResponse(buildListData(items, page, pageSize, total)));
   }));
 
   router.delete('/logs', asyncHandler(async (request: AuthenticatedRequest, response) => {

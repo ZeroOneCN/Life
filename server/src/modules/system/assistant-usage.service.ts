@@ -133,7 +133,6 @@ export function recordAssistantUsage(input: {
           estimated_cost: cost,
           status: input.status,
         });
-        console.log(`[assistant-usage] recorded ${input.status} call for user=${input.userId} prompt=${input.prompt} completion=${input.completion}`);
       } catch (repoError) {
         // 兜底：用原生 SQL 写一次（避免因 entity 未注册导致完全丢数据）
         try {
@@ -152,9 +151,8 @@ export function recordAssistantUsage(input: {
               input.status,
             ],
           );
-          console.log(`[assistant-usage] recorded via raw SQL for user=${input.userId}`);
         } catch (sqlError) {
-          console.error('[assistant-usage] record failed (repo + raw):', repoError, sqlError);
+          // repo + raw SQL both failed, silently ignore
         }
       }
     })();
