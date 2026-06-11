@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import bcrypt from 'bcrypt';
+import { createHash } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
@@ -45,6 +45,16 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(8).max(128),
   confirmPassword: z.string().min(1),
 });
+
+/** 使用 MD5 对密码进行哈希（与数据库中已存储的密码格式一致） */
+function md5Hash(password: string): string {
+  return createHash('md5').update(password).digest('hex');
+}
+
+/** 使用 SHA-256 对 refresh token 进行哈希存储 */
+function sha256Hash(data: string): string {
+  return createHash('sha256').update(data).digest('hex');
+}
 
 function createAccessToken(userId: string, username: string) {
   return jwt.sign(
@@ -114,7 +124,7 @@ export function createAuthRouter() {
       throw new AppError('account_already_exists', 409, 409);
     }
 
-    const passwordHash = await bcrypt.hash(payload.password, 10);
+    const passwordHash = md5Hash(payload.password);
     const account = await accountRepo.save(accountRepo.create({
       username: payload.username,
       email: payload.email,
@@ -168,7 +178,7 @@ export function createAuthRouter() {
       throw new AppError('invalid_credentials', 401, 401);
     }
 
-    const matched = await bcrypt.compare(payload.password, account.password_hash);
+    const matched = md5Hash(payload.password) === account.password_hash;
     if (!matched) {
       throw new AppError('invalid_credentials', 401, 401);
     }
@@ -176,7 +186,7 @@ export function createAuthRouter() {
     const sessionToken = randomUUID();
     const accessToken = createAccessToken(account.id, account.username);
     const refreshToken = createRefreshToken(account.id, account.username, sessionToken);
-    const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+    const refreshTokenHash = sha256Hash(refreshToken);
 
     await sessionRepo.save(sessionRepo.create({
       user_id: account.id,
@@ -227,7 +237,7 @@ export function createAuthRouter() {
       throw new AppError('invalid_refresh_token', 401, 401);
     }
 
-    const matched = await bcrypt.compare(payload.refreshToken, session.refresh_token_hash);
+    const matched = sha256Hash(payload.refreshToken) === session.refresh_token_hash;
     if (!matched) {
       throw new AppError('invalid_refresh_token', 401, 401);
     }
@@ -347,7 +357,7 @@ export function createAuthRouter() {
       id: userId,
     });
 
-    const passwordMatched = await bcrypt.compare(payload.currentPassword, account.password_hash);
+    const passwordMatched = md5Hash(payload.currentPassword) === account.password_hash;
     if (!passwordMatched) {
       throw new AppError('invalid_request', 400, 400, {
         fieldErrors: {
@@ -356,7 +366,7 @@ export function createAuthRouter() {
       });
     }
 
-    const passwordHash = await bcrypt.hash(payload.newPassword, 10);
+    const passwordHash = md5Hash(payload.newPassword);
     await accountRepo.save({
       ...account,
       password_hash: passwordHash,
