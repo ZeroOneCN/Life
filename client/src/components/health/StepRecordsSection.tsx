@@ -76,7 +76,6 @@ export function StepRecordsSection({
       const response = await stepApi.listRecords({
         page,
         page_size: PAGE_SIZE,
-        userId: filterUserId || undefined,
       });
       setRecords(response.items);
       setTotalRecords(response.total);
@@ -91,12 +90,6 @@ export function StepRecordsSection({
   useEffect(() => {
     void loadRecords();
   }, [loadRecords]);
-
-  // 筛选条件变化时重置页码
-  useEffect(() => {
-    setPage(1);
-    setSelectedIds([]);
-  }, [filterUserId]);
 
   // 当删除导致当前页超出范围时，回退到最后一页
   useEffect(() => {
@@ -150,7 +143,6 @@ export function StepRecordsSection({
 
   const openEditModal = (record: StepRecord) => {
     setEditingRecord(record);
-    setEditingUserId(record.userId);
     setEditingSteps(String(record.steps));
     setEditingHour(record.hour);
     setEditingRecordTime(record.recordTime);
@@ -171,11 +163,6 @@ export function StepRecordsSection({
 
     const steps = Number(editingSteps);
 
-    if (!editingUserId.trim()) {
-      showToast('请输入用户 ID。', 'error');
-      return;
-    }
-
     if (!Number.isFinite(steps) || steps < 0) {
       showToast('请输入有效的步数。', 'error');
       return;
@@ -187,7 +174,6 @@ export function StepRecordsSection({
     }
 
     onUpdateRecord(editingRecord.id, {
-      userId: editingUserId,
       steps,
       hour: editingHour,
       recordTime: editingRecordTime,
@@ -200,13 +186,13 @@ export function StepRecordsSection({
     <SectionCard title="记录管理" description="支持按用户筛选、排序、分页、编辑和批量删除。">
       <div className="page-stack">
         <div className="step-filter-grid">
-          <Field
+          {/* <Field
             label="记录用户 ID"
             placeholder="留空查看全部用户"
             value={filterUserId}
             onChange={(event) => onFilterUserIdChange(event.target.value)}
             hint="用于筛选当前列表，留空时会显示全部用户记录。"
-          />
+          /> */}
         </div>
 
         <div className="step-records-toolbar">
@@ -328,12 +314,6 @@ export function StepRecordsSection({
         )}
       >
         <div className="page-stack">
-          <Field
-            label="用户 ID"
-            value={editingUserId}
-            onChange={(event) => setEditingUserId(event.target.value)}
-          />
-
           <Field
             label="步数"
             type="number"

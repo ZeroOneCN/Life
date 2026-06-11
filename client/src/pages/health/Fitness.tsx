@@ -9,7 +9,6 @@ import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Btn, Modal, PillTabs, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
-import { getAuthUserDisplayName, useAuthState } from '../../services/auth';
 import { fitnessApi } from '../../services/fitnessApi';
 import type {
   DietRecord,
@@ -31,12 +30,6 @@ const TAB_OPTIONS: Array<{ value: FitnessTab; label: string }> = [
 ];
 
 const EMPTY_SETTINGS: FitnessPageState['settings'] = {
-  activeUserId: '',
-  dietFilterUserId: '',
-  exerciseFilterUserId: '',
-  shoppingFilterUserId: '',
-  weightFilterUserId: '',
-  dashboardUserId: '',
   defaultHeightCm: 170,
 };
 
@@ -61,7 +54,6 @@ function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
 }
 
 export default function FitnessPage() {
-  const authState = useAuthState();
   const [activeTab, setActiveTab] = usePageTab<FitnessTab>('diet', TAB_OPTIONS.map((item) => item.value), 'fitnessTab');
   const [dietRecords, setDietRecords] = useState<DietRecord[]>([]);
   const [exerciseRecords, setExerciseRecords] = useState<ExerciseRecord[]>([]);
@@ -188,12 +180,7 @@ export default function FitnessPage() {
 
       {activeTab === 'diet' ? (
         <FitnessDietSection
-          activeUserId={settings.activeUserId}
-          filterUserId={settings.dietFilterUserId}
           records={dietRecords}
-          onFilterUserIdChange={(value) => {
-            void updateSettings({ dietFilterUserId: value });
-          }}
           onChangeRecords={(updater) => {
             const previous = dietRecords;
             const next = updater(previous);
@@ -213,12 +200,7 @@ export default function FitnessPage() {
 
       {activeTab === 'exercise' ? (
         <FitnessExerciseSection
-          activeUserId={settings.activeUserId}
-          filterUserId={settings.exerciseFilterUserId}
           records={exerciseRecords}
-          onFilterUserIdChange={(value) => {
-            void updateSettings({ exerciseFilterUserId: value });
-          }}
           onChangeRecords={(updater) => {
             const previous = exerciseRecords;
             const next = updater(previous);
@@ -238,12 +220,7 @@ export default function FitnessPage() {
 
       {activeTab === 'shopping' ? (
         <FitnessShoppingSection
-          activeUserId={settings.activeUserId}
-          filterUserId={settings.shoppingFilterUserId}
           records={shoppingRecords}
-          onFilterUserIdChange={(value) => {
-            void updateSettings({ shoppingFilterUserId: value });
-          }}
           onChangeRecords={(updater) => {
             const previous = shoppingRecords;
             const next = updater(previous);
@@ -263,13 +240,8 @@ export default function FitnessPage() {
 
       {activeTab === 'weight' ? (
         <FitnessWeightSection
-          activeUserId={settings.activeUserId}
-          filterUserId={settings.weightFilterUserId}
           defaultHeightCm={settings.defaultHeightCm ?? 170}
           records={weightRecords}
-          onFilterUserIdChange={(value) => {
-            void updateSettings({ weightFilterUserId: value });
-          }}
           onChangeRecords={(updater) => {
             const previous = weightRecords;
             const next = updater(previous);
@@ -292,15 +264,11 @@ export default function FitnessPage() {
 
       {activeTab === 'dashboard' ? (
         <FitnessDashboardSection
-          userId={settings.dashboardUserId}
           defaultHeightCm={settings.defaultHeightCm ?? 170}
           dietRecords={dietRecords}
           exerciseRecords={exerciseRecords}
           shoppingRecords={shoppingRecords}
           weightRecords={weightRecords}
-          onUserIdChange={(value) => {
-            void updateSettings({ dashboardUserId: value });
-          }}
         />
       ) : null}
 

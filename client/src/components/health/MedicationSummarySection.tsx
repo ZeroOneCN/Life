@@ -13,7 +13,6 @@ import {
   buildMedicationStockSummary,
   filterMedicationRecordsByUserId,
   filterMedicationSummariesByUserId,
-  normalizeMedicationUserId,
 } from '../../services/medication';
 import { useNotificationCenterState } from '../../services/notificationCenter';
 import type {
@@ -85,8 +84,8 @@ export function MedicationSummarySection({
   const [summaryText, setSummaryText] = useState('');
 
   const filteredSummaries = useMemo(
-    () => filterMedicationSummariesByUserId(summaries, settings.summaryUserId),
-    [settings.summaryUserId, summaries],
+    () => filterMedicationSummariesByUserId(summaries),
+    [summaries],
   );
   const monthlySummaries = useMemo(
     () => filteredSummaries.filter((summary) => summary.date.startsWith(selectedMonth)),
@@ -97,30 +96,28 @@ export function MedicationSummarySection({
     [filteredSummaries, selectedDate],
   );
   const selectedDateTotal = useMemo(
-    () => filterMedicationRecordsByUserId(records, settings.summaryUserId)
+    () => filterMedicationRecordsByUserId(records)
       .filter((record) => record.date === selectedDate)
       .reduce((sum, record) => sum + record.breakfast + record.lunch + record.dinner, 0),
-    [records, selectedDate, settings.summaryUserId],
+    [records, selectedDate],
   );
   const stockInsights = useMemo(
     () => buildMedicationStockSummary(
       records,
       purchases,
-      settings.summaryUserId,
       settings.defaultStockThreshold,
       settings.medicineThresholds,
     ),
-    [records, purchases, settings.defaultStockThreshold, settings.medicineThresholds, settings.summaryUserId],
+    [records, purchases, settings.defaultStockThreshold, settings.medicineThresholds],
   );
   const lowStockItems = useMemo(
     () => buildMedicationLowStockItems(
       records,
       purchases,
-      settings.summaryUserId,
       settings.defaultStockThreshold,
       settings.medicineThresholds,
     ),
-    [records, purchases, settings.defaultStockThreshold, settings.medicineThresholds, settings.summaryUserId],
+    [records, purchases, settings.defaultStockThreshold, settings.medicineThresholds],
   );
   const latestLogs = useMemo(
     () => notificationState.logs
@@ -149,13 +146,6 @@ export function MedicationSummarySection({
     >
       <div className="page-stack">
         <div className="medication-filter-grid medication-filter-grid-summary">
-          <Field
-            label="总结用户 ID"
-            value={settings.summaryUserId}
-            onChange={(event) => onSettingsChange({ summaryUserId: event.target.value })}
-            placeholder="留空查看全部用户"
-            hint="每日总结、提醒判断和库存估算都会按这里的用户维度计算。"
-          />
           <MonthPickerField
             label="摘要月份"
             value={selectedMonth}

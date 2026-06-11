@@ -9,18 +9,13 @@ import {
   calculateBmi,
   createWeightRecord,
   deleteWeightRecord,
-  filterRecordsByUserId,
-  normalizeFitnessUserId,
   updateWeightRecord,
 } from '../../services/fitness';
 import type { WeightRecord, WeightRecordDraft } from '../../types/fitness';
 
 interface FitnessWeightSectionProps {
-  activeUserId: string;
-  filterUserId: string;
   defaultHeightCm: number;
   records: WeightRecord[];
-  onFilterUserIdChange: (value: string) => void;
   onChangeRecords: (updater: (records: WeightRecord[]) => WeightRecord[]) => void;
   onDefaultHeightChange: (value: number) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
@@ -40,13 +35,12 @@ const defaultFormState = (defaultHeightCm: number): WeightFormState => ({
   bodyFat: '',
 });
 
-function parseDraft(form: WeightFormState, userId: string): WeightRecordDraft | null {
-  const normalizedUserId = normalizeFitnessUserId(userId);
+function parseDraft(form: WeightFormState): WeightRecordDraft | null {
   const weight = Number(form.weight);
   const height = Number(form.height);
   const bodyFat = Number(form.bodyFat || 0);
 
-  if (!normalizedUserId || !dayjs(form.date).isValid()) {
+  if (!dayjs(form.date).isValid()) {
     return null;
   }
 
@@ -55,7 +49,6 @@ function parseDraft(form: WeightFormState, userId: string): WeightRecordDraft | 
   }
 
   return {
-    userId: normalizedUserId,
     date: form.date,
     weight,
     height,
@@ -64,11 +57,8 @@ function parseDraft(form: WeightFormState, userId: string): WeightRecordDraft | 
 }
 
 export function FitnessWeightSection({
-  activeUserId,
-  filterUserId,
   defaultHeightCm,
   records,
-  onFilterUserIdChange,
   onChangeRecords,
   onDefaultHeightChange,
   showToast,
@@ -89,14 +79,12 @@ export function FitnessWeightSection({
   }, [defaultHeightCm]);
 
   const filteredRecords = useMemo(() => {
-    const byUser = filterRecordsByUserId(records, filterUserId);
-
     if (!filterDate) {
-      return byUser;
+      return records;
     }
 
-    return byUser.filter((record) => record.date === filterDate);
-  }, [filterDate, filterUserId, records]);
+    return records.filter((record) => record.date === filterDate);
+  }, [filterDate, records]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / FITNESS_RECORD_PAGE_SIZE));
   const pageRecords = useMemo(() => {
@@ -106,7 +94,7 @@ export function FitnessWeightSection({
 
   useEffect(() => {
     setPage(1);
-  }, [filterDate, filterUserId]);
+  }, [filterDate]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -165,10 +153,10 @@ export function FitnessWeightSection({
   ], []);
 
   const handleCreate = () => {
-    const draft = parseDraft(form, activeUserId);
+    const draft = parseDraft(form);
 
     if (!draft) {
-      showToast('请补全体重记录的用户、日期、体重和身高。', 'error');
+      showToast('请补全体重记录的日期、体重和身高。', 'error');
       return;
     }
 
@@ -183,7 +171,7 @@ export function FitnessWeightSection({
       return;
     }
 
-    const draft = parseDraft(editingForm, editingRecord.userId);
+    const draft = parseDraft(editingForm);
 
     if (!draft) {
       showToast('请补全要保存的体重记录。', 'error');
@@ -243,25 +231,18 @@ export function FitnessWeightSection({
         </form>
 
         <div className="step-filter-grid">
-          <Field
-            label="筛选用户 ID"
-            placeholder="留空查看全部用户"
-            value={filterUserId}
-            onChange={(event) => onFilterUserIdChange(event.target.value)}
-          />
           <DatePickerField
             label="筛选日期"
             value={filterDate}
             onChange={setFilterDate}
             placeholder="按日期筛选"
-            hint="留空时显示该用户的全部体重记录。"
+            hint="留空时显示全部体重记录。"
           />
         </div>
 
         <div className="fitness-section-summary">
           <span className="subtle-text">
             共 {filteredRecords.length} 条体重记录
-            {filterUserId.trim() ? `（用户 ${filterUserId.trim()}）` : '（全部用户）'}
           </span>
         </div>
 

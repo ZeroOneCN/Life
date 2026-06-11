@@ -31,13 +31,13 @@ export function CheckupInsightsSection({
   const notificationState = useNotificationCenterState();
 
   const insights = useMemo(
-    () => buildCheckupInsights(records, settings.insightUserId, settings.followUpLeadDays),
-    [records, settings.followUpLeadDays, settings.insightUserId],
+    () => buildCheckupInsights(records, settings.followUpLeadDays),
+    [records, settings.followUpLeadDays],
   );
 
   const dueFollowUps = useMemo(
-    () => buildDueFollowUps(records, settings.insightUserId, settings.followUpLeadDays),
-    [records, settings.followUpLeadDays, settings.insightUserId],
+    () => buildDueFollowUps(records, settings.followUpLeadDays),
+    [records, settings.followUpLeadDays],
   );
 
   const latestLogs = useMemo(

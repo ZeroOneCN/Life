@@ -4,7 +4,6 @@ export type RentOccupancyStatus = 'active' | 'ended';
 
 export interface RentHousingRecord {
   id: string;
-  userId: string;
   address: string;
   channelId: string;
   channelName: string;
@@ -26,7 +25,6 @@ export interface RentHousingRecord {
 }
 
 export interface RentHousingRecordDraft {
-  userId: string;
   address: string;
   channelId: string;
   moveInDate: string;
@@ -46,14 +44,12 @@ export interface RentHousingRecordDraft {
 
 export interface RentChannel {
   id: string;
-  userId: string;
   name: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface RentChannelDraft {
-  userId: string;
   name: string;
 }
 
@@ -96,9 +92,6 @@ export interface RentPageState {
   records: RentHousingRecord[];
   channels: RentChannel[];
   settings: {
-    activeUserId: string;
-    recordsUserId: string;
-    statisticsUserId: string;
     editingRecordId: string;
   };
 }

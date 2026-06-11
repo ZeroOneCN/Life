@@ -8,17 +8,12 @@ import {
   FITNESS_RECORD_PAGE_SIZE,
   createFitnessShoppingRecord,
   deleteFitnessShoppingRecord,
-  filterRecordsByUserId,
-  normalizeFitnessUserId,
   updateFitnessShoppingRecord,
 } from '../../services/fitness';
 import type { FitnessShoppingRecord, FitnessShoppingRecordDraft } from '../../types/fitness';
 
 interface FitnessShoppingSectionProps {
-  activeUserId: string;
-  filterUserId: string;
   records: FitnessShoppingRecord[];
-  onFilterUserIdChange: (value: string) => void;
   onChangeRecords: (updater: (records: FitnessShoppingRecord[]) => FitnessShoppingRecord[]) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
@@ -41,13 +36,12 @@ const defaultFormState = (): ShoppingFormState => ({
   location: '',
 });
 
-function parseDraft(form: ShoppingFormState, userId: string): FitnessShoppingRecordDraft | null {
-  const normalizedUserId = normalizeFitnessUserId(userId);
+function parseDraft(form: ShoppingFormState): FitnessShoppingRecordDraft | null {
   const specGrams = Number(form.specGrams);
   const quantity = Number(form.quantity);
   const unitPrice = Number(form.unitPrice);
 
-  if (!normalizedUserId || !form.itemName.trim() || !dayjs(form.date).isValid()) {
+  if (!form.itemName.trim() || !dayjs(form.date).isValid()) {
     return null;
   }
 
@@ -56,7 +50,6 @@ function parseDraft(form: ShoppingFormState, userId: string): FitnessShoppingRec
   }
 
   return {
-    userId: normalizedUserId,
     date: form.date,
     itemName: form.itemName.trim(),
     specGrams,
@@ -67,10 +60,7 @@ function parseDraft(form: ShoppingFormState, userId: string): FitnessShoppingRec
 }
 
 export function FitnessShoppingSection({
-  activeUserId,
-  filterUserId,
   records,
-  onFilterUserIdChange,
   onChangeRecords,
   showToast,
 }: FitnessShoppingSectionProps) {
@@ -82,14 +72,12 @@ export function FitnessShoppingSection({
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const filteredRecords = useMemo(() => {
-    const byUser = filterRecordsByUserId(records, filterUserId);
-
     if (!filterDate) {
-      return byUser;
+      return records;
     }
 
-    return byUser.filter((record) => record.date === filterDate);
-  }, [filterDate, filterUserId, records]);
+    return records.filter((record) => record.date === filterDate);
+  }, [filterDate, records]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / FITNESS_RECORD_PAGE_SIZE));
   const pageRecords = useMemo(() => {
@@ -99,7 +87,7 @@ export function FitnessShoppingSection({
 
   useEffect(() => {
     setPage(1);
-  }, [filterDate, filterUserId]);
+  }, [filterDate]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -163,10 +151,10 @@ export function FitnessShoppingSection({
   ], []);
 
   const handleCreate = () => {
-    const draft = parseDraft(form, activeUserId);
+    const draft = parseDraft(form);
 
     if (!draft) {
-      showToast('请补全食材采购记录的用户、日期、名称、规格、数量和单价。', 'error');
+      showToast('请补全食材采购记录的日期、名称、规格、数量和单价。', 'error');
       return;
     }
 
@@ -180,7 +168,7 @@ export function FitnessShoppingSection({
       return;
     }
 
-    const draft = parseDraft(editingForm, editingRecord.userId);
+    const draft = parseDraft(editingForm);
 
     if (!draft) {
       showToast('请补全要保存的食材采购记录。', 'error');
@@ -251,25 +239,18 @@ export function FitnessShoppingSection({
         </form>
 
         <div className="step-filter-grid">
-          <Field
-            label="筛选用户 ID"
-            placeholder="留空查看全部用户"
-            value={filterUserId}
-            onChange={(event) => onFilterUserIdChange(event.target.value)}
-          />
           <DatePickerField
             label="筛选日期"
             value={filterDate}
             onChange={setFilterDate}
             placeholder="按日期筛选"
-            hint="留空时显示该用户的全部采购记录。"
+            hint="留空时显示全部采购记录。"
           />
         </div>
 
         <div className="fitness-section-summary">
           <span className="subtle-text">
             共 {filteredRecords.length} 条食材采购记录
-            {filterUserId.trim() ? `（用户 ${filterUserId.trim()}）` : '（全部用户）'}
           </span>
         </div>
 

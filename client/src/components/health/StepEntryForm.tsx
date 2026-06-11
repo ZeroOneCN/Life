@@ -42,7 +42,7 @@ export function StepEntryForm({
   showToast,
 }: StepEntryFormProps) {
   return (
-    <SectionCard title="步数录入" description="支持按用户、全天或具体小时录入步数记录。">
+    <SectionCard title="步数录入" description="支持全天或具体小时录入步数记录。">
       <div className="step-entry-panel">
         <div className="step-entry-meta">
           <strong>{getEntryTitle(selectedHour)}</strong>

@@ -17,18 +17,11 @@ import {
   CHECKUP_RECORD_PAGE_SIZE,
   CHECKUP_STATUS_META,
   buildCheckupTrend,
-  filterCheckupRecordsByUserId,
-  normalizeCheckupUserId,
 } from '../../services/checkup';
 import type { CheckupRecord, CheckupRecordDraft, CheckupStatus } from '../../types/checkup';
 
 interface CheckupRecordsSectionProps {
-  activeUserId: string;
-  filterUserId: string;
-  trendUserId: string;
   records: CheckupRecord[];
-  onFilterUserIdChange: (value: string) => void;
-  onTrendUserIdChange: (value: string) => void;
   onCreateRecord: (draft: CheckupRecordDraft) => void;
   onUpdateRecord: (id: string, draft: CheckupRecordDraft) => void;
   onDeleteRecord: (id: string) => void;
@@ -82,11 +75,10 @@ function buildFormState(record: CheckupRecord): RecordFormState {
   };
 }
 
-function parseDraft(form: RecordFormState, userId: string): CheckupRecordDraft | null {
-  const normalizedUserId = normalizeCheckupUserId(userId);
+function parseDraft(form: RecordFormState): CheckupRecordDraft | null {
   const numericValue = Number(form.value);
 
-  if (!normalizedUserId || !form.testName.trim() || !form.testType.trim() || !dayjs(form.testDate).isValid()) {
+  if (!form.testName.trim() || !form.testType.trim() || !dayjs(form.testDate).isValid()) {
     return null;
   }
 
@@ -99,7 +91,6 @@ function parseDraft(form: RecordFormState, userId: string): CheckupRecordDraft |
   }
 
   return {
-    userId: normalizedUserId,
     testDate: form.testDate,
     testType: form.testType.trim(),
     testName: form.testName.trim(),
@@ -113,12 +104,7 @@ function parseDraft(form: RecordFormState, userId: string): CheckupRecordDraft |
 }
 
 export function CheckupRecordsSection({
-  activeUserId,
-  filterUserId,
-  trendUserId,
   records,
-  onFilterUserIdChange,
-  onTrendUserIdChange,
   onCreateRecord,
   onUpdateRecord,
   onDeleteRecord,
@@ -140,7 +126,7 @@ export function CheckupRecordsSection({
   const filteredRecords = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
 
-    return filterCheckupRecordsByUserId(records, filterUserId)
+    return records
       .filter((record) => statusFilter === 'all' || record.status === statusFilter)
       .filter((record) => (!startDate || record.testDate >= startDate))
       .filter((record) => (!endDate || record.testDate <= endDate))
@@ -150,19 +136,17 @@ export function CheckupRecordsSection({
         }
 
         return [
-          record.userId,
           record.testType,
           record.testName,
           record.notes,
           record.referenceRange,
         ].some((value) => value.toLowerCase().includes(normalizedKeyword));
       });
-  }, [endDate, filterUserId, keyword, records, startDate, statusFilter]);
+  }, [endDate, keyword, records, startDate, statusFilter]);
 
   const trendTestOptions = useMemo(() => {
-    const sourceRecords = filterCheckupRecordsByUserId(records, trendUserId);
-    return Array.from(new Set(sourceRecords.map((record) => record.testName))).filter(Boolean);
-  }, [records, trendUserId]);
+    return Array.from(new Set(records.map((record) => record.testName))).filter(Boolean);
+  }, [records]);
 
   useEffect(() => {
     if (!trendTestOptions.length) {
@@ -177,7 +161,7 @@ export function CheckupRecordsSection({
 
   useEffect(() => {
     setPage(1);
-  }, [endDate, filterUserId, keyword, startDate, statusFilter]);
+  }, [endDate, keyword, startDate, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / CHECKUP_RECORD_PAGE_SIZE));
   const pageRecords = useMemo(() => {
@@ -192,11 +176,10 @@ export function CheckupRecordsSection({
   }, [page, totalPages]);
 
   const trendData = useMemo(() => buildCheckupTrend(records, {
-    userId: trendUserId,
     testName: trendTestName,
     startDate: trendStartDate,
     endDate: trendEndDate,
-  }), [records, trendEndDate, trendStartDate, trendTestName, trendUserId]);
+  }), [records, trendEndDate, trendStartDate, trendTestName]);
 
   const columns = useMemo(() => [
     {
@@ -262,7 +245,7 @@ export function CheckupRecordsSection({
   ], []);
 
   const handleCreate = () => {
-    const draft = parseDraft(form, activeUserId);
+    const draft = parseDraft(form);
 
     if (!draft) {
       showToast('请补全检查日期、检查类型、项目和结果数值。', 'error');
@@ -279,7 +262,7 @@ export function CheckupRecordsSection({
       return;
     }
 
-    const draft = parseDraft(editingForm, editingRecord.userId);
+    const draft = parseDraft(editingForm);
 
     if (!draft) {
       showToast('请补全要保存的指标记录。', 'error');
@@ -370,12 +353,12 @@ export function CheckupRecordsSection({
         </div>
 
         <div className="checkup-filter-grid">
-          <Field
+          {/* <Field
             label="记录用户 ID"
             value={filterUserId}
             onChange={(event) => onFilterUserIdChange(event.target.value)}
             placeholder="留空查看全部用户"
-          />
+          /> */}
           <Field
             label="关键词"
             value={keyword}
@@ -400,7 +383,6 @@ export function CheckupRecordsSection({
         <div className="step-records-toolbar">
           <span className="subtle-text">
             共 {filteredRecords.length} 条记录
-            {filterUserId.trim() ? `，当前筛选用户：${filterUserId.trim()}` : '，当前显示全部用户'}
           </span>
         </div>
 
@@ -422,12 +404,6 @@ export function CheckupRecordsSection({
             <span>按用户、项目和日期范围查看历史变化。</span>
           </div>
           <div className="checkup-filter-grid">
-            <Field
-              label="趋势用户 ID"
-              value={trendUserId}
-              onChange={(event) => onTrendUserIdChange(event.target.value)}
-              placeholder="留空查看全部用户"
-            />
             <SelectField
               label="指标项目"
               value={trendTestName}

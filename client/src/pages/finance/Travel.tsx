@@ -10,7 +10,6 @@ import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, SelectField, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
-import { getAuthUserDisplayName, useAuthState } from '../../services/auth';
 import { formatTravelAmount, TRAVEL_ALL_BOOKS } from '../../services/travel';
 import { travelApi } from '../../services/travelApi';
 import type {
@@ -31,12 +30,10 @@ const TAB_OPTIONS: Array<{ value: TravelTab; label: string }> = [
 ];
 
 const EMPTY_SETTINGS: TravelPageState['settings'] = {
-  activeUserId: '',
   activeBookId: '',
   detailsBookId: TRAVEL_ALL_BOOKS,
   statsBookId: '',
   reportBookId: '',
-  leaderboardUserId: '',
   reportColumns: [],
 };
 
@@ -60,7 +57,6 @@ function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
 function hydrateSettings(
   incoming: Partial<TravelPageState['settings']> | null | undefined,
   books: TravelBook[],
-  currentUserId: string,
 ): TravelPageState['settings'] {
   const normalized = {
     ...EMPTY_SETTINGS,
@@ -69,23 +65,18 @@ function hydrateSettings(
   const firstBookId = books[0]?.id ?? '';
   const hasBook = (value: string) => books.some((item) => item.id === value);
   const hasBookOrAll = (value: string) => value === TRAVEL_ALL_BOOKS || hasBook(value);
-  const activeUserId = currentUserId || normalized.activeUserId || '';
   const activeBookId = hasBook(normalized.activeBookId) ? normalized.activeBookId : firstBookId;
 
   return {
     ...normalized,
-    activeUserId,
     activeBookId,
     detailsBookId: hasBookOrAll(normalized.detailsBookId) ? normalized.detailsBookId : (activeBookId || TRAVEL_ALL_BOOKS),
     statsBookId: hasBook(normalized.statsBookId) ? normalized.statsBookId : activeBookId,
     reportBookId: hasBook(normalized.reportBookId) ? normalized.reportBookId : activeBookId,
-    leaderboardUserId: currentUserId || normalized.leaderboardUserId || activeUserId,
   };
 }
 
 export default function TravelPage() {
-  const authState = useAuthState();
-  const currentUserId = authState.session?.user.id ?? '';
   const [tab, setTab] = usePageTab<TravelTab>('books', TAB_OPTIONS.map((item) => item.value), 'travelTab');
   const [books, setBooks] = useState<TravelBook[]>([]);
   const [records, setRecords] = useState<TravelExpenseRecord[]>([]);
@@ -107,7 +98,7 @@ export default function TravelPage() {
     ]);
 
     const nextBooks = booksResponse.items;
-    const nextSettings = hydrateSettings(settingsResponse, nextBooks, currentUserId);
+    const nextSettings = hydrateSettings(settingsResponse, nextBooks);
     const nextSummary = await travelApi.getSummary(
       nextSettings.activeBookId ? { bookId: nextSettings.activeBookId } : undefined,
     );
@@ -117,22 +108,7 @@ export default function TravelPage() {
     setPayChannels(payChannelsResponse.items);
     setSettings(nextSettings);
     setSummary(nextSummary);
-
-    if (
-      currentUserId
-      && (
-        settingsResponse.activeUserId !== currentUserId
-        || settingsResponse.leaderboardUserId !== currentUserId
-      )
-    ) {
-      void travelApi.updateSettings({
-        activeUserId: currentUserId,
-        leaderboardUserId: currentUserId,
-      }).catch((error) => {
-        console.error('更新旅行设置失败:', error);
-      });
-    }
-  }, [currentUserId]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -161,12 +137,8 @@ export default function TravelPage() {
 
   const updateSettings = useCallback(async (patch: Partial<TravelPageState['settings']>) => {
     try {
-      const next = await travelApi.updateSettings({
-        ...patch,
-        activeUserId: currentUserId || patch.activeUserId,
-        leaderboardUserId: currentUserId || patch.leaderboardUserId,
-      });
-      const normalized = hydrateSettings(next, books, currentUserId);
+      const next = await travelApi.updateSettings(patch);
+      const normalized = hydrateSettings(next, books);
       setSettings(normalized);
       const nextSummary = await travelApi.getSummary(
         normalized.activeBookId ? { bookId: normalized.activeBookId } : undefined,
@@ -175,7 +147,7 @@ export default function TravelPage() {
     } catch (error) {
       showToast(buildApiErrorMessage(error, '旅行设置保存失败。'), 'error');
     }
-  }, [books, currentUserId, showToast]);
+  }, [books, showToast]);
 
   const resolveBookId = useCallback(async (bookId: string) => {
     if (!bookId) {
@@ -207,7 +179,6 @@ export default function TravelPage() {
       await Promise.all([
         ...created.map((item) => {
           const request = travelApi.createBook({
-            userId: currentUserId || item.userId,
             name: item.name,
             description: item.description,
             startDate: item.startDate,
@@ -221,7 +192,6 @@ export default function TravelPage() {
           return request;
         }),
         ...updated.map((item) => travelApi.updateBook(item.id, {
-          userId: currentUserId || item.userId,
           name: item.name,
           description: item.description,
           startDate: item.startDate,
@@ -239,7 +209,7 @@ export default function TravelPage() {
       showToast(buildApiErrorMessage(error, '行程账本保存失败。'), 'error');
       await reload();
     }
-  }, [books, currentUserId, reload, showToast]);
+  }, [books, reload, showToast]);
 
   const handleRecordsChange = useCallback(async (updater: (items: TravelExpenseRecord[]) => TravelExpenseRecord[]) => {
     const previous = records;
@@ -253,7 +223,6 @@ export default function TravelPage() {
 
       await Promise.all([
         ...created.map(async (item) => travelApi.createRecord({
-          userId: currentUserId || item.userId,
           bookId: await resolveBookId(item.bookId),
           date: item.date,
           timeStart: item.timeStart,
@@ -268,7 +237,6 @@ export default function TravelPage() {
           remark: item.remark,
         })),
         ...updated.map(async (item) => travelApi.updateRecord(item.id, {
-          userId: currentUserId || item.userId,
           bookId: await resolveBookId(item.bookId),
           date: item.date,
           timeStart: item.timeStart,
@@ -290,7 +258,7 @@ export default function TravelPage() {
       showToast(buildApiErrorMessage(error, '旅行明细保存失败。'), 'error');
       await reload();
     }
-  }, [currentUserId, records, reload, resolveBookId, showToast]);
+  }, [records, reload, resolveBookId, showToast]);
 
   const handlePayChannelsChange = useCallback(async (updater: (items: TravelPayChannel[]) => TravelPayChannel[]) => {
     const previous = payChannels;
@@ -395,7 +363,6 @@ export default function TravelPage() {
 
       {tab === 'books' ? (
         <TravelBooksSection
-          activeUserId={settings.activeUserId}
           activeBookId={activeBook?.id ?? ''}
           books={books}
           records={records}
@@ -416,7 +383,6 @@ export default function TravelPage() {
 
       {tab === 'details' ? (
         <TravelDetailsSection
-          activeUserId={settings.activeUserId}
           activeBookId={activeBook?.id ?? ''}
           detailsBookId={settings.detailsBookId}
           books={books}
@@ -437,7 +403,6 @@ export default function TravelPage() {
 
       {tab === 'stats' ? (
         <TravelStatsSection
-          activeUserId={settings.activeUserId}
           statsBookId={settings.statsBookId}
           books={books}
           records={records}
@@ -454,12 +419,8 @@ export default function TravelPage() {
 
       {tab === 'leaderboard' ? (
         <TravelLeaderboardSection
-          userId={settings.leaderboardUserId}
           books={books}
           records={records}
-          onUserIdChange={() => {
-            void updateSettings({ leaderboardUserId: currentUserId || settings.leaderboardUserId });
-          }}
           onSelectBook={(bookId) => {
             handleActiveBookChange(bookId);
             setTab('details');
@@ -470,7 +431,6 @@ export default function TravelPage() {
 
       {tab === 'report' ? (
         <TravelReportSection
-          activeUserId={settings.activeUserId}
           reportBookId={settings.reportBookId}
           reportColumns={settings.reportColumns}
           books={books}

@@ -8,7 +8,6 @@ export type StepRecordSortField = 'steps' | 'hour' | 'recordTime';
 
 export interface StepRecord {
   id: string;
-  userId: string;
   steps: number;
   hour: StepHour;
   recordTime: string;
@@ -17,7 +16,6 @@ export interface StepRecord {
 }
 
 export interface StepRecordDraft {
-  userId: string;
   steps: number;
   hour: StepHour;
   recordTime: string;
@@ -27,8 +25,6 @@ export interface StepPageState {
   records: StepRecord[];
   settings: {
     strideLength: number;
-    activeUserId: string;
-    statsUserId: string;
     recordsUserId: string;
   };
 }

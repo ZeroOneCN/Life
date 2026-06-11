@@ -16,7 +16,6 @@ import type {
 const DATE_FORMAT = 'YYYY-MM-DD';
 const DATE_TIME_FORMAT = 'YYYY-MM-DDTHH:mm';
 
-export const DEFAULT_RENT_USER_ID = 'user-001';
 export const RENT_RECORD_PAGE_SIZE = 10;
 export const RENT_ALL_CHANNELS = 'all';
 export const RENT_CHANNEL_COLORS = CHART_CATEGORY_8;
@@ -62,10 +61,6 @@ function normalizeTimestamp(value: unknown, fallbackDate: string) {
 
 function sortChannels(channels: RentChannel[]) {
   return [...channels].sort((left, right) => {
-    if (left.userId !== right.userId) {
-      return left.userId.localeCompare(right.userId, 'zh-CN');
-    }
-
     return left.name.localeCompare(right.name, 'zh-CN');
   });
 }
@@ -88,13 +83,12 @@ function sortRecords(records: RentHousingRecord[]) {
   });
 }
 
-function normalizeChannel(record: Partial<RentChannel>, fallbackUserId = DEFAULT_RENT_USER_ID): RentChannel {
+function normalizeChannel(record: Partial<RentChannel>): RentChannel {
   const createdAt = normalizeTimestamp(record.createdAt, dayjs().format(DATE_FORMAT));
   const updatedAt = normalizeTimestamp(record.updatedAt, dayjs(createdAt).format(DATE_FORMAT));
 
   return {
     id: record.id ?? buildId(),
-    userId: normalizeTrimmedValue(record.userId, fallbackUserId),
     name: normalizeTrimmedValue(record.name, '未命名渠道'),
     createdAt,
     updatedAt,
@@ -104,19 +98,16 @@ function normalizeChannel(record: Partial<RentChannel>, fallbackUserId = DEFAULT
 function normalizeRecord(
   record: Partial<RentHousingRecord>,
   channels: RentChannel[],
-  fallbackUserId = DEFAULT_RENT_USER_ID,
 ): RentHousingRecord {
   const moveInDate = normalizeDate(record.moveInDate);
   const moveOutDate = record.moveOutDate ? normalizeDate(record.moveOutDate, '') : '';
-  const userId = normalizeTrimmedValue(record.userId, fallbackUserId);
   const matchedChannel = channels.find((channel) => channel.id === record.channelId)
-    ?? channels.find((channel) => channel.userId === userId && channel.name === record.channelName);
+    ?? channels.find((channel) => channel.name === record.channelName);
   const createdAt = normalizeTimestamp(record.createdAt, moveInDate);
   const updatedAt = normalizeTimestamp(record.updatedAt, moveInDate);
 
   return {
     id: record.id ?? buildId(),
-    userId,
     address: normalizeTrimmedValue(record.address, '未命名住房'),
     channelId: normalizeTrimmedValue(record.channelId ?? matchedChannel?.id),
     channelName: normalizeTrimmedValue(record.channelName ?? matchedChannel?.name, '未分配渠道'),
@@ -142,10 +133,10 @@ function createInitialChannels(): RentChannel[] {
   const now = dayjs().format(DATE_TIME_FORMAT);
 
   return sortChannels([
-    { id: 'rent-channel-ziroom', userId: 'user-001', name: '自如', createdAt: now, updatedAt: now },
-    { id: 'rent-channel-lianjia', userId: 'user-001', name: '链家', createdAt: now, updatedAt: now },
-    { id: 'rent-channel-landlord', userId: 'user-001', name: '房东直租', createdAt: now, updatedAt: now },
-    { id: 'rent-channel-beike', userId: 'user-002', name: '贝壳', createdAt: now, updatedAt: now },
+    { id: 'rent-channel-ziroom', name: '自如', createdAt: now, updatedAt: now },
+    { id: 'rent-channel-lianjia', name: '链家', createdAt: now, updatedAt: now },
+    { id: 'rent-channel-landlord', name: '房东直租', createdAt: now, updatedAt: now },
+    { id: 'rent-channel-beike', name: '贝壳', createdAt: now, updatedAt: now },
   ]);
 }
 
@@ -156,7 +147,6 @@ function createInitialRecords(channels: RentChannel[]): RentHousingRecord[] {
   return sortRecords([
     {
       id: 'rent-record-1',
-      userId: 'user-001',
       address: '上海市浦东新区锦绣路 1888 弄 8 号 1202',
       channelId: 'rent-channel-ziroom',
       channelName: channelMap['rent-channel-ziroom']?.name ?? '自如',
@@ -177,7 +167,6 @@ function createInitialRecords(channels: RentChannel[]): RentHousingRecord[] {
     },
     {
       id: 'rent-record-2',
-      userId: 'user-001',
       address: '杭州市西湖区古荆新村 23 幢 402',
       channelId: 'rent-channel-lianjia',
       channelName: channelMap['rent-channel-lianjia']?.name ?? '链家',
@@ -198,7 +187,6 @@ function createInitialRecords(channels: RentChannel[]): RentHousingRecord[] {
     },
     {
       id: 'rent-record-3',
-      userId: 'user-002',
       address: '深圳市南山区后海大道 99 号 3 栋 1706',
       channelId: 'rent-channel-beike',
       channelName: channelMap['rent-channel-beike']?.name ?? '贝壳',
@@ -218,10 +206,6 @@ function createInitialRecords(channels: RentChannel[]): RentHousingRecord[] {
       updatedAt: now,
     },
   ]);
-}
-
-export function normalizeRentUserId(value: string) {
-  return value.trim();
 }
 
 export function formatRentAmount(value: number) {
@@ -281,9 +265,6 @@ export function buildInitialRentState(): RentPageState {
     records,
     channels,
     settings: {
-      activeUserId: DEFAULT_RENT_USER_ID,
-      recordsUserId: DEFAULT_RENT_USER_ID,
-      statisticsUserId: DEFAULT_RENT_USER_ID,
       editingRecordId: '',
     },
   };
@@ -293,17 +274,12 @@ export function normalizeRentPageState(state: RentPageState | null | undefined):
   const fallback = buildInitialRentState();
   const rawChannels = Array.isArray(state?.channels) ? state.channels : fallback.channels;
   const channels = sortChannels(rawChannels.map((channel) => normalizeChannel(channel)));
-  const fallbackUserId = channels[0]?.userId || DEFAULT_RENT_USER_ID;
-  const records = sortRecords((Array.isArray(state?.records) ? state.records : fallback.records).map((record) => normalizeRecord(record, channels, fallbackUserId)));
-  const activeUserId = normalizeTrimmedValue(state?.settings?.activeUserId, fallbackUserId);
+  const records = sortRecords((Array.isArray(state?.records) ? state.records : fallback.records).map((record) => normalizeRecord(record, channels)));
 
   return {
     records,
     channels,
     settings: {
-      activeUserId,
-      recordsUserId: normalizeTrimmedValue(state?.settings?.recordsUserId, activeUserId),
-      statisticsUserId: normalizeTrimmedValue(state?.settings?.statisticsUserId, activeUserId),
       editingRecordId: normalizeTrimmedValue(state?.settings?.editingRecordId),
     },
   };
@@ -317,7 +293,6 @@ export function createRentRecord(channels: RentChannel[], records: RentHousingRe
   return sortRecords([
     {
       id: buildId(),
-      userId: normalizeRentUserId(draft.userId) || DEFAULT_RENT_USER_ID,
       address: draft.address.trim(),
       channelId: draft.channelId,
       channelName: channel?.name ?? '未分配渠道',
@@ -356,7 +331,6 @@ export function updateRentRecord(
 
     return {
       ...record,
-      userId: normalizeRentUserId(draft.userId) || DEFAULT_RENT_USER_ID,
       address: draft.address.trim(),
       channelId: draft.channelId,
       channelName: channel?.name ?? record.channelName,
@@ -389,7 +363,6 @@ export function createRentChannel(channels: RentChannel[], draft: RentChannelDra
     ...channels,
     {
       id: buildId(),
-      userId: normalizeRentUserId(draft.userId) || DEFAULT_RENT_USER_ID,
       name: draft.name.trim(),
       createdAt: now,
       updatedAt: now,
@@ -405,7 +378,6 @@ export function updateRentChannel(channels: RentChannel[], channelId: string, dr
 
     return {
       ...channel,
-      userId: normalizeRentUserId(draft.userId) || DEFAULT_RENT_USER_ID,
       name: draft.name.trim(),
       updatedAt: dayjs().format(DATE_TIME_FORMAT),
     };
@@ -418,20 +390,17 @@ export function deleteRentChannel(channels: RentChannel[], channelId: string) {
 
 export function filterRentRecords(
   records: RentHousingRecord[],
-  userId: string,
   options?: {
     keyword?: string;
     channelId?: string;
     occupancy?: 'all' | 'active' | 'ended';
   },
 ) {
-  const normalizedUserId = normalizeRentUserId(userId);
   const normalizedKeyword = options?.keyword?.trim().toLowerCase() ?? '';
   const channelId = options?.channelId ?? RENT_ALL_CHANNELS;
   const occupancy = options?.occupancy ?? 'all';
 
   return records
-    .filter((record) => !normalizedUserId || record.userId === normalizedUserId)
     .filter((record) => channelId === RENT_ALL_CHANNELS || record.channelId === channelId)
     .filter((record) => {
       const status = calculateRentDerivedMetrics(record).occupancyStatus;
@@ -447,23 +416,16 @@ export function filterRentRecords(
     });
 }
 
-export function filterRentChannels(channels: RentChannel[], userId: string) {
-  const normalizedUserId = normalizeRentUserId(userId);
-
-  if (!normalizedUserId) {
-    return channels;
-  }
-
-  return channels.filter((channel) => channel.userId === normalizedUserId);
+export function filterRentChannels(channels: RentChannel[]): RentChannel[] {
+  return channels;
 }
 
 export function buildRentOverview(
   records: RentHousingRecord[],
   channels: RentChannel[],
-  userId: string,
 ): RentOverviewSummary {
-  const scopedRecords = filterRentRecords(records, userId);
-  const scopedChannels = filterRentChannels(channels, userId);
+  const scopedRecords = filterRentRecords(records);
+  const scopedChannels = filterRentChannels(channels);
   const totals = scopedRecords.reduce((accumulator, record) => {
     const metrics = calculateRentDerivedMetrics(record);
 
@@ -497,8 +459,8 @@ export function buildRentOverview(
   };
 }
 
-export function buildRentCostBreakdown(records: RentHousingRecord[], userId: string): RentCostBreakdownPoint[] {
-  const scopedRecords = filterRentRecords(records, userId);
+export function buildRentCostBreakdown(records: RentHousingRecord[]): RentCostBreakdownPoint[] {
+  const scopedRecords = filterRentRecords(records);
   const totals = scopedRecords.reduce((accumulator, record) => {
     accumulator.rent += record.rent;
     accumulator.electricityFee += record.electricityFee;
@@ -546,10 +508,9 @@ export function buildRentCostBreakdown(records: RentHousingRecord[], userId: str
 export function buildRentChannelBreakdown(
   records: RentHousingRecord[],
   channels: RentChannel[],
-  userId: string,
 ): RentChannelBreakdownPoint[] {
-  const scopedChannels = filterRentChannels(channels, userId);
-  const scopedRecords = filterRentRecords(records, userId);
+  const scopedChannels = filterRentChannels(channels);
+  const scopedRecords = filterRentRecords(records);
 
   return scopedChannels
     .map((channel, index) => ({

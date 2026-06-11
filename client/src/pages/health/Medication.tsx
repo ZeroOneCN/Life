@@ -29,11 +29,6 @@ const TAB_OPTIONS: Array<{ value: MedicationTab; label: string }> = [
 ];
 
 const EMPTY_SETTINGS: MedicationPageState['settings'] = {
-  activeUserId: '',
-  recordsUserId: '',
-  purchaseUserId: '',
-  analysisUserId: '',
-  summaryUserId: '',
   doseReminderEnabled: true,
   stockReminderEnabled: true,
   breakfastReminderTime: '08:00',
@@ -188,7 +183,7 @@ export default function MedicationPage() {
 
   const handleSaveSummary = useCallback(async (date: string, content: string) => {
     try {
-      const existing = summaries.find((item) => item.date === date && item.userId === settings.summaryUserId);
+      const existing = summaries.find((item) => item.date === date);
 
       if (!content.trim()) {
         if (existing) {
@@ -198,7 +193,6 @@ export default function MedicationPage() {
         await medicationApi.updateSummary(existing.id, { date, content });
       } else {
         await medicationApi.createSummary({
-          userId: settings.summaryUserId,
           date,
           content,
         });
@@ -209,7 +203,7 @@ export default function MedicationPage() {
     } catch (error) {
       showToast(buildApiErrorMessage(error, '每日总结保存失败。'), 'error');
     }
-  }, [reload, settings.summaryUserId, showToast, summaries]);
+  }, [reload, showToast, summaries]);
 
   const triggerDoseReminder = useCallback(async (slot: MedicationReminderTimeKey) => {
     try {
@@ -262,12 +256,7 @@ export default function MedicationPage() {
 
       {tab === 'records' ? (
         <MedicationRecordsSection
-          activeUserId={settings.activeUserId}
-          filterUserId={settings.recordsUserId}
           records={records}
-          onFilterUserIdChange={(value) => {
-            void updateSettings({ recordsUserId: value });
-          }}
           onChangeRecords={(updater) => {
             const previous = records;
             const next = updater(previous);
@@ -287,12 +276,7 @@ export default function MedicationPage() {
 
       {tab === 'purchases' ? (
         <MedicationPurchasesSection
-          activeUserId={settings.activeUserId}
-          filterUserId={settings.purchaseUserId}
           purchases={purchases}
-          onFilterUserIdChange={(value) => {
-            void updateSettings({ purchaseUserId: value });
-          }}
           onChangePurchases={(updater) => {
             const previous = purchases;
             const next = updater(previous);
@@ -312,12 +296,8 @@ export default function MedicationPage() {
 
       {tab === 'analysis' ? (
         <MedicationAnalysisSection
-          userId={settings.analysisUserId}
           records={records}
           purchases={purchases}
-          onUserIdChange={(value) => {
-            void updateSettings({ analysisUserId: value });
-          }}
         />
       ) : null}
 

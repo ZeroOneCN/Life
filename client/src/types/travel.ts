@@ -20,7 +20,6 @@ export type TravelReportColumnKey =
 
 export interface TravelBook {
   id: string;
-  userId: string;
   name: string;
   description: string;
   startDate: string;
@@ -35,7 +34,6 @@ export interface TravelBook {
 }
 
 export interface TravelBookDraft {
-  userId: string;
   name: string;
   description?: string;
   startDate: string;
@@ -53,7 +51,6 @@ export interface TravelArchiveSuggestion {
 
 export interface TravelExpenseRecord {
   id: string;
-  userId: string;
   bookId: string;
   date: string;
   timeStart: string;
@@ -72,7 +69,6 @@ export interface TravelExpenseRecord {
 }
 
 export interface TravelExpenseDraft {
-  userId: string;
   bookId: string;
   date: string;
   timeStart: string;
@@ -176,12 +172,10 @@ export interface TravelPageState {
   records: TravelExpenseRecord[];
   payChannels: TravelPayChannel[];
   settings: {
-    activeUserId: string;
     activeBookId: string;
     detailsBookId: string;
     statsBookId: string;
     reportBookId: string;
-    leaderboardUserId: string;
     reportColumns: TravelReportColumnKey[];
   };
 }

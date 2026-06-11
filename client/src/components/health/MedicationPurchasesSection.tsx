@@ -11,16 +11,12 @@ import {
   createMedicationPurchase,
   deleteMedicationPurchase,
   filterMedicationPurchasesByUserId,
-  normalizeMedicationUserId,
   updateMedicationPurchase,
 } from '../../services/medication';
 import type { MedicationPurchaseDraft, MedicationPurchaseRecord } from '../../types/medication';
 
 interface MedicationPurchasesSectionProps {
-  activeUserId: string;
-  filterUserId: string;
   purchases: MedicationPurchaseRecord[];
-  onFilterUserIdChange: (value: string) => void;
   onChangePurchases: (updater: (records: MedicationPurchaseRecord[]) => MedicationPurchaseRecord[]) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
@@ -59,13 +55,12 @@ function buildFormState(record: MedicationPurchaseRecord): PurchaseFormState {
   };
 }
 
-function parseDraft(form: PurchaseFormState, userId: string): MedicationPurchaseDraft | null {
-  const normalizedUserId = normalizeMedicationUserId(userId);
+function parseDraft(form: PurchaseFormState): MedicationPurchaseDraft | null {
   const quantity = Number(form.quantity);
   const unitPrice = Number(form.unitPrice);
   const explicitTotalPrice = form.totalPrice ? Number(form.totalPrice) : undefined;
 
-  if (!normalizedUserId || !form.medicineName.trim() || !dayjs(form.purchaseDate).isValid()) {
+  if (!form.medicineName.trim() || !dayjs(form.purchaseDate).isValid()) {
     return null;
   }
 
@@ -74,7 +69,6 @@ function parseDraft(form: PurchaseFormState, userId: string): MedicationPurchase
   }
 
   return {
-    userId: normalizedUserId,
     purchaseDate: form.purchaseDate,
     medicineName: form.medicineName.trim(),
     quantity,
@@ -97,10 +91,7 @@ function inferTotalPrice(quantity: string, unitPrice: string) {
 }
 
 export function MedicationPurchasesSection({
-  activeUserId,
-  filterUserId,
   purchases,
-  onFilterUserIdChange,
   onChangePurchases,
   showToast,
 }: MedicationPurchasesSectionProps) {
@@ -135,16 +126,16 @@ export function MedicationPurchasesSection({
   const filteredPurchases = useMemo(() => {
     const normalizedKeyword = medicineKeyword.trim().toLowerCase();
 
-    return filterMedicationPurchasesByUserId(purchases, filterUserId)
+    return filterMedicationPurchasesByUserId(purchases)
       .filter((record) => (!normalizedKeyword || record.medicineName.toLowerCase().includes(normalizedKeyword)))
       .filter((record) => (!channel || record.channel === channel))
       .filter((record) => (!startDate || record.purchaseDate >= startDate))
       .filter((record) => (!endDate || record.purchaseDate <= endDate));
-  }, [purchases, filterUserId, medicineKeyword, channel, startDate, endDate]);
+  }, [purchases, medicineKeyword, channel, startDate, endDate]);
 
   useEffect(() => {
     setPage(1);
-  }, [filterUserId, medicineKeyword, channel, startDate, endDate]);
+  }, [medicineKeyword, channel, startDate, endDate]);
 
   const totalPages = Math.max(1, Math.ceil(filteredPurchases.length / MEDICATION_PURCHASE_PAGE_SIZE));
   const pagePurchases = useMemo(() => {
@@ -197,7 +188,7 @@ export function MedicationPurchasesSection({
   ], []);
 
   const handleCreate = () => {
-    const draft = parseDraft(form, activeUserId);
+    const draft = parseDraft(form);
 
     if (!draft) {
       showToast('请补全购药日期、药品名称、数量和单价。', 'error');
@@ -214,7 +205,7 @@ export function MedicationPurchasesSection({
       return;
     }
 
-    const draft = parseDraft(editingForm, editingPurchase.userId);
+    const draft = parseDraft(editingForm);
     if (!draft) {
       showToast('请补全要保存的购药记录。', 'error');
       return;
@@ -306,12 +297,12 @@ export function MedicationPurchasesSection({
         </form>
 
         <div className="medication-filter-grid medication-filter-grid-purchase">
-          <Field
+          {/* <Field
             label="记录用户 ID"
             value={filterUserId}
             onChange={(event) => onFilterUserIdChange(event.target.value)}
             placeholder="留空查看全部用户"
-          />
+          /> */}
           <Field
             label="药品名称"
             value={medicineKeyword}

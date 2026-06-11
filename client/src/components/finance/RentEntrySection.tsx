@@ -14,7 +14,6 @@ import {
 import type { RentChannel, RentHousingRecord, RentHousingRecordDraft } from '../../types/rent';
 
 interface RentEntrySectionProps {
-  activeUserId: string;
   editingRecordId: string;
   records: RentHousingRecord[];
   channels: RentChannel[];
@@ -25,7 +24,6 @@ interface RentEntrySectionProps {
 }
 
 interface RentFormState {
-  userId: string;
   address: string;
   channelId: string;
   moveInDate: string;
@@ -62,11 +60,10 @@ function toInputNumber(value: number) {
   return value ? String(value) : '';
 }
 
-function createDefaultFormState(activeUserId: string, channels: RentChannel[]): RentFormState {
-  const firstChannel = channels.find((item) => item.userId === activeUserId) ?? channels[0] ?? null;
+function createDefaultFormState(channels: RentChannel[]): RentFormState {
+  const firstChannel = channels[0] ?? null;
 
   return {
-    userId: activeUserId,
     address: '',
     channelId: firstChannel?.id ?? '',
     moveInDate: dayjs().format('YYYY-MM-DD'),
@@ -87,7 +84,6 @@ function createDefaultFormState(activeUserId: string, channels: RentChannel[]): 
 
 function buildFormState(record: RentHousingRecord): RentFormState {
   return {
-    userId: record.userId,
     address: record.address,
     channelId: record.channelId,
     moveInDate: record.moveInDate,
@@ -127,8 +123,7 @@ function parseDraft(form: RentFormState): RentHousingRecordDraft | null {
   const serviceFee = toOptionalMoney(form.serviceFee);
 
   if (
-    !form.userId.trim()
-    || !form.address.trim()
+    !form.address.trim()
     || !form.channelId
     || !dayjs(form.moveInDate).isValid()
     || [rent, deposit, electricityFee, waterFee, gasFee, agencyFee, cleaningFee, laundryFee, serviceFee].some((value) => Number.isNaN(value))
@@ -141,7 +136,6 @@ function parseDraft(form: RentFormState): RentHousingRecordDraft | null {
   }
 
   return {
-    userId: form.userId.trim(),
     address: form.address.trim(),
     channelId: form.channelId,
     moveInDate: form.moveInDate,
@@ -161,7 +155,6 @@ function parseDraft(form: RentFormState): RentHousingRecordDraft | null {
 }
 
 export function RentEntrySection({
-  activeUserId,
   editingRecordId,
   records,
   channels,
@@ -170,11 +163,11 @@ export function RentEntrySection({
   onFinishSave,
   showToast,
 }: RentEntrySectionProps) {
-  const [form, setForm] = useState<RentFormState>(() => createDefaultFormState(activeUserId, channels));
+  const [form, setForm] = useState<RentFormState>(() => createDefaultFormState(channels));
 
   const availableChannels = useMemo(
-    () => filterRentChannels(channels, form.userId || activeUserId),
-    [activeUserId, channels, form.userId],
+    () => filterRentChannels(channels),
+    [channels],
   );
 
   const editingRecord = useMemo(
@@ -188,8 +181,8 @@ export function RentEntrySection({
       return;
     }
 
-    setForm(createDefaultFormState(activeUserId, channels));
-  }, [activeUserId, channels, editingRecord]);
+    setForm(createDefaultFormState(channels));
+  }, [channels, editingRecord]);
 
   useEffect(() => {
     const exists = availableChannels.some((channel) => channel.id === form.channelId);
@@ -217,7 +210,7 @@ export function RentEntrySection({
     const draft = parseDraft(form);
 
     if (!draft) {
-      showToast('请补全用户、地址、渠道、入住日期以及有效费用信息。', 'error');
+      showToast('请补全地址、渠道、入住日期以及有效费用信息。', 'error');
       return;
     }
 
@@ -236,13 +229,13 @@ export function RentEntrySection({
     }
 
     onEditingRecordIdChange('');
-    setForm(createDefaultFormState(activeUserId, channels));
+    setForm(createDefaultFormState(channels));
     onFinishSave();
   };
 
   const handleReset = () => {
     onEditingRecordIdChange('');
-    setForm(createDefaultFormState(activeUserId, channels));
+    setForm(createDefaultFormState(channels));
   };
 
   if (!channels.length) {

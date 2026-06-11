@@ -27,14 +27,12 @@ import {
 import type { ShoppingCurrencyMode, ShoppingLedger, ShoppingPlatform, ShoppingRecord } from '../../types/shopping';
 
 interface ShoppingDashboardSectionProps {
-  userId: string;
   ledgerId: string;
   records: ShoppingRecord[];
   ledgers: ShoppingLedger[];
   platforms: ShoppingPlatform[];
   currencyMode: ShoppingCurrencyMode;
   usdtRate: number;
-  onUserIdChange: (value: string) => void;
   onLedgerIdChange: (value: string) => void;
 }
 
@@ -66,31 +64,29 @@ function ChartCard({
 }
 
 export function ShoppingDashboardSection({
-  userId,
   ledgerId,
   records,
   ledgers,
   platforms,
   currencyMode,
   usdtRate,
-  onUserIdChange,
   onLedgerIdChange,
 }: ShoppingDashboardSectionProps) {
   const overview = useMemo(
-    () => buildShoppingOverview(records, userId, ledgerId),
-    [records, userId, ledgerId],
+    () => buildShoppingOverview(records, ledgerId),
+    [records, ledgerId],
   );
   const monthlyTrend = useMemo(
-    () => buildShoppingMonthlyTrend(records, userId, ledgerId),
-    [records, userId, ledgerId],
+    () => buildShoppingMonthlyTrend(records, ledgerId),
+    [records, ledgerId],
   );
   const platformBreakdown = useMemo(
-    () => buildShoppingPlatformBreakdown(records, userId, ledgerId, platforms),
-    [records, userId, ledgerId, platforms],
+    () => buildShoppingPlatformBreakdown(records, ledgerId, platforms),
+    [records, ledgerId, platforms],
   );
   const ledgerSummary = useMemo(
-    () => buildShoppingLedgerSummary(records, ledgers, userId),
-    [records, ledgers, userId],
+    () => buildShoppingLedgerSummary(records, ledgers),
+    [records, ledgers],
   );
 
   const hasTrendData = monthlyTrend.some((item) => item.amount > 0);

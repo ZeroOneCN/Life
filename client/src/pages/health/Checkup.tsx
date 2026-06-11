@@ -27,10 +27,6 @@ const TAB_OPTIONS: Array<{ value: CheckupTab; label: string }> = [
 ];
 
 const EMPTY_SETTINGS: CheckupPageState['settings'] = {
-  activeUserId: '',
-  recordsUserId: '',
-  trendUserId: '',
-  insightUserId: '',
   reminderEnabled: true,
   abnormalAlertEnabled: true,
   followUpLeadDays: 7,
@@ -153,16 +149,7 @@ export default function CheckupPage() {
 
       {tab === 'records' ? (
         <CheckupRecordsSection
-          activeUserId={settings.activeUserId}
-          filterUserId={settings.recordsUserId}
-          trendUserId={settings.trendUserId}
           records={records}
-          onFilterUserIdChange={(value) => {
-            void updateSettings({ recordsUserId: value });
-          }}
-          onTrendUserIdChange={(value) => {
-            void updateSettings({ trendUserId: value });
-          }}
           onCreateRecord={(draft) => {
             void runWithReload(() => checkupApi.createRecord(draft).then(() => undefined), '指标记录已新增。');
           }}
@@ -178,7 +165,6 @@ export default function CheckupPage() {
 
       {tab === 'batch' ? (
         <CheckupBatchEntrySection
-          activeUserId={settings.activeUserId}
           templates={templates}
           preferredTemplateId={preferredTemplateId}
           onPreferredTemplateConsumed={() => setPreferredTemplateId(null)}

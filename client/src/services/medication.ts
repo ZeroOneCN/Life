@@ -21,9 +21,8 @@ const DATE_TIME_FORMAT = 'YYYY-MM-DDTHH:mm';
 
 type MedicationRecordInput = MedicationRecordDraft & Partial<Pick<MedicationRecord, 'id' | 'createdAt' | 'updatedAt'>>;
 type MedicationPurchaseInput = MedicationPurchaseDraft & Partial<Pick<MedicationPurchaseRecord, 'id' | 'createdAt' | 'updatedAt'>>;
-type SummaryInput = Pick<MedicationDailySummary, 'userId' | 'date' | 'content'> & Partial<Pick<MedicationDailySummary, 'id' | 'createdAt' | 'updatedAt'>>;
+type SummaryInput = Pick<MedicationDailySummary, 'date' | 'content'> & Partial<Pick<MedicationDailySummary, 'id' | 'createdAt' | 'updatedAt'>>;
 
-export const DEFAULT_MEDICATION_USER_ID = 'user-001';
 export const MEDICATION_RECORD_PAGE_SIZE = 10;
 export const MEDICATION_PURCHASE_PAGE_SIZE = 10;
 export const MEDICATION_TREND_RANGE_OPTIONS = [7, 30, 90] as const;
@@ -100,10 +99,6 @@ function normalizeMedicineKey(name: string) {
   return name.trim().toLowerCase();
 }
 
-export function normalizeMedicationUserId(userId: string) {
-  return userId.trim();
-}
-
 function materializeMedicationRecord(input: MedicationRecordInput, existing?: MedicationRecord): MedicationRecord {
   const raw = input as MedicationRecordInput & Record<string, unknown>;
   const date = normalizeDate(raw.date ?? raw.recordDate);
@@ -111,7 +106,6 @@ function materializeMedicationRecord(input: MedicationRecordInput, existing?: Me
 
   return {
     id: input.id ?? existing?.id ?? buildId(),
-    userId: normalizeMedicationUserId(String(raw.userId ?? existing?.userId ?? DEFAULT_MEDICATION_USER_ID)) || DEFAULT_MEDICATION_USER_ID,
     date,
     medicineName: String(raw.medicineName ?? raw.medicine_name ?? existing?.medicineName ?? '').trim(),
     breakfast: Math.max(0, toNumber(raw.breakfast)),
@@ -132,7 +126,6 @@ function materializeMedicationPurchase(input: MedicationPurchaseInput, existing?
 
   return {
     id: input.id ?? existing?.id ?? buildId(),
-    userId: normalizeMedicationUserId(String(raw.userId ?? existing?.userId ?? DEFAULT_MEDICATION_USER_ID)) || DEFAULT_MEDICATION_USER_ID,
     purchaseDate,
     medicineName: String(raw.medicineName ?? raw.medicine_name ?? existing?.medicineName ?? '').trim(),
     quantity,
@@ -151,7 +144,6 @@ function materializeSummary(input: SummaryInput, existing?: MedicationDailySumma
 
   return {
     id: input.id ?? existing?.id ?? buildId(),
-    userId: normalizeMedicationUserId(input.userId) || existing?.userId || DEFAULT_MEDICATION_USER_ID,
     date,
     content: input.content.trim(),
     createdAt: existing?.createdAt ?? normalizeTimestamp(input.createdAt, date),
@@ -160,57 +152,35 @@ function materializeSummary(input: SummaryInput, existing?: MedicationDailySumma
 }
 
 function createMockMedicationRecord(
-  userId: string,
   daysAgo: number,
   draft: Omit<MedicationRecordDraft, 'userId' | 'date'>,
 ): MedicationRecord {
   return materializeMedicationRecord({
-    userId,
     date: dayjs().subtract(daysAgo, 'day').format(DATE_FORMAT),
     ...draft,
   });
 }
 
 function createMockPurchase(
-  userId: string,
   daysAgo: number,
   draft: Omit<MedicationPurchaseDraft, 'userId' | 'purchaseDate'>,
 ): MedicationPurchaseRecord {
   return materializeMedicationPurchase({
-    userId,
     purchaseDate: dayjs().subtract(daysAgo, 'day').format(DATE_FORMAT),
     ...draft,
   });
 }
 
-export function filterMedicationRecordsByUserId(records: MedicationRecord[], userId: string) {
-  const normalizedUserId = normalizeMedicationUserId(userId);
-
-  if (!normalizedUserId) {
-    return records;
-  }
-
-  return records.filter((record) => normalizeMedicationUserId(record.userId) === normalizedUserId);
+export function filterMedicationRecordsByUserId(records: MedicationRecord[]): MedicationRecord[] {
+  return records;
 }
 
-export function filterMedicationPurchasesByUserId(records: MedicationPurchaseRecord[], userId: string) {
-  const normalizedUserId = normalizeMedicationUserId(userId);
-
-  if (!normalizedUserId) {
-    return records;
-  }
-
-  return records.filter((record) => normalizeMedicationUserId(record.userId) === normalizedUserId);
+export function filterMedicationPurchasesByUserId(records: MedicationPurchaseRecord[]): MedicationPurchaseRecord[] {
+  return records;
 }
 
-export function filterMedicationSummariesByUserId(records: MedicationDailySummary[], userId: string) {
-  const normalizedUserId = normalizeMedicationUserId(userId);
-
-  if (!normalizedUserId) {
-    return records;
-  }
-
-  return records.filter((record) => normalizeMedicationUserId(record.userId) === normalizedUserId);
+export function filterMedicationSummariesByUserId(records: MedicationDailySummary[]): MedicationDailySummary[] {
+  return records;
 }
 
 export function createMedicationRecord(records: MedicationRecord[], draft: MedicationRecordDraft) {
@@ -253,10 +223,10 @@ export function deleteMedicationPurchase(records: MedicationPurchaseRecord[], id
 
 export function saveMedicationDailySummary(
   summaries: MedicationDailySummary[],
-  input: Pick<MedicationDailySummary, 'userId' | 'date' | 'content'>,
+  input: Pick<MedicationDailySummary, 'date' | 'content'>,
 ) {
   const existing = summaries.find((item) => (
-    normalizeMedicationUserId(item.userId) === normalizeMedicationUserId(input.userId) && dayjs(item.date).format(DATE_FORMAT) === dayjs(input.date).format(DATE_FORMAT)
+    dayjs(item.date).format(DATE_FORMAT) === dayjs(input.date).format(DATE_FORMAT)
   ));
 
   if (!input.content.trim()) {
@@ -275,10 +245,9 @@ export function saveMedicationDailySummary(
 export function buildMedicationOverview(
   records: MedicationRecord[],
   purchases: MedicationPurchaseRecord[],
-  userId: string,
 ): MedicationOverviewSummary {
-  const filteredRecords = filterMedicationRecordsByUserId(records, userId);
-  const filteredPurchases = filterMedicationPurchasesByUserId(purchases, userId);
+  const filteredRecords = filterMedicationRecordsByUserId(records);
+  const filteredPurchases = filterMedicationPurchasesByUserId(purchases);
   const totalDosage = filteredRecords.reduce((sum, record) => sum + getRecordTotalDose(record), 0);
   const trackedDays = new Set(filteredRecords.map((record) => dayjs(record.date).format(DATE_FORMAT))).size;
   const activeMedicineCount = new Set(filteredRecords.map((record) => record.medicineName)).size;
@@ -300,8 +269,8 @@ export function buildMedicationOverview(
   };
 }
 
-export function buildMedicationTrend(records: MedicationRecord[], userId: string, days: number): MedicationTrendPoint[] {
-  const filteredRecords = filterMedicationRecordsByUserId(records, userId);
+export function buildMedicationTrend(records: MedicationRecord[], days: number): MedicationTrendPoint[] {
+  const filteredRecords = filterMedicationRecordsByUserId(records);
   const dateMap = new Map<string, MedicationTrendPoint>();
 
   Array.from({ length: days }, (_, index) => {
@@ -332,8 +301,8 @@ export function buildMedicationTrend(records: MedicationRecord[], userId: string
   return Array.from(dateMap.values());
 }
 
-export function buildMedicationTimeOfDaySummary(records: MedicationRecord[], userId: string): MedicationTimeOfDaySummary {
-  return filterMedicationRecordsByUserId(records, userId).reduce<MedicationTimeOfDaySummary>((summary, record) => ({
+export function buildMedicationTimeOfDaySummary(records: MedicationRecord[]): MedicationTimeOfDaySummary {
+  return filterMedicationRecordsByUserId(records).reduce<MedicationTimeOfDaySummary>((summary, record) => ({
     breakfast: summary.breakfast + record.breakfast,
     lunch: summary.lunch + record.lunch,
     dinner: summary.dinner + record.dinner,
@@ -344,9 +313,9 @@ export function buildMedicationTimeOfDaySummary(records: MedicationRecord[], use
   });
 }
 
-export function buildMedicationRanking(records: MedicationRecord[], userId: string): MedicationRankingPoint[] {
+export function buildMedicationRanking(records: MedicationRecord[]): MedicationRankingPoint[] {
   const medicineMap = new Map<string, number>();
-  const filteredRecords = filterMedicationRecordsByUserId(records, userId);
+  const filteredRecords = filterMedicationRecordsByUserId(records);
   const totalDosage = filteredRecords.reduce((sum, record) => sum + getRecordTotalDose(record), 0);
 
   filteredRecords.forEach((record) => {
@@ -369,12 +338,11 @@ const CONTAINER_UNITS = new Set(['盒', '瓶']);
 export function buildMedicationStockSummary(
   records: MedicationRecord[],
   purchases: MedicationPurchaseRecord[],
-  userId: string,
   defaultThreshold: number,
   medicineThresholds: Record<string, number>,
 ): MedicationStockInsight[] {
-  const filteredRecords = filterMedicationRecordsByUserId(records, userId);
-  const filteredPurchases = filterMedicationPurchasesByUserId(purchases, userId);
+  const filteredRecords = filterMedicationRecordsByUserId(records);
+  const filteredPurchases = filterMedicationPurchasesByUserId(purchases);
   const medicineNames = new Map<string, string>();
 
   filteredRecords.forEach((record) => medicineNames.set(normalizeMedicineKey(record.medicineName), record.medicineName.trim()));
@@ -491,23 +459,20 @@ export function buildMedicationStockSummary(
 export function buildMedicationLowStockItems(
   records: MedicationRecord[],
   purchases: MedicationPurchaseRecord[],
-  userId: string,
   defaultThreshold: number,
   medicineThresholds: Record<string, number>,
 ) {
-  return buildMedicationStockSummary(records, purchases, userId, defaultThreshold, medicineThresholds)
+  return buildMedicationStockSummary(records, purchases, defaultThreshold, medicineThresholds)
     .filter((item) => item.status === 'low');
 }
 
 function buildInitialSummaries() {
   return sortSummaries([
     materializeSummary({
-      userId: DEFAULT_MEDICATION_USER_ID,
       date: dayjs().format(DATE_FORMAT),
       content: '今天症状较轻，早餐和晚餐按计划服药，午后未出现明显不适。',
     }),
     materializeSummary({
-      userId: DEFAULT_MEDICATION_USER_ID,
       date: dayjs().subtract(2, 'day').format(DATE_FORMAT),
       content: '连续几天按时服药后睡眠更稳定，建议继续观察一周。',
     }),
@@ -517,39 +482,33 @@ function buildInitialSummaries() {
 export function buildInitialMedicationState(): MedicationPageState {
   return {
     records: sortMedicationRecords([
-      createMockMedicationRecord(DEFAULT_MEDICATION_USER_ID, 0, {
+      createMockMedicationRecord(0, {
         medicineName: '维生素 C',
         breakfast: 1,
         lunch: 0,
         dinner: 1,
       }),
-      createMockMedicationRecord(DEFAULT_MEDICATION_USER_ID, 1, {
+      createMockMedicationRecord(1, {
         medicineName: '感冒灵',
         breakfast: 1,
         lunch: 1,
         dinner: 1,
       }),
-      createMockMedicationRecord(DEFAULT_MEDICATION_USER_ID, 2, {
+      createMockMedicationRecord(2, {
         medicineName: '维生素 C',
         breakfast: 1,
         lunch: 0,
         dinner: 1,
       }),
-      createMockMedicationRecord(DEFAULT_MEDICATION_USER_ID, 4, {
+      createMockMedicationRecord(4, {
         medicineName: '褪黑素',
         breakfast: 0,
         lunch: 0,
         dinner: 1,
       }),
-      createMockMedicationRecord('user-002', 1, {
-        medicineName: '阿莫西林',
-        breakfast: 1,
-        lunch: 1,
-        dinner: 1,
-      }),
     ]),
     purchases: sortPurchases([
-      createMockPurchase(DEFAULT_MEDICATION_USER_ID, 8, {
+      createMockPurchase(8, {
         medicineName: '维生素 C',
         quantity: 6,
         unit: '片',
@@ -557,7 +516,7 @@ export function buildInitialMedicationState(): MedicationPageState {
         totalPrice: 7.2,
         channel: '京东',
       }),
-      createMockPurchase(DEFAULT_MEDICATION_USER_ID, 20, {
+      createMockPurchase(20, {
         medicineName: '感冒灵',
         quantity: 12,
         unit: '袋',
@@ -565,7 +524,7 @@ export function buildInitialMedicationState(): MedicationPageState {
         totalPrice: 18,
         channel: '药店',
       }),
-      createMockPurchase(DEFAULT_MEDICATION_USER_ID, 35, {
+      createMockPurchase(35, {
         medicineName: '褪黑素',
         quantity: 30,
         unit: '粒',
@@ -573,22 +532,9 @@ export function buildInitialMedicationState(): MedicationPageState {
         totalPrice: 24,
         channel: '淘宝',
       }),
-      createMockPurchase('user-002', 6, {
-        medicineName: '阿莫西林',
-        quantity: 18,
-        unit: '粒',
-        unitPrice: 0.9,
-        totalPrice: 16.2,
-        channel: '医院',
-      }),
     ]),
     summaries: buildInitialSummaries(),
     settings: {
-      activeUserId: DEFAULT_MEDICATION_USER_ID,
-      recordsUserId: DEFAULT_MEDICATION_USER_ID,
-      purchaseUserId: DEFAULT_MEDICATION_USER_ID,
-      analysisUserId: DEFAULT_MEDICATION_USER_ID,
-      summaryUserId: DEFAULT_MEDICATION_USER_ID,
       doseReminderEnabled: true,
       stockReminderEnabled: true,
       breakfastReminderTime: MEDICATION_REMINDER_META.breakfast.defaultTime,
@@ -605,12 +551,10 @@ export function buildInitialMedicationState(): MedicationPageState {
 
 export function normalizeMedicationPageState(state: MedicationPageState): MedicationPageState {
   const fallback = buildInitialMedicationState();
-  const activeUserId = normalizeMedicationUserId(state?.settings?.activeUserId ?? fallback.settings.activeUserId) || DEFAULT_MEDICATION_USER_ID;
 
   const records = Array.isArray(state?.records)
     ? sortMedicationRecords(state.records.map((record) => materializeMedicationRecord({
       ...record,
-      userId: normalizeMedicationUserId(String(record.userId ?? activeUserId)) || activeUserId,
       medicineName: String(
         record.medicineName
         ?? ((record as unknown as Record<string, unknown>).medicine_name ?? ''),
@@ -621,7 +565,6 @@ export function normalizeMedicationPageState(state: MedicationPageState): Medica
   const purchases = Array.isArray(state?.purchases)
     ? sortPurchases(state.purchases.map((record) => materializeMedicationPurchase({
       ...record,
-      userId: normalizeMedicationUserId(String(record.userId ?? activeUserId)) || activeUserId,
       medicineName: String(
         record.medicineName
         ?? ((record as unknown as Record<string, unknown>).medicine_name ?? ''),
@@ -633,7 +576,6 @@ export function normalizeMedicationPageState(state: MedicationPageState): Medica
     ? sortSummaries(state.summaries
       .map((summary) => materializeSummary({
         ...summary,
-        userId: normalizeMedicationUserId(String(summary.userId ?? activeUserId)) || activeUserId,
         content: String(
           summary.content
           ?? ((summary as unknown as Record<string, unknown>).summary ?? ''),
@@ -647,11 +589,6 @@ export function normalizeMedicationPageState(state: MedicationPageState): Medica
     purchases,
     summaries,
     settings: {
-      activeUserId,
-      recordsUserId: normalizeMedicationUserId(state?.settings?.recordsUserId ?? activeUserId),
-      purchaseUserId: normalizeMedicationUserId(state?.settings?.purchaseUserId ?? activeUserId),
-      analysisUserId: normalizeMedicationUserId(state?.settings?.analysisUserId ?? activeUserId),
-      summaryUserId: normalizeMedicationUserId(state?.settings?.summaryUserId ?? activeUserId),
       doseReminderEnabled: state?.settings?.doseReminderEnabled ?? true,
       stockReminderEnabled: state?.settings?.stockReminderEnabled ?? true,
       breakfastReminderTime: state?.settings?.breakfastReminderTime ?? MEDICATION_REMINDER_META.breakfast.defaultTime,

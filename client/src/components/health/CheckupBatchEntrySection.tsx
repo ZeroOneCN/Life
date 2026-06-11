@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
 import { Btn, Field, SelectField, TextArea } from '../ui';
-import { applyCheckupTemplate, normalizeCheckupUserId } from '../../services/checkup';
+import { applyCheckupTemplate } from '../../services/checkup';
 import type { CheckupRecordDraft, CheckupTemplate } from '../../types/checkup';
 
 interface BatchRowState {
@@ -16,7 +16,6 @@ interface BatchRowState {
 }
 
 interface CheckupBatchEntrySectionProps {
-  activeUserId: string;
   templates: CheckupTemplate[];
   preferredTemplateId?: string | null;
   onPreferredTemplateConsumed: () => void;
@@ -36,7 +35,6 @@ function createRow(seed?: Partial<BatchRowState>): BatchRowState {
 }
 
 export function CheckupBatchEntrySection({
-  activeUserId,
   templates,
   preferredTemplateId,
   onPreferredTemplateConsumed,
@@ -44,7 +42,6 @@ export function CheckupBatchEntrySection({
   onSaveSuccess,
   showToast,
 }: CheckupBatchEntrySectionProps) {
-  const [userId, setUserId] = useState(activeUserId);
   const [testDate, setTestDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [testType, setTestType] = useState('生化检查');
   const [followUpDate, setFollowUpDate] = useState('');
@@ -53,8 +50,8 @@ export function CheckupBatchEntrySection({
   const [rows, setRows] = useState<BatchRowState[]>([createRow()]);
 
   useEffect(() => {
-    setUserId(activeUserId);
-  }, [activeUserId]);
+    // Sync removed
+  }, []);
 
   const selectedTemplate = useMemo(
     () => templates.find((template) => template.id === templateId) ?? null,
@@ -91,13 +88,6 @@ export function CheckupBatchEntrySection({
   };
 
   const handleSubmit = () => {
-    const normalizedUserId = normalizeCheckupUserId(userId);
-
-    if (!normalizedUserId) {
-      showToast('请先填写批量录入的用户 ID。', 'error');
-      return;
-    }
-
     if (!dayjs(testDate).isValid()) {
       showToast('请选择有效的检查日期。', 'error');
       return;
@@ -111,7 +101,6 @@ export function CheckupBatchEntrySection({
     const drafts = rows
       .filter((row) => row.testName.trim() || row.value.trim() || row.referenceRange.trim())
       .map((row) => ({
-        userId: normalizedUserId,
         testDate,
         testType: testType.trim(),
         testName: row.testName.trim(),

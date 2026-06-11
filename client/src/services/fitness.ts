@@ -1,4 +1,4 @@
-﻿import dayjs from 'dayjs';
+import dayjs from 'dayjs';
 
 import { CHART_EXERCISE, CHART_INTENSITY, CHART_MACRO, CHART_MEAL } from '../lib/chartPalette';
 import type {
@@ -27,7 +27,6 @@ const DATE_FORMAT = 'YYYY-MM-DD';
 const DATE_TIME_FORMAT = 'YYYY-MM-DDTHH:mm';
 const MONTH_FORMAT = 'YYYY-MM';
 
-export const DEFAULT_FITNESS_USER_ID = 'user-001';
 export const FITNESS_RECORD_PAGE_SIZE = 10;
 export const FITNESS_DASHBOARD_DAYS = 30;
 
@@ -102,25 +101,22 @@ function matchesName(left: string, right: string) {
 
 function buildBaseRecord<T extends FitnessUserScopedRecordBase>(
   record: Partial<T>,
-  activeUserId: string,
 ) {
   const date = normalizeDate(record.date);
 
   return {
     id: record.id ?? buildId(),
-    userId: normalizeFitnessUserId(String(record.userId ?? activeUserId)) || activeUserId,
     date,
     createdAt: normalizeTimestamp(record.createdAt, date),
     updatedAt: normalizeTimestamp(record.updatedAt, date),
   };
 }
 
-function createMockDietRecord(userId: string, daysAgo: number, draft: Omit<DietRecordDraft, 'userId' | 'date'>): DietRecord {
+function createMockDietRecord(daysAgo: number, draft: Omit<DietRecordDraft, 'date'>): DietRecord {
   const date = dayjs().subtract(daysAgo, 'day').format(DATE_FORMAT);
 
   return {
     id: buildId(),
-    userId,
     date,
     createdAt: dayjs(`${date}T08:00`).format(DATE_TIME_FORMAT),
     updatedAt: dayjs(`${date}T08:00`).format(DATE_TIME_FORMAT),
@@ -129,15 +125,13 @@ function createMockDietRecord(userId: string, daysAgo: number, draft: Omit<DietR
 }
 
 function createMockExerciseRecord(
-  userId: string,
   daysAgo: number,
-  draft: Omit<ExerciseRecordDraft, 'userId' | 'date'>,
+  draft: Omit<ExerciseRecordDraft, 'date'>,
 ): ExerciseRecord {
   const date = dayjs().subtract(daysAgo, 'day').format(DATE_FORMAT);
 
   return {
     id: buildId(),
-    userId,
     date,
     createdAt: dayjs(`${date}T18:30`).format(DATE_TIME_FORMAT),
     updatedAt: dayjs(`${date}T18:30`).format(DATE_TIME_FORMAT),
@@ -146,15 +140,13 @@ function createMockExerciseRecord(
 }
 
 function createMockShoppingRecord(
-  userId: string,
   daysAgo: number,
-  draft: Omit<FitnessShoppingRecordDraft, 'userId' | 'date'>,
+  draft: Omit<FitnessShoppingRecordDraft, 'date'>,
 ): FitnessShoppingRecord {
   const date = dayjs().subtract(daysAgo, 'day').format(DATE_FORMAT);
 
   return {
     id: buildId(),
-    userId,
     date,
     createdAt: dayjs(`${date}T10:20`).format(DATE_TIME_FORMAT),
     updatedAt: dayjs(`${date}T10:20`).format(DATE_TIME_FORMAT),
@@ -162,12 +154,11 @@ function createMockShoppingRecord(
   };
 }
 
-function createMockWeightRecord(userId: string, daysAgo: number, draft: Omit<WeightRecordDraft, 'userId' | 'date'>): WeightRecord {
+function createMockWeightRecord(daysAgo: number, draft: Omit<WeightRecordDraft, 'date'>): WeightRecord {
   const date = dayjs().subtract(daysAgo, 'day').format(DATE_FORMAT);
 
   return {
     id: buildId(),
-    userId,
     date,
     createdAt: dayjs(`${date}T07:40`).format(DATE_TIME_FORMAT),
     updatedAt: dayjs(`${date}T07:40`).format(DATE_TIME_FORMAT),
@@ -177,20 +168,6 @@ function createMockWeightRecord(userId: string, daysAgo: number, draft: Omit<Wei
 
 function getRecentDateKeys(days: number) {
   return Array.from({ length: days }, (_, index) => dayjs().subtract(days - index - 1, 'day').format(DATE_FORMAT));
-}
-
-export function normalizeFitnessUserId(userId: string) {
-  return userId.trim();
-}
-
-export function filterRecordsByUserId<T extends FitnessUserScopedRecordBase>(records: T[], userId: string) {
-  const normalizedUserId = normalizeFitnessUserId(userId);
-
-  if (!normalizedUserId) {
-    return records;
-  }
-
-  return records.filter((record) => normalizeFitnessUserId(record.userId) === normalizedUserId);
 }
 
 export function calculateBmi(weightKg: number, heightCm: number) {
@@ -204,8 +181,7 @@ export function calculateBmi(weightKg: number, heightCm: number) {
 
 export function calculateDietCostFromShopping(record: DietRecord, shoppingRecords: FitnessShoppingRecord[]) {
   const matched = shoppingRecords.filter((shoppingRecord) => (
-    normalizeFitnessUserId(shoppingRecord.userId) === normalizeFitnessUserId(record.userId)
-    && matchesName(record.foodName, shoppingRecord.itemName)
+    matchesName(record.foodName, shoppingRecord.itemName)
     && shoppingRecord.specGrams > 0
     && shoppingRecord.unitPrice > 0
   ));
@@ -228,7 +204,6 @@ export function createDietRecord(records: DietRecord[], draft: DietRecordDraft) 
   return sortByLatestDate([
     {
       id: buildId(),
-      userId: normalizeFitnessUserId(draft.userId),
       date: normalizeDate(draft.date),
       mealType: draft.mealType,
       foodName: draft.foodName.trim(),
@@ -249,7 +224,6 @@ export function updateDietRecord(records: DietRecord[], id: string, draft: DietR
     record.id === id
       ? {
         ...record,
-        userId: normalizeFitnessUserId(draft.userId),
         date: normalizeDate(draft.date),
         mealType: draft.mealType,
         foodName: draft.foodName.trim(),
@@ -274,7 +248,6 @@ export function createExerciseRecord(records: ExerciseRecord[], draft: ExerciseR
   return sortByLatestDate([
     {
       id: buildId(),
-      userId: normalizeFitnessUserId(draft.userId),
       date: normalizeDate(draft.date),
       exerciseType: draft.exerciseType,
       exerciseName: draft.exerciseName.trim(),
@@ -293,7 +266,6 @@ export function updateExerciseRecord(records: ExerciseRecord[], id: string, draf
     record.id === id
       ? {
         ...record,
-        userId: normalizeFitnessUserId(draft.userId),
         date: normalizeDate(draft.date),
         exerciseType: draft.exerciseType,
         exerciseName: draft.exerciseName.trim(),
@@ -316,7 +288,6 @@ export function createFitnessShoppingRecord(records: FitnessShoppingRecord[], dr
   return sortByLatestDate([
     {
       id: buildId(),
-      userId: normalizeFitnessUserId(draft.userId),
       date: normalizeDate(draft.date),
       itemName: draft.itemName.trim(),
       specGrams: draft.specGrams,
@@ -335,7 +306,6 @@ export function updateFitnessShoppingRecord(records: FitnessShoppingRecord[], id
     record.id === id
       ? {
         ...record,
-        userId: normalizeFitnessUserId(draft.userId),
         date: normalizeDate(draft.date),
         itemName: draft.itemName.trim(),
         specGrams: draft.specGrams,
@@ -358,7 +328,6 @@ export function createWeightRecord(records: WeightRecord[], draft: WeightRecordD
   return sortByLatestDate([
     {
       id: buildId(),
-      userId: normalizeFitnessUserId(draft.userId),
       date: normalizeDate(draft.date),
       weight: draft.weight,
       height: draft.height,
@@ -375,7 +344,6 @@ export function updateWeightRecord(records: WeightRecord[], id: string, draft: W
     record.id === id
       ? {
         ...record,
-        userId: normalizeFitnessUserId(draft.userId),
         date: normalizeDate(draft.date),
         weight: draft.weight,
         height: draft.height,
@@ -653,10 +621,9 @@ export function normalizeFitnessPageState(state: FitnessPageState): FitnessPageS
     shopping?: unknown[];
     weight?: unknown[];
   };
-  const activeUserId = normalizeFitnessUserId(state.settings?.activeUserId ?? fallback.settings.activeUserId) || DEFAULT_FITNESS_USER_ID;
 
   const normalizeDietRecord = (record: Partial<DietRecord>): DietRecord => ({
-    ...buildBaseRecord<DietRecord>(record, activeUserId),
+    ...buildBaseRecord<DietRecord>(record),
     mealType: (record.mealType as MealType) ?? 'breakfast',
     foodName: String(record.foodName ?? ''),
     grams: toNumber(record.grams, 100),
@@ -667,7 +634,7 @@ export function normalizeFitnessPageState(state: FitnessPageState): FitnessPageS
   });
 
   const normalizeExerciseRecord = (record: Partial<ExerciseRecord>): ExerciseRecord => ({
-    ...buildBaseRecord<ExerciseRecord>(record, activeUserId),
+    ...buildBaseRecord<ExerciseRecord>(record),
     exerciseType: (record.exerciseType as ExerciseType) ?? 'cardio',
     exerciseName: String(record.exerciseName ?? ''),
     duration: toNumber(record.duration, 0),
@@ -676,7 +643,7 @@ export function normalizeFitnessPageState(state: FitnessPageState): FitnessPageS
   });
 
   const normalizeShoppingRecord = (record: Partial<FitnessShoppingRecord>): FitnessShoppingRecord => ({
-    ...buildBaseRecord<FitnessShoppingRecord>(record, activeUserId),
+    ...buildBaseRecord<FitnessShoppingRecord>(record),
     itemName: String(record.itemName ?? ''),
     specGrams: toNumber(record.specGrams, 500),
     quantity: toNumber(record.quantity, 1),
@@ -685,7 +652,7 @@ export function normalizeFitnessPageState(state: FitnessPageState): FitnessPageS
   });
 
   const normalizeWeightRecord = (record: Partial<WeightRecord>): WeightRecord => ({
-    ...buildBaseRecord<WeightRecord>(record, activeUserId),
+    ...buildBaseRecord<WeightRecord>(record),
     weight: toNumber(record.weight, 0),
     height: toNumber(record.height, 170),
     bodyFat: toNumber(record.bodyFat, 0),
@@ -697,12 +664,6 @@ export function normalizeFitnessPageState(state: FitnessPageState): FitnessPageS
     shoppingRecords: sortByLatestDate((rawState.shoppingRecords ?? rawState.shopping ?? fallback.shoppingRecords).map((record) => normalizeShoppingRecord(record as Partial<FitnessShoppingRecord>))),
     weightRecords: sortByLatestDate((rawState.weightRecords ?? rawState.weight ?? fallback.weightRecords).map((record) => normalizeWeightRecord(record as Partial<WeightRecord>))),
     settings: {
-      activeUserId,
-      dietFilterUserId: state.settings?.dietFilterUserId ?? activeUserId,
-      exerciseFilterUserId: state.settings?.exerciseFilterUserId ?? activeUserId,
-      shoppingFilterUserId: state.settings?.shoppingFilterUserId ?? activeUserId,
-      weightFilterUserId: state.settings?.weightFilterUserId ?? activeUserId,
-      dashboardUserId: state.settings?.dashboardUserId ?? activeUserId,
       defaultHeightCm: toNumber(state.settings?.defaultHeightCm, fallback.settings.defaultHeightCm ?? 170),
     },
   };
@@ -711,42 +672,36 @@ export function normalizeFitnessPageState(state: FitnessPageState): FitnessPageS
 export function buildInitialFitnessState(): FitnessPageState {
   return {
     dietRecords: sortByLatestDate([
-      createMockDietRecord('user-001', 0, { mealType: 'breakfast', foodName: '燕麦酸奶杯', grams: 320, calories: 365, protein: 24, carbs: 46, fat: 9 }),
-      createMockDietRecord('user-001', 0, { mealType: 'dinner', foodName: '鸡胸肉沙拉', grams: 420, calories: 520, protein: 48, carbs: 22, fat: 18 }),
-      createMockDietRecord('user-001', 2, { mealType: 'lunch', foodName: '牛肉藜麦饭', grams: 460, calories: 610, protein: 42, carbs: 58, fat: 16 }),
-      createMockDietRecord('user-001', 5, { mealType: 'snack', foodName: '香蕉蛋白奶昔', grams: 280, calories: 265, protein: 26, carbs: 29, fat: 5 }),
-      createMockDietRecord('user-002', 1, { mealType: 'lunch', foodName: '三文鱼便当', grams: 430, calories: 590, protein: 39, carbs: 44, fat: 19 }),
-      createMockDietRecord('user-002', 4, { mealType: 'breakfast', foodName: '全麦三明治', grams: 250, calories: 340, protein: 18, carbs: 36, fat: 12 }),
+      createMockDietRecord(0, { mealType: 'breakfast', foodName: '燕麦酸奶杯', grams: 320, calories: 365, protein: 24, carbs: 46, fat: 9 }),
+      createMockDietRecord(0, { mealType: 'dinner', foodName: '鸡胸肉沙拉', grams: 420, calories: 520, protein: 48, carbs: 22, fat: 18 }),
+      createMockDietRecord(2, { mealType: 'lunch', foodName: '牛肉藜麦饭', grams: 460, calories: 610, protein: 42, carbs: 58, fat: 16 }),
+      createMockDietRecord(5, { mealType: 'snack', foodName: '香蕉蛋白奶昔', grams: 280, calories: 265, protein: 26, carbs: 29, fat: 5 }),
+      createMockDietRecord(1, { mealType: 'lunch', foodName: '三文鱼便当', grams: 430, calories: 590, protein: 39, carbs: 44, fat: 19 }),
+      createMockDietRecord(4, { mealType: 'breakfast', foodName: '全麦三明治', grams: 250, calories: 340, protein: 18, carbs: 36, fat: 12 }),
     ]),
     exerciseRecords: sortByLatestDate([
-      createMockExerciseRecord('user-001', 0, { exerciseType: 'cardio', exerciseName: '跑步机间歇跑', duration: 35, calories: 360, intensity: 'high' }),
-      createMockExerciseRecord('user-001', 2, { exerciseType: 'strength', exerciseName: '上肢力量训练', duration: 50, calories: 280, intensity: 'medium' }),
-      createMockExerciseRecord('user-001', 4, { exerciseType: 'flexibility', exerciseName: '瑜伽拉伸', duration: 30, calories: 110, intensity: 'low' }),
-      createMockExerciseRecord('user-002', 1, { exerciseType: 'cardio', exerciseName: '动感单车', duration: 45, calories: 430, intensity: 'high' }),
-      createMockExerciseRecord('user-002', 6, { exerciseType: 'strength', exerciseName: '腿部训练', duration: 55, calories: 320, intensity: 'medium' }),
+      createMockExerciseRecord(0, { exerciseType: 'cardio', exerciseName: '跑步机间歇跑', duration: 35, calories: 360, intensity: 'high' }),
+      createMockExerciseRecord(2, { exerciseType: 'strength', exerciseName: '上肢力量训练', duration: 50, calories: 280, intensity: 'medium' }),
+      createMockExerciseRecord(4, { exerciseType: 'flexibility', exerciseName: '瑜伽拉伸', duration: 30, calories: 110, intensity: 'low' }),
+      createMockExerciseRecord(1, { exerciseType: 'cardio', exerciseName: '动感单车', duration: 45, calories: 430, intensity: 'high' }),
+      createMockExerciseRecord(6, { exerciseType: 'strength', exerciseName: '腿部训练', duration: 55, calories: 320, intensity: 'medium' }),
     ]),
     shoppingRecords: sortByLatestDate([
-      createMockShoppingRecord('user-001', 0, { itemName: '鸡胸肉', specGrams: 1000, quantity: 2, unitPrice: 32, location: '山姆' }),
-      createMockShoppingRecord('user-001', 1, { itemName: '燕麦', specGrams: 1000, quantity: 1, unitPrice: 26, location: '盒马' }),
-      createMockShoppingRecord('user-001', 3, { itemName: '香蕉', specGrams: 500, quantity: 2, unitPrice: 9.8, location: '永辉' }),
-      createMockShoppingRecord('user-002', 2, { itemName: '三文鱼', specGrams: 300, quantity: 2, unitPrice: 45, location: 'Ole' }),
-      createMockShoppingRecord('user-002', 6, { itemName: '全麦面包', specGrams: 420, quantity: 2, unitPrice: 16, location: '盒马' }),
+      createMockShoppingRecord(0, { itemName: '鸡胸肉', specGrams: 1000, quantity: 2, unitPrice: 32, location: '山姆' }),
+      createMockShoppingRecord(1, { itemName: '燕麦', specGrams: 1000, quantity: 1, unitPrice: 26, location: '盒马' }),
+      createMockShoppingRecord(3, { itemName: '香蕉', specGrams: 500, quantity: 2, unitPrice: 9.8, location: '永辉' }),
+      createMockShoppingRecord(2, { itemName: '三文鱼', specGrams: 300, quantity: 2, unitPrice: 45, location: 'Ole' }),
+      createMockShoppingRecord(6, { itemName: '全麦面包', specGrams: 420, quantity: 2, unitPrice: 16, location: '盒马' }),
     ]),
     weightRecords: sortByLatestDate([
-      createMockWeightRecord('user-001', 0, { weight: 72.4, height: 178, bodyFat: 19.6 }),
-      createMockWeightRecord('user-001', 7, { weight: 72.9, height: 178, bodyFat: 20.2 }),
-      createMockWeightRecord('user-001', 14, { weight: 73.3, height: 178, bodyFat: 20.6 }),
-      createMockWeightRecord('user-001', 21, { weight: 73.1, height: 178, bodyFat: 20.4 }),
-      createMockWeightRecord('user-002', 0, { weight: 64.8, height: 170, bodyFat: 23.1 }),
-      createMockWeightRecord('user-002', 10, { weight: 65.4, height: 170, bodyFat: 23.8 }),
+      createMockWeightRecord(0, { weight: 72.4, height: 178, bodyFat: 19.6 }),
+      createMockWeightRecord(7, { weight: 72.9, height: 178, bodyFat: 20.2 }),
+      createMockWeightRecord(14, { weight: 73.3, height: 178, bodyFat: 20.6 }),
+      createMockWeightRecord(21, { weight: 73.1, height: 178, bodyFat: 20.4 }),
+      createMockWeightRecord(0, { weight: 64.8, height: 170, bodyFat: 23.1 }),
+      createMockWeightRecord(10, { weight: 65.4, height: 170, bodyFat: 23.8 }),
     ]),
     settings: {
-      activeUserId: DEFAULT_FITNESS_USER_ID,
-      dietFilterUserId: DEFAULT_FITNESS_USER_ID,
-      exerciseFilterUserId: DEFAULT_FITNESS_USER_ID,
-      shoppingFilterUserId: DEFAULT_FITNESS_USER_ID,
-      weightFilterUserId: DEFAULT_FITNESS_USER_ID,
-      dashboardUserId: DEFAULT_FITNESS_USER_ID,
       defaultHeightCm: 170,
     },
   };

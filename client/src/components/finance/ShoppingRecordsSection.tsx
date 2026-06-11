@@ -11,29 +11,24 @@ import {
   deleteShoppingRecord,
   filterShoppingRecords,
   formatShoppingAmount,
-  normalizeShoppingUserId,
   updateShoppingRecord,
 } from '../../services/shopping';
 import type { ShoppingCurrencyMode, ShoppingLedger, ShoppingPlatform, ShoppingRecord, ShoppingRecordDraft } from '../../types/shopping';
 
 interface ShoppingRecordsSectionProps {
-  activeUserId: string;
   activeLedgerId: string;
-  filterUserId: string;
   filterLedgerId: string;
   records: ShoppingRecord[];
   ledgers: ShoppingLedger[];
   platforms: ShoppingPlatform[];
   currencyMode: ShoppingCurrencyMode;
   usdtRate: number;
-  onFilterUserIdChange: (value: string) => void;
   onFilterLedgerIdChange: (value: string) => void;
   onChangeRecords: (updater: (records: ShoppingRecord[]) => ShoppingRecord[]) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
 interface ShoppingFormState {
-  userId: string;
   ledgerId: string;
   date: string;
   platform: string;
@@ -45,9 +40,8 @@ interface ShoppingFormState {
   note: string;
 }
 
-function createDefaultFormState(activeUserId: string, activeLedgerId: string, platforms: ShoppingPlatform[]): ShoppingFormState {
+function createDefaultFormState(activeLedgerId: string, platforms: ShoppingPlatform[]): ShoppingFormState {
   return {
-    userId: activeUserId,
     ledgerId: activeLedgerId,
     date: dayjs().format('YYYY-MM-DD'),
     platform: platforms[0]?.name ?? '其他',
@@ -62,7 +56,6 @@ function createDefaultFormState(activeUserId: string, activeLedgerId: string, pl
 
 function buildFormState(record: ShoppingRecord): ShoppingFormState {
   return {
-    userId: record.userId,
     ledgerId: record.ledgerId,
     date: record.date,
     platform: record.platform,
@@ -76,11 +69,10 @@ function buildFormState(record: ShoppingRecord): ShoppingFormState {
 }
 
 function parseDraft(form: ShoppingFormState): ShoppingRecordDraft | null {
-  const userId = normalizeShoppingUserId(form.userId);
   const price = Number(form.price);
   const unitPrice = form.unitPrice ? Number(form.unitPrice) : null;
 
-  if (!userId || !form.ledgerId || !dayjs(form.date).isValid() || !form.platform.trim() || !form.itemName.trim()) {
+  if (!form.ledgerId || !dayjs(form.date).isValid() || !form.platform.trim() || !form.itemName.trim()) {
     return null;
   }
 
@@ -93,7 +85,6 @@ function parseDraft(form: ShoppingFormState): ShoppingRecordDraft | null {
   }
 
   return {
-    userId,
     ledgerId: form.ledgerId,
     date: form.date,
     platform: form.platform.trim(),
@@ -107,37 +98,33 @@ function parseDraft(form: ShoppingFormState): ShoppingRecordDraft | null {
 }
 
 export function ShoppingRecordsSection({
-  activeUserId,
   activeLedgerId,
-  filterUserId,
   filterLedgerId,
   records,
   ledgers,
   platforms,
   currencyMode,
   usdtRate,
-  onFilterUserIdChange,
   onFilterLedgerIdChange,
   onChangeRecords,
   showToast,
 }: ShoppingRecordsSectionProps) {
-  const [form, setForm] = useState<ShoppingFormState>(() => createDefaultFormState(activeUserId, activeLedgerId, platforms));
+  const [form, setForm] = useState<ShoppingFormState>(() => createDefaultFormState(activeLedgerId, platforms));
   const [keyword, setKeyword] = useState('');
   const [platformFilter, setPlatformFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [page, setPage] = useState(1);
   const [editingRecord, setEditingRecord] = useState<ShoppingRecord | null>(null);
-  const [editingForm, setEditingForm] = useState<ShoppingFormState>(() => createDefaultFormState(activeUserId, activeLedgerId, platforms));
+  const [editingForm, setEditingForm] = useState<ShoppingFormState>(() => createDefaultFormState(activeLedgerId, platforms));
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     setForm((previous) => ({
       ...previous,
-      userId: activeUserId,
       ledgerId: activeLedgerId,
       platform: previous.platform || platforms[0]?.name || '其他',
     }));
-  }, [activeLedgerId, activeUserId, platforms]);
+  }, [activeLedgerId, platforms]);
 
   const ledgerNameMap = useMemo(
     () => Object.fromEntries(ledgers.map((ledger) => [ledger.id, ledger.name])),
@@ -147,7 +134,7 @@ export function ShoppingRecordsSection({
   const filteredRecords = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
 
-    return filterShoppingRecords(records, filterUserId, filterLedgerId)
+    return filterShoppingRecords(records, filterLedgerId)
       .filter((record) => (!platformFilter || record.platform === platformFilter))
       .filter((record) => (!dateFilter || record.date === dateFilter))
       .filter((record) => {
@@ -164,11 +151,11 @@ export function ShoppingRecordsSection({
           ledgerNameMap[record.ledgerId] ?? '',
         ].some((value) => value.toLowerCase().includes(normalizedKeyword));
       });
-  }, [records, filterUserId, filterLedgerId, platformFilter, dateFilter, keyword, ledgerNameMap]);
+  }, [records, filterLedgerId, platformFilter, dateFilter, keyword, ledgerNameMap]);
 
   useEffect(() => {
     setPage(1);
-  }, [filterUserId, filterLedgerId, platformFilter, dateFilter, keyword]);
+  }, [filterLedgerId, platformFilter, dateFilter, keyword]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / SHOPPING_RECORD_PAGE_SIZE));
   const pageRecords = useMemo(() => {
@@ -244,7 +231,7 @@ export function ShoppingRecordsSection({
     }
 
     onChangeRecords((previous) => createShoppingRecord(previous, draft));
-    setForm(createDefaultFormState(activeUserId, activeLedgerId, platforms));
+    setForm(createDefaultFormState(activeLedgerId, platforms));
     showToast('购物记录已新增。');
   };
 
@@ -262,7 +249,7 @@ export function ShoppingRecordsSection({
 
     onChangeRecords((previous) => updateShoppingRecord(previous, editingRecord.id, draft));
     setEditingRecord(null);
-    setEditingForm(createDefaultFormState(activeUserId, activeLedgerId, platforms));
+    setEditingForm(createDefaultFormState(activeLedgerId, platforms));
     showToast('购物记录已更新。');
   };
 
@@ -343,12 +330,6 @@ export function ShoppingRecordsSection({
         </form>
 
         <div className="shopping-filter-grid">
-          <Field
-            label="筛选用户 ID"
-            value={filterUserId}
-            onChange={(event) => onFilterUserIdChange(event.target.value)}
-            placeholder="留空查看全部用户"
-          />
           <SelectField
             label="筛选账本"
             value={filterLedgerId}
@@ -397,7 +378,7 @@ export function ShoppingRecordsSection({
         open={Boolean(editingRecord)}
         onClose={() => {
           setEditingRecord(null);
-          setEditingForm(createDefaultFormState(activeUserId, activeLedgerId, platforms));
+          setEditingForm(createDefaultFormState(activeLedgerId, platforms));
         }}
         title={editingRecord ? `编辑购物记录：${editingRecord.itemName}` : '编辑购物记录'}
         width={900}
@@ -407,7 +388,7 @@ export function ShoppingRecordsSection({
               tone="secondary"
               onClick={() => {
                 setEditingRecord(null);
-                setEditingForm(createDefaultFormState(activeUserId, activeLedgerId, platforms));
+                setEditingForm(createDefaultFormState(activeLedgerId, platforms));
               }}
             >
               取消

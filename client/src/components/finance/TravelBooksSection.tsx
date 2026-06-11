@@ -24,7 +24,6 @@ import {
   formatTravelDateTime,
   importTravelWorkbook,
   mergeTravelBooks,
-  normalizeTravelUserId,
   sortArchiveSuggestions,
   updateTravelBook,
 } from '../../services/travel';
@@ -40,7 +39,6 @@ import type {
 } from '../../types/travel';
 
 interface TravelBooksSectionProps {
-  activeUserId: string;
   activeBookId: string;
   books: TravelBook[];
   records: TravelExpenseRecord[];
@@ -53,7 +51,6 @@ interface TravelBooksSectionProps {
 }
 
 interface TravelBookFormState {
-  userId: string;
   name: string;
   description: string;
   startDate: string;
@@ -64,9 +61,8 @@ interface TravelBookFormState {
   budget: string;
 }
 
-function createDefaultFormState(activeUserId: string): TravelBookFormState {
+function createDefaultFormState(): TravelBookFormState {
   return {
-    userId: activeUserId,
     name: '',
     description: '',
     startDate: dayjs().format('YYYY-MM-DD'),
@@ -80,7 +76,6 @@ function createDefaultFormState(activeUserId: string): TravelBookFormState {
 
 function buildFormState(book: TravelBook): TravelBookFormState {
   return {
-    userId: book.userId,
     name: book.name,
     description: book.description,
     startDate: book.startDate,
@@ -93,9 +88,7 @@ function buildFormState(book: TravelBook): TravelBookFormState {
 }
 
 function parseDraft(form: TravelBookFormState): TravelBookDraft | null {
-  const userId = normalizeTravelUserId(form.userId);
-
-  if (!userId || !form.name.trim() || !dayjs(form.startDate).isValid()) {
+  if (!form.name.trim() || !dayjs(form.startDate).isValid()) {
     return null;
   }
 
@@ -107,7 +100,6 @@ function parseDraft(form: TravelBookFormState): TravelBookDraft | null {
   const budget = Number.isFinite(budgetNumber) && budgetNumber >= 0 ? budgetNumber : undefined;
 
   return {
-    userId,
     name: form.name.trim(),
     description: form.description.trim(),
     startDate: form.startDate,
@@ -126,7 +118,6 @@ const STATUS_OPTIONS: Array<{ value: TravelBookStatus; label: string }> = (TRAVE
 }));
 
 export function TravelBooksSection({
-  activeUserId,
   activeBookId,
   books,
   records,
@@ -137,9 +128,9 @@ export function TravelBooksSection({
   onChangePayChannels,
   showToast,
 }: TravelBooksSectionProps) {
-  const [form, setForm] = useState<TravelBookFormState>(() => createDefaultFormState(activeUserId));
+  const [form, setForm] = useState<TravelBookFormState>(() => createDefaultFormState());
   const [editingBook, setEditingBook] = useState<TravelBook | null>(null);
-  const [editingForm, setEditingForm] = useState<TravelBookFormState>(() => createDefaultFormState(activeUserId));
+  const [editingForm, setEditingForm] = useState<TravelBookFormState>(() => createDefaultFormState());
   const [pendingDeleteBook, setPendingDeleteBook] = useState<TravelBook | null>(null);
   const [pendingCompleteBook, setPendingCompleteBook] = useState<TravelBook | null>(null);
   const [pendingArchiveBook, setPendingArchiveBook] = useState<TravelBook | null>(null);
@@ -151,8 +142,8 @@ export function TravelBooksSection({
   const [archiveSuggestionLoading, setArchiveSuggestionLoading] = useState(false);
 
   const bookSummaries = useMemo(
-    () => buildTravelBookSummaries(books, records, activeUserId),
-    [books, records, activeUserId],
+    () => buildTravelBookSummaries(books, records),
+    [books, records],
   );
 
   const totalPages = Math.max(1, Math.ceil(bookSummaries.length / TRAVEL_RECORD_PAGE_SIZE));
@@ -285,21 +276,21 @@ export function TravelBooksSection({
     const draft = parseDraft(form);
 
     if (!draft) {
-      showToast('请补全用户 ID、行程账本名称和开始日期。', 'error');
+      showToast('请补全行程账本名称和开始日期。', 'error');
       return;
     }
 
     const duplicate = books.some((book) => (
-      book.userId === draft.userId && book.name.trim().toLowerCase() === draft.name.trim().toLowerCase()
+      book.name.trim().toLowerCase() === draft.name.trim().toLowerCase()
     ));
 
     if (duplicate) {
-      showToast('该用户下已存在同名行程账本。', 'error');
+      showToast('已存在同名行程账本。', 'error');
       return;
     }
 
     onChangeBooks((previous) => createTravelBook(previous, draft));
-    setForm(createDefaultFormState(activeUserId));
+    setForm(createDefaultFormState());
     showToast('行程账本已创建。');
   };
 
@@ -317,18 +308,17 @@ export function TravelBooksSection({
 
     const duplicate = books.some((book) => (
       book.id !== editingBook.id
-      && book.userId === draft.userId
       && book.name.trim().toLowerCase() === draft.name.trim().toLowerCase()
     ));
 
     if (duplicate) {
-      showToast('该用户下已存在同名行程账本。', 'error');
+      showToast('已存在同名行程账本。', 'error');
       return;
     }
 
     onChangeBooks((previous) => updateTravelBook(previous, editingBook.id, draft));
     setEditingBook(null);
-    setEditingForm(createDefaultFormState(activeUserId));
+    setEditingForm(createDefaultFormState());
     showToast('行程账本已更新。');
   };
 
@@ -396,7 +386,6 @@ export function TravelBooksSection({
 
     try {
       const result = await importTravelWorkbook(file, {
-        activeUserId,
         activeBookId,
         books,
         records,
@@ -545,7 +534,7 @@ export function TravelBooksSection({
         open={Boolean(editingBook)}
         onClose={() => {
           setEditingBook(null);
-          setEditingForm(createDefaultFormState(activeUserId));
+          setEditingForm(createDefaultFormState());
         }}
         title={editingBook ? `编辑行程账本：${editingBook.name}` : '编辑行程账本'}
         width={760}
@@ -555,7 +544,7 @@ export function TravelBooksSection({
               tone="secondary"
               onClick={() => {
                 setEditingBook(null);
-                setEditingForm(createDefaultFormState(activeUserId));
+                setEditingForm(createDefaultFormState());
               }}
             >
               取消
@@ -643,7 +632,7 @@ export function TravelBooksSection({
           onChangeBooks((previous) => deleteTravelBook(previous, pendingDeleteBook.id));
           onChangeRecords((previous) => deleteTravelExpensesByBookId(previous, pendingDeleteBook.id));
 
-          const nextActiveBook = books.find((book) => book.id !== pendingDeleteBook.id && book.userId === activeUserId);
+          const nextActiveBook = books.find((book) => book.id !== pendingDeleteBook.id);
           if (pendingDeleteBook.id === activeBookId && nextActiveBook) {
             onActiveBookChange(nextActiveBook.id);
           }

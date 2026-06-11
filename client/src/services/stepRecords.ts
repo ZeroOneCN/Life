@@ -14,7 +14,6 @@ const DATE_FORMAT = 'YYYY-MM-DD';
 const MONTH_FORMAT = 'YYYY-MM';
 const DATE_TIME_FORMAT = 'YYYY-MM-DDTHH:mm';
 
-export const DEFAULT_STEP_USER_ID = 'user-001';
 export const DEFAULT_STRIDE_LENGTH = 0.7;
 export const STEP_AGGREGATE_PAGE_SIZE = 10;
 export const STEP_RECORD_PAGE_SIZE = 10;
@@ -89,24 +88,19 @@ function createAggregatePoint(
   return [...buckets.values()].sort((left, right) => left.bucket.localeCompare(right.bucket));
 }
 
-function createMockRecord(userId: string, daysAgo: number, hour: StepHour, steps: number, minute = 0): StepRecord {
+function createMockRecord(daysAgo: number, hour: StepHour, steps: number, minute = 0): StepRecord {
   const recordTime = hour === null
     ? dayjs().subtract(daysAgo, 'day').hour(23).minute(59).second(0).millisecond(0)
     : dayjs().subtract(daysAgo, 'day').hour(hour).minute(minute).second(0).millisecond(0);
 
   return {
     id: buildId(),
-    userId,
     steps,
     hour,
     recordTime: recordTime.format(DATE_TIME_FORMAT),
     createdAt: recordTime.format(DATE_TIME_FORMAT),
     updatedAt: recordTime.format(DATE_TIME_FORMAT),
   };
-}
-
-export function normalizeStepUserId(userId: string) {
-  return userId.trim();
 }
 
 export function getTodayEndDateTime() {
@@ -163,27 +157,15 @@ export function calculateStepDistanceKm(steps: number, strideLength: number) {
   return Number(((steps * strideLength) / 1000).toFixed(2));
 }
 
-export function filterStepRecordsByUserId(records: StepRecord[], userId: string) {
-  const normalizedUserId = normalizeStepUserId(userId);
-
-  if (!normalizedUserId) {
-    return records;
-  }
-
-  return records.filter((record) => normalizeStepUserId(record.userId) === normalizedUserId);
-}
-
 export function findDuplicateStepRecord(
   records: StepRecord[],
   draft: StepRecordDraft,
   excludeId?: string,
 ) {
   const dateKey = getStepDateKey(draft.recordTime);
-  const normalizedUserId = normalizeStepUserId(draft.userId);
 
   return records.find((record) => (
     record.id !== excludeId
-    && normalizeStepUserId(record.userId) === normalizedUserId
     && getStepDateKey(record.recordTime) === dateKey
     && record.hour === draft.hour
   ));
@@ -196,7 +178,6 @@ export function createStepRecord(records: StepRecord[], draft: StepRecordDraft) 
   return sortRecordsByLatest([
     {
       id: buildId(),
-      userId: normalizeStepUserId(draft.userId),
       steps: draft.steps,
       hour: draft.hour,
       recordTime: normalizedRecordTime,
@@ -214,7 +195,6 @@ export function updateStepRecord(records: StepRecord[], id: string, draft: StepR
     record.id === id
       ? {
         ...record,
-        userId: normalizeStepUserId(draft.userId),
         steps: draft.steps,
         hour: draft.hour,
         recordTime: normalizedRecordTime,
@@ -346,22 +326,14 @@ export function buildStepMonthCompare(
 
 export function normalizeStepPageState(state: StepPageState): StepPageState {
   const fallback = buildInitialStepState();
-  const activeUserId = normalizeStepUserId(state.settings?.activeUserId ?? fallback.settings.activeUserId) || DEFAULT_STEP_USER_ID;
-  const statsUserId = state.settings?.statsUserId ?? activeUserId;
-  const recordsUserId = state.settings?.recordsUserId ?? activeUserId;
 
   return {
     records: sortRecordsByLatest(
-      (state.records ?? fallback.records).map((record) => ({
-        ...record,
-        userId: normalizeStepUserId(record.userId ?? activeUserId) || activeUserId,
-      })),
+      (state.records ?? fallback.records).map((record) => ({ ...record })),
     ),
     settings: {
       strideLength: state.settings?.strideLength ?? fallback.settings.strideLength,
-      activeUserId,
-      statsUserId,
-      recordsUserId,
+      recordsUserId: state.settings?.recordsUserId ?? '',
     },
   };
 }
@@ -369,22 +341,20 @@ export function normalizeStepPageState(state: StepPageState): StepPageState {
 export function buildInitialStepState(): StepPageState {
   return {
     records: sortRecordsByLatest([
-      createMockRecord('user-001', 0, 21, 6842, 12),
-      createMockRecord('user-001', 1, 18, 9230, 8),
-      createMockRecord('user-001', 2, null, 12012),
-      createMockRecord('user-001', 4, 8, 3540, 16),
-      createMockRecord('user-002', 6, 20, 10120, 14),
-      createMockRecord('user-002', 8, 7, 2810, 5),
-      createMockRecord('user-001', 33, null, 9876),
-      createMockRecord('user-003', 35, 18, 7640, 18),
-      createMockRecord('user-002', 38, 12, 5430, 30),
-      createMockRecord('user-001', 41, 20, 11020, 24),
+      createMockRecord(0, 21, 6842, 12),
+      createMockRecord(1, 18, 9230, 8),
+      createMockRecord(2, null, 12012),
+      createMockRecord(4, 8, 3540, 16),
+      createMockRecord(6, 20, 10120, 14),
+      createMockRecord(8, 7, 2810, 5),
+      createMockRecord(33, null, 9876),
+      createMockRecord(35, 18, 7640, 18),
+      createMockRecord(38, 12, 5430, 30),
+      createMockRecord(41, 20, 11020, 24),
     ]),
     settings: {
       strideLength: DEFAULT_STRIDE_LENGTH,
-      activeUserId: DEFAULT_STEP_USER_ID,
-      statsUserId: DEFAULT_STEP_USER_ID,
-      recordsUserId: DEFAULT_STEP_USER_ID,
+      recordsUserId: '',
     },
   };
 }

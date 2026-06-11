@@ -16,14 +16,12 @@ import {
   formatTravelDuration,
   getTravelCategoryLabel,
   getTravelPayChannelLabel,
-  normalizeTravelUserId,
   updateTravelBook,
   updateTravelExpense,
 } from '../../services/travel';
 import type { TravelBook, TravelCategory, TravelExpenseDraft, TravelExpenseRecord, TravelPayChannel } from '../../types/travel';
 
 interface TravelDetailsSectionProps {
-  activeUserId: string;
   activeBookId: string;
   detailsBookId: string;
   books: TravelBook[];
@@ -36,7 +34,6 @@ interface TravelDetailsSectionProps {
 }
 
 interface TravelExpenseFormState {
-  userId: string;
   bookId: string;
   date: string;
   timeStart: string;
@@ -53,9 +50,8 @@ interface TravelExpenseFormState {
 
 const CATEGORY_OPTIONS: TravelCategory[] = ['transport', 'hotel', 'food', 'ticket', 'shopping', 'other'];
 
-function createDefaultFormState(activeUserId: string, activeBookId: string, payChannels: TravelPayChannel[]): TravelExpenseFormState {
+function createDefaultFormState(activeBookId: string, payChannels: TravelPayChannel[]): TravelExpenseFormState {
   return {
-    userId: activeUserId,
     bookId: activeBookId,
     date: dayjs().format('YYYY-MM-DD'),
     timeStart: '09:00',
@@ -73,7 +69,6 @@ function createDefaultFormState(activeUserId: string, activeBookId: string, payC
 
 function buildFormState(record: TravelExpenseRecord): TravelExpenseFormState {
   return {
-    userId: record.userId,
     bookId: record.bookId,
     date: record.date,
     timeStart: record.timeStart,
@@ -90,11 +85,10 @@ function buildFormState(record: TravelExpenseRecord): TravelExpenseFormState {
 }
 
 function parseDraft(form: TravelExpenseFormState): TravelExpenseDraft | null {
-  const userId = normalizeTravelUserId(form.userId);
   const amount = Number(form.amount);
   const discountAmount = form.discountAmount ? Number(form.discountAmount) : 0;
 
-  if (!userId || !form.bookId || !dayjs(form.date).isValid() || !form.title.trim()) {
+  if (!form.bookId || !dayjs(form.date).isValid() || !form.title.trim()) {
     return null;
   }
 
@@ -107,7 +101,6 @@ function parseDraft(form: TravelExpenseFormState): TravelExpenseDraft | null {
   }
 
   return {
-    userId,
     bookId: form.bookId,
     date: form.date,
     timeStart: form.timeStart,
@@ -124,7 +117,6 @@ function parseDraft(form: TravelExpenseFormState): TravelExpenseDraft | null {
 }
 
 export function TravelDetailsSection({
-  activeUserId,
   activeBookId,
   detailsBookId,
   books,
@@ -135,9 +127,9 @@ export function TravelDetailsSection({
   onChangeRecords,
   showToast,
 }: TravelDetailsSectionProps) {
-  const [form, setForm] = useState<TravelExpenseFormState>(() => createDefaultFormState(activeUserId, activeBookId, payChannels));
+  const [form, setForm] = useState<TravelExpenseFormState>(() => createDefaultFormState(activeBookId, payChannels));
   const [editingRecord, setEditingRecord] = useState<TravelExpenseRecord | null>(null);
-  const [editingForm, setEditingForm] = useState<TravelExpenseFormState>(() => createDefaultFormState(activeUserId, activeBookId, payChannels));
+  const [editingForm, setEditingForm] = useState<TravelExpenseFormState>(() => createDefaultFormState(activeBookId, payChannels));
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState('');
@@ -150,11 +142,10 @@ export function TravelDetailsSection({
   useEffect(() => {
     setForm((previous) => ({
       ...previous,
-      userId: activeUserId,
       bookId: activeBookId,
       payChannel: previous.payChannel || payChannels[0]?.value || 'ALIPAY',
     }));
-  }, [activeBookId, activeUserId, payChannels]);
+  }, [activeBookId, payChannels]);
 
   const activeBook = useMemo(
     () => books.find((book) => book.id === activeBookId) ?? null,
@@ -173,7 +164,7 @@ export function TravelDetailsSection({
   const filteredRecords = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
 
-    return filterTravelRecords(records, activeUserId, detailsBookId)
+    return filterTravelRecords(records, detailsBookId)
       .filter((record) => (!startDate || !dayjs(record.date).isBefore(startDate, 'day')))
       .filter((record) => (!endDate || !dayjs(record.date).isAfter(endDate, 'day')))
       .filter((record) => (!categoryFilter || record.category === categoryFilter))
@@ -191,7 +182,7 @@ export function TravelDetailsSection({
           getTravelPayChannelLabel(record.payChannel, payChannels),
         ].some((value) => value.toLowerCase().includes(normalizedKeyword));
       });
-  }, [records, activeUserId, detailsBookId, startDate, endDate, categoryFilter, payChannelFilter, keyword, payChannels]);
+  }, [records, detailsBookId, startDate, endDate, categoryFilter, payChannelFilter, keyword, payChannels]);
 
   useEffect(() => {
     setPage(1);
@@ -288,12 +279,12 @@ export function TravelDetailsSection({
     const draft = parseDraft(form);
 
     if (!draft) {
-      showToast('请补全用户 ID、账本、日期、时间段、项目和金额。', 'error');
+      showToast('请补全账本、日期、时间段、项目和金额。', 'error');
       return;
     }
 
     onChangeRecords((previous) => createTravelExpense(previous, draft));
-    setForm(createDefaultFormState(activeUserId, activeBookId, payChannels));
+    setForm(createDefaultFormState(activeBookId, payChannels));
     showToast('旅行消费记录已保存。');
   };
 
@@ -311,7 +302,7 @@ export function TravelDetailsSection({
 
     onChangeRecords((previous) => updateTravelExpense(previous, editingRecord.id, draft));
     setEditingRecord(null);
-    setEditingForm(createDefaultFormState(activeUserId, activeBookId, payChannels));
+    setEditingForm(createDefaultFormState(activeBookId, payChannels));
     showToast('旅行消费记录已更新。');
   };
 
@@ -322,7 +313,6 @@ export function TravelDetailsSection({
     }
 
     onChangeBooks((previous) => updateTravelBook(previous, selectedBook.id, {
-      userId: selectedBook.userId,
       name: selectedBook.name,
       description: selectedBook.description,
       startDate: selectedBook.startDate,
@@ -461,7 +451,6 @@ export function TravelDetailsSection({
           <SelectField label="筛选账本" value={detailsBookId} onChange={(event) => onDetailsBookIdChange(event.target.value)}>
             <option value={TRAVEL_ALL_BOOKS}>全部行程账本</option>
             {books
-              .filter((book) => book.userId === activeUserId)
               .map((book) => (
                 <option key={book.id} value={book.id}>{book.name}</option>
               ))}
@@ -512,7 +501,7 @@ export function TravelDetailsSection({
         open={Boolean(editingRecord)}
         onClose={() => {
           setEditingRecord(null);
-          setEditingForm(createDefaultFormState(activeUserId, activeBookId, payChannels));
+          setEditingForm(createDefaultFormState(activeBookId, payChannels));
         }}
         title={editingRecord ? `编辑旅行消费：${editingRecord.title}` : '编辑旅行消费'}
         width={980}
@@ -522,7 +511,7 @@ export function TravelDetailsSection({
               tone="secondary"
               onClick={() => {
                 setEditingRecord(null);
-                setEditingForm(createDefaultFormState(activeUserId, activeBookId, payChannels));
+                setEditingForm(createDefaultFormState(activeBookId, payChannels));
               }}
             >
               取消
@@ -539,7 +528,6 @@ export function TravelDetailsSection({
               onChange={(event) => setEditingForm((previous) => ({ ...previous, bookId: event.target.value }))}
             >
               {books
-                .filter((book) => book.userId === editingForm.userId || book.userId === activeUserId)
                 .map((book) => (
                   <option key={book.id} value={book.id}>{book.name}</option>
                 ))}

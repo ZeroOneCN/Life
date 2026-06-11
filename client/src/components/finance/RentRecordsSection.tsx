@@ -15,11 +15,8 @@ import {
 import type { RentChannel, RentHousingRecord } from '../../types/rent';
 
 interface RentRecordsSectionProps {
-  activeUserId: string;
-  filterUserId: string;
   records: RentHousingRecord[];
   channels: RentChannel[];
-  onFilterUserIdChange: (value: string) => void;
   onEditRecord: (recordId: string) => void;
   onCreateRecord: () => void;
   onChangeRecords: (updater: (records: RentHousingRecord[]) => RentHousingRecord[]) => void;
@@ -39,11 +36,8 @@ function getOccupancyLabel(value: 'all' | 'active' | 'ended') {
 }
 
 export function RentRecordsSection({
-  activeUserId,
-  filterUserId,
   records,
   channels,
-  onFilterUserIdChange,
   onEditRecord,
   onCreateRecord,
   onChangeRecords,
@@ -57,22 +51,22 @@ export function RentRecordsSection({
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const availableChannels = useMemo(
-    () => filterRentChannels(channels, filterUserId || activeUserId),
-    [activeUserId, channels, filterUserId],
+    () => filterRentChannels(channels),
+    [channels],
   );
 
   const filteredRecords = useMemo(
-    () => filterRentRecords(records, filterUserId, {
+    () => filterRentRecords(records, {
       keyword,
       channelId: channelFilter,
       occupancy: occupancyFilter,
     }),
-    [channelFilter, filterUserId, keyword, occupancyFilter, records],
+    [channelFilter, keyword, occupancyFilter, records],
   );
 
   useEffect(() => {
     setPage(1);
-  }, [filterUserId, keyword, channelFilter, occupancyFilter]);
+  }, [keyword, channelFilter, occupancyFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / RENT_RECORD_PAGE_SIZE));
   const pageRecords = useMemo(() => {
@@ -163,12 +157,6 @@ export function RentRecordsSection({
         </div>
 
         <div className="rent-records-filter-grid">
-          <Field
-            label="筛选用户 ID"
-            value={filterUserId}
-            onChange={(event) => onFilterUserIdChange(event.target.value)}
-            placeholder="留空查看全部用户"
-          />
           <Field
             label="地址关键词"
             value={keyword}

@@ -1,4 +1,4 @@
-﻿import { useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 import { EmptyState, SectionCard } from '../page';
@@ -19,7 +19,6 @@ import {
 import type { TravelBook, TravelExpenseRecord, TravelPayChannel, TravelReportColumnKey } from '../../types/travel';
 
 interface TravelReportSectionProps {
-  activeUserId: string;
   reportBookId: string;
   reportColumns: TravelReportColumnKey[];
   books: TravelBook[];
@@ -65,7 +64,6 @@ function renderRecordCell(record: TravelExpenseRecord, column: TravelReportColum
 }
 
 export function TravelReportSection({
-  activeUserId,
   reportBookId,
   reportColumns,
   books,
@@ -77,8 +75,8 @@ export function TravelReportSection({
 }: TravelReportSectionProps) {
   const reportRef = useRef<HTMLDivElement>(null);
   const reportData = useMemo(
-    () => buildTravelReportData(books, records, payChannels, activeUserId, reportBookId),
-    [books, records, payChannels, activeUserId, reportBookId],
+    () => buildTravelReportData(books, records, payChannels, reportBookId),
+    [books, records, payChannels, reportBookId],
   );
 
   const handleToggleColumn = (column: TravelReportColumnKey, checked: boolean) => {
@@ -147,7 +145,6 @@ export function TravelReportSection({
         <div className="travel-filter-grid travel-filter-grid-report">
           <SelectField label="报告账本" value={reportBookId} onChange={(event) => onReportBookIdChange(event.target.value)}>
             {books
-              .filter((book) => book.userId === activeUserId)
               .map((book) => (
                 <option key={book.id} value={book.id}>{book.name}</option>
               ))}

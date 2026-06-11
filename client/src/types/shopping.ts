@@ -4,7 +4,6 @@ export type ShoppingTab = 'records' | 'dashboard' | 'ledgers' | 'platforms';
 
 export interface ShoppingRecord {
   id: string;
-  userId: string;
   ledgerId: string;
   date: string;
   platform: string;
@@ -19,7 +18,6 @@ export interface ShoppingRecord {
 }
 
 export interface ShoppingRecordDraft {
-  userId: string;
   ledgerId: string;
   date: string;
   platform: string;
@@ -116,9 +114,6 @@ export interface ShoppingPageState {
   ledgers: ShoppingLedger[];
   platforms: ShoppingPlatform[];
   settings: {
-    activeUserId: string;
-    recordsUserId: string;
-    dashboardUserId: string;
     activeLedgerId: string;
     recordsLedgerId: string;
     dashboardLedgerId: string;

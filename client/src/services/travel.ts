@@ -27,7 +27,6 @@ const DATE_FORMAT = 'YYYY-MM-DD';
 const DATE_TIME_FORMAT = 'YYYY-MM-DDTHH:mm';
 const TIME_FORMAT = 'HH:mm';
 
-export const DEFAULT_TRAVEL_USER_ID = 'user-001';
 export const TRAVEL_ALL_BOOKS = 'all';
 export const TRAVEL_RECORD_PAGE_SIZE = 10;
 export const DEFAULT_TRAVEL_BOOK_STATUS: TravelBookStatus = 'ongoing';
@@ -171,10 +170,6 @@ function normalizeCategory(value: unknown): TravelCategory {
 
 function buildDateTime(date: string, time: string) {
   return dayjs(`${date}T${time}`);
-}
-
-export function normalizeTravelUserId(value: string) {
-  return value.trim();
 }
 
 function normalizeBookId(value: string) {
@@ -326,7 +321,6 @@ function createInitialBooks(): TravelBook[] {
   return sortBooks([
     {
       id: 'travel-book-shanghai',
-      userId: 'user-001',
       name: '上海周末漫游',
       description: '两天一夜城市游，覆盖交通、住宿、餐饮和门票消费。',
       startDate: dayjs().subtract(18, 'day').format(DATE_FORMAT),
@@ -341,7 +335,6 @@ function createInitialBooks(): TravelBook[] {
     },
     {
       id: 'travel-book-hangzhou',
-      userId: 'user-001',
       name: '杭州短途放松',
       description: '高铁往返，重点放在住宿体验和景区门票。',
       startDate: dayjs().subtract(42, 'day').format(DATE_FORMAT),
@@ -356,7 +349,6 @@ function createInitialBooks(): TravelBook[] {
     },
     {
       id: 'travel-book-guangzhou',
-      userId: 'user-002',
       name: '广州美食之旅',
       description: '朋友结伴出行，餐饮和交通占比最高。',
       startDate: dayjs().subtract(10, 'day').format(DATE_FORMAT),
@@ -377,7 +369,6 @@ function createMockRecord(draft: Omit<TravelExpenseDraft, 'date'> & { date: stri
 
   return {
     id: buildId(),
-    userId: draft.userId,
     bookId: draft.bookId,
     date: draft.date,
     timeStart: normalizeTime(draft.timeStart),
@@ -399,7 +390,6 @@ function createMockRecord(draft: Omit<TravelExpenseDraft, 'date'> & { date: stri
 function createInitialRecords(): TravelExpenseRecord[] {
   return sortRecords([
     createMockRecord({
-      userId: 'user-001',
       bookId: 'travel-book-shanghai',
       date: dayjs().subtract(18, 'day').format(DATE_FORMAT),
       timeStart: '07:45',
@@ -415,7 +405,6 @@ function createInitialRecords(): TravelExpenseRecord[] {
       createdAtOffset: 18,
     }),
     createMockRecord({
-      userId: 'user-001',
       bookId: 'travel-book-shanghai',
       date: dayjs().subtract(18, 'day').format(DATE_FORMAT),
       timeStart: '13:10',
@@ -431,7 +420,6 @@ function createInitialRecords(): TravelExpenseRecord[] {
       createdAtOffset: 18,
     }),
     createMockRecord({
-      userId: 'user-001',
       bookId: 'travel-book-shanghai',
       date: dayjs().subtract(17, 'day').format(DATE_FORMAT),
       timeStart: '19:00',
@@ -447,7 +435,6 @@ function createInitialRecords(): TravelExpenseRecord[] {
       createdAtOffset: 17,
     }),
     createMockRecord({
-      userId: 'user-001',
       bookId: 'travel-book-hangzhou',
       date: dayjs().subtract(41, 'day').format(DATE_FORMAT),
       timeStart: '15:00',
@@ -463,7 +450,6 @@ function createInitialRecords(): TravelExpenseRecord[] {
       createdAtOffset: 41,
     }),
     createMockRecord({
-      userId: 'user-001',
       bookId: 'travel-book-hangzhou',
       date: dayjs().subtract(40, 'day').format(DATE_FORMAT),
       timeStart: '09:30',
@@ -479,7 +465,6 @@ function createInitialRecords(): TravelExpenseRecord[] {
       createdAtOffset: 40,
     }),
     createMockRecord({
-      userId: 'user-002',
       bookId: 'travel-book-guangzhou',
       date: dayjs().subtract(9, 'day').format(DATE_FORMAT),
       timeStart: '11:20',
@@ -497,7 +482,7 @@ function createInitialRecords(): TravelExpenseRecord[] {
   ]);
 }
 
-function normalizeBook(book: Partial<TravelBook>, fallbackUserId: string): TravelBook {
+function normalizeBook(book: Partial<TravelBook>): TravelBook {
   const startDate = normalizeDate(book.startDate);
   const status = (book.status ?? DEFAULT_TRAVEL_BOOK_STATUS) as TravelBookStatus;
   const currency = (book.currency || DEFAULT_TRAVEL_BOOK_CURRENCY).toUpperCase();
@@ -506,7 +491,6 @@ function normalizeBook(book: Partial<TravelBook>, fallbackUserId: string): Trave
 
   return {
     id: book.id ?? buildId(),
-    userId: normalizeTravelUserId(String(book.userId ?? fallbackUserId)) || fallbackUserId,
     name: normalizeTrimmedValue(book.name, '未命名行程账本'),
     description: normalizeTrimmedValue(book.description),
     startDate,
@@ -521,14 +505,13 @@ function normalizeBook(book: Partial<TravelBook>, fallbackUserId: string): Trave
   };
 }
 
-function normalizeRecord(record: Partial<TravelExpenseRecord>, fallbackUserId: string, fallbackBookId: string): TravelExpenseRecord {
+function normalizeRecord(record: Partial<TravelExpenseRecord>, fallbackBookId: string): TravelExpenseRecord {
   const date = normalizeDate(record.date);
   const timeStart = normalizeTime(record.timeStart, '09:00');
   const timeEnd = normalizeTime(record.timeEnd, '10:00');
 
   return {
     id: record.id ?? buildId(),
-    userId: normalizeTravelUserId(String(record.userId ?? fallbackUserId)) || fallbackUserId,
     bookId: normalizeBookId(String(record.bookId ?? fallbackBookId)) || fallbackBookId,
     date,
     timeStart,
@@ -559,9 +542,8 @@ function normalizePayChannel(channel: Partial<TravelPayChannel>): TravelPayChann
   };
 }
 
-function buildRecordDedupKey(record: Pick<TravelExpenseRecord, 'userId' | 'bookId' | 'date' | 'timeStart' | 'timeEnd' | 'title' | 'amount'>) {
+function buildRecordDedupKey(record: Pick<TravelExpenseRecord, 'bookId' | 'date' | 'timeStart' | 'timeEnd' | 'title' | 'amount'>) {
   return [
-    normalizeTravelUserId(record.userId).toLowerCase(),
     normalizeBookId(record.bookId).toLowerCase(),
     normalizeDate(record.date),
     normalizeTime(record.timeStart),
@@ -635,12 +617,10 @@ export function buildInitialTravelState(): TravelPageState {
     records: createInitialRecords(),
     payChannels,
     settings: {
-      activeUserId: DEFAULT_TRAVEL_USER_ID,
       activeBookId: books[0]?.id ?? '',
       detailsBookId: books[0]?.id ?? '',
       statsBookId: books[0]?.id ?? '',
       reportBookId: books[0]?.id ?? '',
-      leaderboardUserId: DEFAULT_TRAVEL_USER_ID,
       reportColumns: [...TRAVEL_DEFAULT_REPORT_COLUMNS],
     },
   };
@@ -649,16 +629,14 @@ export function buildInitialTravelState(): TravelPageState {
 export function normalizeTravelPageState(state: TravelPageState): TravelPageState {
   const fallback = buildInitialTravelState();
   const rawState = state as Partial<TravelPageState>;
-  const activeUserId = normalizeTravelUserId(rawState.settings?.activeUserId ?? fallback.settings.activeUserId) || DEFAULT_TRAVEL_USER_ID;
   const sourceBooks = rawState.books?.length ? rawState.books : fallback.books;
-  const normalizedBooks = sortBooks(sourceBooks.map((book) => normalizeBook(book, activeUserId)));
+  const normalizedBooks = sortBooks(sourceBooks.map((book) => normalizeBook(book)));
   const availableBookIds = new Set(normalizedBooks.map((book) => book.id));
-  const firstUserBook = normalizedBooks.find((book) => book.userId === activeUserId) ?? null;
-  const activeBookFallback = firstUserBook?.id ?? '';
+  const activeBookFallback = normalizedBooks[0]?.id ?? '';
   const recordFallbackBookId = normalizedBooks[0]?.id ?? fallback.settings.activeBookId;
   const sourceRecords = rawState.records?.length ? rawState.records : fallback.records;
   const normalizedRecords = sortRecords(sourceRecords.map((record) => {
-    const normalized = normalizeRecord(record, activeUserId, recordFallbackBookId);
+    const normalized = normalizeRecord(record, recordFallbackBookId);
     return availableBookIds.has(normalized.bookId) ? normalized : { ...normalized, bookId: recordFallbackBookId };
   }));
   const sourcePayChannels = rawState.payChannels?.length ? rawState.payChannels : fallback.payChannels;
@@ -689,30 +667,21 @@ export function normalizeTravelPageState(state: TravelPageState): TravelPageStat
     records: normalizedRecords,
     payChannels: sortPayChannels(normalizedPayChannels),
     settings: {
-      activeUserId,
       activeBookId: availableBookIds.has(activeBookId) ? activeBookId : activeBookFallback,
       detailsBookId: detailsBookId === TRAVEL_ALL_BOOKS || availableBookIds.has(detailsBookId) ? detailsBookId : activeBookFallback,
       statsBookId: statsBookId === TRAVEL_ALL_BOOKS || availableBookIds.has(statsBookId) ? statsBookId : activeBookFallback,
       reportBookId: availableBookIds.has(reportBookId) ? reportBookId : activeBookFallback,
-      leaderboardUserId: normalizeTravelUserId(rawState.settings?.leaderboardUserId ?? activeUserId),
       reportColumns: normalizeReportColumns(rawState.settings?.reportColumns),
     },
   };
 }
 
-export function filterTravelBooksByUserId(books: TravelBook[], userId: string) {
-  const normalizedUserId = normalizeTravelUserId(userId);
-  return books.filter((book) => !normalizedUserId || normalizeTravelUserId(book.userId) === normalizedUserId);
-}
-
-export function filterTravelRecords(records: TravelExpenseRecord[], userId: string, bookId: string) {
-  const normalizedUserId = normalizeTravelUserId(userId);
+export function filterTravelRecords(records: TravelExpenseRecord[], bookId: string) {
   const normalizedBookId = normalizeBookId(bookId);
 
   return records.filter((record) => {
-    const matchesUser = !normalizedUserId || normalizeTravelUserId(record.userId) === normalizedUserId;
     const matchesBook = !normalizedBookId || normalizedBookId === TRAVEL_ALL_BOOKS || record.bookId === normalizedBookId;
-    return matchesUser && matchesBook;
+    return matchesBook;
   });
 }
 
@@ -724,7 +693,6 @@ export function createTravelBook(books: TravelBook[], draft: TravelBookDraft) {
   return sortBooks([
     {
       id: buildId(),
-      userId: normalizeTravelUserId(draft.userId),
       name: draft.name.trim(),
       description: draft.description?.trim() ?? '',
       startDate: normalizeDate(draft.startDate),
@@ -754,7 +722,6 @@ export function updateTravelBook(books: TravelBook[], id: string, draft: TravelB
 
     return {
       ...book,
-      userId: normalizeTravelUserId(draft.userId),
       name: draft.name.trim(),
       description: draft.description?.trim() ?? '',
       startDate: normalizeDate(draft.startDate),
@@ -812,7 +779,6 @@ export function createTravelExpense(records: TravelExpenseRecord[], draft: Trave
   return sortRecords([
     {
       id: buildId(),
-      userId: normalizeTravelUserId(draft.userId),
       bookId: normalizeBookId(draft.bookId),
       date: normalizeDate(draft.date),
       timeStart: normalizeTime(draft.timeStart, '09:00'),
@@ -838,7 +804,6 @@ export function updateTravelExpense(records: TravelExpenseRecord[], id: string, 
     record.id === id
       ? {
         ...record,
-        userId: normalizeTravelUserId(draft.userId),
         bookId: normalizeBookId(draft.bookId),
         date: normalizeDate(draft.date),
         timeStart: normalizeTime(draft.timeStart, '09:00'),
@@ -999,12 +964,11 @@ export function buildTravelPayChannelBreakdown(records: TravelExpenseRecord[], p
     .sort((left, right) => right.paidAmount - left.paidAmount);
 }
 
-export function buildTravelLeaderboard(books: TravelBook[], records: TravelExpenseRecord[], userId: string): TravelLeaderboardItem[] {
-  const scopedBooks = filterTravelBooksByUserId(books, userId);
-  const scopedBookIds = new Set(scopedBooks.map((book) => book.id));
-  const scopedRecords = filterTravelRecords(records, userId, TRAVEL_ALL_BOOKS).filter((record) => scopedBookIds.has(record.bookId));
+export function buildTravelLeaderboard(books: TravelBook[], records: TravelExpenseRecord[]): TravelLeaderboardItem[] {
+  const scopedBookIds = new Set(books.map((book) => book.id));
+  const scopedRecords = filterTravelRecords(records, TRAVEL_ALL_BOOKS).filter((record) => scopedBookIds.has(record.bookId));
 
-  return scopedBooks.map((book) => {
+  return books.map((book) => {
     const bookRecords = scopedRecords.filter((record) => record.bookId === book.id);
     const totalAmount = roundMoney(bookRecords.reduce((sum, record) => sum + record.amount, 0));
     const totalSaved = roundMoney(bookRecords.reduce((sum, record) => sum + record.discountAmount, 0));
@@ -1021,9 +985,9 @@ export function buildTravelLeaderboard(books: TravelBook[], records: TravelExpen
   }).sort((left, right) => right.totalPaidAmount - left.totalPaidAmount);
 }
 
-export function buildTravelBookSummaries(books: TravelBook[], records: TravelExpenseRecord[], userId: string): TravelBookSummaryRow[] {
-  return filterTravelBooksByUserId(books, userId).map((book) => {
-    const bookRecords = records.filter((record) => record.bookId === book.id && record.userId === book.userId);
+export function buildTravelBookSummaries(books: TravelBook[], records: TravelExpenseRecord[]): TravelBookSummaryRow[] {
+  return books.map((book) => {
+    const bookRecords = records.filter((record) => record.bookId === book.id);
     const totalAmount = roundMoney(bookRecords.reduce((sum, record) => sum + record.amount, 0));
     const totalSaved = roundMoney(bookRecords.reduce((sum, record) => sum + record.discountAmount, 0));
 
@@ -1044,12 +1008,10 @@ export function buildTravelReportData(
   books: TravelBook[],
   records: TravelExpenseRecord[],
   payChannels: TravelPayChannel[],
-  userId: string,
   bookId: string,
 ): TravelReportData {
-  const filteredBooks = filterTravelBooksByUserId(books, userId);
-  const book = filteredBooks.find((item) => item.id === bookId) ?? null;
-  const scopedRecords = filterTravelRecords(records, userId, bookId);
+  const book = books.find((item) => item.id === bookId) ?? null;
+  const scopedRecords = filterTravelRecords(records, bookId);
 
   return {
     book,
@@ -1089,7 +1051,6 @@ function buildImportedRecord(
   row: Record<string, unknown>,
   rowNumber: number,
   options: {
-    activeUserId: string;
     activeBookId: string;
     books: TravelBook[];
     payChannels: TravelPayChannel[];
@@ -1097,7 +1058,6 @@ function buildImportedRecord(
   createdBooks: TravelBook[],
   createdPayChannels: TravelPayChannel[],
 ): { record: TravelExpenseRecord | null; invalid: TravelImportInvalidRow | null } {
-  const rawUserId = readAliasValue(row, ['用户ID', 'userid', 'userId']);
   const rawBookName = readAliasValue(row, ['行程账本', '账本', 'book', 'bookName']);
   const rawDate = readAliasValue(row, ['日期', 'date']);
   const rawTimeStart = readAliasValue(row, ['开始时间', 'timeStart']);
@@ -1112,7 +1072,6 @@ function buildImportedRecord(
   const rawPayChannel = readAliasValue(row, ['支付方式', '支付渠道', 'payChannel']);
   const rawRemark = readAliasValue(row, ['备注', 'remark']);
 
-  const userId = normalizeTravelUserId(String(rawUserId || options.activeUserId));
   const date = normalizeImportDateCell(rawDate);
   const title = normalizeTrimmedValue(rawTitle);
   const amount = toNumber(rawAmount, NaN);
@@ -1120,10 +1079,6 @@ function buildImportedRecord(
   const range = parseImportedTimeRange(rawTimeRange);
   const timeStart = normalizeTime(rawTimeStart || range.timeStart, '09:00');
   const timeEnd = normalizeTime(rawTimeEnd || range.timeEnd, '10:00');
-
-  if (!userId) {
-    return { record: null, invalid: { rowNumber, reason: '缺少用户 ID' } };
-  }
 
   if (!date) {
     return { record: null, invalid: { rowNumber, reason: '缺少可解析的日期' } };
@@ -1148,7 +1103,6 @@ function buildImportedRecord(
       const now = dayjs().format(DATE_TIME_FORMAT);
       const nextBook: TravelBook = {
         id: buildId(),
-        userId,
         name: bookName,
         description: '由 Excel 导入自动创建',
         startDate: date,
@@ -1184,7 +1138,6 @@ function buildImportedRecord(
     invalid: null,
     record: {
       id: buildId(),
-      userId,
       bookId,
       date,
       timeStart,
@@ -1207,7 +1160,6 @@ function buildImportedRecord(
 export async function importTravelWorkbook(
   file: File,
   options: {
-    activeUserId: string;
     activeBookId: string;
     books: TravelBook[];
     records: TravelExpenseRecord[];
@@ -1252,7 +1204,6 @@ export async function importTravelWorkbook(
       preparedRow,
       index + 2,
       {
-        activeUserId: options.activeUserId,
         activeBookId: options.activeBookId,
         books: options.books,
         payChannels: options.payChannels,
@@ -1295,7 +1246,6 @@ export async function buildTravelImportTemplateWorkbook() {
   const XLSX = await import('xlsx');
   const rows = [
     {
-      用户ID: 'user-001',
       行程账本: '上海周末漫游',
       日期: dayjs().format(DATE_FORMAT),
       开始时间: '09:00',

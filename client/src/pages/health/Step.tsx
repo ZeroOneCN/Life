@@ -25,8 +25,6 @@ import type {
 
 const EMPTY_SETTINGS: StepPageState['settings'] = {
   strideLength: 0.7,
-  activeUserId: '',
-  statsUserId: '',
   recordsUserId: '',
 };
 
@@ -87,11 +85,10 @@ export default function StepPage() {
    */
   const reload = useCallback(async () => {
     const nextSettings = await stepApi.getSettings();
-    const statsUserId = nextSettings.statsUserId || nextSettings.activeUserId || '';
 
     const [nextSummary, nextCompare] = await Promise.all([
-      stepApi.getSummary({ userId: statsUserId }),
-      stepApi.getMonthCompare({ userId: statsUserId }),
+      stepApi.getSummary(),
+      stepApi.getMonthCompare(),
     ]);
 
     setSummary(nextSummary);
@@ -210,7 +207,6 @@ export default function StepPage() {
     }
 
     const draft: StepRecordDraft = {
-      userId: settings.activeUserId,
       steps,
       hour: selectedHour,
       recordTime,
@@ -268,11 +264,9 @@ export default function StepPage() {
 
       <StepTrendSection
         reloadKey={reloadKey}
-        userId={settings.statsUserId}
+        userId=""
         strideLength={settings.strideLength}
-        onUserIdChange={(value) => {
-          void updateSettings({ statsUserId: value });
-        }}
+        onUserIdChange={() => {}}
         onStrideLengthChange={(value) => {
           void updateSettings({ strideLength: value });
         }}

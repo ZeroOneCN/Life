@@ -11,7 +11,6 @@ import type {
 export interface StepListParams {
   page?: number;
   page_size?: number;
-  userId?: string;
   hour?: number | 'all';
   month?: string;
 }
@@ -46,11 +45,11 @@ export const stepApi = {
     return apiGet<StepSummary>('/health/step/summary', undefined, params as Record<string, unknown> | undefined);
   },
 
-  getTrend(params?: { userId?: string; month?: string; hour?: number | 'all' }) {
+  getTrend(params?: Record<string, unknown>) {
     return apiGet<StepAggregatePoint[]>('/health/step/trend', undefined, params as Record<string, unknown> | undefined);
   },
 
-  getMonthCompare(params?: { userId?: string; month?: string }) {
+  getMonthCompare(params?: Record<string, unknown>) {
     return apiGet<StepMonthCompareSummary>('/health/step/month-compare', undefined, params as Record<string, unknown> | undefined);
   },
 

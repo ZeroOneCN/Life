@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { RentChannelsSection } from '../../components/finance/RentChannelsSection';
 import { RentEntrySection } from '../../components/finance/RentEntrySection';
@@ -8,7 +8,6 @@ import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
-import { useAuthState } from '../../services/auth';
 import { formatRentAmount } from '../../services/rent';
 import { rentApi } from '../../services/rentApi';
 import type {
@@ -27,9 +26,6 @@ const TAB_OPTIONS: Array<{ value: RentTab; label: string }> = [
 ];
 
 const EMPTY_SETTINGS: RentPageState['settings'] = {
-  activeUserId: '',
-  recordsUserId: '',
-  statisticsUserId: '',
   editingRecordId: '',
 };
 
@@ -54,20 +50,14 @@ function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
 
 function hydrateSettings(
   incoming: Partial<RentPageState['settings']> | null | undefined,
-  currentUserId: string,
 ): RentPageState['settings'] {
   return {
     ...EMPTY_SETTINGS,
     ...incoming,
-    activeUserId: currentUserId || incoming?.activeUserId || '',
-    recordsUserId: currentUserId || incoming?.recordsUserId || '',
-    statisticsUserId: currentUserId || incoming?.statisticsUserId || '',
   };
 }
 
 export default function RentPage() {
-  const authState = useAuthState();
-  const currentUserId = authState.session?.user.id ?? '';
   const [tab, setTab] = usePageTab<RentTab>('records', TAB_OPTIONS.map((item) => item.value), 'rentTab');
   const [records, setRecords] = useState<RentHousingRecord[]>([]);
   const [channels, setChannels] = useState<RentChannel[]>([]);
@@ -90,25 +80,8 @@ export default function RentPage() {
     setRecords(recordsResponse.items);
     setChannels(channelsResponse.items);
     setOverview(overviewResponse);
-    setSettings(hydrateSettings(settingsResponse, currentUserId));
-
-    if (
-      currentUserId
-      && (
-        settingsResponse.activeUserId !== currentUserId
-        || settingsResponse.recordsUserId !== currentUserId
-        || settingsResponse.statisticsUserId !== currentUserId
-      )
-    ) {
-      void rentApi.updateSettings({
-        activeUserId: currentUserId,
-        recordsUserId: currentUserId,
-        statisticsUserId: currentUserId,
-      }).catch((error) => {
-        console.error('更新租房设置失败:', error);
-      });
-    }
-  }, [currentUserId]);
+    setSettings(hydrateSettings(settingsResponse));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -137,19 +110,14 @@ export default function RentPage() {
 
   const updateSettings = useCallback(async (patch: Partial<RentPageState['settings']>) => {
     try {
-      const next = await rentApi.updateSettings({
-        ...patch,
-        activeUserId: currentUserId || patch.activeUserId,
-        recordsUserId: currentUserId || patch.recordsUserId,
-        statisticsUserId: currentUserId || patch.statisticsUserId,
-      });
-      setSettings(hydrateSettings(next, currentUserId));
+      const next = await rentApi.updateSettings(patch);
+      setSettings(hydrateSettings(next));
       const nextOverview = await rentApi.getOverview();
       setOverview(nextOverview);
     } catch (error) {
       showToast(buildApiErrorMessage(error, '租房设置保存失败。'), 'error');
     }
-  }, [currentUserId, showToast]);
+  }, [showToast]);
 
   const resolveChannelId = useCallback(async (channelId: string) => {
     if (!channelId) {
@@ -180,7 +148,6 @@ export default function RentPage() {
 
       await Promise.all([
         ...created.map(async (item) => rentApi.createRecord({
-          userId: currentUserId || item.userId,
           address: item.address,
           channelId: await resolveChannelId(item.channelId),
           moveInDate: item.moveInDate,
@@ -198,7 +165,6 @@ export default function RentPage() {
           notes: item.notes,
         })),
         ...updated.map(async (item) => rentApi.updateRecord(item.id, {
-          userId: currentUserId || item.userId,
           address: item.address,
           channelId: await resolveChannelId(item.channelId),
           moveInDate: item.moveInDate,
@@ -223,7 +189,7 @@ export default function RentPage() {
       showToast(buildApiErrorMessage(error, '住房记录保存失败。'), 'error');
       await reload();
     }
-  }, [currentUserId, records, reload, resolveChannelId, showToast]);
+  }, [records, reload, resolveChannelId, showToast]);
 
   const handleChannelsChange = useCallback(async (updater: (items: RentChannel[]) => RentChannel[]) => {
     const previous = channels;
@@ -238,14 +204,12 @@ export default function RentPage() {
       await Promise.all([
         ...created.map((item) => {
           const request = rentApi.createChannel({
-            userId: currentUserId || item.userId,
             name: item.name,
           }).then((createdItem) => createdItem.id);
           tempChannelIdsRef.current.set(item.id, request);
           return request;
         }),
         ...updated.map((item) => rentApi.updateChannel(item.id, {
-          userId: currentUserId || item.userId,
           name: item.name,
         })),
         ...deletedIds.map((id) => rentApi.deleteChannel(id)),
@@ -256,14 +220,7 @@ export default function RentPage() {
       showToast(buildApiErrorMessage(error, '租房渠道保存失败。'), 'error');
       await reload();
     }
-  }, [channels, currentUserId, reload, showToast]);
-
-  const activeUserLabel = authState.session?.user.nickname || authState.session?.user.username || '当前登录用户';
-  const currentUserEmail = authState.session?.user.email || '页面仅展示当前登录用户的租房数据';
-  const activeChannels = useMemo(
-    () => channels.filter((channel) => !settings.activeUserId || channel.userId === settings.activeUserId),
-    [channels, settings.activeUserId],
-  );
+  }, [channels, reload, showToast]);
 
   return (
     <div className="page-stack">
@@ -291,13 +248,8 @@ export default function RentPage() {
 
       {tab === 'records' ? (
         <RentRecordsSection
-          activeUserId={settings.activeUserId}
-          filterUserId={settings.recordsUserId}
           records={records}
           channels={channels}
-          onFilterUserIdChange={() => {
-            void updateSettings({ recordsUserId: currentUserId || settings.recordsUserId });
-          }}
           onEditRecord={(recordId) => {
             void updateSettings({ editingRecordId: recordId });
             setTab('entry');
@@ -315,7 +267,6 @@ export default function RentPage() {
 
       {tab === 'entry' ? (
         <RentEntrySection
-          activeUserId={settings.activeUserId}
           editingRecordId={settings.editingRecordId}
           records={records}
           channels={channels}
@@ -332,18 +283,13 @@ export default function RentPage() {
 
       {tab === 'statistics' ? (
         <RentStatisticsSection
-          userId={settings.statisticsUserId}
           records={records}
           channels={channels}
-          onUserIdChange={() => {
-            void updateSettings({ statisticsUserId: currentUserId || settings.statisticsUserId });
-          }}
         />
       ) : null}
 
       {tab === 'channels' ? (
         <RentChannelsSection
-          activeUserId={settings.activeUserId}
           records={records}
           channels={channels}
           onChangeChannels={(updater) => {

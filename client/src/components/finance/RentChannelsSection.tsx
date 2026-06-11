@@ -7,13 +7,11 @@ import {
   createRentChannel,
   deleteRentChannel,
   filterRentChannels,
-  normalizeRentUserId,
   updateRentChannel,
 } from '../../services/rent';
 import type { RentChannel, RentChannelDraft, RentHousingRecord } from '../../types/rent';
 
 interface RentChannelsSectionProps {
-  activeUserId: string;
   records: RentHousingRecord[];
   channels: RentChannel[];
   onChangeChannels: (updater: (channels: RentChannel[]) => RentChannel[]) => void;
@@ -21,57 +19,45 @@ interface RentChannelsSectionProps {
 }
 
 interface ChannelFormState {
-  userId: string;
   name: string;
 }
 
-function createDefaultFormState(activeUserId: string): ChannelFormState {
+function createDefaultFormState(): ChannelFormState {
   return {
-    userId: activeUserId,
     name: '',
   };
 }
 
 function buildFormState(channel: RentChannel): ChannelFormState {
   return {
-    userId: channel.userId,
     name: channel.name,
   };
 }
 
 function parseDraft(form: ChannelFormState): RentChannelDraft | null {
-  const userId = normalizeRentUserId(form.userId);
   const name = form.name.trim();
 
-  if (!userId || !name) {
+  if (!name) {
     return null;
   }
 
-  return { userId, name };
+  return { name };
 }
 
 export function RentChannelsSection({
-  activeUserId,
   records,
   channels,
   onChangeChannels,
   showToast,
 }: RentChannelsSectionProps) {
-  const [form, setForm] = useState<ChannelFormState>(() => createDefaultFormState(activeUserId));
+  const [form, setForm] = useState<ChannelFormState>(() => createDefaultFormState());
   const [editingChannel, setEditingChannel] = useState<RentChannel | null>(null);
-  const [editingForm, setEditingForm] = useState<ChannelFormState>(() => createDefaultFormState(activeUserId));
+  const [editingForm, setEditingForm] = useState<ChannelFormState>(() => createDefaultFormState());
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
-  useEffect(() => {
-    setForm((previous) => ({
-      ...previous,
-      userId: previous.userId || activeUserId,
-    }));
-  }, [activeUserId]);
-
   const scopedChannels = useMemo(
-    () => filterRentChannels(channels, activeUserId),
-    [activeUserId, channels],
+    () => filterRentChannels(channels),
+    [channels],
   );
 
   const usageMap = useMemo(() => records.reduce<Record<string, number>>((accumulator, record) => {
@@ -115,18 +101,18 @@ export function RentChannelsSection({
     const draft = parseDraft(form);
 
     if (!draft) {
-      showToast('请补全用户 ID 和渠道名称。', 'error');
+      showToast('请补全渠道名称。', 'error');
       return;
     }
 
-    const duplicate = channels.some((channel) => channel.userId === draft.userId && channel.name === draft.name);
+    const duplicate = channels.some((channel) => channel.name === draft.name);
     if (duplicate) {
-      showToast('同一用户下已经存在同名渠道。', 'error');
+      showToast('已经存在同名渠道。', 'error');
       return;
     }
 
     onChangeChannels((previous) => createRentChannel(previous, draft));
-    setForm(createDefaultFormState(activeUserId));
+    setForm(createDefaultFormState());
     showToast('渠道已新增。');
   };
 
@@ -144,17 +130,16 @@ export function RentChannelsSection({
 
     const duplicate = channels.some((channel) => (
       channel.id !== editingChannel.id
-      && channel.userId === draft.userId
       && channel.name === draft.name
     ));
     if (duplicate) {
-      showToast('同一用户下已经存在同名渠道。', 'error');
+      showToast('已经存在同名渠道。', 'error');
       return;
     }
 
     onChangeChannels((previous) => updateRentChannel(previous, editingChannel.id, draft));
     setEditingChannel(null);
-    setEditingForm(createDefaultFormState(activeUserId));
+    setEditingForm(createDefaultFormState());
     showToast('渠道已更新。');
   };
 
@@ -193,7 +178,7 @@ export function RentChannelsSection({
         open={Boolean(editingChannel)}
         onClose={() => {
           setEditingChannel(null);
-          setEditingForm(createDefaultFormState(activeUserId));
+          setEditingForm(createDefaultFormState());
         }}
         title={editingChannel ? `编辑渠道 · ${editingChannel.name}` : '编辑渠道'}
         width={560}
@@ -203,7 +188,7 @@ export function RentChannelsSection({
               tone="secondary"
               onClick={() => {
                 setEditingChannel(null);
-                setEditingForm(createDefaultFormState(activeUserId));
+                setEditingForm(createDefaultFormState());
               }}
             >
               取消

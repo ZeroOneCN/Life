@@ -4,7 +4,6 @@ export type MedicationTab = 'records' | 'purchases' | 'analysis' | 'summary';
 
 export interface MedicationRecord {
   id: string;
-  userId: string;
   date: string;
   medicineName: string;
   breakfast: number;
@@ -15,7 +14,6 @@ export interface MedicationRecord {
 }
 
 export interface MedicationRecordDraft {
-  userId: string;
   date: string;
   medicineName: string;
   breakfast: number;
@@ -25,7 +23,6 @@ export interface MedicationRecordDraft {
 
 export interface MedicationPurchaseRecord {
   id: string;
-  userId: string;
   purchaseDate: string;
   medicineName: string;
   quantity: number;
@@ -38,7 +35,6 @@ export interface MedicationPurchaseRecord {
 }
 
 export interface MedicationPurchaseDraft {
-  userId: string;
   purchaseDate: string;
   medicineName: string;
   quantity: number;
@@ -50,7 +46,6 @@ export interface MedicationPurchaseDraft {
 
 export interface MedicationDailySummary {
   id: string;
-  userId: string;
   date: string;
   content: string;
   createdAt: string;
@@ -106,11 +101,6 @@ export interface MedicationPageState {
   purchases: MedicationPurchaseRecord[];
   summaries: MedicationDailySummary[];
   settings: {
-    activeUserId: string;
-    recordsUserId: string;
-    purchaseUserId: string;
-    analysisUserId: string;
-    summaryUserId: string;
     doseReminderEnabled: boolean;
     stockReminderEnabled: boolean;
     breakfastReminderTime: string;

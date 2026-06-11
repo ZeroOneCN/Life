@@ -8,7 +8,6 @@ export type FitnessTab = 'diet' | 'exercise' | 'shopping' | 'weight' | 'dashboar
 
 export interface FitnessUserScopedRecordBase {
   id: string;
-  userId: string;
   date: string;
   createdAt: string;
   updatedAt: string;
@@ -47,7 +46,6 @@ export interface WeightRecord extends FitnessUserScopedRecordBase {
 }
 
 export interface DietRecordDraft {
-  userId: string;
   date: string;
   mealType: MealType;
   foodName: string;
@@ -59,7 +57,6 @@ export interface DietRecordDraft {
 }
 
 export interface ExerciseRecordDraft {
-  userId: string;
   date: string;
   exerciseType: ExerciseType;
   exerciseName: string;
@@ -69,7 +66,6 @@ export interface ExerciseRecordDraft {
 }
 
 export interface FitnessShoppingRecordDraft {
-  userId: string;
   date: string;
   itemName: string;
   specGrams: number;
@@ -79,7 +75,6 @@ export interface FitnessShoppingRecordDraft {
 }
 
 export interface WeightRecordDraft {
-  userId: string;
   date: string;
   weight: number;
   height: number;
@@ -92,12 +87,6 @@ export interface FitnessPageState {
   shoppingRecords: FitnessShoppingRecord[];
   weightRecords: WeightRecord[];
   settings: {
-    activeUserId: string;
-    dietFilterUserId: string;
-    exerciseFilterUserId: string;
-    shoppingFilterUserId: string;
-    weightFilterUserId: string;
-    dashboardUserId: string;
     defaultHeightCm?: number;
   };
 }

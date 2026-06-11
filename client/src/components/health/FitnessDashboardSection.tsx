@@ -25,7 +25,6 @@ import {
   buildFoodCostTrend,
   buildMacroSummary,
   buildWeightTrend,
-  filterRecordsByUserId,
 } from '../../services/fitness';
 import type {
   DietRecord,
@@ -35,13 +34,11 @@ import type {
 } from '../../types/fitness';
 
 interface FitnessDashboardSectionProps {
-  userId: string;
   defaultHeightCm: number;
   dietRecords: DietRecord[];
   exerciseRecords: ExerciseRecord[];
   shoppingRecords: FitnessShoppingRecord[];
   weightRecords: WeightRecord[];
-  onUserIdChange: (value: string) => void;
 }
 
 const tooltipStyle = {
@@ -72,43 +69,36 @@ function ChartCard({
 }
 
 export function FitnessDashboardSection({
-  userId,
   defaultHeightCm,
   dietRecords,
   exerciseRecords,
   shoppingRecords,
   weightRecords,
-  onUserIdChange,
 }: FitnessDashboardSectionProps) {
-  const filteredDietRecords = useMemo(() => filterRecordsByUserId(dietRecords, userId), [dietRecords, userId]);
-  const filteredExerciseRecords = useMemo(() => filterRecordsByUserId(exerciseRecords, userId), [exerciseRecords, userId]);
-  const filteredShoppingRecords = useMemo(() => filterRecordsByUserId(shoppingRecords, userId), [shoppingRecords, userId]);
-  const filteredWeightRecords = useMemo(() => filterRecordsByUserId(weightRecords, userId), [userId, weightRecords]);
-
-  const macroData = useMemo(() => buildMacroSummary(filteredDietRecords), [filteredDietRecords]);
-  const weightTrendData = useMemo(() => buildWeightTrend(filteredWeightRecords), [filteredWeightRecords]);
+  const macroData = useMemo(() => buildMacroSummary(dietRecords), [dietRecords]);
+  const weightTrendData = useMemo(() => buildWeightTrend(weightRecords), [weightRecords]);
   const calorieTrendData = useMemo(
-    () => buildCalorieTrend(filteredDietRecords, filteredExerciseRecords),
-    [filteredDietRecords, filteredExerciseRecords],
+    () => buildCalorieTrend(dietRecords, exerciseRecords),
+    [dietRecords, exerciseRecords],
   );
   const costTrendData = useMemo(
-    () => buildFoodCostTrend(filteredDietRecords, filteredShoppingRecords),
-    [filteredDietRecords, filteredShoppingRecords],
+    () => buildFoodCostTrend(dietRecords, shoppingRecords),
+    [dietRecords, shoppingRecords],
   );
   const overview = useMemo(
     () => buildFitnessOverviewSummary(
-      filteredDietRecords,
-      filteredExerciseRecords,
-      filteredShoppingRecords,
-      filteredWeightRecords,
+      dietRecords,
+      exerciseRecords,
+      shoppingRecords,
+      weightRecords,
       defaultHeightCm,
     ),
     [
       defaultHeightCm,
-      filteredDietRecords,
-      filteredExerciseRecords,
-      filteredShoppingRecords,
-      filteredWeightRecords,
+      dietRecords,
+      exerciseRecords,
+      shoppingRecords,
+      weightRecords,
     ],
   );
 

@@ -18,7 +18,6 @@ import {
   buildTravelPayChannelBreakdown,
   buildTravelSummary,
   createTravelPayChannel,
-  filterTravelBooksByUserId,
   filterTravelRecords,
   formatTravelAmount,
   getTravelPayChannelLabel,
@@ -27,7 +26,6 @@ import {
 import type { TravelBook, TravelExpenseRecord, TravelPayChannel } from '../../types/travel';
 
 interface TravelStatsSectionProps {
-  activeUserId: string;
   statsBookId: string;
   books: TravelBook[];
   records: TravelExpenseRecord[];
@@ -67,7 +65,6 @@ function ChartCard({
 }
 
 export function TravelStatsSection({
-  activeUserId,
   statsBookId,
   books,
   records,
@@ -82,10 +79,10 @@ export function TravelStatsSection({
   const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState('');
 
-  const availableBooks = useMemo(() => filterTravelBooksByUserId(books, activeUserId), [books, activeUserId]);
+  const availableBooks = useMemo(() => books, [books]);
   const scopedRecords = useMemo(
-    () => filterTravelRecords(records, activeUserId, statsBookId),
-    [records, activeUserId, statsBookId],
+    () => filterTravelRecords(records, statsBookId),
+    [records, statsBookId],
   );
   const summary = useMemo(() => buildTravelSummary(scopedRecords, payChannels), [scopedRecords, payChannels]);
   const categoryRows = useMemo(() => buildTravelCategoryBreakdown(scopedRecords), [scopedRecords]);

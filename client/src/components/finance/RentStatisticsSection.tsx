@@ -23,10 +23,8 @@ import {
 import type { RentChannel, RentHousingRecord } from '../../types/rent';
 
 interface RentStatisticsSectionProps {
-  userId: string;
   records: RentHousingRecord[];
   channels: RentChannel[];
-  onUserIdChange: (value: string) => void;
 }
 
 const tooltipStyle = {
@@ -59,14 +57,12 @@ function ChartCard({
 }
 
 export function RentStatisticsSection({
-  userId,
   records,
   channels,
-  onUserIdChange,
 }: RentStatisticsSectionProps) {
-  const overview = useMemo(() => buildRentOverview(records, channels, userId), [records, channels, userId]);
-  const costBreakdown = useMemo(() => buildRentCostBreakdown(records, userId), [records, userId]);
-  const channelBreakdown = useMemo(() => buildRentChannelBreakdown(records, channels, userId), [records, channels, userId]);
+  const overview = useMemo(() => buildRentOverview(records, channels), [records, channels]);
+  const costBreakdown = useMemo(() => buildRentCostBreakdown(records), [records]);
+  const channelBreakdown = useMemo(() => buildRentChannelBreakdown(records, channels), [records, channels]);
   const topCostItems = costBreakdown.slice(0, 6);
 
   return (

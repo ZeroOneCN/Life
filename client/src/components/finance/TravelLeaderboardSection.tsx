@@ -1,31 +1,26 @@
 import { useMemo } from 'react';
 
 import { EmptyState, SectionCard, StatGrid } from '../page';
-import { Btn, DataTable, Field } from '../ui';
+import { Btn, DataTable } from '../ui';
 import {
   buildTravelLeaderboard,
-  filterTravelBooksByUserId,
   formatTravelAmount,
 } from '../../services/travel';
 import type { TravelBook, TravelExpenseRecord } from '../../types/travel';
 
 interface TravelLeaderboardSectionProps {
-  userId: string;
   books: TravelBook[];
   records: TravelExpenseRecord[];
-  onUserIdChange: (value: string) => void;
   onSelectBook: (bookId: string) => void;
 }
 
 export function TravelLeaderboardSection({
-  userId,
   books,
   records,
-  onUserIdChange,
   onSelectBook,
 }: TravelLeaderboardSectionProps) {
-  const rankedItems = useMemo(() => buildTravelLeaderboard(books, records, userId), [books, records, userId]);
-  const scopedBookCount = useMemo(() => filterTravelBooksByUserId(books, userId).length, [books, userId]);
+  const rankedItems = useMemo(() => buildTravelLeaderboard(books, records), [books, records]);
+  const scopedBookCount = useMemo(() => books.length, [books]);
   const totals = useMemo(() => rankedItems.reduce((accumulator, item) => ({
     totalPaidAmount: accumulator.totalPaidAmount + item.totalPaidAmount,
     totalAmount: accumulator.totalAmount + item.totalAmount,
@@ -75,14 +70,6 @@ export function TravelLeaderboardSection({
       description="按当前用户聚合全部行程账本的旅行支出表现，帮助识别哪次出行的花费更集中。"
     >
       <div className="page-stack">
-        <Field
-          label="排行用户 ID"
-          value={userId}
-          onChange={(event) => onUserIdChange(event.target.value)}
-          placeholder="例如：user-001"
-          hint="排行榜会按这个用户汇总全部行程账本。"
-        />
-
         <StatGrid
           items={[
             { label: '账本数量', value: `${scopedBookCount}` },

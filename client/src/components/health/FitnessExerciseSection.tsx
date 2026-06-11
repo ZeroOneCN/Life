@@ -10,8 +10,6 @@ import {
   INTENSITY_LEVEL_META,
   createExerciseRecord,
   deleteExerciseRecord,
-  filterRecordsByUserId,
-  normalizeFitnessUserId,
   updateExerciseRecord,
 } from '../../services/fitness';
 import { fetchExerciseCalorie } from '../../services/fitnessAiApi';
@@ -19,10 +17,7 @@ import { buildApiErrorMessage } from '../../lib/api';
 import type { ExerciseRecord, ExerciseRecordDraft, ExerciseType, IntensityLevel } from '../../types/fitness';
 
 interface FitnessExerciseSectionProps {
-  activeUserId: string;
-  filterUserId: string;
   records: ExerciseRecord[];
-  onFilterUserIdChange: (value: string) => void;
   onChangeRecords: (updater: (records: ExerciseRecord[]) => ExerciseRecord[]) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
@@ -45,12 +40,11 @@ const defaultFormState = (): ExerciseFormState => ({
   intensity: 'medium',
 });
 
-function parseDraft(form: ExerciseFormState, userId: string): ExerciseRecordDraft | null {
-  const normalizedUserId = normalizeFitnessUserId(userId);
+function parseDraft(form: ExerciseFormState): ExerciseRecordDraft | null {
   const duration = Number(form.duration);
   const calories = Number(form.calories);
 
-  if (!normalizedUserId || !form.exerciseName.trim() || !dayjs(form.date).isValid()) {
+  if (!form.exerciseName.trim() || !dayjs(form.date).isValid()) {
     return null;
   }
 
@@ -59,7 +53,6 @@ function parseDraft(form: ExerciseFormState, userId: string): ExerciseRecordDraf
   }
 
   return {
-    userId: normalizedUserId,
     date: form.date,
     exerciseType: form.exerciseType,
     exerciseName: form.exerciseName.trim(),
@@ -70,10 +63,7 @@ function parseDraft(form: ExerciseFormState, userId: string): ExerciseRecordDraf
 }
 
 export function FitnessExerciseSection({
-  activeUserId,
-  filterUserId,
   records,
-  onFilterUserIdChange,
   onChangeRecords,
   showToast,
 }: FitnessExerciseSectionProps) {
@@ -89,14 +79,12 @@ export function FitnessExerciseSection({
   const [aiSource, setAiSource] = useState<'cache' | 'ai' | null>(null);
 
   const filteredRecords = useMemo(() => {
-    const byUser = filterRecordsByUserId(records, filterUserId);
-
     if (!filterDate) {
-      return byUser;
+      return records;
     }
 
-    return byUser.filter((record) => record.date === filterDate);
-  }, [filterDate, filterUserId, records]);
+    return records.filter((record) => record.date === filterDate);
+  }, [filterDate, records]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / FITNESS_RECORD_PAGE_SIZE));
   const pageRecords = useMemo(() => {
@@ -106,7 +94,7 @@ export function FitnessExerciseSection({
 
   useEffect(() => {
     setPage(1);
-  }, [filterDate, filterUserId]);
+  }, [filterDate]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -181,10 +169,10 @@ export function FitnessExerciseSection({
   ], []);
 
   const handleCreate = () => {
-    const draft = parseDraft(form, activeUserId);
+    const draft = parseDraft(form);
 
     if (!draft) {
-      showToast('请补全运动记录的用户、日期、项目、时长和热量。', 'error');
+      showToast('请补全运动记录的日期、项目、时长和热量。', 'error');
       return;
     }
 
@@ -236,7 +224,7 @@ export function FitnessExerciseSection({
       return;
     }
 
-    const draft = parseDraft(editingForm, editingRecord.userId);
+    const draft = parseDraft(editingForm);
 
     if (!draft) {
       showToast('请补全要保存的运动记录。', 'error');
@@ -327,25 +315,18 @@ export function FitnessExerciseSection({
         </form>
 
         <div className="step-filter-grid">
-          <Field
-            label="筛选用户 ID"
-            placeholder="留空查看全部用户"
-            value={filterUserId}
-            onChange={(event) => onFilterUserIdChange(event.target.value)}
-          />
           <DatePickerField
             label="筛选日期"
             value={filterDate}
             onChange={setFilterDate}
             placeholder="按日期筛选"
-            hint="留空时显示该用户的全部运动记录。"
+            hint="留空时显示全部运动记录。"
           />
         </div>
 
         <div className="fitness-section-summary">
           <span className="subtle-text">
             共 {filteredRecords.length} 条运动记录
-            {filterUserId.trim() ? `（用户 ${filterUserId.trim()}）` : '（全部用户）'}
           </span>
         </div>
 

@@ -21,7 +21,6 @@ type CheckupRecordInput = CheckupRecordDraft & Partial<Pick<
 const DATE_FORMAT = 'YYYY-MM-DD';
 const DATE_TIME_FORMAT = 'YYYY-MM-DDTHH:mm';
 
-export const DEFAULT_CHECKUP_USER_ID = 'user-001';
 export const CHECKUP_RECORD_PAGE_SIZE = 10;
 
 export const CHECKUP_STATUS_META: Record<CheckupStatus, { label: string; tone: 'green' | 'orange' | 'red' | 'default' }> = {
@@ -95,10 +94,6 @@ function normalizeTemplate(
   };
 }
 
-export function normalizeCheckupUserId(userId: string) {
-  return userId.trim();
-}
-
 function isPersistedRecord(
   input: CheckupRecordInput,
 ): input is CheckupRecordInput & Required<Pick<CheckupRecord, 'id'>> {
@@ -146,7 +141,6 @@ export function materializeCheckupRecord(
     const normalizedStatus = input.status || evaluateCheckupStatus(input.value, input.referenceRange);
     return {
       ...input,
-      userId: normalizeCheckupUserId(input.userId) || existingRecord?.userId || DEFAULT_CHECKUP_USER_ID,
       testDate: normalizeDate(input.testDate),
       testType: input.testType.trim(),
       testName: input.testName.trim(),
@@ -170,7 +164,6 @@ export function materializeCheckupRecord(
 
   return {
     id: existingRecord?.id ?? buildId(),
-    userId: normalizeCheckupUserId(input.userId) || existingRecord?.userId || DEFAULT_CHECKUP_USER_ID,
     testDate,
     testType: input.testType.trim(),
     testName: input.testName.trim(),
@@ -185,16 +178,6 @@ export function materializeCheckupRecord(
     lastAbnormalAlertAt: existingRecord?.lastAbnormalAlertAt,
     lastFollowUpReminderAt: existingRecord?.lastFollowUpReminderAt,
   };
-}
-
-export function filterCheckupRecordsByUserId(records: CheckupRecord[], userId: string) {
-  const normalizedUserId = normalizeCheckupUserId(userId);
-
-  if (!normalizedUserId) {
-    return records;
-  }
-
-  return records.filter((record) => normalizeCheckupUserId(record.userId) === normalizedUserId);
 }
 
 export function createCheckupRecord(records: CheckupRecord[], input: CheckupRecordInput) {
@@ -273,10 +256,10 @@ export function applyCheckupTemplate(template: CheckupTemplate) {
   }));
 }
 
-export function buildDueFollowUps(records: CheckupRecord[], userId: string, leadDays: number): CheckupDueFollowUpItem[] {
+export function buildDueFollowUps(records: CheckupRecord[], leadDays: number): CheckupDueFollowUpItem[] {
   const today = dayjs().startOf('day');
 
-  return filterCheckupRecordsByUserId(records, userId)
+  return records
     .filter((record) => record.followUpDate && (record.status === 'abnormal' || record.status === 'attention'))
     .map((record) => {
       const followUpDate = normalizeDate(record.followUpDate);
@@ -284,7 +267,6 @@ export function buildDueFollowUps(records: CheckupRecord[], userId: string, lead
 
       return {
         id: record.id,
-        userId: record.userId,
         testName: record.testName,
         testType: record.testType,
         testDate: record.testDate,
@@ -299,32 +281,29 @@ export function buildDueFollowUps(records: CheckupRecord[], userId: string, lead
 
 export function buildCheckupOverview(
   records: CheckupRecord[],
-  userId: string,
   leadDays: number,
 ): CheckupOverviewSummary {
-  const filteredRecords = filterCheckupRecordsByUserId(records, userId);
-  const dueFollowUps = buildDueFollowUps(filteredRecords, '', leadDays);
+  const dueFollowUps = buildDueFollowUps(records, leadDays);
 
   return {
-    totalRecords: filteredRecords.length,
-    abnormalCount: filteredRecords.filter((record) => record.status === 'abnormal').length,
-    attentionCount: filteredRecords.filter((record) => record.status === 'attention').length,
+    totalRecords: records.length,
+    abnormalCount: records.filter((record) => record.status === 'abnormal').length,
+    attentionCount: records.filter((record) => record.status === 'attention').length,
     dueFollowUpCount: dueFollowUps.length,
-    uniqueIndicatorCount: new Set(filteredRecords.map((record) => record.testName)).size,
-    recentTestDate: filteredRecords.length ? filteredRecords[0].testDate : null,
+    uniqueIndicatorCount: new Set(records.map((record) => record.testName)).size,
+    recentTestDate: records.length ? records[0].testDate : null,
   };
 }
 
 export function buildCheckupTrend(
   records: CheckupRecord[],
   options: {
-    userId: string;
     testName: string;
     startDate?: string;
     endDate?: string;
   },
 ): CheckupTrendPoint[] {
-  const filteredRecords = filterCheckupRecordsByUserId(records, options.userId)
+  const filteredRecords = records
     .filter((record) => record.testName === options.testName)
     .filter((record) => (!options.startDate || record.testDate >= options.startDate))
     .filter((record) => (!options.endDate || record.testDate <= options.endDate))
@@ -338,10 +317,8 @@ export function buildCheckupTrend(
   }));
 }
 
-export function buildCheckupInsights(records: CheckupRecord[], userId: string, leadDays: number): CheckupInsight[] {
-  const filteredRecords = filterCheckupRecordsByUserId(records, userId);
-
-  if (!filteredRecords.length) {
+export function buildCheckupInsights(records: CheckupRecord[], leadDays: number): CheckupInsight[] {
+  if (!records.length) {
     return [
       {
         id: 'empty',
@@ -353,8 +330,8 @@ export function buildCheckupInsights(records: CheckupRecord[], userId: string, l
   }
 
   const insights: CheckupInsight[] = [];
-  const abnormalRecords = filteredRecords.filter((record) => record.status === 'abnormal');
-  const abnormalRatio = abnormalRecords.length / filteredRecords.length;
+  const abnormalRecords = records.filter((record) => record.status === 'abnormal');
+  const abnormalRatio = abnormalRecords.length / records.length;
 
   if (abnormalRecords.length) {
     insights.push({
@@ -369,7 +346,7 @@ export function buildCheckupInsights(records: CheckupRecord[], userId: string, l
     });
   }
 
-  const dueFollowUps = buildDueFollowUps(filteredRecords, '', leadDays);
+  const dueFollowUps = buildDueFollowUps(records, leadDays);
   const overdueCount = dueFollowUps.filter((item) => item.daysUntilDue < 0).length;
   if (dueFollowUps.length) {
     insights.push({
@@ -385,7 +362,7 @@ export function buildCheckupInsights(records: CheckupRecord[], userId: string, l
   }
 
   const trendCandidates = new Map<string, CheckupRecord[]>();
-  filteredRecords.forEach((record) => {
+  records.forEach((record) => {
     const current = trendCandidates.get(record.testName) ?? [];
     current.push(record);
     trendCandidates.set(record.testName, current);
@@ -426,9 +403,8 @@ export function buildCheckupInsights(records: CheckupRecord[], userId: string, l
   return insights.slice(0, 4);
 }
 
-function createMockRecord(userId: string, daysAgo: number, draft: Omit<CheckupRecordDraft, 'userId' | 'testDate'>): CheckupRecord {
+function createMockRecord(daysAgo: number, draft: Omit<CheckupRecordDraft, 'testDate'>): CheckupRecord {
   return materializeCheckupRecord({
-    userId,
     testDate: dayjs().subtract(daysAgo, 'day').format(DATE_FORMAT),
     ...draft,
   });
@@ -460,7 +436,7 @@ function buildDefaultTemplates() {
 export function buildInitialCheckupState(): CheckupPageState {
   return {
     records: sortRecords([
-      createMockRecord(DEFAULT_CHECKUP_USER_ID, 90, {
+      createMockRecord(90, {
         testType: '年度体检',
         testName: '空腹血糖',
         value: 5.3,
@@ -468,7 +444,7 @@ export function buildInitialCheckupState(): CheckupPageState {
         referenceRange: '3.9-6.1',
         notes: '年度体检常规项目',
       }),
-      createMockRecord(DEFAULT_CHECKUP_USER_ID, 60, {
+      createMockRecord(60, {
         testType: '年度体检',
         testName: '总胆固醇',
         value: 5.7,
@@ -477,7 +453,7 @@ export function buildInitialCheckupState(): CheckupPageState {
         notes: '建议控制饮食',
         followUpDate: dayjs().add(3, 'day').format(DATE_FORMAT),
       }),
-      createMockRecord(DEFAULT_CHECKUP_USER_ID, 45, {
+      createMockRecord(45, {
         testType: '生化检查',
         testName: 'ALT',
         value: 52,
@@ -486,7 +462,7 @@ export function buildInitialCheckupState(): CheckupPageState {
         notes: '复查肝功能',
         followUpDate: dayjs().subtract(2, 'day').format(DATE_FORMAT),
       }),
-      createMockRecord(DEFAULT_CHECKUP_USER_ID, 20, {
+      createMockRecord(20, {
         testType: '复查',
         testName: 'ALT',
         value: 45,
@@ -496,7 +472,7 @@ export function buildInitialCheckupState(): CheckupPageState {
         status: 'attention',
         followUpDate: dayjs().add(10, 'day').format(DATE_FORMAT),
       }),
-      createMockRecord('user-002', 15, {
+      createMockRecord(15, {
         testType: '年度体检',
         testName: '尿酸',
         value: 455,
@@ -508,10 +484,6 @@ export function buildInitialCheckupState(): CheckupPageState {
     ]),
     templates: buildDefaultTemplates(),
     settings: {
-      activeUserId: DEFAULT_CHECKUP_USER_ID,
-      recordsUserId: DEFAULT_CHECKUP_USER_ID,
-      trendUserId: DEFAULT_CHECKUP_USER_ID,
-      insightUserId: DEFAULT_CHECKUP_USER_ID,
       reminderEnabled: true,
       abnormalAlertEnabled: true,
       followUpLeadDays: 7,
@@ -521,12 +493,10 @@ export function buildInitialCheckupState(): CheckupPageState {
 
 export function normalizeCheckupPageState(state: CheckupPageState): CheckupPageState {
   const fallback = buildInitialCheckupState();
-  const activeUserId = normalizeCheckupUserId(state?.settings?.activeUserId ?? fallback.settings.activeUserId) || DEFAULT_CHECKUP_USER_ID;
 
   const records = Array.isArray(state?.records)
     ? sortRecords(state.records.map((record) => materializeCheckupRecord({
       ...record,
-      userId: normalizeCheckupUserId(String(record.userId ?? activeUserId)) || activeUserId,
       testDate: normalizeDate(record.testDate),
       testType: String(record.testType ?? '生化检查'),
       testName: String(record.testName ?? ''),
@@ -549,10 +519,6 @@ export function normalizeCheckupPageState(state: CheckupPageState): CheckupPageS
     records,
     templates,
     settings: {
-      activeUserId,
-      recordsUserId: normalizeCheckupUserId(state?.settings?.recordsUserId ?? activeUserId),
-      trendUserId: normalizeCheckupUserId(state?.settings?.trendUserId ?? activeUserId),
-      insightUserId: normalizeCheckupUserId(state?.settings?.insightUserId ?? activeUserId),
       reminderEnabled: state?.settings?.reminderEnabled ?? true,
       abnormalAlertEnabled: state?.settings?.abnormalAlertEnabled ?? true,
       followUpLeadDays: Math.max(1, toNumber(state?.settings?.followUpLeadDays, fallback.settings.followUpLeadDays)),

@@ -22,7 +22,6 @@ const DATE_FORMAT = 'YYYY-MM-DD';
 const DATE_TIME_FORMAT = 'YYYY-MM-DDTHH:mm';
 const MONTH_FORMAT = 'YYYY-MM';
 
-export const DEFAULT_SHOPPING_USER_ID = 'user-001';
 export const SHOPPING_RECORD_PAGE_SIZE = 10;
 export const DEFAULT_USDT_RATE = 7;
 export const SHOPPING_ALL_LEDGERS = 'all';
@@ -74,10 +73,6 @@ function normalizeTrimmedValue(value: unknown, fallback = '') {
   return normalized || fallback;
 }
 
-export function normalizeShoppingUserId(value: string) {
-  return value.trim();
-}
-
 function normalizeLedgerId(value: string) {
   return value.trim();
 }
@@ -119,14 +114,13 @@ function sortPlatforms(platforms: ShoppingPlatform[]) {
 }
 
 function createMockRecord(
-  draft: Omit<ShoppingRecordDraft, 'userId' | 'ledgerId' | 'date'> & { userId: string; ledgerId: string; daysAgo: number },
+  draft: Omit<ShoppingRecordDraft, 'userId' | 'ledgerId' | 'date'> & { ledgerId: string; daysAgo: number },
 ): ShoppingRecord {
   const date = dayjs().subtract(draft.daysAgo, 'day').format(DATE_FORMAT);
   const timestamp = dayjs(`${date}T09:30`).format(DATE_TIME_FORMAT);
 
   return {
     id: buildId(),
-    userId: draft.userId,
     ledgerId: draft.ledgerId,
     date,
     platform: draft.platform,
@@ -182,9 +176,8 @@ function createInitialPlatforms(): ShoppingPlatform[] {
   })));
 }
 
-function buildRecordDedupKey(record: Pick<ShoppingRecord, 'userId' | 'ledgerId' | 'date' | 'platform' | 'itemName' | 'price' | 'orderNo'>) {
+function buildRecordDedupKey(record: Pick<ShoppingRecord, 'ledgerId' | 'date' | 'platform' | 'itemName' | 'price' | 'orderNo'>) {
   return [
-    normalizeShoppingUserId(record.userId).toLowerCase(),
     normalizeLedgerId(record.ledgerId).toLowerCase(),
     normalizeDate(record.date),
     record.platform.trim().toLowerCase(),
@@ -209,14 +202,12 @@ function ensurePositiveUsdtRate(value: unknown) {
 
 function normalizeRecord(
   record: Partial<ShoppingRecord>,
-  fallbackUserId: string,
   fallbackLedgerId: string,
 ): ShoppingRecord {
   const date = normalizeDate(record.date);
 
   return {
     id: record.id ?? buildId(),
-    userId: normalizeShoppingUserId(String(record.userId ?? fallbackUserId)) || fallbackUserId,
     ledgerId: normalizeLedgerId(String(record.ledgerId ?? fallbackLedgerId)) || fallbackLedgerId,
     date,
     platform: normalizeTrimmedValue(record.platform, '其他'),
@@ -272,7 +263,6 @@ export function buildInitialShoppingState(): ShoppingPageState {
   return {
     records: sortRecords([
       createMockRecord({
-        userId: 'user-001',
         ledgerId: 'ledger-general',
         daysAgo: 1,
         platform: '京东',
@@ -284,7 +274,6 @@ export function buildInitialShoppingState(): ShoppingPageState {
         note: '书桌升级',
       }),
       createMockRecord({
-        userId: 'user-001',
         ledgerId: 'ledger-general',
         daysAgo: 4,
         platform: '拼多多',
@@ -296,7 +285,6 @@ export function buildInitialShoppingState(): ShoppingPageState {
         note: '补齐调料分装',
       }),
       createMockRecord({
-        userId: 'user-001',
         ledgerId: 'ledger-home',
         daysAgo: 18,
         platform: '淘宝',
@@ -308,7 +296,6 @@ export function buildInitialShoppingState(): ShoppingPageState {
         note: '客厅氛围灯',
       }),
       createMockRecord({
-        userId: 'user-002',
         ledgerId: 'ledger-general',
         daysAgo: 7,
         platform: '抖音',
@@ -320,7 +307,6 @@ export function buildInitialShoppingState(): ShoppingPageState {
         note: '',
       }),
       createMockRecord({
-        userId: 'user-002',
         ledgerId: 'ledger-home',
         daysAgo: 26,
         platform: '京东',
@@ -332,7 +318,6 @@ export function buildInitialShoppingState(): ShoppingPageState {
         note: '季度更换',
       }),
       createMockRecord({
-        userId: 'user-001',
         ledgerId: 'ledger-general',
         daysAgo: 40,
         platform: '美团',
@@ -347,9 +332,6 @@ export function buildInitialShoppingState(): ShoppingPageState {
     ledgers,
     platforms,
     settings: {
-      activeUserId: DEFAULT_SHOPPING_USER_ID,
-      recordsUserId: DEFAULT_SHOPPING_USER_ID,
-      dashboardUserId: DEFAULT_SHOPPING_USER_ID,
       activeLedgerId: ledgers[0].id,
       recordsLedgerId: SHOPPING_ALL_LEDGERS,
       dashboardLedgerId: SHOPPING_ALL_LEDGERS,
@@ -365,7 +347,6 @@ export function normalizeShoppingPageState(state: ShoppingPageState): ShoppingPa
   const rawLedgers = (rawState.ledgers?.length ? rawState.ledgers : fallback.ledgers).map(normalizeLedger);
   const ledgerIds = new Set(rawLedgers.map((ledger) => ledger.id));
   const activeLedgerFallback = rawLedgers[0]?.id ?? fallback.settings.activeLedgerId;
-  const activeUserId = normalizeShoppingUserId(rawState.settings?.activeUserId ?? fallback.settings.activeUserId) || DEFAULT_SHOPPING_USER_ID;
 
   const rawPlatforms = (rawState.platforms?.length ? rawState.platforms : fallback.platforms)
     .map((platform, index) => normalizePlatform(platform, index));
@@ -375,7 +356,6 @@ export function normalizeShoppingPageState(state: ShoppingPageState): ShoppingPa
   const normalizedRecords = sortRecords(recordsSource.map((record) => {
     const normalizedRecord = normalizeRecord(
       record,
-      activeUserId,
       ledgerIds.has(String(record.ledgerId ?? '')) ? String(record.ledgerId) : activeLedgerFallback,
     );
 
@@ -410,9 +390,6 @@ export function normalizeShoppingPageState(state: ShoppingPageState): ShoppingPa
     ledgers: sortLedgers(rawLedgers),
     platforms: sortPlatforms(platformHydratedList),
     settings: {
-      activeUserId,
-      recordsUserId: normalizeShoppingUserId(rawState.settings?.recordsUserId ?? activeUserId),
-      dashboardUserId: normalizeShoppingUserId(rawState.settings?.dashboardUserId ?? activeUserId),
       activeLedgerId: resolvedActiveLedgerId,
       recordsLedgerId: recordsLedgerId === SHOPPING_ALL_LEDGERS || ledgerIds.has(recordsLedgerId)
         ? recordsLedgerId
@@ -426,14 +403,12 @@ export function normalizeShoppingPageState(state: ShoppingPageState): ShoppingPa
   };
 }
 
-export function filterShoppingRecords(records: ShoppingRecord[], userId: string, ledgerId: string) {
-  const normalizedUserId = normalizeShoppingUserId(userId);
+export function filterShoppingRecords(records: ShoppingRecord[], ledgerId: string) {
   const normalizedLedgerId = normalizeLedgerId(ledgerId);
 
   return records.filter((record) => {
-    const matchesUser = !normalizedUserId || normalizeShoppingUserId(record.userId) === normalizedUserId;
     const matchesLedger = !normalizedLedgerId || normalizedLedgerId === SHOPPING_ALL_LEDGERS || record.ledgerId === normalizedLedgerId;
-    return matchesUser && matchesLedger;
+    return matchesLedger;
   });
 }
 
@@ -443,7 +418,6 @@ export function createShoppingRecord(records: ShoppingRecord[], draft: ShoppingR
   return sortRecords([
     {
       id: buildId(),
-      userId: normalizeShoppingUserId(draft.userId),
       ledgerId: normalizeLedgerId(draft.ledgerId),
       date: normalizeDate(draft.date),
       platform: draft.platform.trim() || '其他',
@@ -465,7 +439,6 @@ export function updateShoppingRecord(records: ShoppingRecord[], id: string, draf
     record.id === id
       ? {
         ...record,
-        userId: normalizeShoppingUserId(draft.userId),
         ledgerId: normalizeLedgerId(draft.ledgerId),
         date: normalizeDate(draft.date),
         platform: draft.platform.trim() || '其他',
@@ -600,8 +573,8 @@ export function resolveShoppingPlatformColor(name: string, platforms: ShoppingPl
   return matched?.colorToken || SHOPPING_PLATFORM_COLOR_PRESETS[0];
 }
 
-export function buildShoppingOverview(records: ShoppingRecord[], userId: string, ledgerId: string): ShoppingOverviewSummary {
-  const filtered = filterShoppingRecords(records, userId, ledgerId);
+export function buildShoppingOverview(records: ShoppingRecord[], ledgerId: string): ShoppingOverviewSummary {
+  const filtered = filterShoppingRecords(records, ledgerId);
   const currentMonth = dayjs().format(MONTH_FORMAT);
   const monthRecords = filtered.filter((record) => dayjs(record.date).format(MONTH_FORMAT) === currentMonth);
   const monthSet = new Set(filtered.map((record) => dayjs(record.date).format(MONTH_FORMAT)));
@@ -619,11 +592,10 @@ export function buildShoppingOverview(records: ShoppingRecord[], userId: string,
 
 export function buildShoppingMonthlyTrend(
   records: ShoppingRecord[],
-  userId: string,
   ledgerId: string,
   monthCount = 12,
 ): ShoppingMonthlyTrendPoint[] {
-  const filtered = filterShoppingRecords(records, userId, ledgerId);
+  const filtered = filterShoppingRecords(records, ledgerId);
 
   return Array.from({ length: monthCount }, (_value, index) => {
     const month = dayjs().subtract(monthCount - index - 1, 'month').format(MONTH_FORMAT);
@@ -640,11 +612,10 @@ export function buildShoppingMonthlyTrend(
 
 export function buildShoppingPlatformBreakdown(
   records: ShoppingRecord[],
-  userId: string,
   ledgerId: string,
   platforms: ShoppingPlatform[],
 ): ShoppingPlatformBreakdownPoint[] {
-  const filtered = filterShoppingRecords(records, userId, ledgerId);
+  const filtered = filterShoppingRecords(records, ledgerId);
   const grouped = new Map<string, { amount: number; count: number }>();
 
   filtered.forEach((record) => {
@@ -668,9 +639,8 @@ export function buildShoppingPlatformBreakdown(
 export function buildShoppingLedgerSummary(
   records: ShoppingRecord[],
   ledgers: ShoppingLedger[],
-  userId: string,
 ): ShoppingLedgerSummaryPoint[] {
-  const filtered = filterShoppingRecords(records, userId, SHOPPING_ALL_LEDGERS);
+  const filtered = filterShoppingRecords(records, SHOPPING_ALL_LEDGERS);
 
   return ledgers.map((ledger) => {
     const ledgerRecords = filtered.filter((record) => record.ledgerId === ledger.id);
@@ -748,7 +718,6 @@ function buildImportedRecord(
   row: Record<string, unknown>,
   rowNumber: number,
   options: {
-    activeUserId: string;
     activeLedgerId: string;
     ledgers: ShoppingLedger[];
     platforms: ShoppingPlatform[];
@@ -756,7 +725,6 @@ function buildImportedRecord(
   createdLedgers: ShoppingLedger[],
   createdPlatforms: ShoppingPlatform[],
 ): { record: ShoppingRecord | null; invalid: ShoppingImportInvalidRow | null } {
-  const rawUserId = readAliasValue(row, ['用户ID', 'userid', 'userId']);
   const rawLedgerName = readAliasValue(row, ['账本', '账本名称', 'ledger', 'ledgerName']);
   const rawDate = readAliasValue(row, ['日期', 'date']);
   const rawPlatform = readAliasValue(row, ['平台', 'platform']);
@@ -767,15 +735,10 @@ function buildImportedRecord(
   const rawOrderNo = readAliasValue(row, ['订单号', 'orderNo', 'orderno']);
   const rawNote = readAliasValue(row, ['备注', 'note']);
 
-  const userId = normalizeShoppingUserId(String(rawUserId || options.activeUserId));
   const date = normalizeImportDateCell(rawDate);
   const platformName = normalizeTrimmedValue(rawPlatform, '其他');
   const itemName = normalizeTrimmedValue(rawItemName);
   const price = toNumber(rawPrice, NaN);
-
-  if (!userId) {
-    return { record: null, invalid: { rowNumber, reason: '缺少用户 ID' } };
-  }
 
   if (!date) {
     return { record: null, invalid: { rowNumber, reason: '缺少可解析的日期' } };
@@ -831,7 +794,6 @@ function buildImportedRecord(
     invalid: null,
     record: {
       id: buildId(),
-      userId,
       ledgerId,
       date,
       platform: platformName,
@@ -850,7 +812,6 @@ function buildImportedRecord(
 export async function importShoppingWorkbook(
   file: File,
   options: {
-    activeUserId: string;
     activeLedgerId: string;
     records: ShoppingRecord[];
     ledgers: ShoppingLedger[];
@@ -889,7 +850,6 @@ export async function importShoppingWorkbook(
       row,
       rowNumber,
       {
-        activeUserId: options.activeUserId,
         activeLedgerId: options.activeLedgerId,
         ledgers: options.ledgers,
         platforms: options.platforms,

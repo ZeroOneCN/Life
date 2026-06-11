@@ -6,7 +6,6 @@ export type CheckupTab = 'records' | 'batch' | 'templates' | 'insights';
 
 export interface CheckupRecord {
   id: string;
-  userId: string;
   testDate: string;
   testType: string;
   testName: string;
@@ -23,7 +22,6 @@ export interface CheckupRecord {
 }
 
 export interface CheckupRecordDraft {
-  userId: string;
   testDate: string;
   testType: string;
   testName: string;
@@ -78,7 +76,6 @@ export interface CheckupOverviewSummary {
 
 export interface CheckupDueFollowUpItem {
   id: string;
-  userId: string;
   testName: string;
   testType: string;
   testDate: string;
@@ -91,10 +88,6 @@ export interface CheckupPageState {
   records: CheckupRecord[];
   templates: CheckupTemplate[];
   settings: {
-    activeUserId: string;
-    recordsUserId: string;
-    trendUserId: string;
-    insightUserId: string;
     reminderEnabled: boolean;
     abnormalAlertEnabled: boolean;
     followUpLeadDays: number;

@@ -8,7 +8,6 @@ import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Btn, Modal, PillTabs, SelectField, Tag, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
-import { getAuthUserDisplayName, useAuthState } from '../../services/auth';
 import { importShoppingWorkbook } from '../../services/shopping';
 import { shoppingApi } from '../../services/shoppingApi';
 import type {
@@ -29,9 +28,6 @@ const TAB_OPTIONS: Array<{ value: ShoppingTab; label: string }> = [
 ];
 
 const EMPTY_SETTINGS: ShoppingPageState['settings'] = {
-  activeUserId: '',
-  recordsUserId: '',
-  dashboardUserId: '',
   activeLedgerId: '',
   recordsLedgerId: '',
   dashboardLedgerId: '',
@@ -48,7 +44,6 @@ function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
 }
 
 export default function ShoppingPage() {
-  const authState = useAuthState();
   const [tab, setTab] = usePageTab<ShoppingTab>('records', TAB_OPTIONS.map((item) => item.value), 'shoppingTab');
   const [records, setRecords] = useState<ShoppingRecord[]>([]);
   const [ledgers, setLedgers] = useState<ShoppingLedger[]>([]);
@@ -161,7 +156,6 @@ export default function ShoppingPage() {
     setImporting(true);
     try {
       const result = await importShoppingWorkbook(file, {
-        activeUserId: settings.activeUserId,
         activeLedgerId: settings.activeLedgerId,
         records,
         ledgers,
@@ -262,18 +256,13 @@ export default function ShoppingPage() {
 
       {tab === 'records' ? (
         <ShoppingRecordsSection
-          activeUserId={settings.activeUserId}
           activeLedgerId={settings.activeLedgerId}
-          filterUserId={settings.recordsUserId}
           filterLedgerId={settings.recordsLedgerId}
           records={records}
           ledgers={ledgers}
           platforms={platforms}
           currencyMode={settings.currencyMode}
           usdtRate={settings.usdtRate}
-          onFilterUserIdChange={(value) => {
-            void updateSettings({ recordsUserId: value });
-          }}
           onFilterLedgerIdChange={(value) => {
             void updateSettings({ recordsLedgerId: value });
           }}
@@ -296,16 +285,12 @@ export default function ShoppingPage() {
 
       {tab === 'dashboard' ? (
         <ShoppingDashboardSection
-          userId={settings.dashboardUserId}
           ledgerId={settings.dashboardLedgerId}
           records={records}
           ledgers={ledgers}
           platforms={platforms}
           currencyMode={settings.currencyMode}
           usdtRate={settings.usdtRate}
-          onUserIdChange={(value) => {
-            void updateSettings({ dashboardUserId: value });
-          }}
           onLedgerIdChange={(value) => {
             void updateSettings({ dashboardLedgerId: value });
           }}

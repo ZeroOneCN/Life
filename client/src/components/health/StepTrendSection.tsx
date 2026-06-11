@@ -156,7 +156,7 @@ export function StepTrendSection({
     } finally {
       setTrendLoading(false);
     }
-  }, [granularity, userId, selectedMonth, selectedYear, chartHourFilter, strideLength, reloadKey]);
+  }, [granularity, selectedMonth, selectedYear, chartHourFilter, strideLength, reloadKey]);
 
   useEffect(() => {
     void loadTrendData();
@@ -328,7 +328,7 @@ export function StepTrendSection({
           ) : (
             <EmptyState
               title="暂无统计数据"
-              description={userId ? '这个用户当前筛选条件下还没有步数记录。' : '调整筛选条件，或先录入几条步数记录。'}
+              description="调整筛选条件，或先录入几条步数记录。"
             />
           )}
         </div>

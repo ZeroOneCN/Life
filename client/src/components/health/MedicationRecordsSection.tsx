@@ -9,16 +9,12 @@ import {
   createMedicationRecord,
   deleteMedicationRecord,
   filterMedicationRecordsByUserId,
-  normalizeMedicationUserId,
   updateMedicationRecord,
 } from '../../services/medication';
 import type { MedicationRecord, MedicationRecordDraft } from '../../types/medication';
 
 interface MedicationRecordsSectionProps {
-  activeUserId: string;
-  filterUserId: string;
   records: MedicationRecord[];
-  onFilterUserIdChange: (value: string) => void;
   onChangeRecords: (updater: (records: MedicationRecord[]) => MedicationRecord[]) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
@@ -51,13 +47,12 @@ function buildFormState(record: MedicationRecord): MedicationRecordFormState {
   };
 }
 
-function parseDraft(form: MedicationRecordFormState, userId: string): MedicationRecordDraft | null {
-  const normalizedUserId = normalizeMedicationUserId(userId);
+function parseDraft(form: MedicationRecordFormState): MedicationRecordDraft | null {
   const breakfast = Number(form.breakfast || 0);
   const lunch = Number(form.lunch || 0);
   const dinner = Number(form.dinner || 0);
 
-  if (!normalizedUserId || !form.medicineName.trim() || !dayjs(form.date).isValid()) {
+  if (!form.medicineName.trim() || !dayjs(form.date).isValid()) {
     return null;
   }
 
@@ -70,7 +65,6 @@ function parseDraft(form: MedicationRecordFormState, userId: string): Medication
   }
 
   return {
-    userId: normalizedUserId,
     date: form.date,
     medicineName: form.medicineName.trim(),
     breakfast,
@@ -80,10 +74,7 @@ function parseDraft(form: MedicationRecordFormState, userId: string): Medication
 }
 
 export function MedicationRecordsSection({
-  activeUserId,
-  filterUserId,
   records,
-  onFilterUserIdChange,
   onChangeRecords,
   showToast,
 }: MedicationRecordsSectionProps) {
@@ -103,7 +94,7 @@ export function MedicationRecordsSection({
     const minimum = minTotal ? Number(minTotal) : null;
     const maximum = maxTotal ? Number(maxTotal) : null;
 
-    return filterMedicationRecordsByUserId(records, filterUserId)
+    return filterMedicationRecordsByUserId(records)
       .filter((record) => (!startDate || record.date >= startDate))
       .filter((record) => (!endDate || record.date <= endDate))
       .filter((record) => {
@@ -120,11 +111,11 @@ export function MedicationRecordsSection({
         return true;
       })
       .filter((record) => (!normalizedKeyword || record.medicineName.toLowerCase().includes(normalizedKeyword)));
-  }, [records, filterUserId, startDate, endDate, minTotal, maxTotal, keyword]);
+  }, [records, startDate, endDate, minTotal, maxTotal, keyword]);
 
   useEffect(() => {
     setPage(1);
-  }, [filterUserId, startDate, endDate, minTotal, maxTotal, keyword]);
+  }, [startDate, endDate, minTotal, maxTotal, keyword]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / MEDICATION_RECORD_PAGE_SIZE));
   const pageRecords = useMemo(() => {
@@ -174,7 +165,7 @@ export function MedicationRecordsSection({
   ], []);
 
   const handleCreate = () => {
-    const draft = parseDraft(form, activeUserId);
+    const draft = parseDraft(form);
 
     if (!draft) {
       showToast('请补全日期、药品名称，并至少填写一个大于 0 的时段用量。', 'error');
@@ -191,7 +182,7 @@ export function MedicationRecordsSection({
       return;
     }
 
-    const draft = parseDraft(editingForm, editingRecord.userId);
+    const draft = parseDraft(editingForm);
     if (!draft) {
       showToast('请补全要保存的每日用药记录。', 'error');
       return;
@@ -250,12 +241,12 @@ export function MedicationRecordsSection({
         </form>
 
         <div className="medication-filter-grid">
-          <Field
+          {/* <Field
             label="记录用户 ID"
             value={filterUserId}
             onChange={(event) => onFilterUserIdChange(event.target.value)}
             placeholder="留空查看全部用户"
-          />
+          /> */}
           <Field
             label="药品名称"
             value={keyword}

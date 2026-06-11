@@ -30,10 +30,8 @@ import {
 import type { MedicationPurchaseRecord, MedicationRecord } from '../../types/medication';
 
 interface MedicationAnalysisSectionProps {
-  userId: string;
   records: MedicationRecord[];
   purchases: MedicationPurchaseRecord[];
-  onUserIdChange: (value: string) => void;
 }
 
 const tooltipStyle = {
@@ -80,19 +78,17 @@ function ChartCard({
 }
 
 export function MedicationAnalysisSection({
-  userId,
   records,
   purchases,
-  onUserIdChange,
 }: MedicationAnalysisSectionProps) {
   const [trendDays, setTrendDays] = useState<(typeof MEDICATION_TREND_RANGE_OPTIONS)[number]>(30);
 
-  const filteredRecords = useMemo(() => filterMedicationRecordsByUserId(records, userId), [records, userId]);
-  const filteredPurchases = useMemo(() => filterMedicationPurchasesByUserId(purchases, userId), [purchases, userId]);
-  const overview = useMemo(() => buildMedicationOverview(records, purchases, userId), [records, purchases, userId]);
-  const trendData = useMemo(() => buildMedicationTrend(records, userId, trendDays), [records, trendDays, userId]);
-  const rankingData = useMemo(() => buildMedicationRanking(records, userId), [records, userId]);
-  const timeSummary = useMemo(() => buildMedicationTimeOfDaySummary(records, userId), [records, userId]);
+  const filteredRecords = useMemo(() => filterMedicationRecordsByUserId(records), [records]);
+  const filteredPurchases = useMemo(() => filterMedicationPurchasesByUserId(purchases), [purchases]);
+  const overview = useMemo(() => buildMedicationOverview(records, purchases), [records, purchases]);
+  const trendData = useMemo(() => buildMedicationTrend(records, trendDays), [records, trendDays]);
+  const rankingData = useMemo(() => buildMedicationRanking(records), [records]);
+  const timeSummary = useMemo(() => buildMedicationTimeOfDaySummary(records), [records]);
 
   const dosageShareData = useMemo(() => rankingData.slice(0, 6).map((item) => ({
     name: item.medicineName,
