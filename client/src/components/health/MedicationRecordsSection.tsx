@@ -8,7 +8,6 @@ import {
   MEDICATION_RECORD_PAGE_SIZE,
   createMedicationRecord,
   deleteMedicationRecord,
-  filterMedicationRecordsByUserId,
   updateMedicationRecord,
 } from '../../services/medication';
 import type { MedicationRecord, MedicationRecordDraft } from '../../types/medication';
@@ -94,7 +93,7 @@ export function MedicationRecordsSection({
     const minimum = minTotal ? Number(minTotal) : null;
     const maximum = maxTotal ? Number(maxTotal) : null;
 
-    return filterMedicationRecordsByUserId(records)
+    return records
       .filter((record) => (!startDate || record.date >= startDate))
       .filter((record) => (!endDate || record.date <= endDate))
       .filter((record) => {
@@ -241,12 +240,6 @@ export function MedicationRecordsSection({
         </form>
 
         <div className="medication-filter-grid">
-          {/* <Field
-            label="记录用户 ID"
-            value={filterUserId}
-            onChange={(event) => onFilterUserIdChange(event.target.value)}
-            placeholder="留空查看全部用户"
-          /> */}
           <Field
             label="药品名称"
             value={keyword}

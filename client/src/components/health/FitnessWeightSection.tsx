@@ -236,7 +236,6 @@ export function FitnessWeightSection({
             value={filterDate}
             onChange={setFilterDate}
             placeholder="按日期筛选"
-            hint="留空时显示全部体重记录。"
           />
         </div>
 

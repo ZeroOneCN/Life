@@ -88,21 +88,6 @@ function createAggregatePoint(
   return [...buckets.values()].sort((left, right) => left.bucket.localeCompare(right.bucket));
 }
 
-function createMockRecord(daysAgo: number, hour: StepHour, steps: number, minute = 0): StepRecord {
-  const recordTime = hour === null
-    ? dayjs().subtract(daysAgo, 'day').hour(23).minute(59).second(0).millisecond(0)
-    : dayjs().subtract(daysAgo, 'day').hour(hour).minute(minute).second(0).millisecond(0);
-
-  return {
-    id: buildId(),
-    steps,
-    hour,
-    recordTime: recordTime.format(DATE_TIME_FORMAT),
-    createdAt: recordTime.format(DATE_TIME_FORMAT),
-    updatedAt: recordTime.format(DATE_TIME_FORMAT),
-  };
-}
-
 export function getTodayEndDateTime() {
   return dayjs().hour(23).minute(59).second(0).millisecond(0).format(DATE_TIME_FORMAT);
 }
@@ -333,28 +318,15 @@ export function normalizeStepPageState(state: StepPageState): StepPageState {
     ),
     settings: {
       strideLength: state.settings?.strideLength ?? fallback.settings.strideLength,
-      recordsUserId: state.settings?.recordsUserId ?? '',
     },
   };
 }
 
 export function buildInitialStepState(): StepPageState {
   return {
-    records: sortRecordsByLatest([
-      createMockRecord(0, 21, 6842, 12),
-      createMockRecord(1, 18, 9230, 8),
-      createMockRecord(2, null, 12012),
-      createMockRecord(4, 8, 3540, 16),
-      createMockRecord(6, 20, 10120, 14),
-      createMockRecord(8, 7, 2810, 5),
-      createMockRecord(33, null, 9876),
-      createMockRecord(35, 18, 7640, 18),
-      createMockRecord(38, 12, 5430, 30),
-      createMockRecord(41, 20, 11020, 24),
-    ]),
+    records: sortRecordsByLatest([]),
     settings: {
       strideLength: DEFAULT_STRIDE_LENGTH,
-      recordsUserId: '',
     },
   };
 }

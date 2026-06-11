@@ -24,8 +24,6 @@ import {
   buildMedicationRanking,
   buildMedicationTimeOfDaySummary,
   buildMedicationTrend,
-  filterMedicationPurchasesByUserId,
-  filterMedicationRecordsByUserId,
 } from '../../services/medication';
 import type { MedicationPurchaseRecord, MedicationRecord } from '../../types/medication';
 
@@ -83,8 +81,8 @@ export function MedicationAnalysisSection({
 }: MedicationAnalysisSectionProps) {
   const [trendDays, setTrendDays] = useState<(typeof MEDICATION_TREND_RANGE_OPTIONS)[number]>(30);
 
-  const filteredRecords = useMemo(() => filterMedicationRecordsByUserId(records), [records]);
-  const filteredPurchases = useMemo(() => filterMedicationPurchasesByUserId(purchases), [purchases]);
+  const filteredRecords = useMemo(() => records, [records]);
+  const filteredPurchases = useMemo(() => purchases, [purchases]);
   const overview = useMemo(() => buildMedicationOverview(records, purchases), [records, purchases]);
   const trendData = useMemo(() => buildMedicationTrend(records, trendDays), [records, trendDays]);
   const rankingData = useMemo(() => buildMedicationRanking(records), [records]);

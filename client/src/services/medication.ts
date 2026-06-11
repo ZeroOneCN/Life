@@ -151,38 +151,6 @@ function materializeSummary(input: SummaryInput, existing?: MedicationDailySumma
   };
 }
 
-function createMockMedicationRecord(
-  daysAgo: number,
-  draft: Omit<MedicationRecordDraft, 'userId' | 'date'>,
-): MedicationRecord {
-  return materializeMedicationRecord({
-    date: dayjs().subtract(daysAgo, 'day').format(DATE_FORMAT),
-    ...draft,
-  });
-}
-
-function createMockPurchase(
-  daysAgo: number,
-  draft: Omit<MedicationPurchaseDraft, 'userId' | 'purchaseDate'>,
-): MedicationPurchaseRecord {
-  return materializeMedicationPurchase({
-    purchaseDate: dayjs().subtract(daysAgo, 'day').format(DATE_FORMAT),
-    ...draft,
-  });
-}
-
-export function filterMedicationRecordsByUserId(records: MedicationRecord[]): MedicationRecord[] {
-  return records;
-}
-
-export function filterMedicationPurchasesByUserId(records: MedicationPurchaseRecord[]): MedicationPurchaseRecord[] {
-  return records;
-}
-
-export function filterMedicationSummariesByUserId(records: MedicationDailySummary[]): MedicationDailySummary[] {
-  return records;
-}
-
 export function createMedicationRecord(records: MedicationRecord[], draft: MedicationRecordDraft) {
   return sortMedicationRecords([materializeMedicationRecord(draft), ...records]);
 }
@@ -246,8 +214,8 @@ export function buildMedicationOverview(
   records: MedicationRecord[],
   purchases: MedicationPurchaseRecord[],
 ): MedicationOverviewSummary {
-  const filteredRecords = filterMedicationRecordsByUserId(records);
-  const filteredPurchases = filterMedicationPurchasesByUserId(purchases);
+  const filteredRecords = records;
+  const filteredPurchases = purchases;
   const totalDosage = filteredRecords.reduce((sum, record) => sum + getRecordTotalDose(record), 0);
   const trackedDays = new Set(filteredRecords.map((record) => dayjs(record.date).format(DATE_FORMAT))).size;
   const activeMedicineCount = new Set(filteredRecords.map((record) => record.medicineName)).size;
@@ -270,7 +238,7 @@ export function buildMedicationOverview(
 }
 
 export function buildMedicationTrend(records: MedicationRecord[], days: number): MedicationTrendPoint[] {
-  const filteredRecords = filterMedicationRecordsByUserId(records);
+  const filteredRecords = records;
   const dateMap = new Map<string, MedicationTrendPoint>();
 
   Array.from({ length: days }, (_, index) => {
@@ -302,7 +270,7 @@ export function buildMedicationTrend(records: MedicationRecord[], days: number):
 }
 
 export function buildMedicationTimeOfDaySummary(records: MedicationRecord[]): MedicationTimeOfDaySummary {
-  return filterMedicationRecordsByUserId(records).reduce<MedicationTimeOfDaySummary>((summary, record) => ({
+  return records.reduce<MedicationTimeOfDaySummary>((summary, record) => ({
     breakfast: summary.breakfast + record.breakfast,
     lunch: summary.lunch + record.lunch,
     dinner: summary.dinner + record.dinner,
@@ -315,7 +283,7 @@ export function buildMedicationTimeOfDaySummary(records: MedicationRecord[]): Me
 
 export function buildMedicationRanking(records: MedicationRecord[]): MedicationRankingPoint[] {
   const medicineMap = new Map<string, number>();
-  const filteredRecords = filterMedicationRecordsByUserId(records);
+  const filteredRecords = records;
   const totalDosage = filteredRecords.reduce((sum, record) => sum + getRecordTotalDose(record), 0);
 
   filteredRecords.forEach((record) => {
@@ -341,8 +309,8 @@ export function buildMedicationStockSummary(
   defaultThreshold: number,
   medicineThresholds: Record<string, number>,
 ): MedicationStockInsight[] {
-  const filteredRecords = filterMedicationRecordsByUserId(records);
-  const filteredPurchases = filterMedicationPurchasesByUserId(purchases);
+  const filteredRecords = records;
+  const filteredPurchases = purchases;
   const medicineNames = new Map<string, string>();
 
   filteredRecords.forEach((record) => medicineNames.set(normalizeMedicineKey(record.medicineName), record.medicineName.trim()));
@@ -466,74 +434,11 @@ export function buildMedicationLowStockItems(
     .filter((item) => item.status === 'low');
 }
 
-function buildInitialSummaries() {
-  return sortSummaries([
-    materializeSummary({
-      date: dayjs().format(DATE_FORMAT),
-      content: '今天症状较轻，早餐和晚餐按计划服药，午后未出现明显不适。',
-    }),
-    materializeSummary({
-      date: dayjs().subtract(2, 'day').format(DATE_FORMAT),
-      content: '连续几天按时服药后睡眠更稳定，建议继续观察一周。',
-    }),
-  ]);
-}
-
 export function buildInitialMedicationState(): MedicationPageState {
   return {
-    records: sortMedicationRecords([
-      createMockMedicationRecord(0, {
-        medicineName: '维生素 C',
-        breakfast: 1,
-        lunch: 0,
-        dinner: 1,
-      }),
-      createMockMedicationRecord(1, {
-        medicineName: '感冒灵',
-        breakfast: 1,
-        lunch: 1,
-        dinner: 1,
-      }),
-      createMockMedicationRecord(2, {
-        medicineName: '维生素 C',
-        breakfast: 1,
-        lunch: 0,
-        dinner: 1,
-      }),
-      createMockMedicationRecord(4, {
-        medicineName: '褪黑素',
-        breakfast: 0,
-        lunch: 0,
-        dinner: 1,
-      }),
-    ]),
-    purchases: sortPurchases([
-      createMockPurchase(8, {
-        medicineName: '维生素 C',
-        quantity: 6,
-        unit: '片',
-        unitPrice: 1.2,
-        totalPrice: 7.2,
-        channel: '京东',
-      }),
-      createMockPurchase(20, {
-        medicineName: '感冒灵',
-        quantity: 12,
-        unit: '袋',
-        unitPrice: 1.5,
-        totalPrice: 18,
-        channel: '药店',
-      }),
-      createMockPurchase(35, {
-        medicineName: '褪黑素',
-        quantity: 30,
-        unit: '粒',
-        unitPrice: 0.8,
-        totalPrice: 24,
-        channel: '淘宝',
-      }),
-    ]),
-    summaries: buildInitialSummaries(),
+    records: sortMedicationRecords([]),
+    purchases: sortPurchases([]),
+    summaries: sortSummaries([]),
     settings: {
       doseReminderEnabled: true,
       stockReminderEnabled: true,

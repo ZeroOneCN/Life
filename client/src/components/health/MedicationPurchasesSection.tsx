@@ -10,7 +10,6 @@ import {
   MEDICATION_UNITS,
   createMedicationPurchase,
   deleteMedicationPurchase,
-  filterMedicationPurchasesByUserId,
   updateMedicationPurchase,
 } from '../../services/medication';
 import type { MedicationPurchaseDraft, MedicationPurchaseRecord } from '../../types/medication';
@@ -126,7 +125,7 @@ export function MedicationPurchasesSection({
   const filteredPurchases = useMemo(() => {
     const normalizedKeyword = medicineKeyword.trim().toLowerCase();
 
-    return filterMedicationPurchasesByUserId(purchases)
+    return purchases
       .filter((record) => (!normalizedKeyword || record.medicineName.toLowerCase().includes(normalizedKeyword)))
       .filter((record) => (!channel || record.channel === channel))
       .filter((record) => (!startDate || record.purchaseDate >= startDate))
@@ -297,12 +296,6 @@ export function MedicationPurchasesSection({
         </form>
 
         <div className="medication-filter-grid medication-filter-grid-purchase">
-          {/* <Field
-            label="记录用户 ID"
-            value={filterUserId}
-            onChange={(event) => onFilterUserIdChange(event.target.value)}
-            placeholder="留空查看全部用户"
-          /> */}
           <Field
             label="药品名称"
             value={medicineKeyword}

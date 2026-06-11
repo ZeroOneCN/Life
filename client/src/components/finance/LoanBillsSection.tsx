@@ -238,7 +238,6 @@ export function LoanBillsSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          账单固定归属当前登录用户，不再提供用户 ID 输入框。
           选择平台和账单月份后，会按平台规则自动给出默认到期日。
         </div>
 

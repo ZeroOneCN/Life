@@ -353,12 +353,6 @@ export function CheckupRecordsSection({
         </div>
 
         <div className="checkup-filter-grid">
-          {/* <Field
-            label="记录用户 ID"
-            value={filterUserId}
-            onChange={(event) => onFilterUserIdChange(event.target.value)}
-            placeholder="留空查看全部用户"
-          /> */}
           <Field
             label="关键词"
             value={keyword}

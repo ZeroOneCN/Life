@@ -403,13 +403,6 @@ export function buildCheckupInsights(records: CheckupRecord[], leadDays: number)
   return insights.slice(0, 4);
 }
 
-function createMockRecord(daysAgo: number, draft: Omit<CheckupRecordDraft, 'testDate'>): CheckupRecord {
-  return materializeCheckupRecord({
-    testDate: dayjs().subtract(daysAgo, 'day').format(DATE_FORMAT),
-    ...draft,
-  });
-}
-
 function buildDefaultTemplates() {
   return [
     normalizeTemplate({
@@ -435,53 +428,7 @@ function buildDefaultTemplates() {
 
 export function buildInitialCheckupState(): CheckupPageState {
   return {
-    records: sortRecords([
-      createMockRecord(90, {
-        testType: '年度体检',
-        testName: '空腹血糖',
-        value: 5.3,
-        unit: 'mmol/L',
-        referenceRange: '3.9-6.1',
-        notes: '年度体检常规项目',
-      }),
-      createMockRecord(60, {
-        testType: '年度体检',
-        testName: '总胆固醇',
-        value: 5.7,
-        unit: 'mmol/L',
-        referenceRange: '<5.2',
-        notes: '建议控制饮食',
-        followUpDate: dayjs().add(3, 'day').format(DATE_FORMAT),
-      }),
-      createMockRecord(45, {
-        testType: '生化检查',
-        testName: 'ALT',
-        value: 52,
-        unit: 'U/L',
-        referenceRange: '7-40',
-        notes: '复查肝功能',
-        followUpDate: dayjs().subtract(2, 'day').format(DATE_FORMAT),
-      }),
-      createMockRecord(20, {
-        testType: '复查',
-        testName: 'ALT',
-        value: 45,
-        unit: 'U/L',
-        referenceRange: '7-40',
-        notes: '较上次回落',
-        status: 'attention',
-        followUpDate: dayjs().add(10, 'day').format(DATE_FORMAT),
-      }),
-      createMockRecord(15, {
-        testType: '年度体检',
-        testName: '尿酸',
-        value: 455,
-        unit: 'μmol/L',
-        referenceRange: '208-428',
-        notes: '偏高，建议饮水并复查',
-        followUpDate: dayjs().add(7, 'day').format(DATE_FORMAT),
-      }),
-    ]),
+    records: sortRecords([]),
     templates: buildDefaultTemplates(),
     settings: {
       reminderEnabled: true,

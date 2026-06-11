@@ -113,28 +113,6 @@ function sortPlatforms(platforms: ShoppingPlatform[]) {
   });
 }
 
-function createMockRecord(
-  draft: Omit<ShoppingRecordDraft, 'userId' | 'ledgerId' | 'date'> & { ledgerId: string; daysAgo: number },
-): ShoppingRecord {
-  const date = dayjs().subtract(draft.daysAgo, 'day').format(DATE_FORMAT);
-  const timestamp = dayjs(`${date}T09:30`).format(DATE_TIME_FORMAT);
-
-  return {
-    id: buildId(),
-    ledgerId: draft.ledgerId,
-    date,
-    platform: draft.platform,
-    itemName: draft.itemName,
-    spec: draft.spec ?? '',
-    price: draft.price,
-    unitPrice: draft.unitPrice ?? null,
-    orderNo: draft.orderNo ?? '',
-    note: draft.note ?? '',
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  };
-}
-
 function createInitialLedgers(): ShoppingLedger[] {
   const now = dayjs().format(DATE_TIME_FORMAT);
 
@@ -261,74 +239,7 @@ export function buildInitialShoppingState(): ShoppingPageState {
   const platforms = createInitialPlatforms();
 
   return {
-    records: sortRecords([
-      createMockRecord({
-        ledgerId: 'ledger-general',
-        daysAgo: 1,
-        platform: '京东',
-        itemName: '显示器支架',
-        spec: '铝合金双臂',
-        price: 289,
-        unitPrice: 289,
-        orderNo: 'JD-20260523-01',
-        note: '书桌升级',
-      }),
-      createMockRecord({
-        ledgerId: 'ledger-general',
-        daysAgo: 4,
-        platform: '拼多多',
-        itemName: '厨房收纳盒',
-        spec: '3件套',
-        price: 68,
-        unitPrice: 22.67,
-        orderNo: 'PDD-20260520-03',
-        note: '补齐调料分装',
-      }),
-      createMockRecord({
-        ledgerId: 'ledger-home',
-        daysAgo: 18,
-        platform: '淘宝',
-        itemName: '落地灯',
-        spec: '暖光款',
-        price: 399,
-        unitPrice: 399,
-        orderNo: 'TB-20260506-08',
-        note: '客厅氛围灯',
-      }),
-      createMockRecord({
-        ledgerId: 'ledger-general',
-        daysAgo: 7,
-        platform: '抖音',
-        itemName: '运动短袖',
-        spec: '黑色 L',
-        price: 129,
-        unitPrice: 129,
-        orderNo: 'DY-20260517-06',
-        note: '',
-      }),
-      createMockRecord({
-        ledgerId: 'ledger-home',
-        daysAgo: 26,
-        platform: '京东',
-        itemName: '空气净化器滤芯',
-        spec: '一组2枚',
-        price: 259,
-        unitPrice: 129.5,
-        orderNo: 'JD-20260428-09',
-        note: '季度更换',
-      }),
-      createMockRecord({
-        ledgerId: 'ledger-general',
-        daysAgo: 40,
-        platform: '美团',
-        itemName: '日用品闪购',
-        spec: '洗衣液+抽纸',
-        price: 87,
-        unitPrice: null,
-        orderNo: '',
-        note: '急用补货',
-      }),
-    ]),
+    records: sortRecords([]),
     ledgers,
     platforms,
     settings: {

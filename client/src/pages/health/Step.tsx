@@ -25,7 +25,6 @@ import type {
 
 const EMPTY_SETTINGS: StepPageState['settings'] = {
   strideLength: 0.7,
-  recordsUserId: '',
 };
 
 const EMPTY_COMPARE: StepMonthCompareSummary = {
@@ -275,11 +274,7 @@ export default function StepPage() {
 
       <StepRecordsSection
         reloadKey={reloadKey}
-        filterUserId={settings.recordsUserId}
         strideLength={settings.strideLength}
-        onFilterUserIdChange={(value) => {
-          void updateSettings({ recordsUserId: value });
-        }}
         onUpdateRecord={(id, draft) => {
           void (async () => {
             try {

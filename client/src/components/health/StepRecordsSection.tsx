@@ -20,9 +20,7 @@ type SortDirection = 'asc' | 'desc';
 
 interface StepRecordsSectionProps {
   reloadKey?: number;
-  filterUserId: string;
   strideLength: number;
-  onFilterUserIdChange: (value: string) => void;
   onUpdateRecord: (id: string, draft: StepRecordDraft) => void;
   onDeleteRecord: (id: string) => void;
   onDeleteRecords: (ids: string[]) => void;
@@ -41,9 +39,7 @@ const PAGE_SIZE = 10;
 
 export function StepRecordsSection({
   reloadKey,
-  filterUserId,
   strideLength,
-  onFilterUserIdChange,
   onUpdateRecord,
   onDeleteRecord,
   onDeleteRecords,
@@ -54,7 +50,6 @@ export function StepRecordsSection({
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editingRecord, setEditingRecord] = useState<StepRecord | null>(null);
-  const [editingUserId, setEditingUserId] = useState('');
   const [editingSteps, setEditingSteps] = useState('');
   const [editingHour, setEditingHour] = useState<StepHour>(null);
   const [editingRecordTime, setEditingRecordTime] = useState('');
@@ -85,7 +80,7 @@ export function StepRecordsSection({
     } finally {
       setLoading(false);
     }
-  }, [page, filterUserId, reloadKey]);
+  }, [page, reloadKey]);
 
   useEffect(() => {
     void loadRecords();
@@ -150,7 +145,6 @@ export function StepRecordsSection({
 
   const closeEditModal = () => {
     setEditingRecord(null);
-    setEditingUserId('');
     setEditingSteps('');
     setEditingHour(null);
     setEditingRecordTime('');
@@ -186,13 +180,6 @@ export function StepRecordsSection({
     <SectionCard title="记录管理" description="支持按用户筛选、排序、分页、编辑和批量删除。">
       <div className="page-stack">
         <div className="step-filter-grid">
-          {/* <Field
-            label="记录用户 ID"
-            placeholder="留空查看全部用户"
-            value={filterUserId}
-            onChange={(event) => onFilterUserIdChange(event.target.value)}
-            hint="用于筛选当前列表，留空时会显示全部用户记录。"
-          /> */}
         </div>
 
         <div className="step-records-toolbar">
@@ -222,7 +209,6 @@ export function StepRecordsSection({
           </div>
           <span className="subtle-text">
             共 {totalRecords} 条记录
-            {filterUserId.trim() ? `（用户 ${filterUserId.trim()}）` : '（全部用户）'}
             {selectedIds.length ? `，已选择 ${selectedIds.length} 条` : ''}
           </span>
         </div>
@@ -296,7 +282,7 @@ export function StepRecordsSection({
         ) : (
           <EmptyState
             title="还没有步数记录"
-            description={filterUserId.trim() ? '这个用户当前还没有记录。' : '先在上方录入一条记录，这里会自动展示可管理的列表。'}
+            description="先在上方录入一条记录，这里会自动展示可管理的列表。"
           />
         )}
       </div>

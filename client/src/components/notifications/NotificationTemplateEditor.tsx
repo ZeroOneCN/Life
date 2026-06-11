@@ -18,7 +18,6 @@ const TEMPLATE_VARIABLES: { token: string; description: string }[] = [
   { token: '{{title}}', description: '通知标题' },
   { token: '{{message}}', description: '业务消息正文' },
   { token: '{{date}}', description: '当前时间（YYYY-MM-DD HH:mm:ss）' },
-  { token: '{{userId}}', description: '当前用户 ID' },
   { token: '{{meta.xxx}}', description: '调用方传入的额外业务字段（如 {{meta.amount}}）' },
 ];
 

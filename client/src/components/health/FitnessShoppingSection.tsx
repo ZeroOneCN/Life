@@ -244,7 +244,6 @@ export function FitnessShoppingSection({
             value={filterDate}
             onChange={setFilterDate}
             placeholder="按日期筛选"
-            hint="留空时显示全部采购记录。"
           />
         </div>
 

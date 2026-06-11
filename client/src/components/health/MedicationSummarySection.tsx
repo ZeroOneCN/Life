@@ -11,8 +11,6 @@ import {
   MEDICATION_REMINDER_META,
   buildMedicationLowStockItems,
   buildMedicationStockSummary,
-  filterMedicationRecordsByUserId,
-  filterMedicationSummariesByUserId,
 } from '../../services/medication';
 import { useNotificationCenterState } from '../../services/notificationCenter';
 import type {
@@ -84,7 +82,7 @@ export function MedicationSummarySection({
   const [summaryText, setSummaryText] = useState('');
 
   const filteredSummaries = useMemo(
-    () => filterMedicationSummariesByUserId(summaries),
+    () => summaries,
     [summaries],
   );
   const monthlySummaries = useMemo(
@@ -96,7 +94,7 @@ export function MedicationSummarySection({
     [filteredSummaries, selectedDate],
   );
   const selectedDateTotal = useMemo(
-    () => filterMedicationRecordsByUserId(records)
+    () => records
       .filter((record) => record.date === selectedDate)
       .reduce((sum, record) => sum + record.breakfast + record.lunch + record.dinner, 0),
     [records, selectedDate],

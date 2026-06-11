@@ -343,7 +343,6 @@ export function FitnessDietSection({
             value={filterDate}
             onChange={setFilterDate}
             placeholder="按日期筛选"
-            hint="留空时显示全部饮食记录。"
           />
         </div>
 

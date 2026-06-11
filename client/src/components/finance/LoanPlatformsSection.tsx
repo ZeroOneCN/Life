@@ -155,7 +155,6 @@ export function LoanPlatformsSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          平台已固定为当前登录用户所有，不再支持手动填写用户 ID。
           若平台仍被账单或还款记录引用，将不能直接删除。
         </div>
 

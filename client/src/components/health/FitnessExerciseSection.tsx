@@ -320,7 +320,6 @@ export function FitnessExerciseSection({
             value={filterDate}
             onChange={setFilterDate}
             placeholder="按日期筛选"
-            hint="留空时显示全部运动记录。"
           />
         </div>
 

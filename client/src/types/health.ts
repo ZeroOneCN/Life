@@ -25,7 +25,6 @@ export interface StepPageState {
   records: StepRecord[];
   settings: {
     strideLength: number;
-    recordsUserId: string;
   };
 }
 

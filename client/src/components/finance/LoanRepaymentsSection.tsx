@@ -254,7 +254,6 @@ export function LoanRepaymentsSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          页面已固定按当前登录用户工作，不再显示用户 ID 输入。
           若选择关联账单，会自动带出平台、本金和利息。
         </div>
 
