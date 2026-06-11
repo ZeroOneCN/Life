@@ -130,82 +130,11 @@ function normalizeRecord(
 }
 
 function createInitialChannels(): RentChannel[] {
-  const now = dayjs().format(DATE_TIME_FORMAT);
-
-  return sortChannels([
-    { id: 'rent-channel-ziroom', name: '自如', createdAt: now, updatedAt: now },
-    { id: 'rent-channel-lianjia', name: '链家', createdAt: now, updatedAt: now },
-    { id: 'rent-channel-landlord', name: '房东直租', createdAt: now, updatedAt: now },
-    { id: 'rent-channel-beike', name: '贝壳', createdAt: now, updatedAt: now },
-  ]);
+  return [];
 }
 
-function createInitialRecords(channels: RentChannel[]): RentHousingRecord[] {
-  const channelMap = Object.fromEntries(channels.map((channel) => [channel.id, channel]));
-  const now = dayjs().format(DATE_TIME_FORMAT);
-
-  return sortRecords([
-    {
-      id: 'rent-record-1',
-      address: '上海市浦东新区锦绣路 1888 弄 8 号 1202',
-      channelId: 'rent-channel-ziroom',
-      channelName: channelMap['rent-channel-ziroom']?.name ?? '自如',
-      moveInDate: dayjs().subtract(95, 'day').format(DATE_FORMAT),
-      moveOutDate: '',
-      rent: 5200,
-      deposit: 5200,
-      electricityFee: 268,
-      waterFee: 96,
-      gasFee: 44,
-      agencyFee: 0,
-      cleaningFee: 80,
-      laundryFee: 42,
-      serviceFee: 180,
-      notes: '地铁步行 8 分钟，物业相对稳定。',
-      createdAt: now,
-      updatedAt: now,
-    },
-    {
-      id: 'rent-record-2',
-      address: '杭州市西湖区古荆新村 23 幢 402',
-      channelId: 'rent-channel-lianjia',
-      channelName: channelMap['rent-channel-lianjia']?.name ?? '链家',
-      moveInDate: dayjs().subtract(280, 'day').format(DATE_FORMAT),
-      moveOutDate: dayjs().subtract(130, 'day').format(DATE_FORMAT),
-      rent: 4100,
-      deposit: 4100,
-      electricityFee: 182,
-      waterFee: 74,
-      gasFee: 38,
-      agencyFee: 1800,
-      cleaningFee: 65,
-      laundryFee: 36,
-      serviceFee: 120,
-      notes: '合租转整租前的过渡住房。',
-      createdAt: now,
-      updatedAt: now,
-    },
-    {
-      id: 'rent-record-3',
-      address: '深圳市南山区后海大道 99 号 3 栋 1706',
-      channelId: 'rent-channel-beike',
-      channelName: channelMap['rent-channel-beike']?.name ?? '贝壳',
-      moveInDate: dayjs().subtract(44, 'day').format(DATE_FORMAT),
-      moveOutDate: '',
-      rent: 6800,
-      deposit: 6800,
-      electricityFee: 226,
-      waterFee: 88,
-      gasFee: 0,
-      agencyFee: 2200,
-      cleaningFee: 90,
-      laundryFee: 0,
-      serviceFee: 240,
-      notes: '近办公室，当前仍在住。',
-      createdAt: now,
-      updatedAt: now,
-    },
-  ]);
+function createInitialRecords(_channels: RentChannel[]): RentHousingRecord[] {
+  return [];
 }
 
 export function formatRentAmount(value: number) {
