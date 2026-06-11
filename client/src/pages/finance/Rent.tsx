@@ -192,6 +192,7 @@ export default function RentPage() {
           cleaningFee: item.cleaningFee,
           laundryFee: item.laundryFee,
           serviceFee: item.serviceFee,
+          orientation: item.orientation,
           notes: item.notes,
         })),
         ...updated.map(async (item) => rentApi.updateRecord(item.id, {
@@ -209,6 +210,7 @@ export default function RentPage() {
           cleaningFee: item.cleaningFee,
           laundryFee: item.laundryFee,
           serviceFee: item.serviceFee,
+          orientation: item.orientation,
           notes: item.notes,
         })),
         ...deletedIds.map((id) => rentApi.deleteRecord(id)),

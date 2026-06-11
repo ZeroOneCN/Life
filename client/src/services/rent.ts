@@ -131,6 +131,7 @@ function normalizeRecord(
     cleaningFee: toMoney(record.cleaningFee, 0),
     laundryFee: toMoney(record.laundryFee, 0),
     serviceFee: toMoney(record.serviceFee, 0),
+    orientation: normalizeTrimmedValue(record.orientation),
     notes: normalizeTrimmedValue(record.notes),
     createdAt,
     updatedAt,
@@ -331,6 +332,7 @@ export function createRentRecord(channels: RentChannel[], records: RentHousingRe
       cleaningFee: toMoney(draft.cleaningFee, 0),
       laundryFee: toMoney(draft.laundryFee, 0),
       serviceFee: toMoney(draft.serviceFee, 0),
+      orientation: draft.orientation ?? '',
       notes: draft.notes?.trim() ?? '',
       createdAt: now,
       updatedAt: now,
@@ -369,6 +371,7 @@ export function updateRentRecord(
       cleaningFee: toMoney(draft.cleaningFee, 0),
       laundryFee: toMoney(draft.laundryFee, 0),
       serviceFee: toMoney(draft.serviceFee, 0),
+      orientation: draft.orientation ?? record.orientation,
       notes: draft.notes?.trim() ?? '',
       updatedAt: dayjs().format(DATE_TIME_FORMAT),
     };

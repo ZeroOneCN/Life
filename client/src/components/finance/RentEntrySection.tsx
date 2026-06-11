@@ -40,8 +40,24 @@ interface RentFormState {
   cleaningFee: string;
   laundryFee: string;
   serviceFee: string;
+  orientation: string;
   notes: string;
 }
+
+/** 房屋朝向选项 */
+const ORIENTATION_OPTIONS = [
+  { value: '', label: '未选择' },
+  { value: '东', label: '东' },
+  { value: '南', label: '南' },
+  { value: '西', label: '西' },
+  { value: '北', label: '北' },
+  { value: '东南', label: '东南' },
+  { value: '东北', label: '东北' },
+  { value: '西南', label: '西南' },
+  { value: '西北', label: '西北' },
+  { value: '南北', label: '南北' },
+  { value: '东西', label: '东西' },
+];
 
 function toInputNumber(value: number) {
   return value ? String(value) : '';
@@ -65,6 +81,7 @@ function createDefaultFormState(activeUserId: string, channels: RentChannel[]): 
     cleaningFee: '',
     laundryFee: '',
     serviceFee: '',
+    orientation: '',
     notes: '',
   };
 }
@@ -85,6 +102,7 @@ function buildFormState(record: RentHousingRecord): RentFormState {
     cleaningFee: toInputNumber(record.cleaningFee),
     laundryFee: toInputNumber(record.laundryFee),
     serviceFee: toInputNumber(record.serviceFee),
+    orientation: record.orientation ?? '',
     notes: record.notes,
   };
 }
@@ -138,6 +156,7 @@ function parseDraft(form: RentFormState): RentHousingRecordDraft | null {
     cleaningFee,
     laundryFee,
     serviceFee,
+    orientation: form.orientation.trim(),
     notes: form.notes.trim(),
   };
 }
@@ -303,6 +322,18 @@ export function RentEntrySection({
                   onChange={(value) => setForm((previous) => ({ ...previous, moveOutDate: value }))}
                   placeholder="未退租可留空"
                 />
+              </div>
+
+              <div className="rent-entry-cell">
+                <SelectField
+                  label="房屋朝向"
+                  value={form.orientation}
+                  onChange={(event) => setForm((previous) => ({ ...previous, orientation: event.target.value }))}
+                >
+                  {ORIENTATION_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </SelectField>
               </div>
             </div>
           </div>

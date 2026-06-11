@@ -46,6 +46,9 @@ export class FinanceRentRecordEntity extends UserScopedEntity {
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   service_fee!: number;
 
+  @Column({ type: 'varchar', length: 32, default: '' })
+  orientation!: string;
+
   @Column({ type: 'text' })
   notes!: string;
 }

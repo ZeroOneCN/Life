@@ -32,6 +32,7 @@ const recordSchema = z.object({
   cleaningFee: z.number().min(0).optional().default(0),
   laundryFee: z.number().min(0).optional().default(0),
   serviceFee: z.number().min(0).optional().default(0),
+  orientation: z.string().optional().default(''),
   notes: z.string().optional().default(''),
 });
 
@@ -106,6 +107,7 @@ function mapRecord(entity: FinanceRentRecordEntity) {
     cleaningFee: Number(entity.cleaning_fee),
     laundryFee: Number(entity.laundry_fee),
     serviceFee: Number(entity.service_fee),
+    orientation: entity.orientation ?? '',
     notes: entity.notes,
     createdAt: entity.created_at.toISOString(),
     updatedAt: entity.updated_at.toISOString(),
@@ -186,6 +188,7 @@ export function createRentRouter() {
       cleaning_fee: payload.cleaningFee,
       laundry_fee: payload.laundryFee,
       service_fee: payload.serviceFee,
+      orientation: payload.orientation,
       notes: payload.notes,
     }));
 
@@ -228,6 +231,7 @@ export function createRentRouter() {
       cleaning_fee: payload.cleaningFee ?? current.cleaning_fee,
       laundry_fee: payload.laundryFee ?? current.laundry_fee,
       service_fee: payload.serviceFee ?? current.service_fee,
+      orientation: payload.orientation ?? current.orientation,
       notes: payload.notes ?? current.notes,
     });
 

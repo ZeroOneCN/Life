@@ -334,8 +334,14 @@ export function AssistantLauncher() {
     if (event.button !== 0) {
       return;
     }
-    const target = event.currentTarget as HTMLElement;
-    const rect = target.getBoundingClientRect();
+    const target = event.target as HTMLElement;
+    const currentTarget = event.currentTarget as HTMLElement;
+    // 仅在面板 header 拖拽时，点击内部按钮（关闭/清空）不启动拖拽；
+    // FAB 自身就是 button，不应被此逻辑拦截。
+    if (currentTarget.classList.contains('assistant-drag-handle') && target.closest('button')) {
+      return;
+    }
+    const rect = currentTarget.getBoundingClientRect();
     dragStateRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -347,7 +353,7 @@ export function AssistantLauncher() {
     };
     setIsDragging(true);
     try {
-      target.setPointerCapture(event.pointerId);
+      currentTarget.setPointerCapture(event.pointerId);
     } catch (error) {
       // 某些浏览器对非指针元素会抛错，忽略
     }

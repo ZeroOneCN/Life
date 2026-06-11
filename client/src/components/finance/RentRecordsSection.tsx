@@ -114,6 +114,13 @@ export function RentRecordsSection({
     { key: 'channelName', title: '渠道', dataIndex: 'channelName' as const, align: 'center' as const },
     { key: 'moveInDate', title: '入住日期', dataIndex: 'moveInDate' as const, align: 'center' as const },
     {
+      key: 'orientation',
+      title: '朝向',
+      dataIndex: 'orientation' as const,
+      align: 'center' as const,
+      render: (value: unknown) => (value as string) || '-',
+    },
+    {
       key: 'moveOutDate',
       title: '退租日期',
       align: 'center' as const,
@@ -237,6 +244,10 @@ export function RentRecordsSection({
               <div className="callout callout-neutral">
                 <strong>退租日期</strong>
                 <span>{detailRecord.moveOutDate || '仍在住'}</span>
+              </div>
+              <div className="callout callout-neutral">
+                <strong>房屋朝向</strong>
+                <span>{detailRecord.orientation || '-'}</span>
               </div>
             </div>
 

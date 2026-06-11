@@ -19,6 +19,7 @@ export interface RentHousingRecord {
   cleaningFee: number;
   laundryFee: number;
   serviceFee: number;
+  orientation: string;
   notes: string;
   createdAt: string;
   updatedAt: string;
@@ -39,6 +40,7 @@ export interface RentHousingRecordDraft {
   cleaningFee?: number;
   laundryFee?: number;
   serviceFee?: number;
+  orientation?: string;
   notes?: string;
 }
 
