@@ -21,6 +21,7 @@ type SortDirection = 'asc' | 'desc';
 interface StepRecordsSectionProps {
   reloadKey?: number;
   filterUserId: string;
+  userLabel?: string;
   strideLength: number;
   onFilterUserIdChange: (value: string) => void;
   onUpdateRecord: (id: string, draft: StepRecordDraft) => void;
@@ -42,6 +43,7 @@ const PAGE_SIZE = 10;
 export function StepRecordsSection({
   reloadKey,
   filterUserId,
+  userLabel,
   strideLength,
   onFilterUserIdChange,
   onUpdateRecord,
@@ -291,7 +293,7 @@ export function StepRecordsSection({
                           }}
                         />
                       </td>
-                      <td>{record.userId}</td>
+                      <td>{userLabel || '当前用户'}</td>
                       <td>{record.steps.toLocaleString()}</td>
                       <td>{getStepHourLabel(record.hour)}</td>
                       <td>{formatStepRecordTime(record.recordTime)}</td>

@@ -15,6 +15,7 @@ import type { CheckupPageState, CheckupRecord } from '../../types/checkup';
 
 interface CheckupInsightsSectionProps {
   records: CheckupRecord[];
+  userLabel?: string;
   settings: CheckupPageState['settings'];
   onSettingsChange: (patch: Partial<CheckupPageState['settings']>) => void;
   onReminderToggle: (checked: boolean) => void;
@@ -23,6 +24,7 @@ interface CheckupInsightsSectionProps {
 
 export function CheckupInsightsSection({
   records,
+  userLabel,
   settings,
   onSettingsChange,
   onReminderToggle,
@@ -148,8 +150,8 @@ export function CheckupInsightsSection({
                   },
                   {
                     key: 'userId',
-                    title: '用户 ID',
-                    dataIndex: 'userId',
+                    title: '归属用户',
+                    render: () => userLabel || '当前用户',
                   },
                   {
                     key: 'followUpDate',

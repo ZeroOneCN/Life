@@ -281,6 +281,7 @@ export default function StepPage() {
       <StepTrendSection
         reloadKey={reloadKey}
         userId={settings.statsUserId}
+        userLabel={currentUserLabel}
         strideLength={settings.strideLength}
         onUserIdChange={(value) => {
           void updateSettings({ statsUserId: value });
@@ -294,6 +295,7 @@ export default function StepPage() {
       <StepRecordsSection
         reloadKey={reloadKey}
         filterUserId={settings.recordsUserId}
+        userLabel={currentUserLabel}
         strideLength={settings.strideLength}
         onFilterUserIdChange={(value) => {
           void updateSettings({ recordsUserId: value });

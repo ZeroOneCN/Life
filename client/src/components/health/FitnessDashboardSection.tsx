@@ -1,4 +1,4 @@
-﻿import { useMemo, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import {
   Bar,
   BarChart,
@@ -36,6 +36,7 @@ import type {
 
 interface FitnessDashboardSectionProps {
   userId: string;
+  userLabel?: string;
   defaultHeightCm: number;
   dietRecords: DietRecord[];
   exerciseRecords: ExerciseRecord[];
@@ -73,6 +74,7 @@ function ChartCard({
 
 export function FitnessDashboardSection({
   userId,
+  userLabel,
   defaultHeightCm,
   dietRecords,
   exerciseRecords,
@@ -124,10 +126,9 @@ export function FitnessDashboardSection({
       <div className="page-stack">
         <div className="step-filter-grid">
           <Field
-            label="看板用户 ID"
-            placeholder="留空查看全部用户"
-            value={userId}
-            onChange={(event) => onUserIdChange(event.target.value)}
+            label="当前用户"
+            value={userLabel || (userId ? '当前登录用户' : '全部用户')}
+            readOnly
             hint="图表和汇总卡都会根据这里的用户筛选同步刷新。"
           />
         </div>
@@ -137,7 +138,7 @@ export function FitnessDashboardSection({
             {
               label: '近 30 天记录天数',
               value: `${overview.trackedDays}`,
-              helper: userId.trim() ? `用户 ${userId.trim()} 的活跃日期` : '当前为全部用户汇总',
+              helper: userLabel ? `${userLabel} 的活跃日期` : '当前为全部用户汇总',
             },
             {
               label: '今日净热量',

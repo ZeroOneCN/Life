@@ -216,6 +216,7 @@ export default function CheckupPage() {
       {tab === 'insights' ? (
         <CheckupInsightsSection
           records={records}
+          userLabel={currentUserLabel}
           settings={settings}
           onSettingsChange={(patch) => {
             void updateSettings(patch);
