@@ -244,7 +244,7 @@ function renderSceneBreakdown(scenes: DeepseekSceneUsage[]) {
     <div className="deepseek-usage-section deepseek-usage-section-scenes">
       <div className="deepseek-usage-section-head">
         <h4>按场景调用统计</h4>
-        <span>覆盖 AI 智能助理、健身饮食/运动等站内 AI 调用</span>
+        <span>覆盖 AI 助理、健身饮食/运动等站内 AI 调用</span>
       </div>
       <div className="deepseek-usage-scene-list">
         {orderedScenes.map((scene) => {

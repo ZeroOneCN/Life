@@ -4344,7 +4344,7 @@ textarea {
 
 /* 按场景调用统计 */
 .deepseek-usage-section-scenes {
-  border-top: 1px dashed var(--color-hairline, #e5e7eb);
+  border-top: 1px dashed var(--color-hairline);
   padding-top: 14px;
   margin-top: 4px;
 }
@@ -4360,9 +4360,9 @@ textarea {
   flex-direction: column;
   gap: 6px;
   padding: 10px 12px;
-  border: 1px solid var(--color-hairline, #e5e7eb);
+  border: 1px solid var(--color-hairline);
   border-radius: 10px;
-  background: var(--color-surface-soft, #f8fafc);
+  background: var(--color-surface-3, #f1f2f7);
 }
 
 .deepseek-usage-scene-head {
@@ -4388,7 +4388,7 @@ textarea {
 .deepseek-usage-scene-bar {
   position: relative;
   height: 6px;
-  background: var(--color-hairline, #e5e7eb);
+  background: var(--color-hairline, #e3e8ee);
   border-radius: 999px;
   overflow: hidden;
 }
