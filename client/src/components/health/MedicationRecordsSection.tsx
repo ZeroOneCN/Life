@@ -146,7 +146,6 @@ export function MedicationRecordsSection({
 
   const columns = useMemo(() => [
     { key: 'date', title: '日期', dataIndex: 'date' as const },
-    { key: 'userId', title: '归属用户', render: () => currentUserLabel },
     { key: 'medicineName', title: '药品名称', dataIndex: 'medicineName' as const },
     { key: 'breakfast', title: '早餐', render: (_value: unknown, row: MedicationRecord) => `${row.breakfast}` },
     { key: 'lunch', title: '午餐', render: (_value: unknown, row: MedicationRecord) => `${row.lunch}` },
@@ -212,10 +211,6 @@ export function MedicationRecordsSection({
       description="按日期记录药品在早餐、午餐、晚餐的使用情况，并支持按用量和日期范围回看。"
     >
       <div className="page-stack">
-        <div className="callout callout-info">
-          当前录入用户为 <strong>{currentUserLabel}</strong>，新的用药记录会默认归属当前登录用户。
-        </div>
-
         <form className="medication-entry-grid" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <DatePickerField
             label="日期"
@@ -327,10 +322,6 @@ export function MedicationRecordsSection({
       >
         <div className="medication-modal-layout">
           <div className="medication-modal-summary">
-            <div className="medication-modal-summary-card">
-              <span className="medication-modal-summary-label">当前用户</span>
-              <strong>{currentUserLabel}</strong>
-            </div>
             <div className="medication-modal-summary-card">
               <span className="medication-modal-summary-label">记录日期</span>
               <strong>{editingForm.date || '-'}</strong>

@@ -23,7 +23,6 @@ type ChartHourFilter = 'all' | StepConcreteHour;
 interface StepTrendSectionProps {
   reloadKey?: number;
   userId: string;
-  userLabel?: string;
   strideLength: number;
   onUserIdChange: (value: string) => void;
   onStrideLengthChange: (value: number) => void;
@@ -68,7 +67,6 @@ function getCompareTone(trend: 'up' | 'down' | 'flat' | 'none') {
 export function StepTrendSection({
   reloadKey,
   userId,
-  userLabel,
   strideLength,
   onUserIdChange,
   onStrideLengthChange,
@@ -198,12 +196,6 @@ export function StepTrendSection({
         </div>
 
         <div className="step-filter-grid">
-          <Field
-            label="统计用户"
-            value={userLabel || (userId ? '当前登录用户' : '全部用户')}
-            readOnly
-            hint="支持按指定用户查看趋势，也可以留空统计全部用户。"
-          />
 
           <label className="field">
             <span className="field-label">步幅（米）</span>

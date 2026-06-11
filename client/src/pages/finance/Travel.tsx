@@ -363,11 +363,6 @@ export default function TravelPage() {
       <StatGrid
         items={[
           {
-            label: '当前用户',
-            value: currentUserLabel,
-            helper: authState.session?.user.email || '所有数据默认按当前登录用户隔离',
-          },
-          {
             label: '当前账本',
             value: activeBook?.name ?? '未选择账本',
             helper: activeBook ? `${activeBook.startDate}${activeBook.endDate ? ` - ${activeBook.endDate}` : ''}` : '先创建一个账本再录入明细',
@@ -463,7 +458,6 @@ export default function TravelPage() {
       {tab === 'leaderboard' ? (
         <TravelLeaderboardSection
           userId={settings.leaderboardUserId}
-          userLabel={currentUserLabel}
           books={books}
           records={records}
           onUserIdChange={() => {

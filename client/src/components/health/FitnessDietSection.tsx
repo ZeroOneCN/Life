@@ -265,10 +265,6 @@ export function FitnessDietSection({
       description="记录每日进食结构、热量和三大营养素，用于看板和健康建议分析。"
     >
       <div className="page-stack">
-        <div className="callout callout-info">
-          当前录入用户：<strong>{currentUserLabel}</strong>。饮食记录默认直接归属当前登录用户。
-        </div>
-
         <form className="form-grid fitness-entry-grid fitness-entry-grid-diet" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <DatePickerField
             label="记录日期"

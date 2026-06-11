@@ -67,11 +67,6 @@ export function StepEntryForm({
           }
           onSubmit();
         }}>
-          <Field
-            label="当前录入用户"
-            value={currentUserLabel}
-            disabled
-          />
 
           <label className="field">
             <span className="field-label">步数</span>

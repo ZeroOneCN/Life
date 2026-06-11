@@ -31,7 +31,6 @@ import type { MedicationPurchaseRecord, MedicationRecord } from '../../types/med
 
 interface MedicationAnalysisSectionProps {
   userId: string;
-  userLabel?: string;
   records: MedicationRecord[];
   purchases: MedicationPurchaseRecord[];
   onUserIdChange: (value: string) => void;
@@ -82,7 +81,6 @@ function ChartCard({
 
 export function MedicationAnalysisSection({
   userId,
-  userLabel,
   records,
   purchases,
   onUserIdChange,
@@ -116,15 +114,6 @@ export function MedicationAnalysisSection({
       description="从趋势、时段和药品维度汇总当前用户的用药轨迹，同时补充购药金额背景。"
     >
       <div className="page-stack">
-        <div className="medication-filter-grid medication-filter-grid-analysis">
-          <Field
-            label="分析用户"
-            value={userLabel || (userId ? '当前登录用户' : '全部用户')}
-            readOnly
-            hint="趋势图、药品排行和金额统计都会基于这里的用户维度刷新。"
-          />
-        </div>
-
         <StatGrid
           items={[
             { label: '总记录数', value: `${overview.totalRecords}`, helper: `覆盖 ${overview.trackedDays} 个记录日` },

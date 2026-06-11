@@ -21,7 +21,6 @@ type SortDirection = 'asc' | 'desc';
 interface StepRecordsSectionProps {
   reloadKey?: number;
   filterUserId: string;
-  userLabel?: string;
   strideLength: number;
   onFilterUserIdChange: (value: string) => void;
   onUpdateRecord: (id: string, draft: StepRecordDraft) => void;
@@ -43,7 +42,6 @@ const PAGE_SIZE = 10;
 export function StepRecordsSection({
   reloadKey,
   filterUserId,
-  userLabel,
   strideLength,
   onFilterUserIdChange,
   onUpdateRecord,
@@ -252,7 +250,6 @@ export function StepRecordsSection({
                 <thead>
                   <tr>
                     <th style={{ width: 54 }}>选择</th>
-                    <th>用户 ID</th>
                     <th>
                       <button type="button" className="step-sort-button" onClick={() => toggleSort('steps')}>
                         步数
@@ -293,7 +290,6 @@ export function StepRecordsSection({
                           }}
                         />
                       </td>
-                      <td>{userLabel || '当前用户'}</td>
                       <td>{record.steps.toLocaleString()}</td>
                       <td>{getStepHourLabel(record.hour)}</td>
                       <td>{formatStepRecordTime(record.recordTime)}</td>

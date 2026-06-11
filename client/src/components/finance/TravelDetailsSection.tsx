@@ -535,11 +535,6 @@ export function TravelDetailsSection({
       >
         <div className="travel-modal-layout">
           <div className="travel-record-entry-grid">
-            <Field
-              label="当前录入用户"
-              value={currentUserLabel}
-              disabled
-            />
             <SelectField
               label="所属账本"
               value={editingForm.bookId}

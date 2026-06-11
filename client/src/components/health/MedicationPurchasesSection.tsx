@@ -172,7 +172,6 @@ export function MedicationPurchasesSection({
 
   const columns = useMemo(() => [
     { key: 'purchaseDate', title: '购买日期', dataIndex: 'purchaseDate' as const },
-    { key: 'userId', title: '归属用户', render: () => currentUserLabel },
     { key: 'medicineName', title: '药品名称', dataIndex: 'medicineName' as const },
     { key: 'quantity', title: '数量', render: (_value: unknown, row: MedicationPurchaseRecord) => `${row.quantity}` },
     { key: 'unit', title: '单位', dataIndex: 'unit' as const },
@@ -236,7 +235,7 @@ export function MedicationPurchasesSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前录入用户为 <strong>{currentUserLabel}</strong>。若想让库存估算更准确，建议及时同步录入每次购药记录。
+          若想让库存估算更准确，建议及时同步录入每次购药记录。
         </div>
 
         <StatGrid
@@ -369,10 +368,6 @@ export function MedicationPurchasesSection({
       >
         <div className="medication-modal-layout">
           <div className="medication-modal-summary">
-            <div className="medication-modal-summary-card">
-              <span className="medication-modal-summary-label">当前用户</span>
-              <strong>{currentUserLabel}</strong>
-            </div>
             <div className="medication-modal-summary-card">
               <span className="medication-modal-summary-label">估算总价</span>
               <strong>¥{editingTotalPrice}</strong>

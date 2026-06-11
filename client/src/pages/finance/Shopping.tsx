@@ -299,7 +299,6 @@ export default function ShoppingPage() {
       {tab === 'dashboard' ? (
         <ShoppingDashboardSection
           userId={settings.dashboardUserId}
-          userLabel={currentUserLabel}
           ledgerId={settings.dashboardLedgerId}
           records={records}
           ledgers={ledgers}

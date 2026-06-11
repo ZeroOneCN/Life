@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import {
   CartesianGrid,
@@ -300,10 +300,6 @@ export function CheckupRecordsSection({
       description="记录单条检查结果，支持按用户、状态、日期和关键词筛选，并查看单指标历史走势。"
     >
       <div className="page-stack">
-        <div className="callout callout-info">
-          当前录入用户为 <strong>{currentUserLabel}</strong>。新的体检指标会默认归属当前登录用户。
-        </div>
-
         <form id="checkup-create-form" className="checkup-entry-grid" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <DatePickerField
             label="检查日期"

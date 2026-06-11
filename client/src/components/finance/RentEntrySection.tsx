@@ -287,14 +287,6 @@ export function RentEntrySection({
               </div>
 
               <div className="rent-entry-cell">
-                <Field
-                  label="当前录入用户"
-                  value={currentUserLabel}
-                  disabled
-                />
-              </div>
-
-              <div className="rent-entry-cell">
                 <SelectField
                   label="租房渠道"
                   value={form.channelId}

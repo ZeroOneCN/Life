@@ -202,7 +202,7 @@ export function FitnessShoppingSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前录入用户：<strong>{currentUserLabel}</strong>。这些采购记录只服务于健康页食材成本分析，不与财务模块共用。
+          这些采购记录只服务于健康页食材成本分析，不与财务模块共用。
         </div>
 
         <form className="form-grid fitness-entry-grid fitness-entry-grid-shopping" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>

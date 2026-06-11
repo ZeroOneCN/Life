@@ -83,7 +83,6 @@ export function RentChannelsSection({
 
   const columns = useMemo(() => [
     { key: 'name', title: '渠道名称', dataIndex: 'name' as const },
-    { key: 'userId', title: '归属用户', render: () => currentUserLabel },
     {
       key: 'usage',
       title: '引用记录',
@@ -168,16 +167,11 @@ export function RentChannelsSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前新增渠道默认归属 <strong>{currentUserLabel}</strong>。
+          当前新增渠道默认归属当前登录用户。
           历史住房记录里已经保存了 `channelId + channelName` 快照，所以删除渠道不会改写旧记录。
         </div>
 
         <form className="rent-channel-form-grid" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
-          <Field
-            label="当前归属用户"
-            value={currentUserLabel}
-            disabled
-          />
           <Field
             label="渠道名称"
             value={form.name}
@@ -221,11 +215,6 @@ export function RentChannelsSection({
         )}
       >
         <div className="rent-channel-form-grid rent-channel-form-grid-modal">
-          <Field
-            label="当前归属用户"
-            value={currentUserLabel}
-            disabled
-          />
           <Field
             label="渠道名称"
             value={editingForm.name}

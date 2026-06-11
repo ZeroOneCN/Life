@@ -1,4 +1,4 @@
-﻿import { useMemo, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import {
   Bar,
   BarChart,
@@ -76,16 +76,6 @@ export function RentStatisticsSection({
       action={<Tag tone="blue">成本统计默认排除押金</Tag>}
     >
       <div className="page-stack">
-        <div className="rent-context-grid">
-          <Field
-            label="统计用户 ID"
-            value={userId}
-            onChange={(event) => onUserIdChange(event.target.value)}
-            placeholder="留空查看全部用户"
-            hint="总览卡、费用结构和渠道分布都会跟随这里联动刷新。"
-          />
-        </div>
-
         <StatGrid
           className="rent-summary-grid"
           items={[

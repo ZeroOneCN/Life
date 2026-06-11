@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { DatePickerField } from '../date';
@@ -206,7 +206,7 @@ export function FitnessWeightSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
-          当前录入用户：<strong>{currentUserLabel}</strong>。默认身高会跟随最近一次保存值更新。
+          默认身高会跟随最近一次保存值更新。
         </div>
 
         <form className="form-grid fitness-entry-grid fitness-entry-grid-weight" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>

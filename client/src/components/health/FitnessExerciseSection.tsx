@@ -257,10 +257,6 @@ export function FitnessExerciseSection({
       description="记录训练类型、时长、消耗和强度，为净热量和训练频率分析提供数据。"
     >
       <div className="page-stack">
-        <div className="callout callout-info">
-          当前录入用户：<strong>{currentUserLabel}</strong>。训练记录默认直接归属当前登录用户。
-        </div>
-
         <form className="form-grid fitness-entry-grid fitness-entry-grid-exercise" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <DatePickerField
             label="记录日期"

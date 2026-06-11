@@ -144,11 +144,6 @@ export function CheckupBatchEntrySection({
     >
       <form className="page-stack" onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
         <div className="checkup-filter-grid">
-          <Field
-            label="当前录入用户"
-            value={currentUserLabel}
-            disabled
-          />
           <DatePickerField label="检查日期" value={testDate} onChange={setTestDate} clearable={false} />
           <Field
             label="检查类型"

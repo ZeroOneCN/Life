@@ -1,4 +1,4 @@
-﻿import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   Area,
   AreaChart,
@@ -175,12 +175,6 @@ export function TravelStatsSection({
     >
       <div className="page-stack">
         <div className="travel-filter-grid travel-filter-grid-stats">
-          <Field
-            label="统计用户 ID"
-            value={activeUserId}
-            readOnly
-            hint="统计口径跟随页面顶部当前用户。"
-          />
           <SelectField label="统计账本" value={statsBookId} onChange={(event) => onStatsBookIdChange(event.target.value)}>
             <option value={TRAVEL_ALL_BOOKS}>全部行程账本</option>
             {availableBooks.map((book) => (

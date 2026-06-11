@@ -316,7 +316,6 @@ export default function MedicationPage() {
       {tab === 'analysis' ? (
         <MedicationAnalysisSection
           userId={settings.analysisUserId}
-          userLabel={currentUserLabel}
           records={records}
           purchases={purchases}
           onUserIdChange={(value) => {

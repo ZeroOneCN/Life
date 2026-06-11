@@ -298,7 +298,6 @@ export default function FitnessPage() {
       {activeTab === 'dashboard' ? (
         <FitnessDashboardSection
           userId={settings.dashboardUserId}
-          userLabel={currentUserLabel}
           defaultHeightCm={settings.defaultHeightCm ?? 170}
           dietRecords={dietRecords}
           exerciseRecords={exerciseRecords}

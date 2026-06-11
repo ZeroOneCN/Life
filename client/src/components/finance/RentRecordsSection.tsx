@@ -230,10 +230,6 @@ export function RentRecordsSection({
           <div className="page-stack">
             <div className="rent-detail-grid">
               <div className="callout callout-neutral">
-                <strong>当前用户</strong>
-                <span>{currentUserLabel}</span>
-              </div>
-              <div className="callout callout-neutral">
                 <strong>渠道</strong>
                 <span>{detailRecord.channelName}</span>
               </div>

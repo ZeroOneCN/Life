@@ -11,7 +11,6 @@ import type { TravelBook, TravelExpenseRecord } from '../../types/travel';
 
 interface TravelLeaderboardSectionProps {
   userId: string;
-  userLabel?: string;
   books: TravelBook[];
   records: TravelExpenseRecord[];
   onUserIdChange: (value: string) => void;
@@ -20,7 +19,6 @@ interface TravelLeaderboardSectionProps {
 
 export function TravelLeaderboardSection({
   userId,
-  userLabel,
   books,
   records,
   onUserIdChange,
@@ -87,7 +85,6 @@ export function TravelLeaderboardSection({
 
         <StatGrid
           items={[
-            { label: '当前用户', value: userLabel || (userId ? '当前登录用户' : '全部用户') },
             { label: '账本数量', value: `${scopedBookCount}` },
             { label: '总记录数', value: `${totals.totalCount}` },
             { label: '总实付', value: formatTravelAmount(totals.totalPaidAmount) },

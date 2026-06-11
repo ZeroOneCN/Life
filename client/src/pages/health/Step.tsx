@@ -236,11 +236,6 @@ export default function StepPage() {
       <StatGrid
         items={[
           {
-            label: '当前录入用户',
-            value: currentUserLabel,
-            helper: '新增步数记录默认写入当前登录用户的步数档案。',
-          },
-          {
             label: '本月累计',
             value: summary.currentMonthSteps.toLocaleString(),
             helper: `${summary.currentMonthDistanceKm.toFixed(2)} 公里`,
@@ -281,7 +276,6 @@ export default function StepPage() {
       <StepTrendSection
         reloadKey={reloadKey}
         userId={settings.statsUserId}
-        userLabel={currentUserLabel}
         strideLength={settings.strideLength}
         onUserIdChange={(value) => {
           void updateSettings({ statsUserId: value });
@@ -295,7 +289,6 @@ export default function StepPage() {
       <StepRecordsSection
         reloadKey={reloadKey}
         filterUserId={settings.recordsUserId}
-        userLabel={currentUserLabel}
         strideLength={settings.strideLength}
         onFilterUserIdChange={(value) => {
           void updateSettings({ recordsUserId: value });

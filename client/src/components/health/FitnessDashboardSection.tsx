@@ -36,7 +36,6 @@ import type {
 
 interface FitnessDashboardSectionProps {
   userId: string;
-  userLabel?: string;
   defaultHeightCm: number;
   dietRecords: DietRecord[];
   exerciseRecords: ExerciseRecord[];
@@ -74,7 +73,6 @@ function ChartCard({
 
 export function FitnessDashboardSection({
   userId,
-  userLabel,
   defaultHeightCm,
   dietRecords,
   exerciseRecords,
@@ -124,21 +122,12 @@ export function FitnessDashboardSection({
       description="查看当前用户近 30 天的热量、体重体脂、营养结构与饮食成本趋势。"
     >
       <div className="page-stack">
-        <div className="step-filter-grid">
-          <Field
-            label="当前用户"
-            value={userLabel || (userId ? '当前登录用户' : '全部用户')}
-            readOnly
-            hint="图表和汇总卡都会根据这里的用户筛选同步刷新。"
-          />
-        </div>
-
         <StatGrid
           items={[
             {
               label: '近 30 天记录天数',
               value: `${overview.trackedDays}`,
-              helper: userLabel ? `${userLabel} 的活跃日期` : '当前为全部用户汇总',
+              helper: '当前为全部用户汇总',
             },
             {
               label: '今日净热量',

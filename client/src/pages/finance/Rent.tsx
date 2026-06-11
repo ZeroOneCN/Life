@@ -274,11 +274,6 @@ export default function RentPage() {
 
       <StatGrid
         items={[
-          {
-            label: '当前用户',
-            value: activeUserLabel,
-            helper: currentUserEmail,
-          },
           { label: '总记录数', value: `${overview.totalRecords} 条` },
           { label: '总居住天数', value: `${overview.totalStayDays} 天` },
           { label: '总成本', value: formatRentAmount(overview.totalCost), helper: '押金不计入总成本' },

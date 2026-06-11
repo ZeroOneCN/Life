@@ -24,7 +24,6 @@ interface CheckupInsightsSectionProps {
 
 export function CheckupInsightsSection({
   records,
-  userLabel,
   settings,
   onSettingsChange,
   onReminderToggle,
@@ -147,11 +146,6 @@ export function CheckupInsightsSection({
                     key: 'testName',
                     title: '项目',
                     dataIndex: 'testName',
-                  },
-                  {
-                    key: 'userId',
-                    title: '归属用户',
-                    render: () => userLabel || '当前用户',
                   },
                   {
                     key: 'followUpDate',

@@ -28,7 +28,6 @@ import type { ShoppingCurrencyMode, ShoppingLedger, ShoppingPlatform, ShoppingRe
 
 interface ShoppingDashboardSectionProps {
   userId: string;
-  userLabel?: string;
   ledgerId: string;
   records: ShoppingRecord[];
   ledgers: ShoppingLedger[];
@@ -68,7 +67,6 @@ function ChartCard({
 
 export function ShoppingDashboardSection({
   userId,
-  userLabel,
   ledgerId,
   records,
   ledgers,
@@ -128,7 +126,6 @@ export function ShoppingDashboardSection({
 
         <StatGrid
           items={[
-            { label: '当前用户', value: userLabel || (userId ? '当前登录用户' : '全部用户'), helper: '影响看板统计口径' },
             {
               label: '当前账本',
               value: ledgerId === SHOPPING_ALL_LEDGERS ? '全部账本' : (ledgers.find((ledger) => ledger.id === ledgerId)?.name ?? '未知账本'),
