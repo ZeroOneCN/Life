@@ -129,9 +129,10 @@ function diffPercent(current: number, previous: number) {
 /**
  * 计算单条租房记录在指定月份的月度摊销费用。
  *
- * 租房记录中的 rent/electricityFee/waterFee 等字段本身就是月度金额，
- * 直接将各项月费相加，再按当月在住天数比例折算即可。
- * 押金和一次性中介费不计入。
+ * 费用分为两类：
+ *   1. 固定月费（rent + service费）：每月重复发生，按当月在住天数比例折算
+ *   2. 累计消耗（水电燃气中介保洁洗衣）：一次性或累计录入，先日均摊销再乘当月在住天
+ * 押金不计入。
  */
 function calculateRentMonthlyCost(
   row: FinanceRentRecordEntity,
@@ -141,28 +142,39 @@ function calculateRentMonthlyCost(
   const moveIn = dayjs(row.move_in_date);
   const moveOut = row.move_out_date ? dayjs(row.move_out_date) : null;
 
-  // 租期与报告月的交集：max(入住日, 月初) ~ min(退租日或月末, 月末)
+  // 租期与报告月的交集
   const overlapStart = moveIn.isAfter(monthStart) ? moveIn : monthStart;
   const overlapEnd = moveOut && moveOut.isBefore(monthEnd) ? moveOut : monthEnd;
 
   if (overlapEnd.isBefore(overlapStart, 'day')) {
-    return 0; // 该月无在住时间
+    return 0;
   }
 
   const overlapDays = Math.max(1, overlapEnd.diff(overlapStart, 'day') + 1);
-  const daysInMonth = monthEnd.date(); // 当月总天数
+  const daysInMonth = monthEnd.date();
   const ratio = overlapDays / daysInMonth;
 
-  // 各项月度费用之和（不含押金和一次性中介费）
-  const monthlyFees = toNumber(row.rent)
-    + toNumber(row.electricity_fee)
+  // --- 类别1：固定月费，按当月在住比例折算 ---
+  const fixedMonthlyFees = toNumber(row.rent) + toNumber(row.service_fee);
+  const fixedCost = fixedMonthlyFees * ratio;
+
+  // --- 类别2：累计消耗，日均摊销后乘以当月在住天 ---
+  const totalConsumable = toNumber(row.electricity_fee)
     + toNumber(row.water_fee)
     + toNumber(row.gas_fee)
+    + toNumber(row.agency_fee)
     + toNumber(row.cleaning_fee)
-    + toNumber(row.laundry_fee)
-    + toNumber(row.service_fee);
+    + toNumber(row.laundry_fee);
 
-  return round2(monthlyFees * ratio);
+  const totalEnd = moveOut || dayjs();
+  const totalStayDays = Math.max(1, totalEnd.diff(moveIn, 'day') + 1);
+
+  let consumableCost = 0;
+  if (totalConsumable > 0 && totalStayDays > 0) {
+    consumableCost = (totalConsumable / totalStayDays) * overlapDays;
+  }
+
+  return round2(fixedCost + consumableCost);
 }
 
 function describeMonth(month: string) {
