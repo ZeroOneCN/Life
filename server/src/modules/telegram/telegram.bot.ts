@@ -32,6 +32,13 @@ if (!env.TELEGRAM_BOT_TOKEN) {
   console.log('[Telegram] Token configured (%s...), preparing bot.', env.TELEGRAM_BOT_TOKEN.slice(0, 10));
 }
 
+/** 使用自定义 API 根地址时（自签名证书反代），跳过 TLS 验证 */
+if (env.TELEGRAM_API_ROOT) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+  // eslint-disable-next-line no-console
+  console.log('[Telegram] NODE_TLS_REJECT_UNAUTHORIZED=0 (TLS verification skipped for custom API root)');
+}
+
 /** 构建 grammy Bot 配置 */
 const botConfig: ConstructorParameters<typeof Bot>[1] = {};
 if (env.TELEGRAM_API_ROOT) {
@@ -41,12 +48,6 @@ if (env.TELEGRAM_API_ROOT) {
   };
   // eslint-disable-next-line no-console
   console.log('[Telegram] Using custom API root:', env.TELEGRAM_API_ROOT);
-
-  // 自签名证书需要跳过 TLS 验证
-  if (env.TELEGRAM_API_ROOT.startsWith('https://')) {
-    // eslint-disable-next-line no-console
-    console.log('[Telegram] Note: If using self-signed cert, set NODE_TLS_REJECT_UNAUTHORIZED=0');
-  }
 }
 
 export const bot = new Bot(env.TELEGRAM_BOT_TOKEN || '__placeholder__', botConfig);
