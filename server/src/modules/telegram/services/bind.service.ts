@@ -68,7 +68,12 @@ export async function consumeBindCode(
     return { success: false, message: '绑定码无效' };
   }
 
-  if (dayjs().isAfter(dayjs(binding.bind_code_expires_at))) {
+  // 已消费过的绑定码（bind_code 已被清空）
+  if (!binding.bind_code) {
+    return { success: false, message: '该绑定码已被使用，请重新生成' };
+  }
+
+  if (binding.bind_code_expires_at && dayjs().isAfter(dayjs(binding.bind_code_expires_at))) {
     return { success: false, message: '绑定码已过期，请在网页端重新生成' };
   }
 

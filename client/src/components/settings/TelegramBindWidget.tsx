@@ -13,23 +13,32 @@ const CODE_TTL_SECONDS = 10 * 60;
  */
 export default function TelegramBindWidget() {
   const { toast, showToast } = useToastState();
-  const [status, setStatus] = useState<TelegramBindingStatus | null>(null);
+  // 初始状态默认为未绑定，确保 UI 立即可见
+  const [status, setStatus] = useState<TelegramBindingStatus>({ bound: false });
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [bindCode, setBindCode] = useState<string | null>(null);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const [initError, setInitError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // 查询绑定状态
   const fetchStatus = async () => {
     setLoading(true);
+    setInitError(null);
     try {
       const result = await getTelegramBindingStatus();
       setStatus(result);
+      // eslint-disable-next-line no-console
+      console.log('[TelegramBind] status:', result);
     } catch (error) {
       // API 失败时设为未绑定状态，让 UI 可用
       setStatus({ bound: false });
-      showToast('查询绑定状态失败，请检查后端服务', 'error');
+      const msg = error instanceof Error ? error.message : String(error);
+      setInitError(msg);
+      // eslint-disable-next-line no-console
+      console.error('[TelegramBind] fetchStatus error:', error);
+      showToast('查询绑定状态失败：' + msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -70,12 +79,19 @@ export default function TelegramBindWidget() {
   const handleGenerateCode = async () => {
     setGenerating(true);
     try {
+      // eslint-disable-next-line no-console
+      console.log('[TelegramBind] generating code...');
       const result = await generateTelegramBindCode();
+      // eslint-disable-next-line no-console
+      console.log('[TelegramBind] code generated:', result.code);
       setBindCode(result.code);
       setRemainingSeconds(CODE_TTL_SECONDS);
       showToast('绑定码已生成，请在 Telegram 中发送 /bind ' + result.code);
-    } catch {
-      showToast('生成绑定码失败，请重试', 'error');
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      // eslint-disable-next-line no-console
+      console.error('[TelegramBind] generateCode error:', error);
+      showToast('生成绑定码失败：' + msg, 'error');
     } finally {
       setGenerating(false);
     }
@@ -106,9 +122,16 @@ export default function TelegramBindWidget() {
     >
       <Toast toast={toast} />
 
+      {/* 错误提示 */}
+      {initError ? (
+        <div style={{ color: 'var(--color-red-500, #e53935)', fontSize: 13, marginBottom: 12 }}>
+          连接失败：{initError}
+        </div>
+      ) : null}
+
       {/* 绑定状态 */}
       <div className="tg-bind-status">
-        {status?.bound ? (
+        {status.bound ? (
           <div className="tg-bind-bound">
             <Tag tone="green">已绑定</Tag>
             {status.telegramUsername ? (
@@ -129,7 +152,7 @@ export default function TelegramBindWidget() {
       </div>
 
       {/* 绑定操作区（未绑定时显示） */}
-      {!status?.bound && (
+      {!status.bound && (
         <div className="tg-bind-actions">
           {!bindCode ? (
             <Btn tone="primary" onClick={handleGenerateCode} disabled={generating}>

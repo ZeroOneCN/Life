@@ -58,7 +58,11 @@ bot.command('bind', async (ctx: Context) => {
   }
 
   try {
+    // eslint-disable-next-line no-console
+    console.log('[Telegram] /bind received from user', tgUser.id, 'code:', code);
     const result = await consumeBindCode(code, String(tgUser.id), String(ctx.chat?.id ?? '0'), tgUser.username);
+    // eslint-disable-next-line no-console
+    console.log('[Telegram] /bind result:', result);
 
     if (result.success) {
       await ctx.reply(`✅ ${result.message}\n现在可以直接发送数据了！发送 /help 查看指令。`);
@@ -172,12 +176,17 @@ export async function startTelegramBot(): Promise<void> {
     return;
   }
 
-  await bot.start({
-    onStart: () => {
-      // eslint-disable-next-line no-console
-      console.log('[Telegram] Bot started successfully.');
-    },
-  });
+  try {
+    await bot.start({
+      onStart: () => {
+        // eslint-disable-next-line no-console
+        console.log('[Telegram] Bot started successfully.');
+      },
+    });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('[Telegram] Bot failed to start:', error);
+  }
 }
 
 /**
