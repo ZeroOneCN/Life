@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { TimestampedEntity } from '../../shared/persistence/timestamped.entity';
+import { TimestampedEntity } from '../../../shared/persistence/timestamped.entity';
 
 /**
  * Telegram 用户与 LifeOS 用户的绑定关系实体

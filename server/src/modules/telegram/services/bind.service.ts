@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto';
 import dayjs from 'dayjs';
 
 import { appDataSource } from '../../../db/data-source';
-import { TelegramBindingEntity } from '../telegram.entity';
+import { TelegramBindingEntity } from '../entities/telegram.entity';
 
 /** 绑定码有效期（分钟） */
 const BIND_CODE_TTL_MINUTES = 10;
