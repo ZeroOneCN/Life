@@ -43,7 +43,10 @@ async function bootstrap() {
     });
 
     // 启动 Telegram Bot（非阻塞，token 未配置时自动跳过）
-    void startTelegramBot();
+    startTelegramBot().catch((error) => {
+      // eslint-disable-next-line no-console
+      console.error('[Telegram] Unhandled startup error:', error);
+    });
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('LifeOS server failed to start.', error);
