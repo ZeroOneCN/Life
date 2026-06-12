@@ -10,7 +10,7 @@ LifeOS 是一个前后端分离的全栈 Web 应用：**React 18 + TypeScript + 
 - **统一通知中心**：支持邮件、企业微信、钉钉、飞书、Telegram、Webhook 等通知渠道，按业务场景灵活绑定，每个场景支持独立的 HTML 富文本模板（`{{title}}` / `{{message}}` / `{{date}}` / `{{userId}}` / `{{meta.xxx}}` 插值），含发送日志管理
 - **AI 智能助理**：全局浮动聊天按钮 + DeepSeek function calling（4 个 tool：query_finance / query_health / query_investment / query_life），单次会话最多 4 轮 tool_calls
 - **DeepSeek Token 消耗组件**：在 `settings/profile?tab=profile` 中实时显示官方账户余额 + 本站 AI 助理累计 / 今日 Token 消耗 + 估算花费 + 可调用次数，每 30 秒自动轮询
-- **JWT 安全认证**：基于 Passport-JWT 的无状态会话；首次访问自动开放管理员注册引导，注册通道关闭后仅支持登录
+- **Telegram 快速录入**：通过 Telegram Bot 用快捷指令（`步 8234` / `重 72.4` / `早 燕麦杯` 等）或自然语言快速录入步数、体重、饮食、运动、用药、购物、待办数据，无需打开浏览器；6 位绑定码关联账号；DeepSeek AI 自然语言解析 fallback
 - **Stripe 设计体系**：Indigo 主色调，Outfit 字体，亮色/暗色主题切换；表单标签统一 14px
 - **响应式布局**：桌面端侧边栏 + 移动端自适应，720px 以下自动回退单列
 - **原生日期控件**：统一使用浏览器原生日期/月份/时间选择器，无第三方日历依赖
@@ -39,6 +39,7 @@ LifeOS 是一个前后端分离的全栈 Web 应用：**React 18 + TypeScript + 
 | 加密 | bcrypt | 6 | 密码哈希 |
 | 安全 | Helmet / CORS / Compression | - | HTTP 头、CORS、响应压缩 |
 | AI 服务 | DeepSeek | - | `chat/completions` + `user/balance` 双端点 |
+| TG Bot | Grammy | - | Telegram Bot 快速录入（长轮询模式） |
 
 ## 业务模块
 
@@ -94,6 +95,23 @@ LifeOS 是一个前后端分离的全栈 Web 应用：**React 18 + TypeScript + 
 - **典型问题**：「我这个月购物花了多少？」「最近 7 天步数趋势如何？」「盈亏比最高的交易是什么？」
 - **Token 消耗记录**：每次 chat 调用按 1 字符 ≈ 0.6 token 估算 prompt/completion，落库 `system_assistant_usage_logs` 表（含 request_count、prompt_tokens、completion_tokens、estimated_cost、status 字段），同时支持 Repository.insert 失败时回退到原生 SQL 写入
 - **官方余额查询**：`GET /assistant/usage` 同时返回 DeepSeek `/user/balance` 数据（total_balance / granted_balance / topped_up_balance / currency）+ 本站累计 / 今日统计，供个人中心组件展示
+
+### Telegram 快速录入
+
+基于 Grammy 框架的 Telegram Bot，支持通过手机快速录入数据：
+
+- **绑定流程**：Web 端设置页生成 6 位临时绑定码（10 分钟有效）→ 在 Telegram 中发送 `/bind <码>` 完成账号关联
+- **快捷指令**：正则匹配的简短命令格式，覆盖 7 大模块：
+  - `步 8234` — 记录步数；`步 12000 全天` — 全天步数
+  - `重 72.4` — 记录体重
+  - `早 燕麦杯` / `午 牛肉饭 450g` / `晚 沙拉` — 饮食记录
+  - `跑 30min 高强度` — 运动记录
+  - `药 维C 每日1粒` — 用药记录
+  - `买 牛奶 28元` / `花 299 显示器支架` — 购物记录
+  - `+ 提交报告 明天` / `- 买菜` — 待办增删
+- **AI 自然语言 Fallback**：快捷指令未命中时自动调用 DeepSeek 解析自然语言输入（如"今天跑了5公里，大概35分钟"）
+- **前端入口**：个人中心页面 → 个人资料 Tab 底部「Telegram 快速录入」卡片
+- **安全设计**：仅响应私聊文本消息、只做新增/更新操作、未配置 Token 时优雅跳过启动
 
 ### 仪表盘首页 (`/dashboard`)
 
@@ -196,7 +214,8 @@ LifeOS/
 │   │   │   ├── investment/                # 外汇
 │   │   │   ├── life/                      # 号卡 / 储物 / 待办（recurrence 规则）
 │   │   │   ├── notifications/             # 通知中心（scenes/templates 自动补齐）
-│   │   │   └── system/                    # 认证 / 仪表盘 / 健康探针 / 智能分析 / **智能助理（assistant.router + assistant.tools + assistant-usage.service）**
+│   │   │   ├── system/                    # 认证 / 仪表盘 / 健康探针 / 智能分析 / **智能助理（assistant.router + assistant.tools + assistant-usage.service）**
+│   │   │   └── telegram/                  # Telegram Bot 快速录入（entity / bot / router / services / commands）
 │   │   ├── routes/
 │   │   │   └── index.ts                   # 路由注册中心
 │   │   └── shared/                        # 共享基础设施
@@ -241,7 +260,7 @@ LifeOS/
 | `/investment/hk-stock` | 港股市场 | 投资中心 | 占位 |
 | `/investment/us-stock` | 美股市场 | 投资中心 | 占位 |
 | `/notifications` | 通知中心 | - | ✓ |
-| `/settings/profile` | 个人中心（含 DeepSeek Token 组件） | - | ✓ |
+| `/settings/profile` | 个人中心（含 DeepSeek Token 组件 + **Telegram 绑定卡片**） | - | ✓ |
 | `/login` | 登录/注册 | - | ✓ |
 
 ### 后端 API（前缀 `/api`）
@@ -269,6 +288,7 @@ LifeOS/
 | 生活-待办 | `/life/todo` | 任务（含 `recurrence_type` + `recurrence_config` 重复规则）/ 日志 / 回收站 |
 | 生活-储物 | `/life/storage` | 物品 / 归档 / 设置 |
 | 生活-号卡 | `/life/card` | 号卡 / 充值 / 账单 |
+| **TG 快速录入** | `/telegram` | 绑定码生成 / 绑定状态查询（Bot 通过长轮询独立运行） |
 
 ## 数据库表
 
@@ -291,6 +311,7 @@ LifeOS/
 | 生活-储物 | `life_storage_item` / `life_storage_setting` | 物品 |
 | 生活-号卡 | `life_card_record` / `life_card_carrier` / `life_card_recharge_record` / `life_card_bill_record` / `life_card_bill_import_batch` / `life_card_setting` | 号卡 / 运营商 / 充值 / 账单 |
 | 通知 | `notification_center_channel` / `notification_center_scene` / `notification_center_scene_channel` / `notification_center_template` / `notification_center_log` | 渠道 / 场景 / 绑定 / 模板 / 日志 |
+| **TG 快速录入** | **`telegram_binding`** | Telegram 用户与 LifeOS 用户的绑定关系（user_id / telegram_user_id / chat_id / bind_code） |
 
 ## 快速开始
 
@@ -354,6 +375,7 @@ cd client && npm run dev
 | `DEEPSEEK_BASE_URL` | 否 | https://api.deepseek.com | DeepSeek API 基础 URL |
 | `EXCHANGE_RATE_API_KEY` | 否 | - | Exchange Rate API v6 密钥（`/finance/exchange-rate`）；未配置时自动回退到离线 FALLBACK_RATES |
 | `EXCHANGE_RATE_API_BASE_URL` | 否 | https://v6.exchangerate-api.com | Exchange Rate API 基础 URL |
+| `TELEGRAM_BOT_TOKEN` | 否 | - | Telegram Bot Token（从 @BotFather 获取）；不配置则跳过 Bot 启动 |
 
 ### 生产构建与部署
 
@@ -467,6 +489,79 @@ page (页面主组件)
 - `GET /api/system/health` — 探针（无需鉴权）
 - `POST /api/analysis/*` — 智能分析（DeepSeek）
 
+**Telegram 快速录入**
+- `POST /api/telegram/bind-code` — 生成新的 6 位绑定码（需鉴权）
+- `GET  /api/telegram/status` — 查询当前用户的 TG 绑定状态（需鉴权）
+
+## Telegram Bot 配置指南
+
+### 第一步：创建 Bot 并获取 Token
+
+1. 在 Telegram 中搜索 **@BotFather**，发送 `/newbot`
+2. 按提示输入 Bot 名称（如 `LifeOS 录入助手`）和用户名（如 `lifeos_entry_bot`）
+3. 创建成功后，@BotFather 会返回一个 **Bot Token**（格式：`123456789:ABCdefGHIjklMNOpqrsTUVwxyz`）
+
+> **安全提醒**：Token 等同于 Bot 的密码，切勿泄露或提交到公开仓库。
+
+### 第二步：配置环境变量
+
+编辑 `server/.env`，将 Token 填入：
+
+```bash
+# Telegram Bot（快速录入功能，不配置则跳过启动）
+TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+```
+
+不配置 `TELEGRAM_BOT_TOKEN` 时，后端正常启动，仅跳过 Bot 长轮询连接，控制台输出 `[Telegram] Bot disabled (no token configured).`。
+
+### 第三步：重启后端
+
+```bash
+cd server && npm run dev
+```
+
+启动成功后控制台应显示 `[Telegram] Bot started successfully.`。如果 Token 无效会报错，请检查是否完整复制了 Token。
+
+### 第四步：绑定账号
+
+1. 打开 LifeOS 网页端，进入 **设置 → 个人中心 → 个人资料** Tab
+2. 滚动到底部，找到 **「Telegram 快速录入」** 卡片
+3. 点击 **「生成绑定码」** 按钮，获得 6 位数字码（如 `482937`），有效期 **10 分钟**
+4. 打开 Telegram，搜索你的 Bot 用户名，发送：
+
+   ```
+   /bind 482937
+   ```
+
+5. 绑定成功后，Bot 回复 `✅ 绑定成功！现在可以直接发送数据了`
+6. 返回网页端点击「刷新状态」，卡片显示「已绑定」
+
+### 第五步：开始使用
+
+绑定完成后，直接在 Telegram 中发送快捷指令即可录入数据：
+
+| 指令 | 示例 | 说明 |
+|------|------|------|
+| 步数 | `步 8234` | 记录当前小时步数 |
+| 全天步数 | `步 12000 全天` | 记录全天步数 |
+| 体重 | `重 72.4` | 记录体重 (kg) |
+| 早餐 | `早 燕麦酸奶杯 320g` | 记录早餐 |
+| 午餐 | `午 牛肉饭 450g` | 记录午餐 |
+| 晚餐 | `晚 三文鱼` | 记录晚餐 |
+| 运动 | `跑 35min 高强度` | 记录运动 |
+| 用药 | `药 维C 早1晚1` | 记录用药 |
+| 购物 | `买 牛奶 28元` | 记录购物 |
+| 支出 | `花 299 显示器支架` | 记录消费 |
+| 新增待办 | `+ 提交报告 明天` | 新建待办 |
+| 完成待办 | `- 买菜` | 完成待办 |
+| 自然语言 | `今天跑了5公里大概35分钟` | AI 自动解析 |
+
+其他可用命令：
+- `/start` — 显示欢迎信息与绑定指引
+- `/help` — 查看所有快捷指令帮助
+- `/status` — 查看当前绑定状态
+- `/bind <码>` — 绑定/重新绑定账号
+
 ## 开发指南
 
 ### 常用命令
@@ -549,6 +644,9 @@ page (页面主组件)
 | 首页体重 stat-card 显示 74.10 而非 74.06 | 前端聚合或显示精度问题 | 已修复（`toFixed(2)`） |
 | DeepSeek Token 组件一直显示「本站 AI 助理还未发起过请求」 | ① 后端未重启（新 entity 未注册）② DEEPSEEK_API_KEY 未配置导致 chat 走早退路径 ③ 数据源元数据未刷新 | ① 重启后端（让 TypeORM synchronize 建表）② 在 `.env` 配 API Key 或接受 `error` 状态记录 ③ 查看后端控制台 `[assistant-usage] recorded ...` 日志 |
 | 投资中心净收益颜色错位 | 老版本基于格式化字符串前缀判定，被 `±¥` Unicode 字符坑 | 已修复（基于 `netPnlRaw` 数值判断） |
+| TG Bot 启动失败 | ① `TELEGRAM_BOT_TOKEN` 未配置或无效 ② 网络无法连接 `api.telegram.org` | ① 在 `.env` 填入有效 Token（从 @BotFather 获取）② 确认服务器可访问外网 |
+| 绑定码无效 | 绑定码已过期（10 分钟有效）或已被消费 | 重新生成绑定码，并在有效期内完成绑定 |
+| TG 发送指令无响应 | 未完成账号绑定 | 先发送 `/bind <码>` 完成绑定 |
 
 ## 相关文档
 
