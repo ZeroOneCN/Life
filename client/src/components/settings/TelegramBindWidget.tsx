@@ -29,15 +29,10 @@ export default function TelegramBindWidget() {
     try {
       const result = await getTelegramBindingStatus();
       setStatus(result);
-      // eslint-disable-next-line no-console
-      console.log('[TelegramBind] status:', result);
     } catch (error) {
-      // API 失败时设为未绑定状态，让 UI 可用
       setStatus({ bound: false });
       const msg = error instanceof Error ? error.message : String(error);
       setInitError(msg);
-      // eslint-disable-next-line no-console
-      console.error('[TelegramBind] fetchStatus error:', error);
       showToast('查询绑定状态失败：' + msg, 'error');
     } finally {
       setLoading(false);
@@ -79,18 +74,12 @@ export default function TelegramBindWidget() {
   const handleGenerateCode = async () => {
     setGenerating(true);
     try {
-      // eslint-disable-next-line no-console
-      console.log('[TelegramBind] generating code...');
       const result = await generateTelegramBindCode();
-      // eslint-disable-next-line no-console
-      console.log('[TelegramBind] code generated:', result.code);
       setBindCode(result.code);
       setRemainingSeconds(CODE_TTL_SECONDS);
       showToast('绑定码已生成，请在 Telegram 中发送 /bind ' + result.code);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      // eslint-disable-next-line no-console
-      console.error('[TelegramBind] generateCode error:', error);
       showToast('生成绑定码失败：' + msg, 'error');
     } finally {
       setGenerating(false);

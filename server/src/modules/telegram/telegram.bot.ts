@@ -23,20 +23,14 @@ const commandHandlers: Record<string, (userId: string, data: Record<string, unkn
   todo: (u, d) => handleTodo(u, d as any),
 };
 
-// 初始化 Bot 实例（未配置 token 时使用占位符，启动时检查）
+// 初始化 Bot 实例
 if (!env.TELEGRAM_BOT_TOKEN) {
-  // eslint-disable-next-line no-console
-  console.warn('[Telegram] TELEGRAM_BOT_TOKEN not set, bot will be disabled.');
-} else {
-  // eslint-disable-next-line no-console
-  console.log('[Telegram] Token configured (%s...), preparing bot.', env.TELEGRAM_BOT_TOKEN.slice(0, 10));
+  console.warn('[TG Bot] 未配置 TELEGRAM_BOT_TOKEN，Bot 将跳过启动。');
 }
 
 /** 使用自定义 API 根地址时（自签名证书反代），跳过 TLS 验证 */
 if (env.TELEGRAM_API_ROOT) {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-  // eslint-disable-next-line no-console
-  console.log('[Telegram] NODE_TLS_REJECT_UNAUTHORIZED=0 (TLS verification skipped for custom API root)');
 }
 
 /** 构建 grammy Bot 配置 */
@@ -46,8 +40,6 @@ if (env.TELEGRAM_API_ROOT) {
     ...botConfig.client,
     apiRoot: env.TELEGRAM_API_ROOT,
   };
-  // eslint-disable-next-line no-console
-  console.log('[Telegram] Using custom API root:', env.TELEGRAM_API_ROOT);
 }
 
 export const bot = new Bot(env.TELEGRAM_BOT_TOKEN || '__placeholder__', botConfig);
@@ -79,11 +71,7 @@ bot.command('bind', async (ctx: Context) => {
   }
 
   try {
-    // eslint-disable-next-line no-console
-    console.log('[Telegram] /bind received from user', tgUser.id, 'code:', code);
     const result = await consumeBindCode(code, String(tgUser.id), String(ctx.chat?.id ?? '0'), tgUser.username);
-    // eslint-disable-next-line no-console
-    console.log('[Telegram] /bind result:', result);
 
     if (result.success) {
       await ctx.reply(`✅ ${result.message}\n现在可以直接发送数据了！发送 /help 查看指令。`);
@@ -92,8 +80,7 @@ bot.command('bind', async (ctx: Context) => {
     }
   } catch (error) {
     const msg = error instanceof Error ? error.message : '未知错误';
-    // eslint-disable-next-line no-console
-    console.error('[Telegram] /bind error:', error);
+    console.error('[TG Bot] 绑定处理异常：', error);
     await ctx.reply(`❌ 绑定失败：${msg}\n请检查后端服务是否正常，或重新生成绑定码后再试。`);
   }
 });
@@ -182,8 +169,7 @@ bot.on('message:text', async (ctx: Context) => {
 
 // ─── 全局错误处理 ─────────────────────────────────────────────
 bot.catch((error) => {
-  // eslint-disable-next-line no-console
-  console.error('[Telegram] Bot error:', error);
+  console.error('[TG Bot] 未捕获异常：', error);
 });
 
 /**
@@ -191,34 +177,21 @@ bot.catch((error) => {
  * 未配置 TELEGRAM_BOT_TOKEN 时跳过启动
  */
 export async function startTelegramBot(): Promise<void> {
-  // eslint-disable-next-line no-console
-  console.log('[Telegram] startTelegramBot() called...');
-
   if (!env.TELEGRAM_BOT_TOKEN) {
-    // eslint-disable-next-line no-console
-    console.log('[Telegram] Bot disabled (no token configured).');
+    console.log('[TG Bot] 跳过启动（未配置 Token）。');
     return;
   }
 
   try {
-    // eslint-disable-next-line no-console
-    console.log('[Telegram] Starting bot polling (connecting to api.telegram.org)...');
     await bot.start({
       onStart: () => {
-        // eslint-disable-next-line no-console
-        console.log('[Telegram] ✅ Bot started successfully.');
+        console.log('[TG Bot] 启动成功。');
       },
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    // eslint-disable-next-line no-console
-    console.error('[Telegram] ❌ Bot failed to start:', msg);
-    // eslint-disable-next-line no-console
-    console.error('[Telegram]   Possible causes:');
-    console.error('     1. Invalid TELEGRAM_BOT_TOKEN (check .env)');
-    console.error('     2. Network cannot reach api.telegram.org (GFW/proxy issue)');
-    console.error('     3. Bot was already started or token conflict');
-    console.error('   Full error:', error);
+    console.error('[TG Bot] 启动失败：', msg);
+    console.error('   可能原因：Token 无效 / 无法连接 Telegram API / 重复启动');
   }
 }
 
