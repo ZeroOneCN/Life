@@ -10,6 +10,7 @@ import {
   getApiFormErrors,
 } from '../../lib/api';
 import { getSystemHealth, login, register, useAuthState } from '../../services/auth';
+import { useTheme } from '../../hooks/useTheme';
 import type { SystemHealthSnapshot } from '../../types/auth';
 
 type AuthMode = 'login' | 'register';
@@ -34,6 +35,7 @@ export default function LoginPage() {
   const location = useLocation();
   const authState = useAuthState();
   const { toast, showToast } = useToastState();
+  const { isDark, toggleTheme } = useTheme();
   const [mode, setMode] = useState<AuthMode>('login');
   const [submitting, setSubmitting] = useState(false);
   const [healthLoading, setHealthLoading] = useState(true);
@@ -190,6 +192,16 @@ export default function LoginPage() {
 
   return (
     <div className="auth-page-shell">
+      <button
+        className="auth-theme-toggle"
+        type="button"
+        aria-label={isDark ? '切换到浅色模式' : '切换到深色模式'}
+        title={isDark ? '切换到浅色模式' : '切换到深色模式'}
+        onClick={toggleTheme}
+      >
+        {isDark ? '☀️' : '🌙'}
+      </button>
+
       <div className="auth-page-main">
         <PageHeader
           title={title}
