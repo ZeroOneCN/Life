@@ -4439,6 +4439,92 @@ textarea {
   }
 }
 
+/* ─── Telegram Bind Widget ──────────────────────────────────── */
+.tg-bind-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.tg-bind-bound {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tg-bind-username {
+  color: var(--color-ink-subtle);
+  font-size: 14px;
+}
+.tg-bind-unbound {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tg-bind-actions {
+  margin-top: 12px;
+}
+.tg-bind-code-panel {
+  background: var(--color-surface);
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid var(--color-border, var(--color-hairline));
+}
+.tg-bind-code-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.tg-bind-code {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--color-primary);
+  font-family: var(--font-mono, 'Courier New', monospace);
+}
+.tg-bind-countdown {
+  font-size: 13px;
+  color: var(--color-ink-muted);
+  background: var(--color-surface-dim, var(--color-surface-2));
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.tg-bind-code-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.tg-bind-hint {
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+  margin: 0;
+  line-height: 1.6;
+}
+.tg-bind-guide {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border, var(--color-hairline));
+}
+.tg-bind-guide h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--color-ink);
+}
+.tg-bind-guide ol {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: var(--color-ink-subtle);
+  line-height: 1.8;
+}
+.tg-bind-guide code {
+  background: var(--color-surface-dim, var(--color-surface-2));
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
 .layout-shell.is-collapsed .menu-link,
 .layout-shell.is-collapsed .menu-child {
   justify-content: center;

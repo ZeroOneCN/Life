@@ -26,6 +26,7 @@ const envSchema = z.object({
   DEEPSEEK_BASE_URL: z.string().min(1).default('https://api.deepseek.com'),
   EXCHANGE_RATE_API_KEY: z.string().min(0).default(''),
   EXCHANGE_RATE_API_BASE_URL: z.string().min(1).default('https://v6.exchangerate-api.com/v6'),
+  TELEGRAM_BOT_TOKEN: z.string().min(0).default(''),
 });
 
 const parsedEnv = envSchema.parse(process.env);

@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { PageHeader, SectionCard } from '../../components/page';
 import { Btn, Field, PillTabs, Tag, Toast, useToastState } from '../../components/ui';
 import { DeepseekUsageWidget } from '../../components/settings/DeepseekUsageWidget';
+import TelegramBindWidget from '../../components/settings/TelegramBindWidget';
 import { buildApiErrorMessage, getApiFieldErrors } from '../../lib/api';
 import { changePassword, updateAuthProfile, useAuthState } from '../../services/auth';
 
@@ -250,6 +251,7 @@ export default function ProfileSettingsPage() {
       ) : null}
 
       {tab === 'profile' ? <DeepseekUsageWidget /> : null}
+      {tab === 'profile' ? <TelegramBindWidget /> : null}
 
       {tab === 'security' ? (
         <SectionCard
