@@ -30,10 +30,17 @@ function parseDueDate(dueText?: string): string | undefined {
  * @param data - 解析后的待办数据
  * @returns 操作结果消息
  */
-export async function handleTodo(userId: string, data: TodoData): Promise<string> {
+export async function handleTodo(userId: string, data: Record<string, unknown>): Promise<string> {
+  const action = String(data.action ?? '');
+  const text = String(data.text ?? '').trim();
+
+  if (!action || !text) {
+    return '❌ 待办格式无效。格式：+ 提交报告 或 - 买菜';
+  }
+
   const repo = appDataSource.getRepository(LifeTodoTaskEntity);
 
-  if (data.action === 'add') {
+  if (action === 'add') {
     // 查询当前最大 sort_order
     const lastTask = await repo.findOne({
       where: { user_id: userId, completed: false },
@@ -43,9 +50,9 @@ export async function handleTodo(userId: string, data: TodoData): Promise<string
 
     await repo.save(repo.create({
       user_id: userId,
-      title: data.text,
+      title: text,
       description_markdown: '',
-      due_date: parseDueDate(data.due),
+      due_date: parseDueDate(String(data.due)),
       priority: 'medium',
       tags_json: null,
       is_daily: false,
@@ -58,7 +65,7 @@ export async function handleTodo(userId: string, data: TodoData): Promise<string
       sort_order: (lastTask?.sort_order ?? -1) + 1,
     }));
 
-    return `📋 待办已添加：${data.text}${data.due ? ` (${data.due})` : ''}`;
+    return `📋 待办已添加：${text}${data.due ? ` (${data.due})` : ''}`;
   }
 
   // done: 模糊匹配未完成的待办并标记完成
@@ -67,7 +74,7 @@ export async function handleTodo(userId: string, data: TodoData): Promise<string
     take: 20,
   });
 
-  const target = tasks.find((t) => t.title.includes(data.text));
+  const target = tasks.find((t) => t.title.includes(text));
   if (target) {
     target.completed = true;
     target.completed_at = new Date();
@@ -76,5 +83,5 @@ export async function handleTodo(userId: string, data: TodoData): Promise<string
     return `✅ 待办已完成：${target.title}`;
   }
 
-  return `❌ 未找到待办：${data.text}`;
+  return `❌ 未找到待办：${text}`;
 }

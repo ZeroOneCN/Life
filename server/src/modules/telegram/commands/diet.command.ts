@@ -2,13 +2,6 @@ import dayjs from 'dayjs';
 import { appDataSource } from '../../../db/data-source';
 import { HealthFitnessDietRecordEntity } from '../../health/entities/health-fitness-diet-record.entity';
 
-/** 饮食命令数据 */
-interface DietData {
-  mealType: string;
-  foodName: string;
-  amount?: string;
-}
-
 /** 餐次中文标签映射 */
 const mealLabels: Record<string, string> = {
   breakfast: '早餐',
@@ -23,14 +16,21 @@ const mealLabels: Record<string, string> = {
  * @param data - 解析后的饮食数据
  * @returns 操作结果消息
  */
-export async function handleDiet(userId: string, data: DietData): Promise<string> {
+export async function handleDiet(userId: string, data: Record<string, unknown>): Promise<string> {
+  const mealType = String(data.mealType ?? 'other');
+  const foodName = String(data.foodName ?? '').trim();
+
+  if (!foodName) {
+    return '❌ 食物名称不能为空。格式：早 燕麦杯';
+  }
+
   const repo = appDataSource.getRepository(HealthFitnessDietRecordEntity);
 
   await repo.save(repo.create({
     user_id: userId,
     date: dayjs().format('YYYY-MM-DD'),
-    meal_type: data.mealType,
-    food_name: data.foodName,
+    meal_type: mealType,
+    food_name: foodName,
     grams: 0,
     calories: 0,
     protein: 0,
@@ -38,5 +38,5 @@ export async function handleDiet(userId: string, data: DietData): Promise<string
     fat: 0,
   }));
 
-  return `🍽️ ${mealLabels[data.mealType] ?? data.mealType}已记录：${data.foodName}${data.amount ? ` ${data.amount}` : ''}`;
+  return `🍽️ ${mealLabels[mealType] ?? mealType}已记录：${foodName}${data.amount ? ` ${data.amount}` : ''}`;
 }

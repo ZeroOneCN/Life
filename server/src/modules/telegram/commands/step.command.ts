@@ -14,10 +14,15 @@ interface StepData {
  * @param data - 解析后的步数数据
  * @returns 操作结果消息
  */
-export async function handleStep(userId: string, data: StepData): Promise<string> {
+export async function handleStep(userId: string, data: Record<string, unknown>): Promise<string> {
+  const steps = Number(data.steps);
+  if (!steps || steps <= 0 || !Number.isFinite(steps)) {
+    return '❌ 步数无效，请提供正整数。格式：步 8234';
+  }
+
   const repo = appDataSource.getRepository(HealthStepRecordEntity);
   const now = dayjs();
-  const hour = data.hour ?? now.hour();
+  const hour = data.hour != null ? Number(data.hour) : now.hour();
   const recordTime = now.hour(hour).minute(0).second(0).millisecond(0).toDate();
 
   // 重复检查：同一天同一小时视为重复记录
@@ -31,20 +36,19 @@ export async function handleStep(userId: string, data: StepData): Promise<string
     .getOne();
 
   if (existing) {
-    // 更新已有记录
-    existing.steps = data.steps;
+    existing.steps = steps;
     existing.hour = hour;
     existing.record_time = recordTime;
     await repo.save(existing);
-    return `✅ 步数已更新：${data.steps} 步`;
+    return `✅ 步数已更新：${steps} 步`;
   }
 
   await repo.save(repo.create({
     user_id: userId,
-    steps: data.steps,
+    steps,
     hour,
     record_time: recordTime,
   }));
 
-  return `✅ 步数已记录：${data.steps} 步 (${hour !== null ? `${hour}:00` : '全天'})`;
+  return `✅ 步数已记录：${steps} 步 (${hour !== null ? `${hour}:00` : '全天'})`;
 }

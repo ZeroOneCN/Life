@@ -14,14 +14,28 @@ import { getHelpText } from './commands/help.command';
 
 /** 命令处理器映射表 */
 const commandHandlers: Record<string, (userId: string, data: Record<string, unknown>) => Promise<string>> = {
-  step: (u, d) => handleStep(u, d as any),
-  weight: (u, d) => handleWeight(u, d as any),
-  diet: (u, d) => handleDiet(u, d as any),
-  exercise: (u, d) => handleExercise(u, d as any),
-  medication: (u, d) => handleMedication(u, d as any),
-  shopping: (u, d) => handleShopping(u, d as any),
-  todo: (u, d) => handleTodo(u, d as any),
+  step: handleStep,
+  weight: handleWeight,
+  diet: handleDiet,
+  exercise: handleExercise,
+  medication: handleMedication,
+  shopping: handleShopping,
+  todo: handleTodo,
 };
+
+/** Bot 菜单命令列表 */
+const BOT_COMMANDS = [
+  { command: 'start', description: '开始使用 LifeOS 快速录入' },
+  { command: 'bind', description: '绑定账号 /bind <6位码>' },
+  { command: 'help', description: '查看所有快捷指令' },
+  { command: 'status', description: '查看绑定状态' },
+  { command: 'steps', description: '记录步数：步 8234' },
+  { command: 'weight', description: '记录体重：重 72.4' },
+  { command: 'diet', description: '记录饮食：早 燕麦杯' },
+  { command: 'exercise', description: '记录运动：跑 30min' },
+  { command: 'meds', description: '记录用药：药 维C' },
+  { command: 'shop', description: '记录购物：买 牛奶 28元' },
+];
 
 // 初始化 Bot 实例
 if (!env.TELEGRAM_BOT_TOKEN) {
@@ -44,6 +58,16 @@ if (env.TELEGRAM_API_ROOT) {
 
 export const bot = new Bot(env.TELEGRAM_BOT_TOKEN || '__placeholder__', botConfig);
 
+// ─── 注册菜单命令 ──────────────────────────────────────────
+async function registerCommands() {
+  try {
+    await bot.api.setMyCommands(BOT_COMMANDS);
+    console.log('[TG Bot] 菜单命令已注册。');
+  } catch (error) {
+    console.error('[TG Bot] 注册菜单命令失败：', error);
+  }
+}
+
 // ─── /start — 欢迎消息 ───────────────────────────────────────
 bot.command('start', async (ctx: Context) => {
   await ctx.reply(
@@ -52,7 +76,7 @@ bot.command('start', async (ctx: Context) => {
     '1. 打开 LifeOS 网页版 → 设置 → Telegram 绑定\n' +
     '2. 复制 6 位绑定码\n' +
     '3. 发送 /bind <绑定码>\n\n' +
-    '发送 /help 查看所有可用指令。',
+    '点击左下角 ⌨️ 按钮查看可用指令，或发送 /help。',
   );
 });
 
@@ -138,6 +162,7 @@ bot.on('message:text', async (ctx: Context) => {
         await ctx.reply(reply);
       } catch (error) {
         const msg = error instanceof Error ? error.message : '未知错误';
+        console.error('[TG Bot] 指令处理异常：', error);
         await ctx.reply(`❌ 录入失败：${msg}`);
       }
       return;
@@ -145,24 +170,32 @@ bot.on('message:text', async (ctx: Context) => {
   }
 
   // 2. 快捷指令未命中，尝试 AI 解析
-  const aiResult = await parseWithAi(text, userId);
-  if (aiResult && aiResult.confidence > 0.7) {
-    const handler = commandHandlers[aiResult.module];
-    if (handler) {
-      try {
+  try {
+    const aiResult = await parseWithAi(text, userId);
+    if (aiResult && aiResult.confidence > 0.7) {
+      const handler = commandHandlers[aiResult.module];
+      if (handler) {
         const reply = await handler(userId, aiResult.data);
         await ctx.reply(`🤖 AI 解析：${reply}`);
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : '未知错误';
-        await ctx.reply(`❌ AI 录入失败：${msg}`);
+        return;
       }
+      // AI 返回的 module 不在支持列表中
+      await ctx.reply(
+        '🤖 AI 已理解你的输入，但暂不支持该模块的自动录入。\n' +
+        '请尝试用快捷指令格式，发送 /help 查看。',
+      );
       return;
     }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : '未知错误';
+    console.error('[TG Bot] AI 解析异常：', error);
+    await ctx.reply(`❌ AI 解析失败：${msg}，请改用快捷指令格式。`);
+    return;
   }
 
   // 3. 都没命中，提示用户
   await ctx.reply(
-    '❓ 无法识别的格式。发送 /help 查看支持的指令，\n' +
+    '❓ 无法识别的格式。点击左下角 ⌨️ 查看可用指令，\n' +
     '或直接用自然语言描述（如"今天跑了5公里"）。',
   );
 });
@@ -183,6 +216,8 @@ export async function startTelegramBot(): Promise<void> {
   }
 
   try {
+    // 注册菜单命令后启动长轮询
+    await registerCommands();
     await bot.start({
       onStart: () => {
         console.log('[TG Bot] 启动成功。');

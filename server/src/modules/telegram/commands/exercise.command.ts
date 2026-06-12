@@ -16,32 +16,37 @@ const exerciseNameMap: Record<string, string> = {
   普拉提: '普拉提',
 };
 
-/** 运动命令数据 */
-interface ExerciseData {
-  exerciseType: string;
-  durationMin: number;
-  intensity: string;
-}
-
 /**
  * 处理运动录入命令
  * @param userId - LifeOS 用户 ID
  * @param data - 解析后的运动数据
  * @returns 操作结果消息
  */
-export async function handleExercise(userId: string, data: ExerciseData): Promise<string> {
+export async function handleExercise(userId: string, data: Record<string, unknown>): Promise<string> {
+  const exerciseType = String(data.exerciseType ?? '');
+  const durationMin = Number(data.durationMin);
+  const intensity = String(data.intensity ?? 'medium');
+
+  if (!exerciseType) {
+    return '❌ 运动类型不能为空。格式：跑 30min 高强度';
+  }
+  if (!durationMin || durationMin <= 0 || durationMin > 1440) {
+    return '❌ 时长无效（1-1440 分钟）。';
+  }
+
+  const exerciseName = exerciseNameMap[exerciseType] ?? exerciseType;
+
   const repo = appDataSource.getRepository(HealthFitnessExerciseRecordEntity);
-  const exerciseName = exerciseNameMap[data.exerciseType] ?? data.exerciseType;
 
   await repo.save(repo.create({
     user_id: userId,
     date: dayjs().format('YYYY-MM-DD'),
-    exercise_type: data.exerciseType,
+    exercise_type: exerciseType,
     exercise_name: exerciseName,
-    duration: data.durationMin,
+    duration: durationMin,
     calories: 0,
-    intensity: data.intensity,
+    intensity,
   }));
 
-  return `🏃 运动已记录：${exerciseName} ${data.durationMin}分钟 (${data.intensity})`;
+  return `🏃 运动已记录：${exerciseName} ${durationMin}分钟 (${intensity})`;
 }
