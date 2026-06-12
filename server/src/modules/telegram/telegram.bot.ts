@@ -57,12 +57,19 @@ bot.command('bind', async (ctx: Context) => {
     return;
   }
 
-  const result = await consumeBindCode(code, String(tgUser.id), String(ctx.chat?.id ?? '0'), tgUser.username);
+  try {
+    const result = await consumeBindCode(code, String(tgUser.id), String(ctx.chat?.id ?? '0'), tgUser.username);
 
-  if (result.success) {
-    await ctx.reply(`✅ ${result.message}\n现在可以直接发送数据了！发送 /help 查看指令。`);
-  } else {
-    await ctx.reply(`❌ ${result.message}`);
+    if (result.success) {
+      await ctx.reply(`✅ ${result.message}\n现在可以直接发送数据了！发送 /help 查看指令。`);
+    } else {
+      await ctx.reply(`❌ ${result.message}`);
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : '未知错误';
+    // eslint-disable-next-line no-console
+    console.error('[Telegram] /bind error:', error);
+    await ctx.reply(`❌ 绑定失败：${msg}\n请检查后端服务是否正常，或重新生成绑定码后再试。`);
   }
 });
 

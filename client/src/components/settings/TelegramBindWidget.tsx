@@ -26,8 +26,10 @@ export default function TelegramBindWidget() {
     try {
       const result = await getTelegramBindingStatus();
       setStatus(result);
-    } catch {
-      // 静默失败
+    } catch (error) {
+      // API 失败时设为未绑定状态，让 UI 可用
+      setStatus({ bound: false });
+      showToast('查询绑定状态失败，请检查后端服务', 'error');
     } finally {
       setLoading(false);
     }
@@ -119,11 +121,14 @@ export default function TelegramBindWidget() {
         ) : (
           <div className="tg-bind-unbound">
             <Tag tone="orange">未绑定</Tag>
+            <Btn tone="ghost" onClick={fetchStatus} disabled={loading}>
+              刷新状态
+            </Btn>
           </div>
         )}
       </div>
 
-      {/* 绑定操作区 */}
+      {/* 绑定操作区（未绑定时显示） */}
       {!status?.bound && (
         <div className="tg-bind-actions">
           {!bindCode ? (
