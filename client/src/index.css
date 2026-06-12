@@ -85,6 +85,14 @@
   --shadow-blue: rgba(0,55,112,0.08);
   --shadow-soft: 0 16px 40px rgba(20,26,36,0.08);
 
+  /* Auth page 扩展变量 */
+  --color-border: #cdd2de;
+  --color-surface-dim: #f1f2f7;
+  --color-ink-subtle: #8b95a5;
+  --color-primary-muted: #c4b5fd;
+  --color-primary-subtle: #ede9fe;
+  --color-primary-dark: #4335c9;
+
   /* Typography */
   --font-sans: 'Outfit', 'Plus Jakarta Sans', 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'SFMono-Regular', ui-monospace, monospace;
@@ -145,6 +153,14 @@
   --color-surface-1: #13151b;
   --color-on-primary: #ffffff;
   --shadow-soft: 0 16px 40px rgba(0,0,0,0.35);
+
+  /* Auth page 扩展变量 */
+  --color-border: #3d4152;
+  --color-surface-dim: #1c1e26;
+  --color-ink-subtle: #636a7a;
+  --color-primary-muted: #5b4bcf;
+  --color-primary-subtle: #1e1b3e;
+  --color-primary-dark: #a594fc;
 }
 
 /* ── 暗黑模式：Recharts 图表组件文字/线条颜色覆盖 ── */
@@ -7674,11 +7690,11 @@ textarea {
   min-height: 100vh;
   padding: 40px 28px 56px;
   font-family: var(--font-sans);
-  /* 渐变背景：白色基底 + 淡 indigo 径向光晕，增加空间深度 */
+  /* 渐变背景：深色基底 + 淡 indigo 径向光晕，增加空间深度 */
   background:
     radial-gradient(ellipse 80% 60% at 20% 40%, rgba(83, 58, 253, 0.06) 0%, transparent 70%),
     radial-gradient(ellipse 60% 50% at 80% 20%, rgba(83, 58, 253, 0.04) 0%, transparent 60%),
-    linear-gradient(180deg, #fafafe 0%, #fff 100%);
+    linear-gradient(180deg, var(--color-canvas) 0%, var(--color-surface) 100%);
 }
 
 .auth-page-main {
@@ -7700,8 +7716,8 @@ textarea {
 .auth-layout-grid > .card {
   box-shadow:
     0 8px 32px rgba(83, 58, 253, 0.10),
-    0 2px 8px rgba(0, 0, 0, 0.04);
-  border-color: rgba(83, 58, 253, 0.10);
+    0 2px 8px rgba(0, 0, 0, 0.06);
+  border-color: var(--color-primary-muted);
 }
 
 /* 左侧品牌面板 */
@@ -7836,9 +7852,9 @@ textarea {
 }
 
 .auth-mode-tab.is-active {
-  background: #fff;
+  background: var(--color-surface);
   color: var(--color-ink);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .auth-mode-tab:disabled {
