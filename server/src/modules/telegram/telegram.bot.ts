@@ -35,9 +35,18 @@ if (!env.TELEGRAM_BOT_TOKEN) {
 /** 构建 grammy Bot 配置 */
 const botConfig: ConstructorParameters<typeof Bot>[1] = {};
 if (env.TELEGRAM_API_ROOT) {
-  botConfig.client = { ...botConfig.client, apiRoot: env.TELEGRAM_API_ROOT };
+  botConfig.client = {
+    ...botConfig.client,
+    apiRoot: env.TELEGRAM_API_ROOT,
+  };
   // eslint-disable-next-line no-console
   console.log('[Telegram] Using custom API root:', env.TELEGRAM_API_ROOT);
+
+  // 自签名证书需要跳过 TLS 验证
+  if (env.TELEGRAM_API_ROOT.startsWith('https://')) {
+    // eslint-disable-next-line no-console
+    console.log('[Telegram] Note: If using self-signed cert, set NODE_TLS_REJECT_UNAUTHORIZED=0');
+  }
 }
 
 export const bot = new Bot(env.TELEGRAM_BOT_TOKEN || '__placeholder__', botConfig);
