@@ -1,4 +1,5 @@
 import { env } from '../../../config/env';
+import { recordAssistantUsage, estimateTokens } from '../../system/assistant-usage.service';
 
 /** AI 解析结果 */
 interface AiParseResult {
@@ -14,12 +15,18 @@ interface AiParseResult {
  * 使用 DeepSeek AI 解析自然语言输入
  * 仅在快捷指令无法匹配时作为 fallback
  * @param text - 用户原始输入文本
+ * @param userId - LifeOS 用户 ID（用于记录 Token 消耗）
  * @returns AI 解析结果，解析失败或未配置 API Key 返回 null
  */
-export async function parseWithAi(text: string): Promise<AiParseResult | null> {
+export async function parseWithAi(text: string, userId?: string): Promise<AiParseResult | null> {
   if (!env.DEEPSEEK_API_KEY) {
     return null;
   }
+
+  const systemPrompt = `你是 LifeOS 数据录入助手。将用户自然语言转换为结构化 JSON。
+支持模块：step(步数), weight(体重), diet(饮食), exercise(运动), medication(用药), shopping(购物), todo(待办)。
+只返回 JSON，不要其他文字。格式：{"module":"xxx","data":{...},"confidence":0.9}`;
+  const userContent = text;
 
   try {
     const response = await fetch(`${env.DEEPSEEK_BASE_URL}/chat/completions`, {
@@ -31,13 +38,8 @@ export async function parseWithAi(text: string): Promise<AiParseResult | null> {
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages: [
-          {
-            role: 'system',
-            content: `你是 LifeOS 数据录入助手。将用户自然语言转换为结构化 JSON。
-支持模块：step(步数), weight(体重), diet(饮食), exercise(运动), medication(用药), shopping(购物), todo(待办)。
-只返回 JSON，不要其他文字。格式：{"module":"xxx","data":{...},"confidence":0.9}`,
-          },
-          { role: 'user', content: text },
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userContent },
         ],
         temperature: 0.1,
         max_tokens: 200,
@@ -45,6 +47,17 @@ export async function parseWithAi(text: string): Promise<AiParseResult | null> {
     });
 
     if (!response.ok) {
+      // 记录失败的调用
+      if (userId) {
+        recordAssistantUsage({
+          userId,
+          scene: 'telegram',
+          requestCount: 1,
+          prompt: estimateTokens(systemPrompt) + estimateTokens(userContent),
+          completion: 0,
+          status: 'error',
+        });
+      }
       return null;
     }
 
@@ -56,7 +69,21 @@ export async function parseWithAi(text: string): Promise<AiParseResult | null> {
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return null;
 
-    return JSON.parse(jsonMatch[0]) as AiParseResult;
+    const result = JSON.parse(jsonMatch[0]) as AiParseResult;
+
+    // 记录成功的 AI 调用消耗
+    if (userId) {
+      recordAssistantUsage({
+        userId,
+        scene: 'telegram',
+        requestCount: 1,
+        prompt: estimateTokens(systemPrompt) + estimateTokens(userContent),
+        completion: estimateTokens(content),
+        status: 'success',
+      });
+    }
+
+    return result;
   } catch {
     return null;
   }

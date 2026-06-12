@@ -247,6 +247,7 @@ const SCENE_LABELS: Record<string, string> = {
   'chat': 'AI 智能助理',
   'fitness.food': '饮食营养查询',
   'fitness.exercise': '运动消耗查询',
+  'telegram': 'Telegram 快速录入',
 };
 
 /**

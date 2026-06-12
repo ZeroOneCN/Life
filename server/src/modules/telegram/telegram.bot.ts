@@ -145,7 +145,7 @@ bot.on('message:text', async (ctx: Context) => {
   }
 
   // 2. 快捷指令未命中，尝试 AI 解析
-  const aiResult = await parseWithAi(text);
+  const aiResult = await parseWithAi(text, userId);
   if (aiResult && aiResult.confidence > 0.7) {
     const handler = commandHandlers[aiResult.module];
     if (handler) {
