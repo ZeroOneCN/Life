@@ -36,7 +36,7 @@ async function bootstrap() {
 
     const app = createApp();
 
-    app.listen(env.PORT, () => {
+    app.listen(env.PORT, '0.0.0.0', () => {
       // Keep startup logging minimal until a real logger is wired in.
       // eslint-disable-next-line no-console
       console.log(`LifeOS server listening on :${env.PORT}`);
