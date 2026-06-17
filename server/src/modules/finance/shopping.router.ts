@@ -563,18 +563,8 @@ export function createShoppingRouter() {
       const itemName = row.itemName?.trim() ?? '';
       const price = toMoney(row.price, NaN);
 
-      /* [导入调试] 输出前3行 */
-      if (invalidCount + duplicateCount + importedCount < 3) {
-        console.log('[购物导入-调试] 行数据:', { ledgerId, date, platform, itemName: itemName?.slice(0,30), price });
-      }
-
       if (!ledgerId || !date || !platform || !itemName || !Number.isFinite(price) || price <= 0) {
         invalidCount += 1;
-
-        /* [导入调试] 输出无效原因 */
-        if (invalidCount <= 3) {
-          console.log('[购物导入-调试] 无效 #' + invalidCount + ':', { ledgerId: !!ledgerId, date: !!date, platform: !!platform, itemName: !!itemName, priceValid: Number.isFinite(price) && price > 0 });
-        }
         return;
       }
 
@@ -613,9 +603,6 @@ export function createShoppingRouter() {
     if (toSave.length) {
       await recordRepo.save(toSave);
     }
-
-    /* [导入调试] 汇总 */
-    console.log('[购物导入-调试] 汇总: total=' + rows.length + ' imported=' + importedCount + ' duplicate=' + duplicateCount + ' invalid=' + invalidCount);
 
     await batchRepo.save(batchRepo.create({
       user_id: authUserId,

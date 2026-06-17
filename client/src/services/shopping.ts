@@ -58,7 +58,6 @@ function normalizeDate(value: unknown) {
 
   if (/^\d{6}$/.test(raw)) {
     const parsed = dayjs(raw, 'YYMMDD');
-    console.log('[购物导入-调试] normalizeDate 6位:', raw, '->', parsed.format(DATE_FORMAT), 'isValid:', parsed.isValid());
     if (parsed.isValid()) {
       return parsed.format(DATE_FORMAT);
     }
@@ -162,12 +161,13 @@ function createInitialPlatforms(): ShoppingPlatform[] {
   })));
 }
 
-function buildRecordDedupKey(record: Pick<ShoppingRecord, 'ledgerId' | 'date' | 'platform' | 'itemName' | 'price' | 'orderNo'>) {
+function buildRecordDedupKey(record: Pick<ShoppingRecord, 'ledgerId' | 'date' | 'platform' | 'itemName' | 'spec' | 'price' | 'orderNo'>) {
   return [
     normalizeLedgerId(record.ledgerId).toLowerCase(),
     normalizeDate(record.date),
     record.platform.trim().toLowerCase(),
     record.itemName.trim().toLowerCase(),
+    (record.spec ?? '').trim().toLowerCase(),
     Number(record.price).toFixed(2),
     record.orderNo.trim().toLowerCase(),
   ].join('::');
@@ -613,10 +613,7 @@ function normalizeImportDateCell(value: unknown) {
 
     // 6 位 = YYMMDD，8 位 = YYYYMMDD，优先按日期格式解析
     if (/^\d{6}$/.test(str) || /^\d{8}$/.test(str)) {
-      const result = normalizeDate(str);
-      /* [导入调试] */
-      console.log('[购物导入-调试] 数字日期解析:', value, '-> str=' + str, '-> result=' + result);
-      return result;
+      return normalizeDate(str);
     }
 
     // 否则按 Excel 日期序列号处理
@@ -671,24 +668,15 @@ function buildImportedRecord(
   const itemName = normalizeTrimmedValue(rawItemName);
   const price = toNumber(rawPrice, NaN);
 
-  /* [导入调试] 输出前3行原始值和解析结果 */
-  if (rowNumber <= 3) {
-    console.log('[购物导入-调试] 行' + rowNumber + ' 原始值:', { rawDate, rawPlatform: rawPlatform?.slice(0,20), rawItemName: rawItemName?.slice(0,30), rawPrice });
-    console.log('[购物导入-调试] 行' + rowNumber + ' 解析后:', { date, platformName, itemName: itemName?.slice(0,30), price });
-  }
-
   if (!date) {
-    console.warn('[购物导入-调试] 行' + rowNumber + ' 失败: 缺少日期, rawDate=', rawDate, ', type=', typeof rawDate);
     return { record: null, invalid: { rowNumber, reason: '缺少可解析的日期' } };
   }
 
   if (!itemName) {
-    console.warn('[购物导入-调试] 行' + rowNumber + ' 失败: 缺少商品名称');
     return { record: null, invalid: { rowNumber, reason: '缺少商品名称' } };
   }
 
   if (!Number.isFinite(price) || price <= 0) {
-    console.warn('[购物导入-调试] 行' + rowNumber + ' 失败: 价格无效, rawPrice=' + rawPrice + ', parsed=' + price);
     return { record: null, invalid: { rowNumber, reason: '价格不是有效正数' } };
   }
 
