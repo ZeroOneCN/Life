@@ -646,7 +646,7 @@ function buildImportedRecord(
   const rawLedgerName = readAliasValue(row, ['账本', '账本名称', 'ledger', 'ledgerName']);
   const rawDate = readAliasValue(row, ['日期', 'date']);
   const rawPlatform = readAliasValue(row, ['平台', '购买平台', 'platform']);
-  const rawItemName = readAliasValue(row, ['商品名称', '商品名', 'itemname', 'itemName']);
+  const rawItemName = readAliasValue(row, ['商品名称', '商品名', '名称', 'itemname', 'itemName']);
   const rawSpec = readAliasValue(row, ['规格', 'spec']);
   const rawPrice = readAliasValue(row, ['价格', '总价', 'price']);
   const rawUnitPrice = readAliasValue(row, ['单价', 'unitprice', 'unitPrice']);
@@ -658,15 +658,24 @@ function buildImportedRecord(
   const itemName = normalizeTrimmedValue(rawItemName);
   const price = toNumber(rawPrice, NaN);
 
+  /* [导入调试] 输出前3行原始值和解析结果 */
+  if (rowNumber <= 3) {
+    console.log('[购物导入-调试] 行' + rowNumber + ' 原始值:', { rawDate, rawPlatform: rawPlatform?.slice(0,20), rawItemName: rawItemName?.slice(0,30), rawPrice });
+    console.log('[购物导入-调试] 行' + rowNumber + ' 解析后:', { date, platformName, itemName: itemName?.slice(0,30), price });
+  }
+
   if (!date) {
+    console.warn('[购物导入-调试] 行' + rowNumber + ' 失败: 缺少日期, rawDate=', rawDate, ', type=', typeof rawDate);
     return { record: null, invalid: { rowNumber, reason: '缺少可解析的日期' } };
   }
 
   if (!itemName) {
+    console.warn('[购物导入-调试] 行' + rowNumber + ' 失败: 缺少商品名称');
     return { record: null, invalid: { rowNumber, reason: '缺少商品名称' } };
   }
 
   if (!Number.isFinite(price) || price <= 0) {
+    console.warn('[购物导入-调试] 行' + rowNumber + ' 失败: 价格无效, rawPrice=' + rawPrice + ', parsed=' + price);
     return { record: null, invalid: { rowNumber, reason: '价格不是有效正数' } };
   }
 
