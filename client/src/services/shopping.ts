@@ -56,6 +56,13 @@ function normalizeDate(value: unknown) {
     }
   }
 
+  if (/^\d{6}$/.test(raw)) {
+    const parsed = dayjs(raw, 'YYMMDD');
+    if (parsed.isValid()) {
+      return parsed.format(DATE_FORMAT);
+    }
+  }
+
   const sanitized = raw.replace(/\./g, '-').replace(/\//g, '-');
   const parsed = dayjs(sanitized);
   return parsed.isValid() ? parsed.format(DATE_FORMAT) : dayjs().format(DATE_FORMAT);
