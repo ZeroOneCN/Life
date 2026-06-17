@@ -155,7 +155,7 @@ export function createStorageRouter() {
         user_id: userId,
       },
       order: {
-        updated_at: 'DESC',
+        purchase_date: 'DESC',
       },
     });
 
