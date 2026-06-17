@@ -155,6 +155,9 @@ export default function ShoppingPage() {
   const handleImportFile = async (file: File) => {
     setImporting(true);
     try {
+      /* [导入调试] */
+      console.log('[购物导入-调试] activeLedgerId=', settings.activeLedgerId, 'ledgers count=', ledgers.length);
+
       const result = await importShoppingWorkbook(file, {
         activeLedgerId: settings.activeLedgerId,
         records,
@@ -164,6 +167,11 @@ export default function ShoppingPage() {
       setImportResult(result);
 
       if (result.importedCount || result.createdLedgerCount || result.createdPlatformCount) {
+        /* [导入调试] 看第一条记录的 ledgerId */
+        if (result.importedRecords.length > 0) {
+          console.log('[购物导入-调试] 首条记录样本:', JSON.stringify(result.importedRecords[0]).slice(0, 200));
+        }
+
         await Promise.all([
           ...result.nextLedgers
             .filter((item) => !ledgers.some((current) => current.id === item.id))

@@ -606,7 +606,16 @@ export function dedupeImportedShoppingRecords(
 }
 
 function normalizeImportDateCell(value: unknown) {
+  /* 数字类型：区分 Excel 日期序列号（如 45678）和日期编码（如 251113/20251113） */
   if (typeof value === 'number') {
+    const str = String(Math.floor(value));
+
+    // 6 位 = YYMMDD，8 位 = YYYYMMDD，优先按日期格式解析
+    if (/^\d{6}$/.test(str) || /^\d{8}$/.test(str)) {
+      return normalizeDate(str);
+    }
+
+    // 否则按 Excel 日期序列号处理
     const parsed = XLSX.SSF.parse_date_code(value);
 
     if (parsed) {
