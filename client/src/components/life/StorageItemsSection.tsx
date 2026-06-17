@@ -7,7 +7,7 @@ import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag
 import { buildApiErrorMessage } from '../../lib/api';
 import { calculateStorageDailyCost, calculateStorageUsageDays, formatStorageMoney, getStorageStatusLabel } from '../../services/storage';
 import { storageApi } from '../../services/storageApi';
-import { StorageImportFromShoppingModal } from './StorageImportFromShoppingModal';
+
 import type { StorageItemDraft, StorageItemRecord, StoragePageSettings } from '../../types/storage';
 
 interface StorageItemsSectionProps {
@@ -88,7 +88,7 @@ export function StorageItemsSection({
   const [total, setTotal] = useState(0);
   const [editingItem, setEditingItem] = useState<StorageItemRecord | null>(null);
   const [editingForm, setEditingForm] = useState<StorageFormState>(createDefaultFormState);
-  const [showImportModal, setShowImportModal] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [archivingItem, setArchivingItem] = useState<StorageItemRecord | null>(null);
 
   const loadItems = async () => {
@@ -173,6 +173,20 @@ export function StorageItemsSection({
     }
   };
 
+  const handleSyncFromShopping = async () => {
+    setSyncing(true);
+    try {
+      const result = await storageApi.syncFromShopping();
+      showToast(`同步完成：新增 ${result.addedCount} 条，移除 ${result.removedCount} 条，共 ${result.totalCount} 条`);
+      onChanged();
+      await loadItems();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '同步失败'), 'error');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const hasActiveFilters = Boolean(
     keyword
     || statusFilter !== 'active'
@@ -252,7 +266,14 @@ export function StorageItemsSection({
 
         <div className="storage-action-bar">
           <Btn tone="primary" type="submit" className="storage-save-btn">保存物品</Btn>
-          <Btn tone="secondary" onClick={() => setShowImportModal(true)} className="storage-import-btn">从购物导入</Btn>
+          <Btn
+            tone="secondary"
+            onClick={handleSyncFromShopping}
+            disabled={syncing}
+            className="storage-import-btn"
+          >
+            {syncing ? '同步中...' : '同步购物数据'}
+          </Btn>
         </div>
 
         <div className="storage-filter-grid">
@@ -485,17 +506,6 @@ export function StorageItemsSection({
           </>
         )}
       </Modal>
-
-      <StorageImportFromShoppingModal
-        open={showImportModal}
-        onClose={() => setShowImportModal(false)}
-        onImported={() => {
-          onChanged();
-          void loadItems();
-        }}
-        showToast={showToast}
-        existingItems={items}
-      />
 
       <DeleteModal
         open={!!archivingItem}

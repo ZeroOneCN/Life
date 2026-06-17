@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { In } from 'typeorm';
 import dayjs from 'dayjs';
 
 import { appDataSource } from '../../db/data-source';
@@ -46,9 +45,7 @@ const restoreSchema = z.object({
   itemId: z.string().min(1),
 });
 
-const importFromShoppingSchema = z.object({
-  shoppingRecordIds: z.array(z.string().min(1)).min(1),
-});
+
 
 const settingService = new BaseUserSettingService(LifeStorageSettingEntity);
 
@@ -431,74 +428,94 @@ export function createStorageRouter() {
     response.json(successResponse(mapStorageItem(next), 'restore_storage_item_success'));
   }));
 
-  router.post('/actions/import-from-shopping', asyncHandler(async (request: AuthenticatedRequest, response) => {
+  // 一键同步：自动将购物记录与存储物品双向同步
+  router.post('/actions/sync-from-shopping', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
-    const payload = validateBody(importFromShoppingSchema, request.body);
-    const { shoppingRecordIds } = payload;
-
     const shoppingRepo = appDataSource.getRepository(FinanceShoppingRecordEntity);
     const storageRepo = appDataSource.getRepository(LifeStorageItemEntity);
 
-    const shoppingRecords = await shoppingRepo.findByIds(shoppingRecordIds);
+    // 查询该用户所有购物记录
+    const allShoppingRecords = await shoppingRepo.find({
+      where: { user_id: userId },
+    });
 
-    if (shoppingRecords.length === 0) {
-      throw new AppError('shopping_records_not_found', 404, 404);
-    }
-
-    const existingImported = await storageRepo.find({
+    // 查询该用户所有来源为 'shopping' 的存储记录
+    const allShoppingStorageItems = await storageRepo.find({
       where: {
         user_id: userId,
-        shopping_record_id: In(shoppingRecordIds),
+        source: 'shopping',
       },
     });
-    const existingShoppingRecordIds = new Set(existingImported.map((item) => item.shopping_record_id).filter(Boolean));
 
-    let importedCount = 0;
-    let duplicateCount = 0;
-    const importedItems: LifeStorageItemEntity[] = [];
-    const toSave: LifeStorageItemEntity[] = [];
-
-    for (const record of shoppingRecords) {
-      if (existingShoppingRecordIds.has(record.id)) {
-        duplicateCount += 1;
-        continue;
+    // 构建购物记录 ID 集合（用于快速查找）
+    const shoppingRecordIdSet = new Set(allShoppingRecords.map((r) => r.id));
+    // 构建已同步的存储条目映射（shopping_record_id -> storage item）
+    const storageByShoppingId = new Map<string, LifeStorageItemEntity>();
+    for (const item of allShoppingStorageItems) {
+      if (item.shopping_record_id) {
+        storageByShoppingId.set(item.shopping_record_id, item);
       }
-
-      const notes = [
-        '来自购物记录',
-        `平台: ${record.platform}`,
-        record.order_no ? `订单号: ${record.order_no}` : '',
-        record.spec ? `规格: ${record.spec}` : '',
-        record.note ? `备注: ${record.note}` : '',
-      ].filter(Boolean).join(' | ');
-
-      const item = storageRepo.create({
-        user_id: userId,
-        item_name: record.item_name,
-        purchase_price: record.price,
-        purchase_date: record.date,
-        end_date: null,
-        notes,
-        status: 'active',
-        archived_at: null,
-        source: 'shopping',
-        shopping_record_id: record.id,
-      });
-
-      toSave.push(item);
-      importedCount += 1;
     }
 
-    if (toSave.length > 0) {
-      const savedItems = await storageRepo.save(toSave);
-      importedItems.push(...savedItems);
+    let addedCount = 0;
+    let removedCount = 0;
+    const toAdd: LifeStorageItemEntity[] = [];
+    const toRemove: LifeStorageItemEntity[] = [];
+
+    // 1. 遍历购物记录，找出需要新增的存储条目（购物记录存在但存储中没有）
+    for (const record of allShoppingRecords) {
+      if (!storageByShoppingId.has(record.id)) {
+        // 组合备注信息（平台、订单号、规格、备注）
+        const notes = [
+          '来自购物记录',
+          `平台: ${record.platform}`,
+          record.order_no ? `订单号: ${record.order_no}` : '',
+          record.spec ? `规格: ${record.spec}` : '',
+          record.note ? `备注: ${record.note}` : '',
+        ].filter(Boolean).join(' | ');
+
+        const item = storageRepo.create({
+          user_id: userId,
+          item_name: record.item_name,
+          purchase_price: record.price,
+          purchase_date: record.date,
+          end_date: null,
+          notes,
+          status: 'active',
+          archived_at: null,
+          source: 'shopping',
+          shopping_record_id: record.id,
+        });
+
+        toAdd.push(item);
+        addedCount += 1;
+      }
+      // 已存在且匹配 → 跳过（已同步）
     }
 
+    // 2. 遍历存储条目，找出需要删除的（存储中有但购物记录已被删除）
+    for (const item of allShoppingStorageItems) {
+      if (item.shopping_record_id && !shoppingRecordIdSet.has(item.shopping_record_id)) {
+        toRemove.push(item);
+        removedCount += 1;
+      }
+    }
+
+    // 批量执行新增和删除
+    if (toAdd.length > 0) {
+      await storageRepo.save(toAdd);
+    }
+
+    if (toRemove.length > 0) {
+      await storageRepo.remove(toRemove);
+    }
+
+    // 返回同步统计结果
     response.json(successResponse({
-      importedCount,
-      duplicateCount,
-      items: importedItems.map(mapStorageItem),
-    }, 'import_from_shopping_success'));
+      addedCount,
+      removedCount,
+      totalCount: addedCount + removedCount,
+    }, 'sync_from_shopping_success'));
   }));
 
   return router;

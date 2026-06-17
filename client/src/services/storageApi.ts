@@ -66,11 +66,11 @@ export const storageApi = {
     return apiPost<StorageItemRecord, { itemId: string }>('/life/storage/actions/restore', { itemId });
   },
 
-  importFromShopping(shoppingRecordIds: string[]) {
+  syncFromShopping() {
     return apiPost<{
-      importedCount: number;
-      duplicateCount: number;
-      items: StorageItemRecord[];
-    }, { shoppingRecordIds: string[] }>('/life/storage/actions/import-from-shopping', { shoppingRecordIds });
+      addedCount: number;
+      removedCount: number;
+      totalCount: number;
+    }, Record<string, unknown>>('/life/storage/actions/sync-from-shopping', {});
   },
 };
