@@ -332,7 +332,7 @@ export function StorageItemsSection({
                   dataIndex: 'itemName',
                   width: 220,
                   render: (_, row) => (
-                    <div className="storage-item-name">
+                    <div className="storage-item-name" title={`${row.itemName}${row.notes ? ` - ${row.notes}` : ''}`}>
                       <strong>{row.itemName}</strong>
                       <span>{row.notes || '暂无备注'}</span>
                     </div>
