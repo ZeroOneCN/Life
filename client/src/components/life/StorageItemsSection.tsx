@@ -134,6 +134,7 @@ export function StorageItemsSection({
 
   const handleCreate = async () => {
     const draft = parseDraft(form);
+    console.log('[存储-调试] handleCreate form:', JSON.stringify(form), 'draft:', draft);
 
     if (!draft) {
       showToast('请填写完整的物品名称、购买价格和购买日期，且结束日期不能早于购买日期。', 'error');
@@ -141,12 +142,14 @@ export function StorageItemsSection({
     }
 
     try {
-      await storageApi.create(draft);
+      const result = await storageApi.create(draft);
+      console.log('[存储-调试] create 结果:', result);
       setForm(createDefaultFormState());
       showToast('物品记录已保存。');
       onChanged();
       await loadItems();
     } catch (error) {
+      console.error('[存储-调试] create 失败:', error);
       showToast(buildApiErrorMessage(error, '创建物品失败。'), 'error');
     }
   };
