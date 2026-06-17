@@ -452,10 +452,16 @@ export function createStorageRouter() {
     // 构建已同步的存储条目映射（shopping_record_id -> storage item）
     const storageByShoppingId = new Map<string, LifeStorageItemEntity>();
     for (const item of allShoppingStorageItems) {
-      if (item.shopping_record_id) {
-        storageByShoppingId.set(item.shopping_record_id, item);
+      const sid = item.shopping_record_id;
+      if (sid) {
+        storageByShoppingId.set(sid, item);
+      } else {
+        // 调试：确认是否有 shopping 来源但 shopping_record_id 为空的脏数据
+        console.log('[存储同步-调试] shopping来源但无record_id:', item.id, item.item_name?.slice(0, 20));
       }
     }
+
+    console.log('[存储同步-调试] 购物记录:', allShoppingRecords.length, '条, 已同步存储:', allShoppingStorageItems.length, '条, mapping命中:', storageByShoppingId.size, '条');
 
     let addedCount = 0;
     let removedCount = 0;
@@ -511,6 +517,7 @@ export function createStorageRouter() {
     }
 
     // 返回同步统计结果
+    console.log('[存储同步-调试] 结果: 新增=' + addedCount + ' 移除=' + removedCount);
     response.json(successResponse({
       addedCount,
       removedCount,
