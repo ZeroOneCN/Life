@@ -9,7 +9,7 @@ import {
 } from '../services/auth';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim()
-  || 'http://localhost:3100/api';
+  || '/api';
 
 const refreshClient = axios.create({
   baseURL: API_BASE_URL,
