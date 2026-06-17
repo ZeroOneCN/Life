@@ -57,7 +57,11 @@ function normalizeDate(value: unknown) {
   }
 
   if (/^\d{6}$/.test(raw)) {
-    const parsed = dayjs(raw, 'YYMMDD');
+    /* 手动拆分 YYMMDD，避免 dayjs 贪婪匹配导致 251113→2512年 */
+    const y = raw.slice(0, 2);
+    const m = raw.slice(2, 4);
+    const d = raw.slice(4, 6);
+    const parsed = dayjs(`20${y}-${m}-${d}`);
     if (parsed.isValid()) {
       return parsed.format(DATE_FORMAT);
     }
