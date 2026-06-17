@@ -638,7 +638,7 @@ function buildImportedRecord(
 ): { record: ShoppingRecord | null; invalid: ShoppingImportInvalidRow | null } {
   const rawLedgerName = readAliasValue(row, ['账本', '账本名称', 'ledger', 'ledgerName']);
   const rawDate = readAliasValue(row, ['日期', 'date']);
-  const rawPlatform = readAliasValue(row, ['平台', 'platform']);
+  const rawPlatform = readAliasValue(row, ['平台', '购买平台', 'platform']);
   const rawItemName = readAliasValue(row, ['商品名称', '商品名', 'itemname', 'itemName']);
   const rawSpec = readAliasValue(row, ['规格', 'spec']);
   const rawPrice = readAliasValue(row, ['价格', '总价', 'price']);
