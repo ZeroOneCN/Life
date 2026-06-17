@@ -134,7 +134,6 @@ export function StorageItemsSection({
 
   const handleCreate = async () => {
     const draft = parseDraft(form);
-    console.log('[存储-调试] handleCreate form:', JSON.stringify(form), 'draft:', draft);
 
     if (!draft) {
       showToast('请填写完整的物品名称、购买价格和购买日期，且结束日期不能早于购买日期。', 'error');
@@ -142,14 +141,12 @@ export function StorageItemsSection({
     }
 
     try {
-      const result = await storageApi.create(draft);
-      console.log('[存储-调试] create 结果:', result);
+      await storageApi.create(draft);
       setForm(createDefaultFormState());
       showToast('物品记录已保存。');
       onChanged();
       await loadItems();
     } catch (error) {
-      console.error('[存储-调试] create 失败:', error);
       showToast(buildApiErrorMessage(error, '创建物品失败。'), 'error');
     }
   };
@@ -265,19 +262,18 @@ export function StorageItemsSection({
             onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
             placeholder="记录用途或状态"
           />
+          <div className="storage-action-bar">
+            <Btn tone="primary" type="submit" className="storage-save-btn">保存物品</Btn>
+            <Btn
+              tone="secondary"
+              onClick={handleSyncFromShopping}
+              disabled={syncing}
+              className="storage-import-btn"
+            >
+              {syncing ? '同步中...' : '同步购物数据'}
+            </Btn>
+          </div>
         </form>
-
-        <div className="storage-action-bar">
-          <Btn tone="primary" type="submit" className="storage-save-btn">保存物品</Btn>
-          <Btn
-            tone="secondary"
-            onClick={handleSyncFromShopping}
-            disabled={syncing}
-            className="storage-import-btn"
-          >
-            {syncing ? '同步中...' : '同步购物数据'}
-          </Btn>
-        </div>
 
         <div className="storage-filter-grid">
           <Field
