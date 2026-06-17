@@ -130,6 +130,7 @@ function buildRecordKey(item: {
   date: string;
   platform: string;
   itemName: string;
+  spec: string;
   price: number;
   orderNo: string;
 }) {
@@ -139,6 +140,7 @@ function buildRecordKey(item: {
     item.date,
     item.platform.trim().toLowerCase(),
     item.itemName.trim().toLowerCase(),
+    (item.spec ?? '').trim().toLowerCase(),
     item.price.toFixed(2),
     item.orderNo.trim().toLowerCase(),
   ].join('|');
@@ -543,6 +545,7 @@ export function createShoppingRouter() {
       date: item.date,
       platform: item.platform,
       itemName: item.item_name,
+      spec: item.spec ?? '',
       price: Number(item.price),
       orderNo: item.order_no,
     })));
@@ -571,6 +574,7 @@ export function createShoppingRouter() {
         date,
         platform,
         itemName,
+        spec: row.spec ?? '',
         price,
         orderNo: row.orderNo ?? '',
       });
