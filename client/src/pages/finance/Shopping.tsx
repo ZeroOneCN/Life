@@ -158,8 +158,9 @@ export default function ShoppingPage() {
       /* [导入调试] */
       console.log('[购物导入-调试] activeLedgerId=', settings.activeLedgerId, 'ledgers count=', ledgers.length);
 
+      const importLedgerId = settings.activeLedgerId || activeLedger?.id || '';
       const result = await importShoppingWorkbook(file, {
-        activeLedgerId: settings.activeLedgerId,
+        activeLedgerId: importLedgerId,
         records,
         ledgers,
         platforms,

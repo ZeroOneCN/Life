@@ -58,6 +58,7 @@ function normalizeDate(value: unknown) {
 
   if (/^\d{6}$/.test(raw)) {
     const parsed = dayjs(raw, 'YYMMDD');
+    console.log('[购物导入-调试] normalizeDate 6位:', raw, '->', parsed.format(DATE_FORMAT), 'isValid:', parsed.isValid());
     if (parsed.isValid()) {
       return parsed.format(DATE_FORMAT);
     }
@@ -612,7 +613,10 @@ function normalizeImportDateCell(value: unknown) {
 
     // 6 位 = YYMMDD，8 位 = YYYYMMDD，优先按日期格式解析
     if (/^\d{6}$/.test(str) || /^\d{8}$/.test(str)) {
-      return normalizeDate(str);
+      const result = normalizeDate(str);
+      /* [导入调试] */
+      console.log('[购物导入-调试] 数字日期解析:', value, '-> str=' + str, '-> result=' + result);
+      return result;
     }
 
     // 否则按 Excel 日期序列号处理
