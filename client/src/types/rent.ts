@@ -1,4 +1,4 @@
-export type RentTab = 'records' | 'entry' | 'statistics' | 'channels';
+export type RentTab = 'records' | 'entry' | 'statistics' | 'channels' | 'utilityBills';
 
 export type RentOccupancyStatus = 'active' | 'ended';
 
@@ -94,4 +94,25 @@ export interface RentPageState {
   settings: {
     editingRecordId: string;
   };
+}
+
+/** 月度水电燃气账单 */
+export interface RentUtilityBill {
+  id: string;
+  recordId: string;
+  yearMonth: string;      // 格式 YYYY-MM
+  electricityFee: number;
+  waterFee: number;
+  gasFee: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 月度账单录入草稿 */
+export interface RentUtilityBillDraft {
+  recordId: string;
+  yearMonth: string;
+  electricityFee?: number;
+  waterFee?: number;
+  gasFee?: number;
 }

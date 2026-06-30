@@ -20,11 +20,12 @@ import {
   buildRentOverview,
   formatRentAmount,
 } from '../../services/rent';
-import type { RentChannel, RentHousingRecord } from '../../types/rent';
+import type { RentChannel, RentHousingRecord, RentUtilityBill } from '../../types/rent';
 
 interface RentStatisticsSectionProps {
   records: RentHousingRecord[];
   channels: RentChannel[];
+  utilityBills: RentUtilityBill[];
 }
 
 const tooltipStyle = {
@@ -59,11 +60,31 @@ function ChartCard({
 export function RentStatisticsSection({
   records,
   channels,
+  utilityBills,
 }: RentStatisticsSectionProps) {
   const overview = useMemo(() => buildRentOverview(records, channels), [records, channels]);
   const costBreakdown = useMemo(() => buildRentCostBreakdown(records), [records]);
   const channelBreakdown = useMemo(() => buildRentChannelBreakdown(records, channels), [records, channels]);
   const topCostItems = costBreakdown.slice(0, 6);
+
+  /** 按年月聚合水电燃气趋势数据 */
+  const utilityTrendData = useMemo(() => {
+    const monthMap = new Map<string, { electricityFee: number; waterFee: number; gasFee: number }>();
+    utilityBills.forEach((bill) => {
+      const existing = monthMap.get(bill.yearMonth) || { electricityFee: 0, waterFee: 0, gasFee: 0 };
+      existing.electricityFee += bill.electricityFee;
+      existing.waterFee += bill.waterFee;
+      existing.gasFee += bill.gasFee;
+      monthMap.set(bill.yearMonth, existing);
+    });
+    return Array.from(monthMap.entries())
+      .map(([month, values]) => ({
+        month,
+        ...values,
+        total: Number((values.electricityFee + values.waterFee + values.gasFee).toFixed(2)),
+      }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+  }, [utilityBills]);
 
   return (
     <SectionCard
@@ -204,6 +225,29 @@ export function RentStatisticsSection({
               </div>
             ) : (
               <EmptyState title="暂无渠道分布数据" description="如果当前用户还没有住房记录，渠道分布会在这里保持空状态。" />
+            )}
+          </ChartCard>
+
+          <ChartCard title="水电燃气月度趋势" description="按月查看电费、水费、燃气费的支出变化。">
+            {utilityTrendData.length ? (
+              <div className="fitness-chart-shell">
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={utilityTrendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" />
+                    <XAxis dataKey="month" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
+                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      formatter={(value) => [formatRentAmount(Number(value)), '金额']}
+                    />
+                    <Bar dataKey="electricityFee" name="电费" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="waterFee" name="水费" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="gasFee" name="燃气费" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <EmptyState title="暂无水电趋势数据" description="先在「水电账单」Tab 中录入月度数据，这里会显示费用变化趋势。" />
             )}
           </ChartCard>
         </div>

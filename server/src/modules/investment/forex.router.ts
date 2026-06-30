@@ -29,6 +29,7 @@ const tradeSchemaBase = z.object({
   commission: z.number().min(-1e6).max(1e6).nullable().optional(),
   closePrice: z.number().positive().max(100000),
   pnl: z.number().min(-1e10).max(1e10).nullable().optional(),
+  overnightFee: z.number().min(-1e6).max(1e6).nullable().optional(),
   openTime: z.string().trim().min(1),
   closeTime: z.string().trim().min(1),
   holdTime: z.string().optional().default(''),
@@ -38,12 +39,14 @@ const tradeSchemaBase = z.object({
 type TradeInput = z.infer<typeof tradeSchemaBase> & {
   commission: number | null | undefined;
   pnl: number | null | undefined;
+  overnightFee: number | null | undefined;
 };
 
 const tradeSchema = tradeSchemaBase.transform((data): TradeInput => ({
   ...data,
   commission: data.commission ?? null,
   pnl: data.pnl ?? null,
+  overnightFee: data.overnightFee ?? null,
 }));
 
 const capitalFlowSchema = z.object({
@@ -83,6 +86,7 @@ const importTradeSchema = z.object({
   commission: z.union([z.number(), z.string()]).optional(),
   closePrice: z.union([z.number(), z.string()]).optional(),
   pnl: z.union([z.number(), z.string()]).optional(),
+  overnightFee: z.union([z.number(), z.string()]).optional(),
   openTime: z.string().optional(),
   closeTime: z.string().optional(),
   holdTime: z.string().optional(),
@@ -179,6 +183,7 @@ function mapTrade(entity: InvestmentForexTradeRecordEntity) {
     commission: Number(entity.commission),
     closePrice: Number(entity.close_price),
     pnl: Number(entity.pnl),
+    overnightFee: Number(entity.overnight_fee),
     openTime: entity.open_time,
     closeTime: entity.close_time,
     holdTime: entity.hold_time,
@@ -229,7 +234,8 @@ function buildSummary(
   const losers = scopedTrades.filter((item) => Number(item.pnl) < 0);
   const grossPnl = scopedTrades.reduce((sum, item) => sum + Number(item.pnl), 0);
   const totalCommission = scopedTrades.reduce((sum, item) => sum + Number(item.commission), 0);
-  const realizedNetPnl = grossPnl + totalCommission;
+  const totalOvernightFee = scopedTrades.reduce((sum, item) => sum + Number(item.overnight_fee), 0);
+  const realizedNetPnl = grossPnl + totalCommission + totalOvernightFee;
   const deposits = scopedFlows.filter((item) => item.flow_type === 'deposit').reduce((sum, item) => sum + Number(item.amount), 0);
   const withdrawals = scopedFlows.filter((item) => item.flow_type === 'withdrawal').reduce((sum, item) => sum + Number(item.amount), 0);
   const netCapital = deposits - withdrawals;
@@ -238,6 +244,7 @@ function buildSummary(
     tradeCount: scopedTrades.length,
     grossPnl: Number(grossPnl.toFixed(2)),
     totalCommission: Number(totalCommission.toFixed(2)),
+    totalOvernightFee: Number(totalOvernightFee.toFixed(2)),
     realizedNetPnl: Number(realizedNetPnl.toFixed(2)),
     winRate: scopedTrades.length ? winners.length / scopedTrades.length : 0,
     profitLossRatio: losers.length ? winners.reduce((sum, item) => sum + Number(item.pnl), 0) / Math.abs(losers.reduce((sum, item) => sum + Number(item.pnl), 0)) : winners.length ? winners.reduce((sum, item) => sum + Number(item.pnl), 0) : 0,
@@ -290,6 +297,9 @@ export function createForexRouter() {
       pnl: payload.pnl !== null && payload.pnl !== undefined
         ? payload.pnl
         : calculatePnl(payload.instrument, payload.orderType, payload.openPrice, payload.closePrice, payload.lotSize),
+      overnight_fee: payload.overnightFee !== null && payload.overnightFee !== undefined
+        ? payload.overnightFee
+        : 0,
       open_time: normalizeTime(payload.openTime, '09:00'),
       close_time: normalizeTime(payload.closeTime, '10:00'),
       hold_time: payload.holdTime || calculateHoldTime(payload.openTime, payload.closeTime),
@@ -334,6 +344,9 @@ export function createForexRouter() {
       pnl: payload.pnl !== null && payload.pnl !== undefined
         ? payload.pnl
         : calculatePnl(nextInstrument, nextOrderType, nextOpenPrice, nextClosePrice, nextLotSize),
+      overnight_fee: payload.overnightFee !== null && payload.overnightFee !== undefined
+        ? payload.overnightFee
+        : Number(current.overnight_fee),
       open_time: nextOpenTime,
       close_time: nextCloseTime,
       hold_time: payload.holdTime ?? calculateHoldTime(nextOpenTime, nextCloseTime),
@@ -453,12 +466,13 @@ export function createForexRouter() {
     const userId = requireAuthUser(request);
     const repository = appDataSource.getRepository(InvestmentForexTradeRecordEntity);
     const items = await repository.find({ where: { user_id: userId } });
-    const grouped = new Map<string, { grossPnl: number; commission: number; tradeCount: number }>();
+    const grouped = new Map<string, { grossPnl: number; commission: number; overnightFee: number; tradeCount: number }>();
 
     items.forEach((item) => {
-      const current = grouped.get(item.trade_date) ?? { grossPnl: 0, commission: 0, tradeCount: 0 };
+      const current = grouped.get(item.trade_date) ?? { grossPnl: 0, commission: 0, overnightFee: 0, tradeCount: 0 };
       current.grossPnl += Number(item.pnl);
       current.commission += Number(item.commission);
+      current.overnightFee += Number(item.overnight_fee);
       current.tradeCount += 1;
       grouped.set(item.trade_date, current);
     });
@@ -468,7 +482,8 @@ export function createForexRouter() {
         date,
         grossPnl: Number(value.grossPnl.toFixed(2)),
         commission: Number(value.commission.toFixed(2)),
-        netPnl: Number((value.grossPnl + value.commission).toFixed(2)),
+        overnightFee: Number(value.overnightFee.toFixed(2)),
+        netPnl: Number((value.grossPnl + value.commission + value.overnightFee).toFixed(2)),
         tradeCount: value.tradeCount,
       }))
       .sort((left, right) => dayjs(left.date).valueOf() - dayjs(right.date).valueOf());
@@ -485,13 +500,15 @@ export function createForexRouter() {
       const winners = scoped.filter((item) => Number(item.pnl) > 0).length;
       const grossPnl = scoped.reduce((sum, item) => sum + Number(item.pnl), 0);
       const totalCommission = scoped.reduce((sum, item) => sum + Number(item.commission), 0);
+      const totalOvernightFee = scoped.reduce((sum, item) => sum + Number(item.overnight_fee), 0);
 
       return {
         instrument,
         tradeCount: scoped.length,
         grossPnl: Number(grossPnl.toFixed(2)),
         totalCommission: Number(totalCommission.toFixed(2)),
-        netPnl: Number((grossPnl + totalCommission).toFixed(2)),
+        totalOvernightFee: Number(totalOvernightFee.toFixed(2)),
+        netPnl: Number((grossPnl + totalCommission + totalOvernightFee).toFixed(2)),
         avgLotSize: scoped.length ? Number((scoped.reduce((sum, item) => sum + Number(item.lot_size), 0) / scoped.length).toFixed(2)) : 0,
         winRate: scoped.length ? winners / scoped.length : 0,
         longCount: scoped.filter((item) => item.order_type === 'buy').length,
@@ -605,36 +622,108 @@ export function createForexRouter() {
   router.post('/calculator', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const payload = validateBody(calculatorSchema, request.body);
     const positionsInput = payload.positions ?? [];
-    const positions = positionsInput.map((position) => {
+
+    const basePositions = positionsInput.map((position) => {
       const contractValue = Number((position.openPrice * position.lotSize * CONTRACT_UNITS[position.instrument]).toFixed(2));
       const margin = Number((contractValue / payload.leverage).toFixed(2));
       const pointValue = Number((position.lotSize * CONTRACT_UNITS[position.instrument] * POINT_SIZES[position.instrument]).toFixed(2));
       const pnl = position.closePrice
         ? calculatePnl(position.instrument, position.orderType, position.openPrice, position.closePrice, position.lotSize)
         : null;
-      const allowedLoss = Math.max(payload.balance - (margin * payload.forcedLiquidationRatio), 0);
-      const priceMove = allowedLoss / (position.lotSize * CONTRACT_UNITS[position.instrument]);
-      const forcedLiquidationPrice = Number((
-        position.orderType === 'buy'
-          ? Math.max(0, position.openPrice - priceMove)
-          : position.openPrice + priceMove
-      ).toFixed(2));
 
       return {
         id: position.id,
         instrument: position.instrument,
         orderType: position.orderType,
+        openPrice: position.openPrice,
+        lotSize: position.lotSize,
         contractValue,
         margin,
         pointValue,
         pnl,
-        forcedLiquidationPrice,
       };
     });
 
-    const totalContractValue = positions.reduce((sum, item) => sum + item.contractValue, 0);
-    const totalMargin = positions.reduce((sum, item) => sum + item.margin, 0);
-    const totalPnl = positions.reduce((sum, item) => sum + (item.pnl ?? 0), 0);
+    const totalContractValue = basePositions.reduce((sum, item) => sum + item.contractValue, 0);
+    const totalMargin = basePositions.reduce((sum, item) => sum + item.margin, 0);
+    const totalPnl = basePositions.reduce((sum, item) => sum + (item.pnl ?? 0), 0);
+    const equityIfClosed = payload.balance + totalPnl;
+    const marginUsageRatio = payload.balance > 0 ? totalMargin / payload.balance : 0;
+    const remainingAvailableMargin = payload.balance - totalMargin;
+
+    /* 账户级爆仓阈值 */
+    const liquidationEquityThreshold = Number((totalMargin * payload.forcedLiquidationRatio).toFixed(2));
+
+    /* 按「品种 + 方向」分组计算加权平均开仓价 */
+    const groupMap = new Map<string, {
+      instrument: 'XAUUSD' | 'XAGUSD';
+      orderType: 'buy' | 'sell';
+      totalLotSize: number;
+      weightedOpenPrice: number;
+    }>();
+
+    basePositions.forEach((item) => {
+      const key = `${item.instrument}_${item.orderType}`;
+      const existing = groupMap.get(key);
+      if (existing) {
+        const newTotalLot = existing.totalLotSize + item.lotSize;
+        const newWeightedPrice = (existing.weightedOpenPrice * existing.totalLotSize + item.openPrice * item.lotSize) / newTotalLot;
+        existing.totalLotSize = newTotalLot;
+        existing.weightedOpenPrice = newWeightedPrice;
+      } else {
+        groupMap.set(key, {
+          instrument: item.instrument,
+          orderType: item.orderType,
+          totalLotSize: item.lotSize,
+          weightedOpenPrice: item.openPrice,
+        });
+      }
+    });
+
+    /* 计算每组的统一强平价 */
+    const groupLiquidationPriceMap = new Map<string, number>();
+
+    groupMap.forEach((group, key) => {
+      const otherGroupsPnl = totalPnl - basePositions
+        .filter((item) => `${item.instrument}_${item.orderType}` === key)
+        .reduce((sum, item) => sum + (item.pnl ?? 0), 0);
+
+      const targetEquity = liquidationEquityThreshold;
+      const requiredLossFromThisGroup = payload.balance + otherGroupsPnl - targetEquity;
+
+      if (requiredLossFromThisGroup <= 0) {
+        groupLiquidationPriceMap.set(key, group.orderType === 'buy' ? 0 : Number.POSITIVE_INFINITY);
+        return;
+      }
+
+      const priceMove = requiredLossFromThisGroup / (group.totalLotSize * CONTRACT_UNITS[group.instrument]);
+
+      let liquidationPrice: number;
+      if (group.orderType === 'buy') {
+        liquidationPrice = Math.max(0, group.weightedOpenPrice - priceMove);
+      } else {
+        liquidationPrice = group.weightedOpenPrice + priceMove;
+      }
+
+      groupLiquidationPriceMap.set(key, Number(liquidationPrice.toFixed(2)));
+    });
+
+    /* 给每个仓位附上它所在组的统一强平价 */
+    const positions = basePositions.map((item) => {
+      const key = `${item.instrument}_${item.orderType}`;
+      const forcedLiquidationPrice = groupLiquidationPriceMap.get(key) ?? 0;
+
+      return {
+        id: item.id,
+        instrument: item.instrument,
+        orderType: item.orderType,
+        contractValue: item.contractValue,
+        margin: item.margin,
+        pointValue: item.pointValue,
+        pnl: item.pnl,
+        forcedLiquidationPrice,
+      };
+    });
 
     response.json(successResponse({
       positions,
@@ -645,9 +734,11 @@ export function createForexRouter() {
         totalContractValue: Number(totalContractValue.toFixed(2)),
         totalMargin: Number(totalMargin.toFixed(2)),
         totalPnl: Number(totalPnl.toFixed(2)),
-        equityIfClosed: Number((payload.balance + totalPnl).toFixed(2)),
-        marginUsageRatio: payload.balance > 0 ? totalMargin / payload.balance : 0,
-        remainingAvailableMargin: Number((payload.balance - totalMargin).toFixed(2)),
+        equityIfClosed: Number(equityIfClosed.toFixed(2)),
+        marginUsageRatio,
+        remainingAvailableMargin: Number(remainingAvailableMargin.toFixed(2)),
+        accountLiquidationLoss: Number(Math.max(0, payload.balance - liquidationEquityThreshold).toFixed(2)),
+        accountLiquidationEquity: liquidationEquityThreshold,
       },
     }));
   }));
@@ -719,6 +810,7 @@ export function createForexRouter() {
         commission: Number.isFinite(Number(row.commission)) ? Number(Number(row.commission).toFixed(2)) : calculateCommission(lotSize),
         close_price: closePrice,
         pnl: Number.isFinite(Number(row.pnl)) ? Number(Number(row.pnl).toFixed(2)) : calculatePnl(instrument, orderType, openPrice, closePrice, lotSize),
+        overnight_fee: Number.isFinite(Number(row.overnightFee)) ? Number(Number(row.overnightFee).toFixed(2)) : 0,
         open_time: openTime,
         close_time: closeTime,
         hold_time: row.holdTime?.trim() || calculateHoldTime(openTime, closeTime),
@@ -755,11 +847,11 @@ export function createForexRouter() {
   router.get('/actions/download-template', asyncHandler(async (_request: AuthenticatedRequest, response) => {
     response.json(successResponse({
       fileName: 'forex-import-template.json',
-      headers: ['tradeDate', 'instrument', 'orderType', 'openPrice', 'lotSize', 'commission', 'closePrice', 'pnl', 'openTime', 'closeTime', 'holdTime', 'remark'],
+      headers: ['tradeDate', 'instrument', 'orderType', 'openPrice', 'lotSize', 'commission', 'closePrice', 'pnl', 'overnightFee', 'openTime', 'closeTime', 'holdTime', 'remark'],
       formulas: {
         G: '=-F2/0.01*0.06',
         I: '=IF(OR(B2="XAUUSD",B2="XAGUSD"),IF(D2="buy",(H2-E2)*IF(B2="XAUUSD",100,5000)*F2,(E2-H2)*IF(B2="XAUUSD",100,5000)*F2),"")',
-        L: '=IF(K2-J2>=TIME(1,0,0),INT((K2-J2)*24)&"时"&MINUTE(K2-J2)&"分"&SECOND(K2-J2)&"秒",MINUTE(K2-J2)&"分"&SECOND(K2-J2)&"秒")',
+        M: '=IF(L2-K2>=TIME(1,0,0),INT((L2-K2)*24)&"时"&MINUTE(L2-K2)&"分"&SECOND(L2-K2)&"秒",MINUTE(L2-K2)&"分"&SECOND(L2-K2)&"秒")',
       },
       sample: {
         tradeDate: dayjs().format('YYYY-MM-DD'),
@@ -770,6 +862,7 @@ export function createForexRouter() {
         commission: -0.6,
         closePrice: 2346.2,
         pnl: 57,
+        overnightFee: -1.2,
         openTime: '09:35',
         closeTime: '11:10',
         holdTime: '1时35分',

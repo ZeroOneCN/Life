@@ -30,8 +30,6 @@ interface RentFormState {
   moveOutDate: string;
   rent: string;
   deposit: string;
-  electricityFee: string;
-  waterFee: string;
   gasFee: string;
   agencyFee: string;
   cleaningFee: string;
@@ -70,8 +68,6 @@ function createDefaultFormState(channels: RentChannel[]): RentFormState {
     moveOutDate: '',
     rent: '',
     deposit: '',
-    electricityFee: '',
-    waterFee: '',
     gasFee: '',
     agencyFee: '',
     cleaningFee: '',
@@ -90,8 +86,6 @@ function buildFormState(record: RentHousingRecord): RentFormState {
     moveOutDate: record.moveOutDate,
     rent: toInputNumber(record.rent),
     deposit: toInputNumber(record.deposit),
-    electricityFee: toInputNumber(record.electricityFee),
-    waterFee: toInputNumber(record.waterFee),
     gasFee: toInputNumber(record.gasFee),
     agencyFee: toInputNumber(record.agencyFee),
     cleaningFee: toInputNumber(record.cleaningFee),
@@ -114,8 +108,6 @@ function toOptionalMoney(value: string) {
 function parseDraft(form: RentFormState): RentHousingRecordDraft | null {
   const rent = toOptionalMoney(form.rent);
   const deposit = toOptionalMoney(form.deposit);
-  const electricityFee = toOptionalMoney(form.electricityFee);
-  const waterFee = toOptionalMoney(form.waterFee);
   const gasFee = toOptionalMoney(form.gasFee);
   const agencyFee = toOptionalMoney(form.agencyFee);
   const cleaningFee = toOptionalMoney(form.cleaningFee);
@@ -126,7 +118,7 @@ function parseDraft(form: RentFormState): RentHousingRecordDraft | null {
     !form.address.trim()
     || !form.channelId
     || !dayjs(form.moveInDate).isValid()
-    || [rent, deposit, electricityFee, waterFee, gasFee, agencyFee, cleaningFee, laundryFee, serviceFee].some((value) => Number.isNaN(value))
+    || [rent, deposit, gasFee, agencyFee, cleaningFee, laundryFee, serviceFee].some((value) => Number.isNaN(value))
   ) {
     return null;
   }
@@ -142,8 +134,6 @@ function parseDraft(form: RentFormState): RentHousingRecordDraft | null {
     moveOutDate: form.moveOutDate || '',
     rent,
     deposit,
-    electricityFee,
-    waterFee,
     gasFee,
     agencyFee,
     cleaningFee,
@@ -197,8 +187,8 @@ export function RentEntrySection({
     moveInDate: form.moveInDate || dayjs().format('YYYY-MM-DD'),
     moveOutDate: form.moveOutDate,
     rent: Number(form.rent || 0),
-    electricityFee: Number(form.electricityFee || 0),
-    waterFee: Number(form.waterFee || 0),
+    electricityFee: 0,
+    waterFee: 0,
     gasFee: Number(form.gasFee || 0),
     agencyFee: Number(form.agencyFee || 0),
     cleaningFee: Number(form.cleaningFee || 0),
@@ -323,14 +313,15 @@ export function RentEntrySection({
           <div className="rent-entry-module">
             <div className="rent-entry-module-head">
               <h3>费用明细</h3>
-              <span>房租、押金和水电等杂费，押金仅展示不计入总成本</span>
+              <span>房租、押金和杂费；电费/水费已改为按月录入，请在「水电账单」Tab 中登记</span>
+            </div>
+            <div className="callout callout-info" style={{ marginBottom: 'var(--space-4)' }}>
+              电费、水费、燃气费已改为按月录入模式。保存住房记录后，请切换到「水电账单」Tab 进行月度登记，程序将自动汇总到总成本。
             </div>
             <div className="rent-cost-grid">
               {[
                 ['房租', 'rent'],
                 ['押金', 'deposit'],
-                ['电费', 'electricityFee'],
-                ['水费', 'waterFee'],
                 ['燃气费', 'gasFee'],
                 ['中介费', 'agencyFee'],
                 ['保洁费', 'cleaningFee'],

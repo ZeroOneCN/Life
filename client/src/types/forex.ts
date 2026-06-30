@@ -16,6 +16,7 @@ export interface ForexTradeRecord {
   commission: number;
   closePrice: number;
   pnl: number;
+  overnightFee: number;
   openTime: string;
   closeTime: string;
   holdTime: string;
@@ -33,6 +34,7 @@ export interface ForexTradeDraft {
   commission?: number;
   closePrice: number;
   pnl?: number;
+  overnightFee?: number;
   openTime: string;
   closeTime: string;
   holdTime?: string;
@@ -101,6 +103,7 @@ export interface ForexDashboardSummary {
   tradeCount: number;
   grossPnl: number;
   totalCommission: number;
+  totalOvernightFee: number;
   realizedNetPnl: number;
   winRate: number;
   profitLossRatio: number;
@@ -120,6 +123,7 @@ export interface ForexDailyPnlPoint {
   netPnl: number;
   grossPnl: number;
   commission: number;
+  overnightFee: number;
   tradeCount: number;
 }
 
@@ -128,6 +132,7 @@ export interface ForexInstrumentSummary {
   tradeCount: number;
   grossPnl: number;
   totalCommission: number;
+  totalOvernightFee: number;
   netPnl: number;
   avgLotSize: number;
   winRate: number;

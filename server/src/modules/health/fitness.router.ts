@@ -14,6 +14,7 @@ import { normalizeDate } from '../../shared/utils/date';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { AppError } from '../../shared/errors/app-error';
 import { queryExerciseCalorie, queryFoodNutrition } from './fitness-ai.service';
+import { recognizeFitnessImage } from './fitness-ocr.service';
 import { HealthFitnessDietRecordEntity } from './entities/health-fitness-diet-record.entity';
 import { HealthFitnessExerciseRecordEntity } from './entities/health-fitness-exercise-record.entity';
 import { HealthFitnessSettingEntity } from './entities/health-fitness-setting.entity';
@@ -58,6 +59,20 @@ const weightSchema = z.object({
   weight: z.number().min(1).max(1000),
   height: z.number().min(50).max(300).optional(),
   bodyFat: z.number().min(0).max(100).optional(),
+  visceralFat: z.number().min(0).max(50).optional(),
+  fatMass: z.number().min(0).max(100).optional(),
+  muscleRate: z.number().min(0).max(100).optional(),
+  muscleMass: z.number().min(0).max(200).optional(),
+  bodyWaterRate: z.number().min(0).max(100).optional(),
+  bodyWaterMass: z.number().min(0).max(200).optional(),
+  proteinRate: z.number().min(0).max(100).optional(),
+  proteinMass: z.number().min(0).max(100).optional(),
+  boneRate: z.number().min(0).max(50).optional(),
+  boneMass: z.number().min(0).max(50).optional(),
+  skeletalMuscleRate: z.number().min(0).max(100).optional(),
+  skeletalMuscleMass: z.number().min(0).max(100).optional(),
+  subcutaneousFatRate: z.number().min(0).max(100).optional(),
+  subcutaneousFatMass: z.number().min(0).max(100).optional(),
 });
 
 const settingsSchema = z.object({
@@ -127,6 +142,20 @@ function mapWeight(entity: HealthFitnessWeightRecordEntity) {
     weight: Number(entity.weight),
     height: Number(entity.height),
     bodyFat: Number(entity.body_fat),
+    visceralFat: Number(entity.visceral_fat),
+    fatMass: Number(entity.fat_mass),
+    muscleRate: Number(entity.muscle_rate),
+    muscleMass: Number(entity.muscle_mass),
+    bodyWaterRate: Number(entity.body_water_rate),
+    bodyWaterMass: Number(entity.body_water_mass),
+    proteinRate: Number(entity.protein_rate),
+    proteinMass: Number(entity.protein_mass),
+    boneRate: Number(entity.bone_rate),
+    boneMass: Number(entity.bone_mass),
+    skeletalMuscleRate: Number(entity.skeletal_muscle_rate),
+    skeletalMuscleMass: Number(entity.skeletal_muscle_mass),
+    subcutaneousFatRate: Number(entity.subcutaneous_fat_rate),
+    subcutaneousFatMass: Number(entity.subcutaneous_fat_mass),
     createdAt: entity.created_at.toISOString(),
     updatedAt: entity.updated_at.toISOString(),
   };
@@ -333,6 +362,20 @@ export function createFitnessRouter() {
       weight: payload.weight,
       height: payload.height,
       body_fat: payload.bodyFat,
+      visceral_fat: payload.visceralFat,
+      fat_mass: payload.fatMass,
+      muscle_rate: payload.muscleRate,
+      muscle_mass: payload.muscleMass,
+      body_water_rate: payload.bodyWaterRate,
+      body_water_mass: payload.bodyWaterMass,
+      protein_rate: payload.proteinRate,
+      protein_mass: payload.proteinMass,
+      bone_rate: payload.boneRate,
+      bone_mass: payload.boneMass,
+      skeletal_muscle_rate: payload.skeletalMuscleRate,
+      skeletal_muscle_mass: payload.skeletalMuscleMass,
+      subcutaneous_fat_rate: payload.subcutaneousFatRate,
+      subcutaneous_fat_mass: payload.subcutaneousFatMass,
     }),
     (current, payload) => ({
       user_id: payload.userId ?? current.user_id,
@@ -340,6 +383,20 @@ export function createFitnessRouter() {
       weight: payload.weight ?? current.weight,
       height: payload.height ?? current.height,
       body_fat: payload.bodyFat ?? current.body_fat,
+      visceral_fat: payload.visceralFat ?? current.visceral_fat,
+      fat_mass: payload.fatMass ?? current.fat_mass,
+      muscle_rate: payload.muscleRate ?? current.muscle_rate,
+      muscle_mass: payload.muscleMass ?? current.muscle_mass,
+      body_water_rate: payload.bodyWaterRate ?? current.body_water_rate,
+      body_water_mass: payload.bodyWaterMass ?? current.body_water_mass,
+      protein_rate: payload.proteinRate ?? current.protein_rate,
+      protein_mass: payload.proteinMass ?? current.protein_mass,
+      bone_rate: payload.boneRate ?? current.bone_rate,
+      bone_mass: payload.boneMass ?? current.bone_mass,
+      skeletal_muscle_rate: payload.skeletalMuscleRate ?? current.skeletal_muscle_rate,
+      skeletal_muscle_mass: payload.skeletalMuscleMass ?? current.skeletal_muscle_mass,
+      subcutaneous_fat_rate: payload.subcutaneousFatRate ?? current.subcutaneous_fat_rate,
+      subcutaneous_fat_mass: payload.subcutaneousFatMass ?? current.subcutaneous_fat_mass,
     }),
   );
 
@@ -554,6 +611,33 @@ export function createFitnessRouter() {
           code: 422,
           data: null,
           message: error instanceof Error ? error.message : 'AI 运动查询失败',
+        });
+      }
+    }),
+  );
+
+  /**
+   * POST /api/health/fitness/ai/ocr
+   * 上传体脂秤屏幕截图，自动识别各项身体指标数据。
+   * 调用 DeepSeek 多模态模型进行图片识别。
+   */
+  router.post(
+    '/ai/ocr',
+    asyncHandler(async (request: AuthenticatedRequest, response) => {
+      const body = z
+        .object({
+          imageBase64: z.string().trim().min(1),
+        })
+        .parse(request.body ?? {});
+
+      try {
+        const result = await recognizeFitnessImage(body.imageBase64);
+        response.json(successResponse(result));
+      } catch (error) {
+        response.status(422).json({
+          code: 422,
+          data: null,
+          message: error instanceof Error ? error.message : '图片识别失败',
         });
       }
     }),

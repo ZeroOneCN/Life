@@ -4,6 +4,7 @@ import { RentChannelsSection } from '../../components/finance/RentChannelsSectio
 import { RentEntrySection } from '../../components/finance/RentEntrySection';
 import { RentRecordsSection } from '../../components/finance/RentRecordsSection';
 import { RentStatisticsSection } from '../../components/finance/RentStatisticsSection';
+import { RentUtilityBillsSection } from '../../components/finance/RentUtilityBillsSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -16,6 +17,7 @@ import type {
   RentOverviewSummary,
   RentPageState,
   RentTab,
+  RentUtilityBill,
 } from '../../types/rent';
 
 const TAB_OPTIONS: Array<{ value: RentTab; label: string }> = [
@@ -23,6 +25,7 @@ const TAB_OPTIONS: Array<{ value: RentTab; label: string }> = [
   { value: 'entry', label: '录入编辑' },
   { value: 'statistics', label: '统计分析' },
   { value: 'channels', label: '渠道管理' },
+  { value: 'utilityBills', label: '水电账单' },
 ];
 
 const EMPTY_SETTINGS: RentPageState['settings'] = {
@@ -63,6 +66,8 @@ export default function RentPage() {
   const [channels, setChannels] = useState<RentChannel[]>([]);
   const [settings, setSettings] = useState<RentPageState['settings']>(EMPTY_SETTINGS);
   const [overview, setOverview] = useState<RentOverviewSummary>(EMPTY_OVERVIEW);
+  const [utilityBills, setUtilityBills] = useState<RentUtilityBill[]>([]);
+  const [activeBillRecordId, setActiveBillRecordId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const { toast, showToast } = useToastState();
   const tempChannelIdsRef = useRef(new Map<string, Promise<string>>());
@@ -70,17 +75,19 @@ export default function RentPage() {
   showToastRef.current = showToast;
 
   const reload = useCallback(async () => {
-    const [recordsResponse, channelsResponse, overviewResponse, settingsResponse] = await Promise.all([
+    const [recordsResponse, channelsResponse, overviewResponse, settingsResponse, billsResponse] = await Promise.all([
       rentApi.listRecords({ page: 1, page_size: 1000 }),
       rentApi.listChannels(),
       rentApi.getOverview(),
       rentApi.getSettings(),
+      rentApi.listUtilityBills(),
     ]);
 
     setRecords(recordsResponse.items);
     setChannels(channelsResponse.items);
     setOverview(overviewResponse);
     setSettings(hydrateSettings(settingsResponse));
+    setUtilityBills(billsResponse);
   }, []);
 
   useEffect(() => {
@@ -250,6 +257,7 @@ export default function RentPage() {
         <RentRecordsSection
           records={records}
           channels={channels}
+          utilityBills={utilityBills}
           onEditRecord={(recordId) => {
             void updateSettings({ editingRecordId: recordId });
             setTab('entry');
@@ -260,6 +268,10 @@ export default function RentPage() {
           }}
           onChangeRecords={(updater) => {
             void handleRecordsChange(updater);
+          }}
+          onManageUtilityBills={(recordId) => {
+            setActiveBillRecordId(recordId);
+            setTab('utilityBills');
           }}
           showToast={showToast}
         />
@@ -285,6 +297,7 @@ export default function RentPage() {
         <RentStatisticsSection
           records={records}
           channels={channels}
+          utilityBills={utilityBills}
         />
       ) : null}
 
@@ -295,6 +308,14 @@ export default function RentPage() {
           onChangeChannels={(updater) => {
             void handleChannelsChange(updater);
           }}
+          showToast={showToast}
+        />
+      ) : null}
+
+      {tab === 'utilityBills' ? (
+        <RentUtilityBillsSection
+          recordId={activeBillRecordId}
+          recordAddress={activeBillRecordId ? records.find((r) => r.id === activeBillRecordId)?.address ?? '' : ''}
           showToast={showToast}
         />
       ) : null}

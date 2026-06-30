@@ -43,6 +43,41 @@ export interface WeightRecord extends FitnessUserScopedRecordBase {
   weight: number;
   height: number;
   bodyFat: number;
+  visceralFat: number;
+  fatMass: number;
+  muscleRate: number;
+  muscleMass: number;
+  bodyWaterRate: number;
+  bodyWaterMass: number;
+  proteinRate: number;
+  proteinMass: number;
+  boneRate: number;
+  boneMass: number;
+  skeletalMuscleRate: number;
+  skeletalMuscleMass: number;
+  subcutaneousFatRate: number;
+  subcutaneousFatMass: number;
+}
+
+export interface WeightRecordDraft {
+  date: string;
+  weight: number;
+  height: number;
+  bodyFat: number;
+  visceralFat?: number;
+  fatMass?: number;
+  muscleRate?: number;
+  muscleMass?: number;
+  bodyWaterRate?: number;
+  bodyWaterMass?: number;
+  proteinRate?: number;
+  proteinMass?: number;
+  boneRate?: number;
+  boneMass?: number;
+  skeletalMuscleRate?: number;
+  skeletalMuscleMass?: number;
+  subcutaneousFatRate?: number;
+  subcutaneousFatMass?: number;
 }
 
 export interface DietRecordDraft {
@@ -72,13 +107,6 @@ export interface FitnessShoppingRecordDraft {
   quantity: number;
   unitPrice: number;
   location: string;
-}
-
-export interface WeightRecordDraft {
-  date: string;
-  weight: number;
-  height: number;
-  bodyFat: number;
 }
 
 export interface FitnessPageState {

@@ -31,6 +31,9 @@ export class InvestmentForexTradeRecordEntity extends UserScopedEntity {
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   pnl!: number;
 
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  overnight_fee!: number;
+
   @Column({ type: 'varchar', length: 16 })
   open_time!: string;
 

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { In } from 'typeorm';
 import { z } from 'zod';
 import dayjs from 'dayjs';
 
@@ -15,6 +16,7 @@ import { BaseUserSettingService } from '../../shared/db/base-user-setting.servic
 import { FinanceRentChannelEntity } from './entities/finance-rent-channel.entity';
 import { FinanceRentRecordEntity } from './entities/finance-rent-record.entity';
 import { FinanceRentSettingEntity } from './entities/finance-rent-setting.entity';
+import { FinanceRentUtilityBillEntity } from './entities/finance-rent-utility-bill.entity';
 
 const recordSchema = z.object({
   userId: z.string().trim().optional(),
@@ -48,6 +50,15 @@ const settingsSchema = z.object({
   editingRecordId: z.string().optional().default(''),
 });
 
+/** 月度水电燃气账单校验规则 */
+const utilityBillSchema = z.object({
+  recordId: z.string().trim().min(1),
+  yearMonth: z.string().regex(/^\d{4}-\d{2}$/),
+  electricityFee: z.number().min(0).optional().default(0),
+  waterFee: z.number().min(0).optional().default(0),
+  gasFee: z.number().min(0).optional().default(0),
+});
+
 const settingService = new BaseUserSettingService(FinanceRentSettingEntity);
 
 function mapChannel(entity: FinanceRentChannelEntity) {
@@ -60,16 +71,27 @@ function mapChannel(entity: FinanceRentChannelEntity) {
   };
 }
 
-function calculateRentMetrics(entity: FinanceRentRecordEntity) {
+/**
+ * 根据住房记录和关联的月度账单计算派生指标
+ * @param entity 住房记录实体
+ * @param utilityBills 该记录关联的月度水电燃气账单列表
+ */
+function calculateRentMetrics(entity: FinanceRentRecordEntity, utilityBills: FinanceRentUtilityBillEntity[] = []) {
   const start = dayjs(entity.move_in_date).startOf('day');
   const end = entity.move_out_date ? dayjs(entity.move_out_date).startOf('day') : dayjs().startOf('day');
   const safeEnd = end.isBefore(start) ? start : end;
   const stayDays = Math.max(1, safeEnd.diff(start, 'day') + 1);
+
+  // 从月度账单汇总水电燃气费用
+  const electricityTotal = utilityBills.reduce((sum, b) => sum + Number(b.electricity_fee), 0);
+  const waterTotal = utilityBills.reduce((sum, b) => sum + Number(b.water_fee), 0);
+  const gasTotal = utilityBills.reduce((sum, b) => sum + Number(b.gas_fee), 0);
+
   const totalCost = Number((
     Number(entity.rent)
-    + Number(entity.electricity_fee)
-    + Number(entity.water_fee)
-    + Number(entity.gas_fee)
+    + electricityTotal
+    + waterTotal
+    + gasTotal
     + Number(entity.agency_fee)
     + Number(entity.cleaning_fee)
     + Number(entity.laundry_fee)
@@ -89,7 +111,31 @@ function calculateRentMetrics(entity: FinanceRentRecordEntity) {
   };
 }
 
-function mapRecord(entity: FinanceRentRecordEntity) {
+/** 将月度账单实体映射为响应 DTO */
+function mapUtilityBill(entity: FinanceRentUtilityBillEntity) {
+  return {
+    id: entity.id,
+    recordId: entity.record_id,
+    yearMonth: entity.year_month,
+    electricityFee: Number(entity.electricity_fee),
+    waterFee: Number(entity.water_fee),
+    gasFee: Number(entity.gas_fee),
+    createdAt: entity.created_at.toISOString(),
+    updatedAt: entity.updated_at.toISOString(),
+  };
+}
+
+/**
+ * 将住房记录实体映射为响应 DTO，水电燃气费用从关联的月度账单汇总
+ * @param entity 住房记录实体
+ * @param utilityBills 该记录关联的月度账单列表
+ */
+function mapRecord(entity: FinanceRentRecordEntity, utilityBills: FinanceRentUtilityBillEntity[] = []) {
+  // 从月度账单汇总水电燃气费用
+  const electricityTotal = utilityBills.reduce((sum, b) => sum + Number(b.electricity_fee), 0);
+  const waterTotal = utilityBills.reduce((sum, b) => sum + Number(b.water_fee), 0);
+  const gasTotal = utilityBills.reduce((sum, b) => sum + Number(b.gas_fee), 0);
+
   return {
     id: entity.id,
     userId: entity.user_id,
@@ -100,9 +146,9 @@ function mapRecord(entity: FinanceRentRecordEntity) {
     moveOutDate: entity.move_out_date ? dayjs(entity.move_out_date).format('YYYY-MM-DD') : '',
     rent: Number(entity.rent),
     deposit: Number(entity.deposit),
-    electricityFee: Number(entity.electricity_fee),
-    waterFee: Number(entity.water_fee),
-    gasFee: Number(entity.gas_fee),
+    electricityFee: electricityTotal,
+    waterFee: waterTotal,
+    gasFee: gasTotal,
     agencyFee: Number(entity.agency_fee),
     cleaningFee: Number(entity.cleaning_fee),
     laundryFee: Number(entity.laundry_fee),
@@ -111,12 +157,16 @@ function mapRecord(entity: FinanceRentRecordEntity) {
     notes: entity.notes,
     createdAt: entity.created_at.toISOString(),
     updatedAt: entity.updated_at.toISOString(),
-    ...calculateRentMetrics(entity),
+    ...calculateRentMetrics(entity, utilityBills),
   };
 }
 
-function buildOverview(records: FinanceRentRecordEntity[], channels: FinanceRentChannelEntity[]) {
-  const metrics = records.map(calculateRentMetrics);
+function buildOverview(
+  records: FinanceRentRecordEntity[],
+  channels: FinanceRentChannelEntity[],
+  allBillsByRecordId: Map<string, FinanceRentUtilityBillEntity[]>,
+) {
+  const metrics = records.map((record) => calculateRentMetrics(record, allBillsByRecordId.get(record.id) || []));
   const totalStayDays = metrics.reduce((sum, item) => sum + item.stayDays, 0);
   const totalCost = metrics.reduce((sum, item) => sum + item.totalCost, 0);
   const totalDailyCost = metrics.reduce((sum, item) => sum + item.dailyCost, 0);
@@ -145,9 +195,21 @@ export function createRentRouter() {
     const occupancy = String(request.query.occupancy ?? 'all');
     const { page, pageSize, skip } = parsePagination(request.query as Record<string, unknown>);
     const repository = appDataSource.getRepository(FinanceRentRecordEntity);
+    const billRepo = appDataSource.getRepository(FinanceRentUtilityBillEntity);
     const items = await repository.find({
       where: { user_id: userId },
       order: { move_in_date: 'DESC', updated_at: 'DESC' },
+    });
+
+    // 批量查询关联的月度账单，按 record_id 分组
+    const allBills = items.length
+      ? await billRepo.find({ where: { user_id: userId, record_id: In(items.map((r) => r.id)) } })
+      : [];
+    const billsByRecordId = new Map<string, FinanceRentUtilityBillEntity[]>();
+    allBills.forEach((bill) => {
+      const list = billsByRecordId.get(bill.record_id) || [];
+      list.push(bill);
+      billsByRecordId.set(bill.record_id, list);
     });
 
     const filtered = items
@@ -161,7 +223,12 @@ export function createRentRouter() {
       });
 
     const paged = filtered.slice(skip, skip + pageSize);
-    response.json(successResponse(buildListData(paged.map(mapRecord), page, pageSize, filtered.length)));
+    response.json(successResponse(buildListData(
+      paged.map((record) => mapRecord(record, billsByRecordId.get(record.id) || [])),
+      page,
+      pageSize,
+      filtered.length,
+    )));
   }));
 
   router.post('/records', asyncHandler(async (request: AuthenticatedRequest, response) => {
@@ -319,18 +386,39 @@ export function createRentRouter() {
   router.get('/overview', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const authUserId = requireAuthUser(request);
     const userId = String(request.query.userId ?? authUserId);
-    const [records, channels] = await Promise.all([
+    const [records, channels, allBills] = await Promise.all([
       appDataSource.getRepository(FinanceRentRecordEntity).find({ where: { user_id: userId } }),
       appDataSource.getRepository(FinanceRentChannelEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(FinanceRentUtilityBillEntity).find({ where: { user_id: userId } }),
     ]);
 
-    response.json(successResponse(buildOverview(records, channels)));
+    // 按 record_id 分组账单
+    const billsByRecordId = new Map<string, FinanceRentUtilityBillEntity[]>();
+    allBills.forEach((bill) => {
+      const list = billsByRecordId.get(bill.record_id) || [];
+      list.push(bill);
+      billsByRecordId.set(bill.record_id, list);
+    });
+
+    response.json(successResponse(buildOverview(records, channels, billsByRecordId)));
   }));
 
   router.get('/cost-breakdown', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const authUserId = requireAuthUser(request);
     const userId = String(request.query.userId ?? authUserId);
-    const records = await appDataSource.getRepository(FinanceRentRecordEntity).find({ where: { user_id: userId } });
+    const [records, allBills] = await Promise.all([
+      appDataSource.getRepository(FinanceRentRecordEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(FinanceRentUtilityBillEntity).find({ where: { user_id: userId } }),
+    ]);
+
+    // 按 record_id 分组账单
+    const billsByRecordId = new Map<string, FinanceRentUtilityBillEntity[]>();
+    allBills.forEach((bill) => {
+      const list = billsByRecordId.get(bill.record_id) || [];
+      list.push(bill);
+      billsByRecordId.set(bill.record_id, list);
+    });
+
     const totals = {
       rent: 0,
       electricityFee: 0,
@@ -343,10 +431,11 @@ export function createRentRouter() {
     };
 
     records.forEach((item) => {
+      const recordBills = billsByRecordId.get(item.id) || [];
       totals.rent += Number(item.rent);
-      totals.electricityFee += Number(item.electricity_fee);
-      totals.waterFee += Number(item.water_fee);
-      totals.gasFee += Number(item.gas_fee);
+      totals.electricityFee += recordBills.reduce((sum, b) => sum + Number(b.electricity_fee), 0);
+      totals.waterFee += recordBills.reduce((sum, b) => sum + Number(b.water_fee), 0);
+      totals.gasFee += recordBills.reduce((sum, b) => sum + Number(b.gas_fee), 0);
       totals.agencyFee += Number(item.agency_fee);
       totals.cleaningFee += Number(item.cleaning_fee);
       totals.laundryFee += Number(item.laundry_fee);
@@ -431,6 +520,120 @@ export function createRentRouter() {
       statisticsUserId: settings.statistics_user_id ?? userId,
       editingRecordId: settings.editing_record_id ?? '',
     }, 'update_rent_settings_success'));
+  }));
+
+  // ==================== 月度水电燃气账单 CRUD ====================
+
+  /**
+   * 查询月度账单列表
+   * 支持按 recordId 筛选，不传则返回当前用户全部账单
+   */
+  router.get('/utility-bills', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const recordId = String(request.query.recordId ?? '').trim();
+    const billRepo = appDataSource.getRepository(FinanceRentUtilityBillEntity);
+    const whereOptions: Record<string, unknown> = { user_id: userId };
+    if (recordId) {
+      whereOptions.record_id = recordId;
+    }
+    const items = await billRepo.find({
+      where: whereOptions,
+      order: { year_month: 'DESC' },
+    });
+
+    response.json(successResponse(items.map(mapUtilityBill)));
+  }));
+
+  /**
+   * 新增月度账单
+   * 同一记录同一月份不允许重复
+   */
+  router.post('/utility-bills', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const payload = validateBody(utilityBillSchema, request.body);
+    const billRepo = appDataSource.getRepository(FinanceRentUtilityBillEntity);
+    const recordRepo = appDataSource.getRepository(FinanceRentRecordEntity);
+
+    // 校验关联的住房记录存在且属于当前用户
+    const record = await recordRepo.findOne({ where: { id: payload.recordId, user_id: userId } });
+    if (!record) {
+      throw new AppError('rent_record_not_found', 404, 404);
+    }
+
+    // 校验同一个月不重复
+    const existing = await billRepo.findOne({
+      where: { user_id: userId, record_id: payload.recordId, year_month: payload.yearMonth },
+    });
+    if (existing) {
+      throw new AppError('utility_bill_duplicate_month', 409, 409);
+    }
+
+    const item = await billRepo.save(billRepo.create({
+      user_id: userId,
+      record_id: payload.recordId,
+      year_month: payload.yearMonth,
+      electricity_fee: payload.electricityFee,
+      water_fee: payload.waterFee,
+      gas_fee: payload.gasFee,
+    }));
+
+    response.json(successResponse(mapUtilityBill(item), 'create_utility_bill_success'));
+  }));
+
+  /**
+   * 更新月度账单
+   */
+  router.patch('/utility-bills/:id', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const billId = String(request.params.id ?? '');
+    const payload = validateBody(utilityBillSchema.partial(), request.body);
+    const billRepo = appDataSource.getRepository(FinanceRentUtilityBillEntity);
+    const current = await billRepo.findOne({
+      where: { id: billId, user_id: userId },
+    });
+
+    if (!current) {
+      throw new AppError('utility_bill_not_found', 404, 404);
+    }
+
+    // 如果修改了年月，需校验新月份不重复
+    if (payload.yearMonth && payload.yearMonth !== current.year_month) {
+      const existing = await billRepo.findOne({
+        where: { user_id: userId, record_id: current.record_id, year_month: payload.yearMonth },
+      });
+      if (existing) {
+        throw new AppError('utility_bill_duplicate_month', 409, 409);
+      }
+    }
+
+    const next = await billRepo.save({
+      ...current,
+      year_month: payload.yearMonth ?? current.year_month,
+      electricity_fee: payload.electricityFee ?? current.electricity_fee,
+      water_fee: payload.waterFee ?? current.water_fee,
+      gas_fee: payload.gasFee ?? current.gas_fee,
+    });
+
+    response.json(successResponse(mapUtilityBill(next), 'update_utility_bill_success'));
+  }));
+
+  /**
+   * 删除月度账单
+   */
+  router.delete('/utility-bills/:id', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const billId = String(request.params.id ?? '');
+    const billRepo = appDataSource.getRepository(FinanceRentUtilityBillEntity);
+    const current = await billRepo.findOne({
+      where: { id: billId, user_id: userId },
+    });
+
+    if (!current) {
+      throw new AppError('utility_bill_not_found', 404, 404);
+    }
+
+    await billRepo.remove(current);
+    response.json(successResponse({ ok: true }, 'delete_utility_bill_success'));
   }));
 
   return router;

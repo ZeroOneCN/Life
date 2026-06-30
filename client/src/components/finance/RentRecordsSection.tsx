@@ -8,18 +8,22 @@ import {
   RENT_RECORD_PAGE_SIZE,
   buildRentRecordSnapshot,
   deleteRentRecord,
+  filterBillsByRecordId,
   filterRentChannels,
   filterRentRecords,
   formatRentAmount,
+  summarizeUtilityBills,
 } from '../../services/rent';
-import type { RentChannel, RentHousingRecord } from '../../types/rent';
+import type { RentChannel, RentHousingRecord, RentUtilityBill } from '../../types/rent';
 
 interface RentRecordsSectionProps {
   records: RentHousingRecord[];
   channels: RentChannel[];
+  utilityBills: RentUtilityBill[];
   onEditRecord: (recordId: string) => void;
   onCreateRecord: () => void;
   onChangeRecords: (updater: (records: RentHousingRecord[]) => RentHousingRecord[]) => void;
+  onManageUtilityBills: (recordId: string) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
@@ -38,9 +42,11 @@ function getOccupancyLabel(value: 'all' | 'active' | 'ended') {
 export function RentRecordsSection({
   records,
   channels,
+  utilityBills,
   onEditRecord,
   onCreateRecord,
   onChangeRecords,
+  onManageUtilityBills,
   showToast,
 }: RentRecordsSectionProps) {
   const [keyword, setKeyword] = useState('');
@@ -213,6 +219,24 @@ export function RentRecordsSection({
       >
         {detailRecord && detailSnapshot ? (
           <div className="page-stack">
+            {/* 当前记录的账单汇总 */}
+            {(() => {
+              const recordBills = filterBillsByRecordId(utilityBills, detailRecord.id);
+              const billSummary = summarizeUtilityBills(recordBills);
+              return recordBills.length > 0 ? (
+                <StatGrid
+                  className="rent-summary-grid"
+                  items={[
+                    { label: '账单笔数', value: `${recordBills.length} 笔` },
+                    { label: '电费合计', value: formatRentAmount(billSummary.electricityTotal), helper: `共 ${recordBills.length} 个月` },
+                    { label: '水费合计', value: formatRentAmount(billSummary.waterTotal) },
+                    { label: '燃气费合计', value: formatRentAmount(billSummary.gasTotal) },
+                    { label: '水电燃气总计', value: formatRentAmount(billSummary.grandTotal) },
+                  ]}
+                />
+              ) : null;
+            })()}
+
             <div className="rent-detail-grid">
               <div className="callout callout-neutral">
                 <strong>渠道</strong>
@@ -249,22 +273,29 @@ export function RentRecordsSection({
             />
 
             <div className="rent-cost-grid">
-              {[
-                ['房租', detailRecord.rent],
-                ['押金', detailRecord.deposit],
-                ['电费', detailRecord.electricityFee],
-                ['水费', detailRecord.waterFee],
-                ['燃气费', detailRecord.gasFee],
-                ['中介费', detailRecord.agencyFee],
-                ['保洁费', detailRecord.cleaningFee],
-                ['洗衣费', detailRecord.laundryFee],
-                ['服务费', detailRecord.serviceFee],
-              ].map(([label, value]) => (
-                <div key={label} className="callout callout-neutral">
-                  <strong>{label}</strong>
+              {([
+                ['房租', detailRecord.rent, false],
+                ['押金', detailRecord.deposit, false],
+                ['电费', detailRecord.electricityFee, true],
+                ['水费', detailRecord.waterFee, true],
+                ['燃气费', detailRecord.gasFee, true],
+                ['中介费', detailRecord.agencyFee, false],
+                ['保洁费', detailRecord.cleaningFee, false],
+                ['洗衣费', detailRecord.laundryFee, false],
+                ['服务费', detailRecord.serviceFee, false],
+              ] as [string, number, boolean][]).map(([label, value, isUtility]) => (
+                <div key={`cost-${label}`} className="callout callout-neutral">
+                  <strong>{label}{isUtility ? '(按月汇总)' : ''}</strong>
                   <span>{formatRentAmount(Number(value))}</span>
                 </div>
               ))}
+            </div>
+
+            {/* 水电账单管理入口 */}
+            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+              <Btn tone="secondary" onClick={() => onManageUtilityBills(detailRecord.id)}>
+                管理水电账单
+              </Btn>
             </div>
 
             {detailRecord.notes ? (

@@ -11,6 +11,7 @@ import type {
   RentHousingRecordDraft,
   RentOverviewSummary,
   RentPageState,
+  RentUtilityBill,
 } from '../types/rent';
 
 const DATE_FORMAT = 'YYYY-MM-DD';
@@ -458,4 +459,52 @@ export function buildRentRecordSnapshot(record: RentHousingRecord) {
     ...record,
     ...metrics,
   };
+}
+
+/**
+ * 格式化年月为中文显示
+ * @param yearMonth 格式 YYYY-MM
+ * @returns 如 "2026年1月"
+ */
+export function formatYearMonth(yearMonth: string): string {
+  if (!yearMonth || !/^\d{4}-\d{2}$/.test(yearMonth)) return yearMonth;
+  const [y, m] = yearMonth.split('-');
+  return `${y}年${Number(m)}月`;
+}
+
+/**
+ * 计算单月账单小计金额（电费 + 水费 + 燃气费）
+ * @param bill 月度账单
+ * @returns 小计金额
+ */
+export function getUtilityBillTotal(bill: RentUtilityBill): number {
+  return Number((bill.electricityFee + bill.waterFee + bill.gasFee).toFixed(2));
+}
+
+/**
+ * 从账单列表汇总水电燃气费用
+ * @param bills 账单列表
+ * @returns 各项合计与总计
+ */
+export function summarizeUtilityBills(bills: RentUtilityBill[]): {
+  electricityTotal: number;
+  waterTotal: number;
+  gasTotal: number;
+  grandTotal: number;
+} {
+  const electricityTotal = bills.reduce((s, b) => s + b.electricityFee, 0);
+  const waterTotal = bills.reduce((s, b) => s + b.waterFee, 0);
+  const gasTotal = bills.reduce((s, b) => s + b.gasFee, 0);
+  const grandTotal = Number((electricityTotal + waterTotal + gasTotal).toFixed(2));
+  return { electricityTotal, waterTotal, gasTotal, grandTotal };
+}
+
+/**
+ * 筛选指定住房记录的月度账单
+ * @param bills 全部账单
+ * @param recordId 住房记录 ID
+ * @returns 该记录关联的账单列表
+ */
+export function filterBillsByRecordId(bills: RentUtilityBill[], recordId: string): RentUtilityBill[] {
+  return bills.filter((b) => b.recordId === recordId);
 }

@@ -311,6 +311,11 @@ function normalizeForexTrade(record: Partial<ForexTradeRecord>, index = 0): Fore
       ? record.pnl
       : calculateForexTradePnl(instrument, orderType, openPrice, closePrice, lotSize),
   );
+  const overnightFee = roundMoney(
+    typeof record.overnightFee === 'number'
+      ? record.overnightFee
+      : 0,
+  );
   const openTime = normalizeForexTimeInput(String(record.openTime ?? DEFAULT_START_TIME), DEFAULT_START_TIME);
   const closeTime = normalizeForexTimeInput(String(record.closeTime ?? DEFAULT_END_TIME), DEFAULT_END_TIME);
   const holdTime = normalizeTrimmedValue(record.holdTime, calculateForexHoldTime(openTime, closeTime));
@@ -327,6 +332,7 @@ function normalizeForexTrade(record: Partial<ForexTradeRecord>, index = 0): Fore
     commission,
     closePrice,
     pnl,
+    overnightFee,
     openTime,
     closeTime,
     holdTime,
@@ -473,6 +479,7 @@ export function createForexTrade(records: ForexTradeRecord[], draft: ForexTradeD
     id: buildId(),
     commission: draft.commission ?? calculateForexCommission(draft.lotSize),
     pnl: draft.pnl ?? calculateForexTradePnl(draft.instrument, draft.orderType, draft.openPrice, draft.closePrice, draft.lotSize),
+    overnightFee: draft.overnightFee ?? 0,
     holdTime: draft.holdTime ?? calculateForexHoldTime(draft.openTime, draft.closeTime),
     createdAt: dayjs().format(DATE_TIME_FORMAT),
     updatedAt: dayjs().format(DATE_TIME_FORMAT),
@@ -495,6 +502,7 @@ export function updateForexTrade(records: ForexTradeRecord[], tradeId: string, d
       updatedAt: dayjs().format(DATE_TIME_FORMAT),
       commission: draft.commission ?? calculateForexCommission(draft.lotSize),
       pnl: draft.pnl ?? calculateForexTradePnl(draft.instrument, draft.orderType, draft.openPrice, draft.closePrice, draft.lotSize),
+      overnightFee: draft.overnightFee ?? record.overnightFee,
       holdTime: draft.holdTime ?? calculateForexHoldTime(draft.openTime, draft.closeTime),
     });
   }));
@@ -627,7 +635,8 @@ export function buildForexDashboardSummary(
   const negativeGross = Math.abs(losers.reduce((sum, trade) => sum + trade.pnl, 0));
   const grossPnl = roundMoney(scopedTrades.reduce((sum, trade) => sum + trade.pnl, 0));
   const totalCommission = roundMoney(scopedTrades.reduce((sum, trade) => sum + trade.commission, 0));
-  const realizedNetPnl = roundMoney(grossPnl + totalCommission);
+  const totalOvernightFee = roundMoney(scopedTrades.reduce((sum, trade) => sum + trade.overnightFee, 0));
+  const realizedNetPnl = roundMoney(grossPnl + totalCommission + totalOvernightFee);
   const totalDeposit = roundMoney(scopedCapital.filter((flow) => flow.flowType === 'deposit').reduce((sum, flow) => sum + flow.amount, 0));
   const totalWithdrawal = roundMoney(scopedCapital.filter((flow) => flow.flowType === 'withdrawal').reduce((sum, flow) => sum + flow.amount, 0));
   const netCapital = roundMoney(totalDeposit - totalWithdrawal);
@@ -637,6 +646,7 @@ export function buildForexDashboardSummary(
     tradeCount: scopedTrades.length,
     grossPnl,
     totalCommission,
+    totalOvernightFee,
     realizedNetPnl,
     winRate: scopedTrades.length ? winners.length / scopedTrades.length : 0,
     profitLossRatio: negativeGross > 0 ? positiveGross / negativeGross : positiveGross > 0 ? positiveGross : 0,
@@ -666,12 +676,14 @@ export function buildForexDailyPnlTrend(
       netPnl: 0,
       grossPnl: 0,
       commission: 0,
+      overnightFee: 0,
       tradeCount: 0,
     };
 
     existing.grossPnl = roundMoney(existing.grossPnl + record.pnl);
     existing.commission = roundMoney(existing.commission + record.commission);
-    existing.netPnl = roundMoney(existing.grossPnl + existing.commission);
+    existing.overnightFee = roundMoney(existing.overnightFee + record.overnightFee);
+    existing.netPnl = roundMoney(existing.grossPnl + existing.commission + existing.overnightFee);
     existing.tradeCount += 1;
     grouped.set(record.tradeDate, existing);
   });
@@ -701,6 +713,7 @@ export function buildForexDailyPnlTrend(
         netPnl: 0,
         grossPnl: 0,
         commission: 0,
+        overnightFee: 0,
         tradeCount: 0,
       });
     }
@@ -723,13 +736,15 @@ export function buildForexInstrumentSummary(
     const winners = records.filter((trade) => trade.pnl > 0).length;
     const grossPnl = roundMoney(records.reduce((sum, trade) => sum + trade.pnl, 0));
     const totalCommission = roundMoney(records.reduce((sum, trade) => sum + trade.commission, 0));
+    const totalOvernightFee = roundMoney(records.reduce((sum, trade) => sum + trade.overnightFee, 0));
 
     return {
       instrument,
       tradeCount: records.length,
       grossPnl,
       totalCommission,
-      netPnl: roundMoney(grossPnl + totalCommission),
+      totalOvernightFee,
+      netPnl: roundMoney(grossPnl + totalCommission + totalOvernightFee),
       avgLotSize: records.length
         ? Number((records.reduce((sum, trade) => sum + trade.lotSize, 0) / records.length).toFixed(2))
         : 0,
@@ -748,7 +763,7 @@ function buildConsecutiveLossMetric(trades: ForexTradeRecord[]) {
     .filter((trade) => isValidTradeDate(trade.tradeDate))
     .sort((left, right) => dayjs(`${left.tradeDate}T${left.closeTime}`).valueOf() - dayjs(`${right.tradeDate}T${right.closeTime}`).valueOf())
     .forEach((trade) => {
-      if (trade.pnl + trade.commission < 0) {
+      if (trade.pnl + trade.commission + trade.overnightFee < 0) {
         streak += 1;
         maxStreak = Math.max(maxStreak, streak);
       } else {
@@ -910,22 +925,13 @@ export function computeForexMultiPosition(
   const balance = Math.max(0, options.balance || 0);
   const forcedLiquidationRatio = Math.min(1, Math.max(0.1, options.forcedLiquidationRatio || 0.5));
 
-  const results = positions.map((position) => {
+  const baseResults = positions.map((position) => {
     const contractValue = roundMoney(position.openPrice * position.lotSize * FOREX_CONTRACT_UNITS[position.instrument]);
     const margin = roundMoney(contractValue / leverage);
     const pointValue = roundMoney(position.lotSize * FOREX_CONTRACT_UNITS[position.instrument] * FOREX_POINT_SIZES[position.instrument]);
     const pnl = position.closePrice && position.closePrice > 0
       ? calculateForexTradePnl(position.instrument, position.orderType, position.openPrice, position.closePrice, position.lotSize)
       : null;
-    const allowedLoss = Math.max(balance - (margin * forcedLiquidationRatio), 0);
-    const priceMove = position.lotSize > 0
-      ? allowedLoss / (position.lotSize * FOREX_CONTRACT_UNITS[position.instrument])
-      : 0;
-    const forcedLiquidationPrice = roundMoney(
-      position.orderType === 'buy'
-        ? Math.max(0, position.openPrice - priceMove)
-        : position.openPrice + priceMove,
-    );
 
     return {
       id: position.id,
@@ -937,13 +943,12 @@ export function computeForexMultiPosition(
       margin,
       pointValue,
       pnl,
-      forcedLiquidationPrice,
     };
   });
 
-  const totalContractValue = roundMoney(results.reduce((sum, item) => sum + item.contractValue, 0));
-  const totalMargin = roundMoney(results.reduce((sum, item) => sum + item.margin, 0));
-  const totalPnl = roundMoney(results.reduce((sum, item) => sum + (item.pnl ?? 0), 0));
+  const totalContractValue = roundMoney(baseResults.reduce((sum, item) => sum + item.contractValue, 0));
+  const totalMargin = roundMoney(baseResults.reduce((sum, item) => sum + item.margin, 0));
+  const totalPnl = roundMoney(baseResults.reduce((sum, item) => sum + (item.pnl ?? 0), 0));
   const equityIfClosed = roundMoney(balance + totalPnl);
   const marginUsageRatio = balance > 0 ? totalMargin / balance : 0;
   const remainingAvailableMargin = roundMoney(balance - totalMargin);
@@ -953,6 +958,84 @@ export function computeForexMultiPosition(
   /* 爆仓亏损 = 当前净值 - 爆仓阈值（即价格反向移动到触发强平时的总亏损） */
   const accountLiquidationLoss = roundMoney(Math.max(0, balance - liquidationEquityThreshold));
   const accountLiquidationEquity = roundMoney(balance - accountLiquidationLoss);
+
+  /* 按「品种 + 方向」分组，计算每组的加权平均开仓价和总手数 */
+  const groupMap = new Map<string, {
+    instrument: ForexInstrument;
+    orderType: ForexOrderType;
+    totalLotSize: number;
+    weightedOpenPrice: number;
+    totalContractUnits: number;
+  }>();
+
+  baseResults.forEach((item) => {
+    const key = `${item.instrument}_${item.orderType}`;
+    const existing = groupMap.get(key);
+    if (existing) {
+      const newTotalLot = existing.totalLotSize + item.lotSize;
+      const newWeightedPrice = (existing.weightedOpenPrice * existing.totalLotSize + item.openPrice * item.lotSize) / newTotalLot;
+      existing.totalLotSize = newTotalLot;
+      existing.weightedOpenPrice = newWeightedPrice;
+    } else {
+      groupMap.set(key, {
+        instrument: item.instrument,
+        orderType: item.orderType,
+        totalLotSize: item.lotSize,
+        weightedOpenPrice: item.openPrice,
+        totalContractUnits: item.lotSize * FOREX_CONTRACT_UNITS[item.instrument],
+      });
+    }
+  });
+
+  /* 计算每组的统一强平价
+   * 原理：账户净值 = 余额 + Σ(各组盈亏)
+   * 当账户净值 = 总保证金 × 强平比例 时触发爆仓
+   * 对于多单：盈亏 = (价格 - 加权开仓价) × 总手数 × 合约单位
+   * 对于空单：盈亏 = (加权开仓价 - 价格) × 总手数 × 合约单位
+   *
+   * 注意：如果同时持有多单和空单，价格变化时两边盈亏方向相反。
+   * 对于每组来说，需要计算「当该组亏损到使账户净值触及爆仓阈值时的价格」。
+   * 这里假设其他组的盈亏不变（以当前价格为基准），只算该组价格移动到爆仓的位置。
+   * 实际上这给出的是「单边行情下该方向的爆仓价格」，是风险评估的常用简化方式。
+   */
+  const groupLiquidationPriceMap = new Map<string, number>();
+
+  groupMap.forEach((group, key) => {
+    const otherGroupsPnl = totalPnl - baseResults
+      .filter((item) => `${item.instrument}_${item.orderType}` === key)
+      .reduce((sum, item) => sum + (item.pnl ?? 0), 0);
+
+    const targetEquity = liquidationEquityThreshold;
+    const requiredLossFromThisGroup = balance + otherGroupsPnl - targetEquity;
+
+    if (requiredLossFromThisGroup <= 0) {
+      groupLiquidationPriceMap.set(key, group.orderType === 'buy' ? 0 : Infinity);
+      return;
+    }
+
+    const priceMove = requiredLossFromThisGroup / (group.totalLotSize * FOREX_CONTRACT_UNITS[group.instrument]);
+
+    let liquidationPrice: number;
+    if (group.orderType === 'buy') {
+      liquidationPrice = group.weightedOpenPrice - priceMove;
+      liquidationPrice = Math.max(0, liquidationPrice);
+    } else {
+      liquidationPrice = group.weightedOpenPrice + priceMove;
+    }
+
+    groupLiquidationPriceMap.set(key, roundMoney(liquidationPrice));
+  });
+
+  /* 给每个仓位附上它所在组的统一强平价 */
+  const results = baseResults.map((item) => {
+    const key = `${item.instrument}_${item.orderType}`;
+    const forcedLiquidationPrice = groupLiquidationPriceMap.get(key) ?? 0;
+
+    return {
+      ...item,
+      forcedLiquidationPrice,
+    };
+  });
 
   return {
     positions: results,
@@ -1240,6 +1323,7 @@ function buildImportedTrade(
         readAliasValue(row, ['盈亏金额', '盈亏', 'pnl']),
         calculateForexTradePnl(instrument, orderType, openPrice, closePrice, lotSize),
       ),
+      overnightFee: toNumber(readAliasValue(row, ['隔夜费', 'overnightFee', 'overnight_fee']), 0),
       openTime,
       closeTime,
       holdTime: normalizeTrimmedValue(readAliasValue(row, ['持仓时间', '持仓时长', 'holdTime']), calculateForexHoldTime(openTime, closeTime)),
@@ -1326,6 +1410,7 @@ export async function buildForexImportTemplateWorkbook() {
       手续费: -0.6,
       平仓价格: 2346.2,
       盈亏金额: 57,
+      隔夜费: -1.2,
       开仓时间: '09:35:00',
       平仓时间: '11:10:00',
       持仓时间: '1小时 35分钟',
@@ -1467,6 +1552,10 @@ function buildImportedTradeCompatible(
         getForexImportCell(row, ['盈亏金额', '盈亏', 'pnl', 'profitLoss', 'profit_loss']),
         calculateForexTradePnl(instrument, orderType, openPrice, closePrice, lotSize),
       ),
+      overnightFee: toNumber(
+        getForexImportCell(row, ['隔夜费', 'overnightFee', 'overnight_fee', 'swap', 'rollover']),
+        0,
+      ),
       openTime,
       closeTime,
       holdTime: normalizeTrimmedValue(
@@ -1602,6 +1691,7 @@ export async function buildForexImportTemplateWorkbookCompatible() {
       手续费: -0.6,
       平仓价格: 2346.2,
       盈亏金额: 57,
+      隔夜费: -1.2,
       开仓时间: '09:35:00',
       平仓时间: '11:10:00',
       持仓时间: '1小时 35分钟',

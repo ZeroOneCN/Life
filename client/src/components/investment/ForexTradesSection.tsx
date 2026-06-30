@@ -42,6 +42,7 @@ interface TradeFormState {
   commission: string;
   closePrice: string;
   pnl: string;
+  overnightFee: string;
   openTime: string;
   closeTime: string;
   holdTime: string;
@@ -58,6 +59,7 @@ function createDefaultFormState(): TradeFormState {
     commission: '-0.06',
     closePrice: '',
     pnl: '',
+    overnightFee: '0',
     openTime: '',
     closeTime: '',
     holdTime: '',
@@ -75,6 +77,7 @@ function buildFormState(record: ForexTradeRecord): TradeFormState {
     commission: String(record.commission),
     closePrice: String(record.closePrice),
     pnl: String(record.pnl),
+    overnightFee: String(record.overnightFee),
     openTime: record.openTime,
     closeTime: record.closeTime,
     holdTime: record.holdTime,
@@ -143,6 +146,7 @@ function parseDraft(form: TradeFormState): ForexTradeDraft | null {
     commission: Number(form.commission),
     closePrice,
     pnl: Number(form.pnl),
+    overnightFee: Number(form.overnightFee),
     openTime,
     closeTime,
     holdTime: form.holdTime,
@@ -238,6 +242,15 @@ export function ForexTradesSection({
         <strong style={{ color: row.pnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
           {formatForexAmount(row.pnl)}
         </strong>
+      ),
+    },
+    {
+      key: 'overnightFee',
+      title: '隔夜费',
+      render: (_value: unknown, row: ForexTradeRecord) => (
+        <span style={{ color: row.overnightFee >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+          {formatForexAmount(row.overnightFee)}
+        </span>
       ),
     },
     { key: 'openTime', title: '开仓时间', dataIndex: 'openTime' as const },
@@ -413,6 +426,12 @@ export function ForexTradesSection({
             readOnly
           />
           <Field
+            label="隔夜费"
+            value={form.overnightFee}
+            onChange={(event) => setForm((current) => ({ ...current, overnightFee: event.target.value }))}
+            placeholder="-1.20"
+          />
+          <Field
             label="开仓时间"
             value={form.openTime}
             onChange={(event) => setForm((current) => ({ ...current, openTime: event.target.value }))}
@@ -549,6 +568,11 @@ export function ForexTradesSection({
               onChange={(event) => setEditingForm((current) => hydrateDerivedFields({ ...current, closePrice: event.target.value }))}
             />
             <Field label="盈亏金额" value={editingForm.pnl} readOnly />
+            <Field
+              label="隔夜费"
+              value={editingForm.overnightFee}
+              onChange={(event) => setEditingForm((current) => ({ ...current, overnightFee: event.target.value }))}
+            />
             <Field
               label="开仓时间"
               value={editingForm.openTime}

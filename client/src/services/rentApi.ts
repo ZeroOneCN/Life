@@ -8,6 +8,8 @@ import type {
   RentHousingRecordDraft,
   RentOverviewSummary,
   RentPageState,
+  RentUtilityBill,
+  RentUtilityBillDraft,
 } from '../types/rent';
 
 export const rentApi = {
@@ -68,5 +70,25 @@ export const rentApi = {
 
   updateSettings(body: Partial<RentPageState['settings']>) {
     return apiPatch<RentPageState['settings'], Partial<RentPageState['settings']>>('/finance/rent/settings', body);
+  },
+
+  /** 查询月度水电燃气账单，不传 recordId 返回全部 */
+  listUtilityBills(recordId?: string) {
+    return apiGet<RentUtilityBill[]>('/finance/rent/utility-bills', undefined, recordId ? { recordId } : undefined);
+  },
+
+  /** 新增月度账单 */
+  createUtilityBill(body: RentUtilityBillDraft) {
+    return apiPost<RentUtilityBill, RentUtilityBillDraft>('/finance/rent/utility-bills', body);
+  },
+
+  /** 更新月度账单 */
+  updateUtilityBill(billId: string, body: Partial<RentUtilityBillDraft>) {
+    return apiPatch<RentUtilityBill, Partial<RentUtilityBillDraft>>(`/finance/rent/utility-bills/${billId}`, body);
+  },
+
+  /** 删除月度账单 */
+  deleteUtilityBill(billId: string) {
+    return apiDelete<{ ok: true }>(`/finance/rent/utility-bills/${billId}`);
   },
 };
