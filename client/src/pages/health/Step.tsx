@@ -11,6 +11,7 @@ import { getAuthUserDisplayName, useAuthState } from '../../services/auth';
 import { stepApi } from '../../services/stepApi';
 import {
   buildStepRecordTime,
+  getCurrentTimeDefault,
   getNextStepHour,
   getTodayEndDateTime,
   inferStepHourFromRecordTime,
@@ -63,8 +64,8 @@ export default function StepPage() {
   });
   const [compareSummary, setCompareSummary] = useState<StepMonthCompareSummary>(EMPTY_COMPARE);
   const [stepsInput, setStepsInput] = useState('');
-  const [selectedHour, setSelectedHour] = useState<StepHour>(null);
-  const [recordTime, setRecordTime] = useState(getTodayEndDateTime());
+  const [selectedHour, setSelectedHour] = useState<StepHour>(() => getCurrentTimeDefault().hour);
+  const [recordTime, setRecordTime] = useState<string>(() => getCurrentTimeDefault().recordTime);
   const [pendingDuplicate, setPendingDuplicate] = useState<{ existing: StepRecord; draft: StepRecordDraft } | null>(null);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
@@ -123,6 +124,25 @@ export default function StepPage() {
       cancelled = true;
     };
   }, [reload, showToast]);
+
+  /**
+   * 监听页面可见性变化：当用户从其他页面切回来时，
+   * 如果步数输入框为空，自动更新时间段和记录时间为当前时间。
+   */
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && !stepsInput.trim()) {
+        const current = getCurrentTimeDefault();
+        setSelectedHour(current.hour);
+        setRecordTime(current.recordTime);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [stepsInput]);
 
   const focusStepsInput = () => {
     window.setTimeout(() => {

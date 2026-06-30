@@ -92,6 +92,29 @@ export function getTodayEndDateTime() {
   return dayjs().hour(23).minute(59).second(0).millisecond(0).format(DATE_TIME_FORMAT);
 }
 
+/**
+ * 获取当前时间对应的默认时间段和记录时间。
+ * - 当前小时在 7-23 点之间：选中当前整点，记录时间为当前小时:00
+ * - 当前小时在 0-6 点之间：选中 7 点，记录时间为今天 7:00
+ */
+export function getCurrentTimeDefault(): { hour: StepHour; recordTime: string } {
+  const now = dayjs();
+  const currentHour = now.hour();
+
+  if (currentHour >= 7 && currentHour <= 23) {
+    const hour = currentHour as StepConcreteHour;
+    return {
+      hour,
+      recordTime: now.hour(hour).minute(0).second(0).millisecond(0).format(DATE_TIME_FORMAT),
+    };
+  }
+
+  return {
+    hour: 7 as StepConcreteHour,
+    recordTime: now.hour(7).minute(0).second(0).millisecond(0).format(DATE_TIME_FORMAT),
+  };
+}
+
 export function buildStepRecordTime(recordTime: string, hour: StepHour, minute = 0) {
   const base = dayjs(recordTime).isValid() ? dayjs(recordTime) : dayjs();
 
