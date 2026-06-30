@@ -14,27 +14,6 @@ import type {
   WeightRecordDraft,
 } from '../types/fitness';
 
-export interface FitnessOcrResult {
-  weight?: number;
-  height?: number;
-  bodyFat?: number;
-  bmi?: number;
-  visceralFat?: number;
-  fatMass?: number;
-  muscleRate?: number;
-  muscleMass?: number;
-  bodyWaterRate?: number;
-  bodyWaterMass?: number;
-  proteinRate?: number;
-  proteinMass?: number;
-  boneRate?: number;
-  boneMass?: number;
-  skeletalMuscleRate?: number;
-  skeletalMuscleMass?: number;
-  subcutaneousFatRate?: number;
-  subcutaneousFatMass?: number;
-}
-
 export const fitnessApi = {
   listDietRecords(params?: { page?: number; page_size?: number; userId?: string }) {
     return apiGet<PaginatedResponse<DietRecord>>('/health/fitness/diet-records', undefined, params as Record<string, unknown> | undefined);
@@ -114,9 +93,5 @@ export const fitnessApi = {
 
   updateSettings(body: Partial<FitnessPageState['settings']>) {
     return apiPatch<FitnessPageState['settings'], Partial<FitnessPageState['settings']>>('/health/fitness/settings', body);
-  },
-
-  recognizeImage(imageBase64: string) {
-    return apiPost<FitnessOcrResult, { imageBase64: string }>('/health/fitness/ai/ocr', { imageBase64 });
   },
 };

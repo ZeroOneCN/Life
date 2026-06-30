@@ -14,7 +14,6 @@ import { normalizeDate } from '../../shared/utils/date';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { AppError } from '../../shared/errors/app-error';
 import { queryExerciseCalorie, queryFoodNutrition } from './fitness-ai.service';
-import { recognizeFitnessImage } from './fitness-ocr.service';
 import { HealthFitnessDietRecordEntity } from './entities/health-fitness-diet-record.entity';
 import { HealthFitnessExerciseRecordEntity } from './entities/health-fitness-exercise-record.entity';
 import { HealthFitnessSettingEntity } from './entities/health-fitness-setting.entity';
@@ -611,33 +610,6 @@ export function createFitnessRouter() {
           code: 422,
           data: null,
           message: error instanceof Error ? error.message : 'AI 运动查询失败',
-        });
-      }
-    }),
-  );
-
-  /**
-   * POST /api/health/fitness/ai/ocr
-   * 上传体脂秤屏幕截图，自动识别各项身体指标数据。
-   * 调用 DeepSeek 多模态模型进行图片识别。
-   */
-  router.post(
-    '/ai/ocr',
-    asyncHandler(async (request: AuthenticatedRequest, response) => {
-      const body = z
-        .object({
-          imageBase64: z.string().trim().min(1),
-        })
-        .parse(request.body ?? {});
-
-      try {
-        const result = await recognizeFitnessImage(body.imageBase64);
-        response.json(successResponse(result));
-      } catch (error) {
-        response.status(422).json({
-          code: 422,
-          data: null,
-          message: error instanceof Error ? error.message : '图片识别失败',
         });
       }
     }),
