@@ -523,6 +523,8 @@ export function StorageItemsSection({
           }
         }}
         title="确认归档"
+        confirmLabel="确认归档"
+        confirmTone="primary"
       >
         确定要将「{archivingItem?.itemName}」归档吗？归档后将固定最终持有天数和日均成本。
       </DeleteModal>
