@@ -491,9 +491,9 @@ export function formatShoppingAmount(
     : `¥${converted.toFixed(2)}`;
 }
 
-export function resolveShoppingPlatformColor(name: string, platforms: ShoppingPlatform[]) {
+export function resolveShoppingPlatformColor(name: string, platforms: ShoppingPlatform[], fallbackIndex = 0) {
   const matched = findPlatformByName(platforms, name);
-  return matched?.colorToken || SHOPPING_PLATFORM_COLOR_PRESETS[0];
+  return matched?.colorToken || SHOPPING_PLATFORM_COLOR_PRESETS[fallbackIndex % SHOPPING_PLATFORM_COLOR_PRESETS.length];
 }
 
 export function buildShoppingOverview(records: ShoppingRecord[], ledgerId: string): ShoppingOverviewSummary {
@@ -550,11 +550,11 @@ export function buildShoppingPlatformBreakdown(
   });
 
   return Array.from(grouped.entries())
-    .map(([name, summary]) => ({
+    .map(([name, summary], index) => ({
       name,
       amount: Number(summary.amount.toFixed(2)),
       count: summary.count,
-      color: resolveShoppingPlatformColor(name, platforms),
+      color: resolveShoppingPlatformColor(name, platforms, index),
     }))
     .sort((left, right) => right.amount - left.amount);
 }

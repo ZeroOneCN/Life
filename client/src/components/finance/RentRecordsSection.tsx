@@ -108,7 +108,18 @@ export function RentRecordsSection({
   }, [filteredRecords]);
 
   const columns = useMemo(() => [
-    { key: 'address', title: '住房地址', dataIndex: 'address' as const },
+    {
+      key: 'address',
+      title: '住房地址',
+      dataIndex: 'address' as const,
+      render: (value: unknown) => {
+        const address = String(value ?? '');
+        if (address.length <= 12) {
+          return address;
+        }
+        return `${address.slice(0, 12)}…`;
+      },
+    },
     { key: 'channelName', title: '渠道', dataIndex: 'channelName' as const, align: 'center' as const },
     { key: 'moveInDate', title: '入住日期', dataIndex: 'moveInDate' as const, align: 'center' as const },
     {
@@ -213,7 +224,7 @@ export function RentRecordsSection({
       <Modal
         open={Boolean(detailRecord && detailSnapshot)}
         onClose={() => setDetailRecord(null)}
-        title={detailRecord ? `住房详情 · ${detailRecord.address}` : '住房详情'}
+        title={detailRecord ? `住房详情 · ${detailRecord.address.length > 12 ? `${detailRecord.address.slice(0, 12)}…` : detailRecord.address}` : '住房详情'}
         width={820}
         footer={<Btn tone="secondary" onClick={() => setDetailRecord(null)}>关闭</Btn>}
       >
@@ -238,6 +249,10 @@ export function RentRecordsSection({
             })()}
 
             <div className="rent-detail-grid">
+              <div className="callout callout-neutral">
+                <strong>完整地址</strong>
+                <span>{detailRecord.address}</span>
+              </div>
               <div className="callout callout-neutral">
                 <strong>渠道</strong>
                 <span>{detailRecord.channelName}</span>
@@ -301,7 +316,7 @@ export function RentRecordsSection({
             {detailRecord.notes ? (
               <div className="callout callout-info">
                 <strong>备注</strong>
-                <span>{detailRecord.notes}</span>
+                <span style={{ marginTop: 'var(--space-1)', display: 'block' }}>{detailRecord.notes}</span>
               </div>
             ) : null}
           </div>
