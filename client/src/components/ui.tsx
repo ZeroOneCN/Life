@@ -203,16 +203,6 @@ export function Modal({ open, onClose, title, width = 560, footer, children }: M
       aria-modal="true"
       aria-labelledby={title ? titleId : undefined}
       tabIndex={-1}
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') {
-          onClose();
-        }
-      }}
     >
       <div className="modal-panel" style={{ width }}>
         {(title || true) && (

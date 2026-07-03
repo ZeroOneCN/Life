@@ -230,106 +230,140 @@ export function RentRecordsSection({
         footer={<Btn tone="secondary" onClick={() => setDetailRecord(null)}>关闭</Btn>}
       >
         {detailRecord && detailSnapshot ? (
-          <div className="page-stack">
+          <div className="rent-detail-content">
+            {/* 地址信息卡 */}
+            <div className="rent-detail-hero">
+              <div className="rent-detail-hero-label">
+                {detailSnapshot.occupancyStatus === 'active' ? (
+                  <Tag tone="green">在住中</Tag>
+                ) : (
+                  <Tag tone="default">已退租</Tag>
+                )}
+              </div>
+              <div className="rent-detail-hero-body">
+                <h4>{detailRecord.addressShort?.trim() || detailRecord.address}</h4>
+                {detailRecord.addressShort?.trim() ? (
+                  <p>{detailRecord.address}</p>
+                ) : null}
+              </div>
+            </div>
+
             {/* 基础信息 */}
-            <div className="rent-detail-grid">
-              {detailRecord.addressShort?.trim() ? (
-                <div className="callout callout-neutral">
-                  <strong>地址简称</strong>
-                  <span>{detailRecord.addressShort}</span>
+            <div className="rent-detail-section">
+              <div className="rent-detail-section-title">基础信息</div>
+              <div className="rent-detail-info-grid">
+                <div className="rent-detail-info-item">
+                  <span className="rent-detail-info-label">渠道</span>
+                  <span className="rent-detail-info-value">{detailRecord.channelName}</span>
                 </div>
-              ) : null}
-              <div className="callout callout-neutral">
-                <strong>完整地址</strong>
-                <span>{detailRecord.address}</span>
-              </div>
-              <div className="callout callout-neutral">
-                <strong>渠道</strong>
-                <span>{detailRecord.channelName}</span>
-              </div>
-              <div className="callout callout-neutral">
-                <strong>入住日期</strong>
-                <span>{detailRecord.moveInDate}</span>
-              </div>
-              <div className="callout callout-neutral">
-                <strong>退租日期</strong>
-                <span>{detailRecord.moveOutDate || '仍在住'}</span>
-              </div>
-              <div className="callout callout-neutral">
-                <strong>房屋朝向</strong>
-                <span>{detailRecord.orientation || '-'}</span>
+                <div className="rent-detail-info-item">
+                  <span className="rent-detail-info-label">入住日期</span>
+                  <span className="rent-detail-info-value">{detailRecord.moveInDate}</span>
+                </div>
+                <div className="rent-detail-info-item">
+                  <span className="rent-detail-info-label">退租日期</span>
+                  <span className="rent-detail-info-value">{detailRecord.moveOutDate || '仍在住'}</span>
+                </div>
+                <div className="rent-detail-info-item">
+                  <span className="rent-detail-info-label">房屋朝向</span>
+                  <span className="rent-detail-info-value">{detailRecord.orientation || '-'}</span>
+                </div>
               </div>
             </div>
 
             {/* 派生指标 */}
-            <StatGrid
-              className="rent-summary-grid"
-              items={[
-                {
-                  label: '居住状态',
-                  value: detailSnapshot.occupancyStatus === 'active' ? '在住' : '已退租',
-                  helper: `更新于 ${dayjs(detailRecord.updatedAt).format('YYYY-MM-DD HH:mm')}`,
-                },
-                { label: '居住天数', value: `${detailSnapshot.stayDays} 天` },
-                { label: '总成本', value: formatRentAmount(detailSnapshot.totalCost) },
-                { label: '单日成本', value: formatRentAmount(detailSnapshot.dailyCost) },
-                { label: '折算月租', value: formatRentAmount(detailSnapshot.monthlyRent) },
-                { label: '折算季度租金', value: formatRentAmount(detailSnapshot.quarterlyRent) },
-              ]}
-            />
+            <div className="rent-detail-section">
+              <div className="rent-detail-section-title">成本概览</div>
+              <div className="rent-detail-metrics">
+                <div className="rent-detail-metric">
+                  <span className="rent-detail-metric-value">{detailSnapshot.stayDays}</span>
+                  <span className="rent-detail-metric-label">居住天数</span>
+                </div>
+                <div className="rent-detail-metric rent-detail-metric-accent">
+                  <span className="rent-detail-metric-value">{formatRentAmount(detailSnapshot.totalCost)}</span>
+                  <span className="rent-detail-metric-label">总成本</span>
+                </div>
+                <div className="rent-detail-metric">
+                  <span className="rent-detail-metric-value">{formatRentAmount(detailSnapshot.dailyCost)}</span>
+                  <span className="rent-detail-metric-label">单日成本</span>
+                </div>
+                <div className="rent-detail-metric">
+                  <span className="rent-detail-metric-value">{formatRentAmount(detailSnapshot.monthlyRent)}</span>
+                  <span className="rent-detail-metric-label">折算月租</span>
+                </div>
+              </div>
+            </div>
 
             {/* 水电账单汇总 */}
             {(() => {
               const recordBills = filterBillsByRecordId(utilityBills, detailRecord.id);
               const billSummary = summarizeUtilityBills(recordBills);
-              return recordBills.length > 0 ? (
-                <StatGrid
-                  className="rent-summary-grid"
-                  items={[
-                    { label: '账单笔数', value: `${recordBills.length} 笔` },
-                    { label: '电费合计', value: formatRentAmount(billSummary.electricityTotal), helper: `共 ${recordBills.length} 个月` },
-                    { label: '水费合计', value: formatRentAmount(billSummary.waterTotal) },
-                    { label: '燃气费合计', value: formatRentAmount(billSummary.gasTotal) },
-                    { label: '水电燃气总计', value: formatRentAmount(billSummary.grandTotal) },
-                  ]}
-                />
-              ) : null;
+              if (recordBills.length === 0) return null;
+              return (
+                <div className="rent-detail-section">
+                  <div className="rent-detail-section-title">水电账单（{recordBills.length} 个月）</div>
+                  <div className="rent-detail-bills">
+                    <div className="rent-detail-bill-item">
+                      <span className="rent-detail-bill-label">电费</span>
+                      <span className="rent-detail-bill-value">{formatRentAmount(billSummary.electricityTotal)}</span>
+                    </div>
+                    <div className="rent-detail-bill-item">
+                      <span className="rent-detail-bill-label">水费</span>
+                      <span className="rent-detail-bill-value">{formatRentAmount(billSummary.waterTotal)}</span>
+                    </div>
+                    <div className="rent-detail-bill-item">
+                      <span className="rent-detail-bill-label">燃气费</span>
+                      <span className="rent-detail-bill-value">{formatRentAmount(billSummary.gasTotal)}</span>
+                    </div>
+                    <div className="rent-detail-bill-item rent-detail-bill-total">
+                      <span className="rent-detail-bill-label">合计</span>
+                      <span className="rent-detail-bill-value">{formatRentAmount(billSummary.grandTotal)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
             })()}
 
             {/* 费用明细 */}
-            <div className="rent-cost-grid">
-              {([
-                ['房租', detailRecord.rent, false],
-                ['押金', detailRecord.deposit, false],
-                ['电费', detailRecord.electricityFee, true],
-                ['水费', detailRecord.waterFee, true],
-                ['燃气费', detailRecord.gasFee, true],
-                ['中介费', detailRecord.agencyFee, false],
-                ['保洁费', detailRecord.cleaningFee, false],
-                ['洗衣费', detailRecord.laundryFee, false],
-                ['服务费', detailRecord.serviceFee, false],
-              ] as [string, number, boolean][]).map(([label, value, isUtility]) => (
-                <div key={`cost-${label}`} className="callout callout-neutral">
-                  <strong>{label}{isUtility ? '(按月汇总)' : ''}</strong>
-                  <span>{formatRentAmount(Number(value))}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* 操作入口 */}
-            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-              <Btn tone="secondary" onClick={() => onManageUtilityBills(detailRecord.id)}>
-                管理水电账单
-              </Btn>
+            <div className="rent-detail-section">
+              <div className="rent-detail-section-title">费用明细</div>
+              <div className="rent-detail-costs">
+                {([
+                  ['房租', detailRecord.rent, false],
+                  ['押金', detailRecord.deposit, false],
+                  ['电费', detailRecord.electricityFee, true],
+                  ['水费', detailRecord.waterFee, true],
+                  ['燃气费', detailRecord.gasFee, true],
+                  ['中介费', detailRecord.agencyFee, false],
+                  ['保洁费', detailRecord.cleaningFee, false],
+                  ['洗衣费', detailRecord.laundryFee, false],
+                  ['服务费', detailRecord.serviceFee, false],
+                ] as [string, number, boolean][]).map(([label, value, isUtility]) => (
+                  <div key={`cost-${label}`} className="rent-detail-cost-item">
+                    <span className="rent-detail-cost-label">
+                      {label}
+                      {isUtility ? <em>按月汇总</em> : null}
+                    </span>
+                    <span className="rent-detail-cost-value">{formatRentAmount(Number(value))}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* 备注 */}
             {detailRecord.notes ? (
-              <div className="callout callout-info">
-                <strong>备注</strong>
-                <span style={{ marginTop: 'var(--space-1)', display: 'block' }}>{detailRecord.notes}</span>
+              <div className="rent-detail-notes">
+                <div className="rent-detail-notes-label">备注</div>
+                <div className="rent-detail-notes-body">{detailRecord.notes}</div>
               </div>
             ) : null}
+
+            {/* 操作入口 */}
+            <div className="rent-detail-actions">
+              <Btn tone="secondary" onClick={() => onManageUtilityBills(detailRecord.id)}>
+                管理水电账单
+              </Btn>
+            </div>
           </div>
         ) : null}
       </Modal>

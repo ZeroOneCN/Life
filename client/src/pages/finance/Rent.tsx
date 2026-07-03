@@ -156,6 +156,7 @@ export default function RentPage() {
       await Promise.all([
         ...created.map(async (item) => rentApi.createRecord({
           address: item.address,
+          addressShort: item.addressShort,
           channelId: await resolveChannelId(item.channelId),
           moveInDate: item.moveInDate,
           moveOutDate: item.moveOutDate,
@@ -173,6 +174,7 @@ export default function RentPage() {
         })),
         ...updated.map(async (item) => rentApi.updateRecord(item.id, {
           address: item.address,
+          addressShort: item.addressShort,
           channelId: await resolveChannelId(item.channelId),
           moveInDate: item.moveInDate,
           moveOutDate: item.moveOutDate,
