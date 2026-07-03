@@ -115,6 +115,42 @@ export function getCurrentTimeDefault(): { hour: StepHour; recordTime: string } 
   };
 }
 
+/**
+ * 根据当前时间和已记录的时间段，找到下一个空时间段。
+ * - 如果当前时间段没有记录，返回当前时间段
+ * - 如果当前时间段已有记录，向后查找最近的空时间段
+ * - 如果所有时间段都有记录，返回全天模式（null）
+ */
+export function findNextEmptyHour(existingHours: number[]): { hour: StepHour; recordTime: string } {
+  const now = dayjs();
+  const currentHour = now.hour();
+
+  let startHour = currentHour >= 7 ? currentHour : 7;
+
+  for (let h = startHour; h <= 23; h++) {
+    if (!existingHours.includes(h)) {
+      return {
+        hour: h as StepConcreteHour,
+        recordTime: now.hour(h).minute(0).second(0).millisecond(0).format(DATE_TIME_FORMAT),
+      };
+    }
+  }
+
+  for (let h = 7; h < startHour; h++) {
+    if (!existingHours.includes(h)) {
+      return {
+        hour: h as StepConcreteHour,
+        recordTime: now.hour(h).minute(0).second(0).millisecond(0).format(DATE_TIME_FORMAT),
+      };
+    }
+  }
+
+  return {
+    hour: null,
+    recordTime: now.hour(23).minute(59).second(0).millisecond(0).format(DATE_TIME_FORMAT),
+  };
+}
+
 export function buildStepRecordTime(recordTime: string, hour: StepHour, minute = 0) {
   const base = dayjs(recordTime).isValid() ? dayjs(recordTime) : dayjs();
 

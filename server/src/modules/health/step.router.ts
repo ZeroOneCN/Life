@@ -290,6 +290,28 @@ export function createStepRouter() {
     }));
   }));
 
+  // GET /today-hours — 获取今日已记录的时间段列表
+  router.get('/today-hours', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const repository = appDataSource.getRepository(HealthStepRecordEntity);
+    const today = dayjs().format('YYYY-MM-DD');
+
+    const rows = await repository.query(
+      'SELECT DISTINCT hour FROM health_step_record WHERE user_id = ? AND record_time BETWEEN ? AND ? ORDER BY hour ASC',
+      [userId, `${today} 00:00:00`, `${today} 23:59:59`],
+    );
+
+    const hours = rows
+      .map((row: Record<string, unknown>) => {
+        const hour = row.hour;
+        if (hour === null) return null;
+        return Number(hour);
+      })
+      .filter((h: number | null): h is number => typeof h === 'number');
+
+    response.json(successResponse({ hours }));
+  }));
+
   // GET /settings
   router.get('/settings', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);

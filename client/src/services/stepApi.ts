@@ -24,6 +24,10 @@ export interface StepSummary {
   strideLength: number;
 }
 
+export interface StepTodayHoursResponse {
+  hours: number[];
+}
+
 export const stepApi = {
   listRecords(params?: StepListParams) {
     return apiGet<PaginatedResponse<StepRecord>>('/health/step/records', undefined, params as Record<string, unknown> | undefined);
@@ -55,6 +59,10 @@ export const stepApi = {
 
   getSettings() {
     return apiGet<StepPageState['settings']>('/health/step/settings');
+  },
+
+  getTodayHours() {
+    return apiGet<StepTodayHoursResponse>('/health/step/today-hours');
   },
 
   updateSettings(body: Partial<StepPageState['settings']>) {

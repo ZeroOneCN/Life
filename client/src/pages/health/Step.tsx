@@ -11,6 +11,7 @@ import { getAuthUserDisplayName, useAuthState } from '../../services/auth';
 import { stepApi } from '../../services/stepApi';
 import {
   buildStepRecordTime,
+  findNextEmptyHour,
   getCurrentTimeDefault,
   getNextStepHour,
   getTodayEndDateTime,
@@ -66,6 +67,7 @@ export default function StepPage() {
   const [stepsInput, setStepsInput] = useState('');
   const [selectedHour, setSelectedHour] = useState<StepHour>(() => getCurrentTimeDefault().hour);
   const [recordTime, setRecordTime] = useState<string>(() => getCurrentTimeDefault().recordTime);
+  const [todayHours, setTodayHours] = useState<number[]>([]);
   const [pendingDuplicate, setPendingDuplicate] = useState<{ existing: StepRecord; draft: StepRecordDraft } | null>(null);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
@@ -86,13 +88,15 @@ export default function StepPage() {
   const reload = useCallback(async () => {
     const nextSettings = await stepApi.getSettings();
 
-    const [nextSummary, nextCompare] = await Promise.all([
+    const [nextSummary, nextCompare, nextTodayHours] = await Promise.all([
       stepApi.getSummary(),
       stepApi.getMonthCompare(),
+      stepApi.getTodayHours(),
     ]);
 
     setSummary(nextSummary);
     setCompareSummary(nextCompare);
+    setTodayHours(nextTodayHours.hours);
     setSettings({
       ...EMPTY_SETTINGS,
       ...nextSettings,
@@ -126,15 +130,33 @@ export default function StepPage() {
   }, [reload, showToast]);
 
   /**
-   * 监听页面可见性变化：当用户从其他页面切回来时，
-   * 如果步数输入框为空，自动更新时间段和记录时间为当前时间。
+   * 页面加载完成后，根据今日已记录的时间段自动跳到下一个空时间段。
    */
   useEffect(() => {
-    const handleVisibilityChange = () => {
+    if (!loading && todayHours.length > 0) {
+      const nextEmpty = findNextEmptyHour(todayHours);
+      setSelectedHour(nextEmpty.hour);
+      setRecordTime(nextEmpty.recordTime);
+    }
+  }, [loading, todayHours]);
+
+  /**
+   * 监听页面可见性变化：当用户从其他页面切回来时，
+   * 如果步数输入框为空，自动更新时间段和记录时间为下一个空时间段。
+   */
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible' && !stepsInput.trim()) {
-        const current = getCurrentTimeDefault();
-        setSelectedHour(current.hour);
-        setRecordTime(current.recordTime);
+        try {
+          const response = await stepApi.getTodayHours();
+          const nextEmpty = findNextEmptyHour(response.hours);
+          setSelectedHour(nextEmpty.hour);
+          setRecordTime(nextEmpty.recordTime);
+        } catch {
+          const current = getCurrentTimeDefault();
+          setSelectedHour(current.hour);
+          setRecordTime(current.recordTime);
+        }
       }
     };
 
