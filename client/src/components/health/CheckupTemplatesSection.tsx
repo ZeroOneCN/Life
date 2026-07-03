@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DeleteModal, Field, Modal, TextArea } from '../ui';
+import { Btn, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, TextArea } from '../ui';
 import type { CheckupTemplate, CheckupTemplateItem } from '../../types/checkup';
 
 interface TemplateFormState {
@@ -140,8 +140,8 @@ export function CheckupTemplatesSection({
 
                 <div className="fitness-row-actions">
                   <Btn tone="primary" onClick={() => onUseTemplate(template.id)}>用于批量录入</Btn>
-                  <Btn tone="secondary" onClick={() => openEditModal(template)}>编辑</Btn>
-                  <Btn tone="danger" onClick={() => setPendingDeleteId(template.id)}>删除</Btn>
+                  <IconBtn tone="secondary" icon={<EditIcon />} title="编辑" onClick={() => openEditModal(template)} />
+                  <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(template.id)} />
                 </div>
               </div>
             ))}

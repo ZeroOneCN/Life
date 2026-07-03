@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard, StatGrid } from '../page';
-import { Btn, Checkbox, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
+import { Btn, Checkbox, DataTable, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
 import {
   SUBSCRIPTION_ALL_CATEGORIES,
   SUBSCRIPTION_PAGE_SIZE,
@@ -415,8 +415,8 @@ export function SubscriptionRecordsSection({
                   title: '操作',
                   render: (_, row) => (
                     <div className="table-actions">
-                      <Btn tone="secondary" onClick={() => openEditModal(row)}>编辑</Btn>
-                      <Btn tone="danger" onClick={() => setPendingDelete(row)}>删除</Btn>
+                      <IconBtn tone="secondary" icon={<EditIcon />} title="编辑" onClick={() => openEditModal(row)} />
+                      <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDelete(row)} />
                     </div>
                   ),
                 },

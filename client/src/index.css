@@ -1454,6 +1454,48 @@ textarea {
   color: white;
 }
 
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-ink-subtle);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.btn-icon:hover {
+  background: var(--color-surface-3);
+  color: var(--color-ink);
+}
+
+.btn-icon-secondary {
+  color: var(--color-primary);
+}
+.btn-icon-secondary:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.btn-icon-danger {
+  color: var(--color-danger);
+}
+.btn-icon-danger:hover {
+  background: rgba(227, 73, 52, 0.08);
+  color: var(--color-danger);
+}
+
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .tab-bar {
   display: inline-flex;
   gap: 4px;

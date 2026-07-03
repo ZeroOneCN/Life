@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { EmptyState, SectionCard, StatGrid } from '../page';
-import { Btn, DataTable, DeleteModal, Field, Tag } from '../ui';
+import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Tag } from '../ui';
 import {
   formatRentAmount,
   formatYearMonth,
@@ -155,8 +155,8 @@ export function RentUtilityBillsSection({
       title: '操作',
       render: (value: unknown, row: RentUtilityBill) => (
         <div className="fitness-row-actions">
-          <Btn tone="secondary" onClick={() => { setEditingBillId(row.id); setForm(buildBillForm(row)); }}>编辑</Btn>
-          <Btn tone="danger" onClick={() => setPendingDeleteId(row.id)}>删除</Btn>
+          <IconBtn tone="secondary" icon={<EditIcon />} title="编辑" onClick={() => { setEditingBillId(row.id); setForm(buildBillForm(row)); }} />
+          <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(row.id)} />
         </div>
       ),
     },

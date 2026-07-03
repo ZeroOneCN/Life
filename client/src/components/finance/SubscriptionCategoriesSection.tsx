@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DataTable, DeleteModal, Field, Modal, Tag, TextArea } from '../ui';
+import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Tag, TextArea } from '../ui';
 import {
   createSubscriptionCategory,
   deleteSubscriptionCategory,
@@ -152,16 +152,16 @@ export function SubscriptionCategoriesSection({
                 title: '操作',
                 render: (_, row) => (
                   <div className="table-actions">
-                    <Btn
+                    <IconBtn
                       tone="secondary"
+                      icon={<EditIcon />}
+                      title="编辑"
                       onClick={() => {
                         setEditingCategory(row);
                         setEditingForm(buildFormState(row));
                       }}
-                    >
-                      编辑
-                    </Btn>
-                    <Btn tone="danger" onClick={() => setPendingDelete(row)}>删除</Btn>
+                    />
+                    <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDelete(row)} />
                   </div>
                 ),
               },

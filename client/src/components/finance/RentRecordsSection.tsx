@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { EmptyState, SectionCard, StatGrid } from '../page';
-import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag } from '../ui';
+import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, EyeIcon, Field, IconBtn, Modal, Pagination, SelectField, Tag } from '../ui';
 import {
   RENT_ALL_CHANNELS,
   RENT_RECORD_PAGE_SIZE,
@@ -153,9 +153,9 @@ export function RentRecordsSection({
       title: '操作',
       render: (_value: unknown, row: RentHousingRecord) => (
         <div className="fitness-row-actions">
-          <Btn tone="secondary" onClick={() => setDetailRecord(row)}>详情</Btn>
-          <Btn tone="secondary" onClick={() => onEditRecord(row.id)}>编辑</Btn>
-          <Btn tone="danger" onClick={() => setPendingDeleteId(row.id)}>删除</Btn>
+          <IconBtn tone="secondary" icon={<EyeIcon />} title="详情" onClick={() => setDetailRecord(row)} />
+          <IconBtn tone="secondary" icon={<EditIcon />} title="编辑" onClick={() => onEditRecord(row.id)} />
+          <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(row.id)} />
         </div>
       ),
     },

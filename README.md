@@ -610,6 +610,49 @@ cd server && npm run dev
 - 提交前必须 `npm run build` 验证编译通过
 - 文档更新：项目内 `README.md` 需同步更新
 
+### 图标按钮使用规范
+
+列表页的「编辑」「删除」「详情」操作按钮统一使用 SVG 图标按钮替代文字按钮，仅保留 tooltip 作为文字提示，其他业务按钮（新增、保存、取消等）保持文字按钮不变。
+
+**组件位置**：`client/src/components/ui.tsx`
+
+**可用图标**：
+- `EditIcon` — 编辑图标（铅笔）
+- `DeleteIcon` — 删除图标（垃圾桶）
+- `EyeIcon` — 详情/查看图标（眼睛）
+
+**IconBtn 组件属性**：
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `icon` | `React.ReactNode` | 必填 | 图标组件，如 `<EditIcon />` |
+| `title` | `string` | 必填 | tooltip 提示文字，也是 aria-label |
+| `tone` | `'secondary' \| 'danger'` | `'secondary'` | 按钮主题色 |
+| `size` | `number` | `16` | 图标尺寸（px） |
+| `onClick` | `function` | - | 点击事件 |
+| `disabled` | `boolean` | - | 是否禁用 |
+
+**使用示例**：
+```tsx
+import { IconBtn, EditIcon, DeleteIcon, EyeIcon } from '../ui';
+
+// 详情按钮
+<IconBtn tone="secondary" icon={<EyeIcon />} title="详情" onClick={() => setDetailRecord(row)} />
+
+// 编辑按钮
+<IconBtn tone="secondary" icon={<EditIcon />} title="编辑" onClick={() => onEditRecord(row.id)} />
+
+// 删除按钮
+<IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(row.id)} />
+```
+
+**样式位置**：`client/src/index.css` 中的 `.btn-icon` 系列样式
+
+**替换范围（已完成）**：
+- 财务模块：RentRecordsSection（详情/编辑/删除）、RentUtilityBillsSection、RentChannelsSection、LoanBillsSection、LoanPlatformsSection、LoanRepaymentsSection、ShoppingRecordsSection、SubscriptionRecordsSection、SubscriptionCategoriesSection、TravelDetailsSection
+- 健康模块：CheckupRecordsSection、FitnessWeightSection、StepRecordsSection、MedicationRecordsSection、FitnessDietSection、FitnessShoppingSection、FitnessExerciseSection、MedicationPurchasesSection、CheckupTemplatesSection
+- 投资模块：ForexTradesSection、InvestmentTradePage、ForexCapitalSection
+- 生活模块：TodoTasksSection、CardCarriersSection、CardCardsSection、CardBillsSection
+
 ### 数据契约约定
 
 为避免前后端精度/类型不匹配：

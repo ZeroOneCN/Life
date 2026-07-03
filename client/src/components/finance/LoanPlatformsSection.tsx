@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DeleteModal, Field, Modal } from '../ui';
+import { Btn, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal } from '../ui';
 import { formatLoanAmount } from '../../services/loan';
 import type { LoanBill, LoanPlatform, LoanPlatformDraft, LoanRepayment } from '../../types/loan';
 
@@ -216,16 +216,16 @@ export function LoanPlatformsSection({
                       </div>
                     </div>
                     <div className="fitness-row-actions">
-                      <Btn
+                      <IconBtn
                         tone="secondary"
+                        icon={<EditIcon />}
+                        title="编辑"
                         onClick={() => {
                           setEditingPlatform(platform);
                           setEditingForm(buildFormState(platform));
                         }}
-                      >
-                        编辑
-                      </Btn>
-                      <Btn tone="danger" onClick={() => setPendingDeletePlatform(platform)}>删除</Btn>
+                      />
+                      <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeletePlatform(platform)} />
                     </div>
                   </div>
                   <div className="loan-summary-card-metrics">

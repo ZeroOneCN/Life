@@ -6,8 +6,11 @@ import { EmptyState, PageHeader, SectionCard, StatGrid } from '../page';
 import {
   Btn,
   DataTable,
+  DeleteIcon,
   DeleteModal,
+  EditIcon,
   Field,
+  IconBtn,
   Modal,
   Pagination,
   PillTabs,
@@ -644,7 +647,7 @@ function PositionsView({
                   <Btn tone="primary" onClick={() => { setClosingTrade(trade); setClosePrice(String(trade.currentPrice ?? trade.price)); }}>
                     平仓
                   </Btn>
-                  <Btn tone="danger" onClick={() => setPendingDeleteId(trade.id)}>删除</Btn>
+                  <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(trade.id)} />
                 </div>
               </li>
             ))}
@@ -925,21 +928,26 @@ function TradesView({
           ) : (
             <Btn tone="secondary" onClick={() => onReopenTrade(row.id)}>重开</Btn>
           )}
-          <Btn tone="secondary" onClick={() => {
-            setEditingRecord(row);
-            setEditingForm({
-              symbol: row.symbol,
-              name: row.name,
-              side: row.side,
-              quantity: String(row.quantity),
-              price: String(row.price),
-              fee: String(row.fee),
-              tradeDate: row.tradeDate,
-              tags: row.tags.join(', '),
-              remark: row.remark,
-            });
-          }}>编辑</Btn>
-          <Btn tone="danger" onClick={() => setPendingDeleteId(row.id)}>删除</Btn>
+          <IconBtn
+            tone="secondary"
+            icon={<EditIcon />}
+            title="编辑"
+            onClick={() => {
+              setEditingRecord(row);
+              setEditingForm({
+                symbol: row.symbol,
+                name: row.name,
+                side: row.side,
+                quantity: String(row.quantity),
+                price: String(row.price),
+                fee: String(row.fee),
+                tradeDate: row.tradeDate,
+                tags: row.tags.join(', '),
+                remark: row.remark,
+              });
+            }}
+          />
+          <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(row.id)} />
         </div>
       ),
     },
@@ -1207,16 +1215,21 @@ function CapitalView({
       title: '操作',
       render: (_: unknown, row: InvestmentCapitalFlow) => (
         <div className="fitness-row-actions">
-          <Btn tone="secondary" onClick={() => {
-            setEditingRecord(row);
-            setEditingForm({
-              flowDate: row.flowDate,
-              flowType: row.flowType,
-              amount: String(row.amount),
-              remark: row.remark,
-            });
-          }}>编辑</Btn>
-          <Btn tone="danger" onClick={() => setPendingDeleteId(row.id)}>删除</Btn>
+          <IconBtn
+            tone="secondary"
+            icon={<EditIcon />}
+            title="编辑"
+            onClick={() => {
+              setEditingRecord(row);
+              setEditingForm({
+                flowDate: row.flowDate,
+                flowType: row.flowType,
+                amount: String(row.amount),
+                remark: row.remark,
+              });
+            }}
+          />
+          <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(row.id)} />
         </div>
       ),
     },

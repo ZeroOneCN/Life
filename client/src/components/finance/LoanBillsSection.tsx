@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 
 import { DatePickerField, MonthPickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
+import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
 import { LOAN_ALL_PLATFORMS, LOAN_BILL_PAGE_SIZE, formatLoanAmount, getLoanBillStatus, suggestLoanDueDate } from '../../services/loan';
 import type { LoanBill, LoanBillDraft, LoanPlatform } from '../../types/loan';
 
@@ -166,16 +166,16 @@ export function LoanBillsSection({
       render: (_value: unknown, row: LoanBill) => (
         <div className="fitness-row-actions">
           <Btn tone="secondary" disabled={row.isPaid} onClick={() => onMarkPaid(row.id)}>标记已还</Btn>
-          <Btn
+          <IconBtn
             tone="secondary"
+            icon={<EditIcon />}
+            title="编辑"
             onClick={() => {
               setEditingBill(row);
               setEditingForm(buildFormState(row));
             }}
-          >
-            编辑
-          </Btn>
-          <Btn tone="danger" onClick={() => setPendingDeleteId(row.id)}>删除</Btn>
+          />
+          <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(row.id)} />
         </div>
       ),
     },

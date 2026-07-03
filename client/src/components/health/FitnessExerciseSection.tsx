@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { DatePickerField } from '../date';
-import { DataTable, Btn, DeleteModal, Field, Modal, Pagination, SelectField } from '../ui';
+import { DataTable, Btn, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Pagination, SelectField } from '../ui';
 import { EmptyState, SectionCard } from '../page';
 import {
   EXERCISE_TYPE_META,
@@ -146,8 +146,10 @@ export function FitnessExerciseSection({
       title: '操作',
       render: (_value: unknown, record: ExerciseRecord) => (
         <div className="fitness-row-actions">
-          <Btn
+          <IconBtn
             tone="secondary"
+            icon={<EditIcon />}
+            title="编辑"
             onClick={() => {
               setEditingRecord(record);
               setEditingForm({
@@ -159,10 +161,8 @@ export function FitnessExerciseSection({
                 intensity: record.intensity,
               });
             }}
-          >
-            编辑
-          </Btn>
-          <Btn tone="danger" onClick={() => setPendingDeleteId(record.id)}>删除</Btn>
+          />
+          <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(record.id)} />
         </div>
       ),
     },

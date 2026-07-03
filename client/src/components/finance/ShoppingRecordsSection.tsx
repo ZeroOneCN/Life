@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
+import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
 import {
   SHOPPING_ALL_LEDGERS,
   SHOPPING_RECORD_PAGE_SIZE,
@@ -207,16 +207,16 @@ export function ShoppingRecordsSection({
       title: '操作',
       render: (_value: unknown, row: ShoppingRecord) => (
         <div className="fitness-row-actions">
-          <Btn
+          <IconBtn
             tone="secondary"
+            icon={<EditIcon />}
+            title="编辑"
             onClick={() => {
               setEditingRecord(row);
               setEditingForm(buildFormState(row));
             }}
-          >
-            编辑
-          </Btn>
-          <Btn tone="danger" onClick={() => setPendingDeleteId(row.id)}>删除</Btn>
+          />
+          <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(row.id)} />
         </div>
       ),
     },

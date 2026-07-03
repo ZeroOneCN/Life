@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { DateTimePickerField } from '../date';
-import { DeleteModal, Modal, Pagination, Btn, Field, SelectField, TableSkeleton } from '../ui';
+import { DeleteIcon, DeleteModal, EditIcon, IconBtn, Modal, Pagination, Btn, Field, SelectField, TableSkeleton } from '../ui';
 import { EmptyState } from '../page';
 import {
   STEP_HOURS,
@@ -268,8 +268,8 @@ export function StepRecordsSection({
                       <td>{calculateStepDistanceKm(record.steps, strideLength)} 公里</td>
                       <td>
                         <div className="step-record-actions">
-                          <Btn tone="secondary" onClick={() => openEditModal(record)}>编辑</Btn>
-                          <Btn tone="danger" onClick={() => setPendingDeleteId(record.id)}>删除</Btn>
+                          <IconBtn tone="secondary" icon={<EditIcon />} title="编辑" onClick={() => openEditModal(record)} />
+                          <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(record.id)} />
                         </div>
                       </td>
                     </tr>
