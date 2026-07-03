@@ -4010,24 +4010,32 @@ textarea {
   background: var(--color-canvas);
   border: 1px solid var(--color-hairline);
   border-radius: 16px;
-  padding: 32px;
   max-width: 90vw;
   width: calc(100% - 40px);
   max-height: 85vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   box-shadow: 0 24px 80px rgba(13,37,61,0.15), 0 8px 24px rgba(13,37,61,0.08);
 }
 
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--color-hairline);
+  flex-shrink: 0;
+}
+
 .modal-title {
-  margin: 0 0 16px;
-  padding-right: 32px; /* 给关闭按钮留位 */
+  margin: 0;
+  padding-right: 8px;
+  font-size: 17px;
+  font-weight: 600;
 }
 
 .modal-close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
   width: 32px;
   height: 32px;
   border: none;
@@ -4041,17 +4049,27 @@ textarea {
   align-items: center;
   justify-content: center;
   transition: background 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
 }
 .modal-close:hover {
   background: var(--color-surface-3);
   color: var(--color-ink);
 }
 
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+}
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 20px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--color-hairline);
+  flex-shrink: 0;
 }
 
 .icon-button {
@@ -9067,7 +9085,7 @@ select:focus-visible {
 
   .modal-panel {
     width: 100% !important;
-    max-height: 85vh;
+    max-height: 90vh;
     border-radius: 20px 20px 0 0 !important;
     max-width: none !important;
   }

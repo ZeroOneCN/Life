@@ -215,16 +215,20 @@ export function Modal({ open, onClose, title, width = 560, footer, children }: M
       }}
     >
       <div className="modal-panel" style={{ width }}>
-        {title ? <h3 id={titleId} className="modal-title">{title}</h3> : null}
-        <button
-          type="button"
-          className="modal-close"
-          aria-label="关闭弹窗"
-          onClick={onClose}
-        >
-          ×
-        </button>
-        <div>{children}</div>
+        {(title || true) && (
+          <div className="modal-header">
+            {title ? <h3 id={titleId} className="modal-title">{title}</h3> : <span />}
+            <button
+              type="button"
+              className="modal-close"
+              aria-label="关闭弹窗"
+              onClick={onClose}
+            >
+              ×
+            </button>
+          </div>
+        )}
+        <div className="modal-body">{children}</div>
         {footer ? <div className="modal-footer">{footer}</div> : null}
       </div>
     </div>,

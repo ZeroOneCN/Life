@@ -110,14 +110,15 @@ export function RentRecordsSection({
   const columns = useMemo(() => [
     {
       key: 'address',
-      title: '住房地址',
-      dataIndex: 'address' as const,
-      render: (value: unknown) => {
-        const address = String(value ?? '');
-        if (address.length <= 12) {
-          return address;
+      title: '名称',
+      dataIndex: 'addressShort' as const,
+      render: (_value: unknown, row: RentHousingRecord) => {
+        const short = (row.addressShort ?? '').trim();
+        if (short) {
+          return short;
         }
-        return `${address.slice(0, 12)}…`;
+        const address = row.address ?? '';
+        return address.length <= 12 ? address : `${address.slice(0, 12)}…`;
       },
     },
     { key: 'channelName', title: '渠道', dataIndex: 'channelName' as const, align: 'center' as const },
@@ -224,31 +225,20 @@ export function RentRecordsSection({
       <Modal
         open={Boolean(detailRecord && detailSnapshot)}
         onClose={() => setDetailRecord(null)}
-        title={detailRecord ? `住房详情 · ${detailRecord.address.length > 12 ? `${detailRecord.address.slice(0, 12)}…` : detailRecord.address}` : '住房详情'}
+        title={detailRecord ? `住房详情 · ${detailRecord.addressShort?.trim() || detailRecord.address}` : '住房详情'}
         width={820}
         footer={<Btn tone="secondary" onClick={() => setDetailRecord(null)}>关闭</Btn>}
       >
         {detailRecord && detailSnapshot ? (
           <div className="page-stack">
-            {/* 当前记录的账单汇总 */}
-            {(() => {
-              const recordBills = filterBillsByRecordId(utilityBills, detailRecord.id);
-              const billSummary = summarizeUtilityBills(recordBills);
-              return recordBills.length > 0 ? (
-                <StatGrid
-                  className="rent-summary-grid"
-                  items={[
-                    { label: '账单笔数', value: `${recordBills.length} 笔` },
-                    { label: '电费合计', value: formatRentAmount(billSummary.electricityTotal), helper: `共 ${recordBills.length} 个月` },
-                    { label: '水费合计', value: formatRentAmount(billSummary.waterTotal) },
-                    { label: '燃气费合计', value: formatRentAmount(billSummary.gasTotal) },
-                    { label: '水电燃气总计', value: formatRentAmount(billSummary.grandTotal) },
-                  ]}
-                />
-              ) : null;
-            })()}
-
+            {/* 基础信息 */}
             <div className="rent-detail-grid">
+              {detailRecord.addressShort?.trim() ? (
+                <div className="callout callout-neutral">
+                  <strong>地址简称</strong>
+                  <span>{detailRecord.addressShort}</span>
+                </div>
+              ) : null}
               <div className="callout callout-neutral">
                 <strong>完整地址</strong>
                 <span>{detailRecord.address}</span>
@@ -271,6 +261,7 @@ export function RentRecordsSection({
               </div>
             </div>
 
+            {/* 派生指标 */}
             <StatGrid
               className="rent-summary-grid"
               items={[
@@ -287,6 +278,25 @@ export function RentRecordsSection({
               ]}
             />
 
+            {/* 水电账单汇总 */}
+            {(() => {
+              const recordBills = filterBillsByRecordId(utilityBills, detailRecord.id);
+              const billSummary = summarizeUtilityBills(recordBills);
+              return recordBills.length > 0 ? (
+                <StatGrid
+                  className="rent-summary-grid"
+                  items={[
+                    { label: '账单笔数', value: `${recordBills.length} 笔` },
+                    { label: '电费合计', value: formatRentAmount(billSummary.electricityTotal), helper: `共 ${recordBills.length} 个月` },
+                    { label: '水费合计', value: formatRentAmount(billSummary.waterTotal) },
+                    { label: '燃气费合计', value: formatRentAmount(billSummary.gasTotal) },
+                    { label: '水电燃气总计', value: formatRentAmount(billSummary.grandTotal) },
+                  ]}
+                />
+              ) : null;
+            })()}
+
+            {/* 费用明细 */}
             <div className="rent-cost-grid">
               {([
                 ['房租', detailRecord.rent, false],
@@ -306,13 +316,14 @@ export function RentRecordsSection({
               ))}
             </div>
 
-            {/* 水电账单管理入口 */}
+            {/* 操作入口 */}
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
               <Btn tone="secondary" onClick={() => onManageUtilityBills(detailRecord.id)}>
                 管理水电账单
               </Btn>
             </div>
 
+            {/* 备注 */}
             {detailRecord.notes ? (
               <div className="callout callout-info">
                 <strong>备注</strong>

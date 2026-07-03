@@ -25,6 +25,7 @@ interface RentEntrySectionProps {
 
 interface RentFormState {
   address: string;
+  addressShort: string;
   channelId: string;
   moveInDate: string;
   moveOutDate: string;
@@ -63,6 +64,7 @@ function createDefaultFormState(channels: RentChannel[]): RentFormState {
 
   return {
     address: '',
+    addressShort: '',
     channelId: firstChannel?.id ?? '',
     moveInDate: dayjs().format('YYYY-MM-DD'),
     moveOutDate: '',
@@ -81,6 +83,7 @@ function createDefaultFormState(channels: RentChannel[]): RentFormState {
 function buildFormState(record: RentHousingRecord): RentFormState {
   return {
     address: record.address,
+    addressShort: record.addressShort ?? '',
     channelId: record.channelId,
     moveInDate: record.moveInDate,
     moveOutDate: record.moveOutDate,
@@ -129,6 +132,7 @@ function parseDraft(form: RentFormState): RentHousingRecordDraft | null {
 
   return {
     address: form.address.trim(),
+    addressShort: form.addressShort.trim(),
     channelId: form.channelId,
     moveInDate: form.moveInDate,
     moveOutDate: form.moveOutDate || '',
@@ -257,6 +261,15 @@ export function RentEntrySection({
               <span>住房地址、用户、渠道与入住 / 退租日期</span>
             </div>
             <div className="rent-entry-grid rent-entry-grid-primary">
+              <div className="rent-entry-cell rent-entry-cell-address">
+                <Field
+                  label="地址简称"
+                  value={form.addressShort}
+                  onChange={(event) => setForm((previous) => ({ ...previous, addressShort: event.target.value }))}
+                  placeholder="例如：阳光花园、如家酒店"
+                />
+              </div>
+
               <div className="rent-entry-cell rent-entry-cell-address">
                 <Field
                   label="住房地址"

@@ -7,6 +7,9 @@ export class FinanceRentRecordEntity extends UserScopedEntity {
   @Column({ type: 'varchar', length: 255 })
   address!: string;
 
+  @Column({ type: 'varchar', length: 128, default: '' })
+  address_short!: string;
+
   @Column({ type: 'varchar', length: 36 })
   channel_id!: string;
 

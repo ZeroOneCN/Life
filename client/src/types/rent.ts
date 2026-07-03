@@ -5,6 +5,7 @@ export type RentOccupancyStatus = 'active' | 'ended';
 export interface RentHousingRecord {
   id: string;
   address: string;
+  addressShort: string;
   channelId: string;
   channelName: string;
   moveInDate: string;
@@ -26,6 +27,7 @@ export interface RentHousingRecord {
 
 export interface RentHousingRecordDraft {
   address: string;
+  addressShort?: string;
   channelId: string;
   moveInDate: string;
   moveOutDate?: string;

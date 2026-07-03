@@ -21,6 +21,7 @@ import { FinanceRentUtilityBillEntity } from './entities/finance-rent-utility-bi
 const recordSchema = z.object({
   userId: z.string().trim().optional(),
   address: z.string().trim().min(1).max(255),
+  addressShort: z.string().trim().max(128).optional().default(''),
   channelId: z.string().trim().min(1),
   channelName: z.string().trim().optional().default(''),
   moveInDate: z.string().min(1),
@@ -140,6 +141,7 @@ function mapRecord(entity: FinanceRentRecordEntity, utilityBills: FinanceRentUti
     id: entity.id,
     userId: entity.user_id,
     address: entity.address,
+    addressShort: entity.address_short ?? '',
     channelId: entity.channel_id,
     channelName: entity.channel_name,
     moveInDate: dayjs(entity.move_in_date).format('YYYY-MM-DD'),
@@ -242,6 +244,7 @@ export function createRentRouter() {
     const item = await recordRepo.save(recordRepo.create({
       user_id: userId,
       address: payload.address,
+      address_short: payload.addressShort,
       channel_id: payload.channelId,
       channel_name: payload.channelName || channel?.name || '',
       move_in_date: normalizeDate(payload.moveInDate),
@@ -285,6 +288,7 @@ export function createRentRouter() {
       ...current,
       user_id: nextUserId,
       address: payload.address ?? current.address,
+      address_short: payload.addressShort ?? current.address_short,
       channel_id: payload.channelId ?? current.channel_id,
       channel_name: payload.channelName ?? channel?.name ?? current.channel_name,
       move_in_date: payload.moveInDate ? normalizeDate(payload.moveInDate) : current.move_in_date,

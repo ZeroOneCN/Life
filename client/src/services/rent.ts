@@ -110,6 +110,7 @@ function normalizeRecord(
   return {
     id: record.id ?? buildId(),
     address: normalizeTrimmedValue(record.address, '未命名住房'),
+    addressShort: normalizeTrimmedValue(record.addressShort),
     channelId: normalizeTrimmedValue(record.channelId ?? matchedChannel?.id),
     channelName: normalizeTrimmedValue(record.channelName ?? matchedChannel?.name, '未分配渠道'),
     moveInDate,
@@ -224,6 +225,7 @@ export function createRentRecord(channels: RentChannel[], records: RentHousingRe
     {
       id: buildId(),
       address: draft.address.trim(),
+      addressShort: draft.addressShort?.trim() ?? '',
       channelId: draft.channelId,
       channelName: channel?.name ?? '未分配渠道',
       moveInDate,
@@ -262,6 +264,7 @@ export function updateRentRecord(
     return {
       ...record,
       address: draft.address.trim(),
+      addressShort: draft.addressShort?.trim() ?? '',
       channelId: draft.channelId,
       channelName: channel?.name ?? record.channelName,
       moveInDate: normalizeDate(draft.moveInDate),
@@ -341,7 +344,7 @@ export function filterRentRecords(
         return true;
       }
 
-      return [record.address, record.channelName, record.notes]
+      return [record.address, record.addressShort, record.channelName, record.notes]
         .some((value) => value.toLowerCase().includes(normalizedKeyword));
     });
 }
