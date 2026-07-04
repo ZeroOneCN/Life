@@ -112,9 +112,12 @@ export default function VitalPage() {
 
   useEffect(() => {
     void loadOverview();
-    void loadTrend();
     void loadRecords();
-  }, [loadOverview, loadTrend, loadRecords]);
+  }, [loadOverview, loadRecords]);
+
+  useEffect(() => {
+    void loadTrend();
+  }, [loadTrend]);
 
   /**
    * 提交新体征记录。

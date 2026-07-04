@@ -99,7 +99,7 @@ export function VitalTrendSection({
     >
       {loading ? (
         <div className="skeleton-block" />
-      ) : !trend || trend.items.length === 0 ? (
+      ) : !trend || trend.items.every((i) => i.avgValue === null) ? (
         <EmptyState title="暂无趋势数据" description="请先录入体征记录后查看趋势分析。" />
       ) : (
         <>
