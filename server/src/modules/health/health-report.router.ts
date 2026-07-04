@@ -30,13 +30,16 @@ export function createHealthReportRouter() {
 
   /**
    * 解析周期参数，返回当前周期与上一周期的起止时间。
+   * 兼容多种日期格式：week=YYYY-MM-DD，month=YYYY-MM/YYYY-MM-DD，year=YYYY/YYYY-MM-DD。
    * @param period - 周期类型（week/month/year）
-   * @param dateStr - 日期字符串（YYYY-MM 或 YYYY 或 YYYY-MM-DD）
+   * @param dateStr - 日期字符串
    * @returns 当前周期与上一周期的起止信息
    */
   function resolvePeriodRange(period: 'week' | 'month' | 'year', dateStr: string) {
+    const trimmed = String(dateStr ?? '').trim();
     if (period === 'week') {
-      const base = dayjs(dateStr);
+      const datePart = trimmed.length >= 10 ? trimmed.slice(0, 10) : dayjs().format('YYYY-MM-DD');
+      const base = dayjs(datePart);
       if (!base.isValid()) throw new AppError('invalid_date', 400, 400);
       const current = base.startOf('day');
       const start = current.startOf('week');
@@ -49,7 +52,8 @@ export function createHealthReportRouter() {
       };
     }
     if (period === 'month') {
-      const current = dayjs(`${dateStr}-01`);
+      const monthStr = trimmed.length >= 7 ? trimmed.slice(0, 7) : dayjs().format('YYYY-MM');
+      const current = dayjs(`${monthStr}-01`);
       if (!current.isValid()) throw new AppError('invalid_date', 400, 400);
       const start = current.startOf('month');
       const end = current.endOf('month');
@@ -61,7 +65,8 @@ export function createHealthReportRouter() {
       };
     }
     // year
-    const current = dayjs(`${dateStr}-01-01`);
+    const yearStr = trimmed.length >= 4 ? trimmed.slice(0, 4) : String(dayjs().year());
+    const current = dayjs(`${yearStr}-01-01`);
     if (!current.isValid()) throw new AppError('invalid_date', 400, 400);
     const start = current.startOf('year');
     const end = current.endOf('year');

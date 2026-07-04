@@ -82,22 +82,25 @@ export function HealthReportHeaderSection({
             value={period}
             onChange={handlePeriodChange}
           />
-          <input
-            className="health-report-date-input"
-            type={dateInputProps.type}
-            value={dateInputProps.value}
-            min={period === 'year' ? 2000 : undefined}
-            max={period === 'year' ? dayjs().year() : undefined}
-            onChange={(event) => {
-              const value = event.target.value;
-              if (period === 'week') onDateChange(value);
-              else if (period === 'month') onDateChange(`${value}-01`);
-              else onDateChange(`${value}-01-01`);
-            }}
-          />
-          <Btn type="button" tone="secondary" onClick={onRefresh} disabled={loading}>
-            {loading ? '加载中…' : '刷新报告'}
-          </Btn>
+          <div className="health-report-header-row">
+            <input
+              className="health-report-date-input"
+              type={dateInputProps.type}
+              value={dateInputProps.value}
+              min={period === 'year' ? 2000 : undefined}
+              max={period === 'year' ? dayjs().year() : undefined}
+              onChange={(event) => {
+                const value = event.target.value;
+                if (period === 'week') onDateChange(value);
+                else if (period === 'month') onDateChange(`${value}-01`);
+                else onDateChange(`${value}-01-01`);
+              }}
+              aria-label="选择周期日期"
+            />
+            <Btn type="button" tone="secondary" onClick={onRefresh} disabled={loading}>
+              {loading ? '加载中…' : '刷新报告'}
+            </Btn>
+          </div>
         </div>
       }
     >

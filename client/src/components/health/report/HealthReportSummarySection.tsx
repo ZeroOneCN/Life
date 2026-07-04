@@ -69,7 +69,7 @@ export function HealthReportSummarySection({
   if (loading) {
     return (
       <SectionCard title="数据汇总" description="正在加载当前周期健康指标…">
-        <div className="stat-grid health-stat-grid">
+        <div className="stat-grid health-report-stat-grid">
           {Array.from({ length: 6 }).map((_, index) => (
             <div className="stat-card" key={index}>
               <span className="stat-label">加载中</span>
@@ -147,7 +147,7 @@ export function HealthReportSummarySection({
         ) : null
       }
     >
-      <StatGrid items={items} className="health-stat-grid" />
+      <StatGrid items={items} className="health-report-stat-grid" />
 
       {changes ? (
         <div className="health-report-changes">

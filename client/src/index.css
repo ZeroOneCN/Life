@@ -1535,8 +1535,15 @@ textarea {
 
 .health-report-header-actions {
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.health-report-header-row {
+  display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -1547,6 +1554,7 @@ textarea {
   background: var(--color-surface-1);
   font-size: var(--fs-body);
   color: var(--color-ink-primary);
+  min-width: 140px;
 }
 
 .health-report-date-input:focus {
@@ -1569,6 +1577,22 @@ textarea {
   color: var(--color-ink-mute);
 }
 
+.health-report-stat-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.health-report-stat-grid .stat-card {
+  padding: 14px 16px;
+}
+
+.health-report-stat-grid .stat-helper {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
 .health-report-changes {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1582,7 +1606,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 14px;
+  padding: 12px 14px;
   background: var(--color-surface-1);
   border: 1px solid var(--color-hairline);
   border-radius: 10px;
@@ -1600,7 +1624,7 @@ textarea {
 }
 
 .health-report-change-value strong {
-  font-size: var(--fs-heading);
+  font-size: var(--fs-title);
   font-weight: 700;
   color: var(--color-ink-primary);
 }
@@ -1625,7 +1649,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 16px;
+  padding: 14px 16px;
   background: var(--color-surface-1);
   border: 1px solid var(--color-hairline);
   border-radius: 10px;
@@ -1655,11 +1679,16 @@ textarea {
 
 .health-report-abnormal-table-wrap {
   overflow-x: auto;
+  max-height: 360px;
+  overflow-y: auto;
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
 }
 
 .health-report-abnormal-table-wrap .data-table th,
 .health-report-abnormal-table-wrap .data-table td {
   white-space: nowrap;
+  padding: 8px 12px;
 }
 
 .health-report-ai-summary {
@@ -1742,9 +1771,23 @@ textarea {
   margin-bottom: 4px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
+  .health-report-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .health-report-changes {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .health-report-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .health-report-changes {
+    grid-template-columns: 1fr;
   }
 
   .health-report-abnormal-overview {
@@ -1756,8 +1799,12 @@ textarea {
   }
 
   .health-report-header-actions {
-    flex-direction: column;
     align-items: flex-start;
+    width: 100%;
+  }
+
+  .health-report-header-row {
+    width: 100%;
   }
 }
 
