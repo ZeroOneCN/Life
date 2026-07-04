@@ -176,9 +176,11 @@ export default function FinanceOverviewPage() {
           </SectionCard>
         </>
       ) : (
-        <Suspense fallback={<div className="skeleton-block" />}>
-          <FinanceReportPage />
-        </Suspense>
+        <div className="finance-overview-report">
+          <Suspense fallback={<div className="skeleton-block" />}>
+            <FinanceReportPage />
+          </Suspense>
+        </div>
       )}
 
       <Toast toast={toast} />

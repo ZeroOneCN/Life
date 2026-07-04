@@ -12521,6 +12521,9 @@ select:focus-visible {
 .finance-merged-page .merged-content .page-header {
   display: none;
 }
+.finance-overview-report .page-header {
+  display: none;
+}
 
 .finance-overview-module-list {
   display: flex;
