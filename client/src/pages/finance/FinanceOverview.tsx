@@ -82,25 +82,25 @@ export default function FinanceOverviewPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader
-        title="财务概览"
-        subtitle="实时财务数据概览与周期报告"
-        actions={
-          <div style={{ width: 280 }}>
-            <PillTabs
-              options={[
-                { value: 'overview', label: '本期概览' },
-                { value: 'report', label: '周期报告' },
-              ]}
-              value={activeTab}
-              onChange={(v) => setActiveTab(v as 'overview' | 'report')}
-            />
-          </div>
-        }
-      />
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ width: 280 }}>
+          <PillTabs
+            options={[
+              { value: 'overview', label: '本期概览' },
+              { value: 'report', label: '周期报告' },
+            ]}
+            value={activeTab}
+            onChange={(v) => setActiveTab(v as 'overview' | 'report')}
+          />
+        </div>
+      </div>
 
       {activeTab === 'overview' ? (
         <>
+          <PageHeader
+            title="财务概览"
+            subtitle="实时财务数据概览"
+          />
           <StatGrid
             items={[
               { label: '本月总支出', value: report ? formatCurrency(report.totalExpense) : '—' },
@@ -176,11 +176,9 @@ export default function FinanceOverviewPage() {
           </SectionCard>
         </>
       ) : (
-        <div className="finance-overview-report">
-          <Suspense fallback={<div className="skeleton-block" />}>
-            <FinanceReportPage />
-          </Suspense>
-        </div>
+        <Suspense fallback={<div className="skeleton-block" />}>
+          <FinanceReportPage />
+        </Suspense>
       )}
 
       <Toast toast={toast} />
