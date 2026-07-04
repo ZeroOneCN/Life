@@ -5,7 +5,7 @@ import { MedicationAnalysisSection } from '../../components/health/MedicationAna
 import { MedicationPurchasesSection } from '../../components/health/MedicationPurchasesSection';
 import { MedicationRecordsSection } from '../../components/health/MedicationRecordsSection';
 import { MedicationSummarySection } from '../../components/health/MedicationSummarySection';
-import { SectionCard, StatGrid } from '../../components/page';
+import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Btn, PillTabs, Tag, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';

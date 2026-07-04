@@ -302,7 +302,7 @@ export default function Dashboard() {
         ) : null}
 
         {/* ====== 1. 健康中心（大模块，可点击跳转）====== */}
-        <Link to="/health/fitness" className="dash-masonry-item dash-card dash-card-link">
+        <Link to="/health/step" className="dash-masonry-item dash-card dash-card-link">
           <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-health"><IconHeart /></div>
             <div className="dash-card-title-area">
@@ -344,7 +344,7 @@ export default function Dashboard() {
           </div>
           <div className="dash-card-bd">
             <div className="dash-quick-grid">
-              <Link to="/health/fitness" className="dash-quick-btn">
+              <Link to="/health/step?stepTab=entry" className="dash-quick-btn">
                 <div className="qa-icon dash-bg-step"><IconSteps /></div>
                 <span className="qa-text">录入步数</span>
               </Link>

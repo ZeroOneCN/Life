@@ -6,6 +6,7 @@ import { HealthReportSummarySection } from '../../components/health/report/Healt
 import { HealthReportTrendSection } from '../../components/health/report/HealthReportTrendSection';
 import { HealthReportAbnormalSection } from '../../components/health/report/HealthReportAbnormalSection';
 import { HealthReportAISuggestionSection } from '../../components/health/report/HealthReportAISuggestionSection';
+import { HealthReportExportButton } from '../../components/health/report/HealthReportExportButton';
 import { Toast, useToastState } from '../../components/ui';
 import { buildApiErrorMessage } from '../../lib/api';
 import { healthReportApi } from '../../services/healthReportApi';
