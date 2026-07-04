@@ -7,7 +7,7 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { TabOption, TableColumn } from '../types/ui';
@@ -35,12 +35,14 @@ interface ModalProps {
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   hint?: string;
+  error?: string;
   children?: ReactNode;
 }
 
 interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   hint?: string;
+  error?: string;
   children: ReactNode;
 }
 
@@ -346,19 +348,24 @@ export function PillTabs({
   );
 }
 
-export function Field({ label, hint, children, ...rest }: FieldProps) {
+export function Field({ label, hint, error, children, className = '', ...rest }: FieldProps) {
+  const fieldClass = `field ${error ? 'is-error' : ''} ${className}`.trim();
+
   return (
-    <label className="field">
+    <label className={fieldClass}>
       {label ? <span className="field-label">{label}</span> : null}
       {children ?? <input {...rest} />}
-      {hint ? <span className="field-hint">{hint}</span> : null}
+      {error ? <span className="field-error">{error}</span> : null}
+      {hint && !error ? <span className="field-hint">{hint}</span> : null}
     </label>
   );
 }
 
-export function SelectField({ label, hint, children, className = '', ...rest }: SelectFieldProps) {
+export function SelectField({ label, hint, error, children, className = '', ...rest }: SelectFieldProps) {
+  const fieldClass = `field ${error ? 'is-error' : ''}`.trim();
+
   return (
-    <label className="field">
+    <label className={fieldClass}>
       {label ? <span className="field-label">{label}</span> : null}
       <div className="field-control field-control-select">
         <select className={`select-themed ${className}`.trim()} {...rest}>
@@ -376,7 +383,8 @@ export function SelectField({ label, hint, children, className = '', ...rest }: 
           </svg>
         </span>
       </div>
-      {hint ? <span className="field-hint">{hint}</span> : null}
+      {error ? <span className="field-error">{error}</span> : null}
+      {hint && !error ? <span className="field-hint">{hint}</span> : null}
     </label>
   );
 }
@@ -518,18 +526,226 @@ export function Checkbox({ checked, onChange, children }: CheckboxProps) {
 export function TextArea({
   label,
   hint,
+  error,
+  className = '',
   ...rest
 }: {
   label?: string;
   hint?: string;
+  error?: string;
 } & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const fieldClass = `field ${error ? 'is-error' : ''} ${className}`.trim();
+
   return (
-    <label className="field">
+    <label className={fieldClass}>
       {label ? <span className="field-label">{label}</span> : null}
       <textarea {...rest} />
-      {hint ? <span className="field-hint">{hint}</span> : null}
+      {error ? <span className="field-error">{error}</span> : null}
+      {hint && !error ? <span className="field-hint">{hint}</span> : null}
     </label>
   );
+}
+
+export const validators = {
+  required: (message = '此项为必填') => (value: any): string | null => {
+    if (value === null || value === undefined || value === '') {
+      return message;
+    }
+    if (typeof value === 'string' && value.trim() === '') {
+      return message;
+    }
+    return null;
+  },
+
+  minLength: (min: number, message?: string) => (value: any): string | null => {
+    if (!value && value !== 0) return null;
+    const str = String(value);
+    if (str.length < min) {
+      return message || `最少需要 ${min} 个字符`;
+    }
+    return null;
+  },
+
+  maxLength: (max: number, message?: string) => (value: any): string | null => {
+    if (!value && value !== 0) return null;
+    const str = String(value);
+    if (str.length > max) {
+      return message || `最多允许 ${max} 个字符`;
+    }
+    return null;
+  },
+
+  min: (minValue: number, message?: string) => (value: any): string | null => {
+    if (value === null || value === undefined || value === '') return null;
+    const num = Number(value);
+    if (isNaN(num)) return null;
+    if (num < minValue) {
+      return message || `不能小于 ${minValue}`;
+    }
+    return null;
+  },
+
+  max: (maxValue: number, message?: string) => (value: any): string | null => {
+    if (value === null || value === undefined || value === '') return null;
+    const num = Number(value);
+    if (isNaN(num)) return null;
+    if (num > maxValue) {
+      return message || `不能大于 ${maxValue}`;
+    }
+    return null;
+  },
+
+  email: (message = '请输入有效的邮箱地址') => (value: any): string | null => {
+    if (!value) return null;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(String(value))) {
+      return message;
+    }
+    return null;
+  },
+
+  pattern: (regex: RegExp, message = '格式不正确') => (value: any): string | null => {
+    if (!value) return null;
+    if (!regex.test(String(value))) {
+      return message;
+    }
+    return null;
+  },
+
+  number: (message = '请输入有效的数字') => (value: any): string | null => {
+    if (value === null || value === undefined || value === '') return null;
+    if (isNaN(Number(value))) {
+      return message;
+    }
+    return null;
+  },
+
+  positiveNumber: (message = '请输入正数') => (value: any): string | null => {
+    if (value === null || value === undefined || value === '') return null;
+    const num = Number(value);
+    if (isNaN(num) || num <= 0) {
+      return message;
+    }
+    return null;
+  },
+};
+
+type Validator = (value: any) => string | null;
+type ValidationRules<T> = Partial<Record<keyof T, Validator[]>>;
+type ValidationErrors<T> = Partial<Record<keyof T, string>>;
+
+export function useFormValidation<T extends Record<string, any>>(
+  initialValues: T,
+  rules: ValidationRules<T>,
+) {
+  const [values, setValues] = useState<T>(initialValues);
+  const [errors, setErrors] = useState<ValidationErrors<T>>({});
+  const [touched, setTouched] = useState<Partial<Record<keyof T, boolean>>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const validateField = useCallback(
+    (name: keyof T, value: any): string | null => {
+      const fieldRules = rules[name];
+      if (!fieldRules) return null;
+
+      for (const rule of fieldRules) {
+        const error = rule(value);
+        if (error) return error;
+      }
+      return null;
+    },
+    [rules],
+  );
+
+  const validateAll = useCallback((): boolean => {
+    const newErrors: ValidationErrors<T> = {};
+    let isValid = true;
+
+    (Object.keys(rules) as Array<keyof T>).forEach((key) => {
+      const error = validateField(key, values[key]);
+      if (error) {
+        newErrors[key] = error;
+        isValid = false;
+      }
+    });
+
+    setErrors(newErrors);
+    setTouched(
+      Object.keys(rules).reduce((acc, key) => {
+        acc[key as keyof T] = true;
+        return acc;
+      }, {} as Partial<Record<keyof T, boolean>>),
+    );
+
+    return isValid;
+  }, [rules, values, validateField]);
+
+  const handleChange = useCallback(
+    (name: keyof T) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+      const value = e.target.value;
+      setValues((prev) => ({ ...prev, [name]: value } as T));
+
+      if (touched[name]) {
+        const error = validateField(name, value);
+        setErrors((prev) => ({ ...prev, [name]: error ?? undefined }));
+      }
+    },
+    [touched, validateField],
+  );
+
+  const handleBlur = useCallback(
+    (name: keyof T) => () => {
+      setTouched((prev) => ({ ...prev, [name]: true }));
+      const error = validateField(name, values[name]);
+      setErrors((prev) => ({ ...prev, [name]: error ?? undefined }));
+    },
+    [validateField, values],
+  );
+
+  const setFieldValue = useCallback(
+    (name: keyof T, value: any) => {
+      setValues((prev) => ({ ...prev, [name]: value } as T));
+      if (touched[name]) {
+        const error = validateField(name, value);
+        setErrors((prev) => ({ ...prev, [name]: error ?? undefined }));
+      }
+    },
+    [touched, validateField],
+  );
+
+  const setFieldError = useCallback((name: keyof T, error: string | null) => {
+    setErrors((prev) => ({ ...prev, [name]: error ?? undefined }));
+  }, []);
+
+  const resetForm = useCallback(() => {
+    setValues(initialValues);
+    setErrors({});
+    setTouched({});
+    setIsSubmitting(false);
+  }, [initialValues]);
+
+  const isValid = useMemo(() => {
+    return (Object.keys(rules) as Array<keyof T>).every((key) => {
+      return validateField(key, values[key]) === null;
+    });
+  }, [rules, values, validateField]);
+
+  return {
+    values,
+    errors,
+    touched,
+    isValid,
+    isSubmitting,
+    setIsSubmitting,
+    handleChange,
+    handleBlur,
+    setFieldValue,
+    setFieldError,
+    validateField,
+    validateAll,
+    resetForm,
+    setValues,
+  };
 }
 
 export function useToastState() {

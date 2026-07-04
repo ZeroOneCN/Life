@@ -674,6 +674,13 @@ textarea {
   grid-template-columns: repeat(4, 1fr);
 }
 
+.fitness-page-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
 .health-stat-grid {
   grid-template-columns: repeat(3, 1fr);
 }
@@ -801,6 +808,29 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.field.is-error input,
+.field.is-error textarea,
+.field.is-error select {
+  border-color: var(--color-danger);
+}
+
+.field.is-error input:focus,
+.field.is-error textarea:focus,
+.field.is-error select:focus {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.field.is-error .field-label {
+  color: var(--color-danger);
+}
+
+.field-error {
+  font-size: var(--fs-caption);
+  color: var(--color-danger);
+  line-height: 1.4;
 }
 
 .field-label {
@@ -1538,6 +1568,12 @@ textarea {
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
+}
+
+.health-report-export-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 0;
 }
 
 .health-report-header-row {
@@ -12518,11 +12554,25 @@ select:focus-visible {
   color: var(--color-ink-tertiary);
 }
 
+.merged-page-tabs {
+  width: fit-content;
+  max-width: 100%;
+}
+
 .finance-merged-page .merged-content .page-header {
   display: none;
 }
 .finance-overview-report .page-header {
   display: none;
+}
+
+.merged-content .merged-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
 }
 
 .finance-overview-module-list {
