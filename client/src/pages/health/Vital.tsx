@@ -61,63 +61,81 @@ export default function VitalPage() {
   }, [showToast]);
 
   /**
-   * 加载概览数据。
+   * 加载概览数据（仅页面初始化加载一次）。
    */
-  const loadOverview = useCallback(async () => {
+  useEffect(() => {
+    let cancelled = false;
     setOverviewLoading(true);
-    try {
-      const data = await vitalApi.getOverview();
-      setOverview(data);
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '体征概览加载失败。'), 'error');
-    } finally {
-      setOverviewLoading(false);
-    }
+    void vitalApi.getOverview().then((data) => {
+      if (!cancelled) setOverview(data);
+    }).catch((error) => {
+      if (!cancelled) showToast(buildApiErrorMessage(error, '体征概览加载失败。'), 'error');
+    }).finally(() => {
+      if (!cancelled) setOverviewLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [showToast]);
 
   /**
-   * 加载趋势数据。
+   * 加载趋势数据（指标/周期变化时重新加载）。
    */
-  const loadTrend = useCallback(async () => {
+  useEffect(() => {
+    let cancelled = false;
     setTrendLoading(true);
-    try {
-      const data = await vitalApi.getTrend(selectedMetric, trendPeriod);
-      setTrend(data);
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '趋势数据加载失败。'), 'error');
-    } finally {
-      setTrendLoading(false);
-    }
+    void vitalApi.getTrend(selectedMetric, trendPeriod).then((data) => {
+      if (!cancelled) setTrend(data);
+    }).catch((error) => {
+      if (!cancelled) showToast(buildApiErrorMessage(error, '趋势数据加载失败。'), 'error');
+    }).finally(() => {
+      if (!cancelled) setTrendLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedMetric, trendPeriod, showToast]);
 
   /**
-   * 加载记录列表。
+   * 加载记录列表（筛选条件/页码变化时重新加载）。
    */
-  const loadRecords = useCallback(async () => {
+  useEffect(() => {
+    let cancelled = false;
     setRecordsLoading(true);
-    try {
-      const data = await vitalApi.listRecords({
-        metric: filterMetric === 'all' ? undefined : filterMetric,
-        page,
-        pageSize,
-      });
+    void vitalApi.listRecords({
+      metric: filterMetric === 'all' ? undefined : filterMetric,
+      page,
+      pageSize,
+    }).then((data) => {
+      if (!cancelled) {
+        setRecords(data.items);
+        setRecordsTotal(data.total);
+      }
+    }).catch((error) => {
+      if (!cancelled) showToast(buildApiErrorMessage(error, '体征记录加载失败。'), 'error');
+    }).finally(() => {
+      if (!cancelled) setRecordsLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [filterMetric, page, pageSize, showToast]);
+
+  /**
+   * 刷新所有数据（录入/编辑/删除后调用）。
+   */
+  const refreshAll = useCallback(() => {
+    void vitalApi.getOverview().then(setOverview).catch(() => {});
+    void vitalApi.getTrend(selectedMetric, trendPeriod).then(setTrend).catch(() => {});
+    void vitalApi.listRecords({
+      metric: filterMetric === 'all' ? undefined : filterMetric,
+      page,
+      pageSize,
+    }).then((data) => {
       setRecords(data.items);
       setRecordsTotal(data.total);
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '体征记录加载失败。'), 'error');
-    } finally {
-      setRecordsLoading(false);
-    }
-  }, [filterMetric, page, showToast]);
-
-  useEffect(() => {
-    void loadOverview();
-    void loadRecords();
-  }, [loadOverview, loadRecords]);
-
-  useEffect(() => {
-    void loadTrend();
-  }, [loadTrend]);
+    }).catch(() => {});
+  }, [selectedMetric, trendPeriod, filterMetric, page, pageSize]);
 
   /**
    * 提交新体征记录。
@@ -132,15 +150,13 @@ export default function VitalPage() {
     try {
       await vitalApi.createRecord(payload);
       showToast('体征记录已保存。');
-      void loadOverview();
-      void loadTrend();
-      void loadRecords();
+      refreshAll();
     } catch (error) {
       showToast(buildApiErrorMessage(error, '体征记录保存失败。'), 'error');
     } finally {
       setEntryLoading(false);
     }
-  }, [loadOverview, loadTrend, loadRecords, showToast]);
+  }, [refreshAll, showToast]);
 
   /**
    * 打开编辑对话框。
@@ -167,15 +183,13 @@ export default function VitalPage() {
       });
       showToast('记录已更新。');
       setEditOpen(false);
-      void loadOverview();
-      void loadTrend();
-      void loadRecords();
+      refreshAll();
     } catch (error) {
       showToast(buildApiErrorMessage(error, '记录更新失败。'), 'error');
     } finally {
       setEditSaving(false);
     }
-  }, [editingRecord, editValue, editNotes, editRecordTime, loadOverview, loadTrend, loadRecords, showToast]);
+  }, [editingRecord, editValue, editNotes, editRecordTime, refreshAll, showToast]);
 
   /**
    * 打开删除确认。
@@ -195,13 +209,11 @@ export default function VitalPage() {
       showToast('记录已删除。');
       setDeleteOpen(false);
       setDeletingRecord(null);
-      void loadOverview();
-      void loadTrend();
-      void loadRecords();
+      refreshAll();
     } catch (error) {
       showToast(buildApiErrorMessage(error, '删除失败。'), 'error');
     }
-  }, [deletingRecord, loadOverview, loadTrend, loadRecords, showToast]);
+  }, [deletingRecord, refreshAll, showToast]);
 
   /**
    * 切指标时重置页码。
