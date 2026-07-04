@@ -182,6 +182,69 @@ export function buildApiErrorMessage(error: unknown, fallback = '请求失败，
   return fallback;
 }
 
+export interface FriendlyApiError {
+  message: string;
+  detail?: string;
+}
+
+export function buildFriendlyApiError(error: unknown): FriendlyApiError {
+  if (axios.isAxiosError<ApiErrorShape>(error)) {
+    const status = error.response?.status;
+    const message = error.response?.data?.message;
+    const details = error.response?.data?.details;
+    const responseData = error.response?.data?.data as Record<string, any> | undefined;
+    const fieldErrors = responseData?.fieldErrors as Record<string, string[]> | undefined;
+
+    let userMessage = '操作失败，请稍后重试。';
+    const detailParts: string[] = [];
+
+    if (message) {
+      const mapped = API_ERROR_MESSAGES[message];
+      userMessage = mapped ?? message;
+    } else if (status && HTTP_STATUS_MESSAGES[status]) {
+      userMessage = HTTP_STATUS_MESSAGES[status];
+    } else if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+      userMessage = '请求超时了';
+      detailParts.push('网络连接较慢，请检查网络后重试');
+    } else if (error.code === 'ERR_NETWORK' || !error.response) {
+      userMessage = '网络连接失败';
+      detailParts.push('请检查您的网络连接是否正常');
+    }
+
+    if (status) {
+      detailParts.push(`状态码: ${status}`);
+    }
+    if (message && !API_ERROR_MESSAGES[message]) {
+      detailParts.push(`错误码: ${message}`);
+    }
+    if (details) {
+      detailParts.push(`详情: ${typeof details === 'string' ? details : JSON.stringify(details)}`);
+    }
+    if (fieldErrors && Object.keys(fieldErrors).length > 0) {
+      const fieldErrorTexts = Object.entries(fieldErrors)
+        .map(([field, errs]) => `${field}: ${(errs as string[]).join(', ')}`)
+        .join('; ');
+      detailParts.push(`字段错误: ${fieldErrorTexts}`);
+    }
+
+    return {
+      message: userMessage,
+      detail: detailParts.length > 0 ? detailParts.join('\n') : undefined,
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      message: '操作遇到问题，请稍后重试',
+      detail: error.message,
+    };
+  }
+
+  return {
+    message: '操作失败，请稍后重试。',
+  };
+}
+
 export async function apiGet<T>(url: string, options?: ApiClientOptions, params?: Record<string, unknown>) {
   const response = await apiClient.get<ApiSuccessResponse<T>>(url, {
     params,

@@ -16,7 +16,9 @@ type ButtonTone = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-fill';
 
 interface ToastState {
   message: string;
-  type?: 'success' | 'error' | 'warning';
+  type?: 'success' | 'error' | 'warning' | 'info';
+  detail?: string;
+  duration?: number;
 }
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -67,18 +69,66 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
 }
 
+const TOAST_ICONS: Record<NonNullable<ToastState['type']>, string> = {
+  success: '✓',
+  error: '✕',
+  warning: '!',
+  info: 'i',
+};
+
+const TOAST_LABELS: Record<NonNullable<ToastState['type']>, string> = {
+  success: '操作成功',
+  error: '操作失败',
+  warning: '温馨提示',
+  info: '提示信息',
+};
+
 export function Toast({ toast }: { toast: ToastState | null }) {
+  const [showDetail, setShowDetail] = useState(false);
+
   if (!toast) {
     return null;
   }
 
-  const typeClass = toast.type === 'error' ? 'is-error' : toast.type === 'warning' ? 'is-warning' : 'is-success';
-  const label = toast.type === 'error' ? '操作提示' : toast.type === 'warning' ? '警告' : '操作成功';
+  const type = toast.type ?? 'success';
+  const typeClass = `is-${type}`;
+  const label = TOAST_LABELS[type];
+  const icon = TOAST_ICONS[type];
 
   return (
     <div className={`toast ${typeClass}`}>
-      <strong>{label}</strong>
-      <span>{toast.message}</span>
+      <div className="toast-icon" aria-hidden="true">{icon}</div>
+      <div className="toast-content">
+        <strong className="toast-title">{label}</strong>
+        <span className="toast-message">{toast.message}</span>
+        {toast.detail ? (
+          <>
+            <button
+              type="button"
+              className="toast-detail-toggle"
+              onClick={() => setShowDetail((v) => !v)}
+            >
+              {showDetail ? '收起详情' : '查看详情'}
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                style={{ transform: showDetail ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+              >
+                <path
+                  d="M6 9l6 6 6-6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            {showDetail ? <span className="toast-detail">{toast.detail}</span> : null}
+          </>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -752,13 +802,26 @@ export function useToastState() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const timerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
 
-  const showToast = useCallback((message: string, type: ToastState['type'] = 'success') => {
+  const showToast = useCallback((
+    message: string,
+    type: ToastState['type'] = 'success',
+    options?: { detail?: string; duration?: number },
+  ) => {
     if (timerRef.current) {
       window.clearTimeout(timerRef.current);
     }
-    setToast({ message, type });
-    timerRef.current = window.setTimeout(() => setToast(null), 2800);
+    const duration = options?.duration ?? (type === 'error' ? 4000 : 2800);
+    setToast({ message, type, detail: options?.detail, duration });
+    timerRef.current = window.setTimeout(() => setToast(null), duration);
   }, []);
 
-  return { toast, showToast };
+  const hideToast = useCallback(() => {
+    if (timerRef.current) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setToast(null);
+  }, []);
+
+  return { toast, showToast, hideToast };
 }

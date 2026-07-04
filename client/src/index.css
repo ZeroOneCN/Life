@@ -4915,35 +4915,133 @@ textarea {
   bottom: 22px;
   z-index: 1100;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 260px;
-  max-width: 360px;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 280px;
+  max-width: 400px;
   padding: 14px 16px;
   border-radius: 14px;
   border-left: 4px solid var(--color-success);
   background: var(--color-surface-1);
   box-shadow: var(--shadow-soft);
+  animation: toast-in 0.25s ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--color-success);
 }
 
 .toast.is-warning {
   border-left-color: var(--color-warning);
 }
 
+.toast.is-warning .toast-icon {
+  background: var(--color-warning);
+}
+
 .toast.is-error {
   border-left-color: var(--color-danger);
 }
 
-.toast.is-success strong {
+.toast.is-error .toast-icon {
+  background: var(--color-danger);
+}
+
+.toast.is-info {
+  border-left-color: var(--color-primary);
+}
+
+.toast.is-info .toast-icon {
+  background: var(--color-primary);
+}
+
+.toast-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-title {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.toast-message {
+  font-size: var(--fs-body);
+  color: var(--color-ink-secondary);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.toast-detail-toggle {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 2px 0;
+  font-size: var(--fs-caption);
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toast-detail-toggle:hover {
+  opacity: 0.8;
+}
+
+.toast-detail {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--color-surface-2);
+  border-radius: 8px;
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+  line-height: 1.6;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.toast.is-success .toast-title {
   color: var(--color-success);
 }
 
-.toast.is-error strong {
+.toast.is-error .toast-title {
   color: var(--color-danger);
 }
 
-.toast.is-warning strong {
+.toast.is-warning .toast-title {
   color: var(--color-warning);
+}
+
+.toast.is-info .toast-title {
+  color: var(--color-primary);
 }
 
 .skeleton-line {
