@@ -72,7 +72,32 @@ function getTrendColor(trend: 'up' | 'down' | 'flat' | 'none') {
 }
 
 /**
+ * 格式化展示值：体重保留 2 位小数，其他指标取整。
+ * @param value - 数值
+ * @param metric - 指标类型
+ * @returns 格式化后的字符串
+ */
+function formatValue(value: number, metric: HealthComparisonMetric) {
+  if (metric === 'weight') {
+    return value.toFixed(2);
+  }
+  return Math.round(value).toLocaleString();
+}
+
+/**
+ * 格式化同比变化：保留 2 位小数并带正负号。
+ * @param changePercentage - 变化百分比
+ * @returns 格式化后的字符串
+ */
+function formatChange(changePercentage: number | null) {
+  if (changePercentage === null) return '上一周期无数据可比';
+  const sign = changePercentage > 0 ? '+' : '';
+  return `${sign}${changePercentage.toFixed(2)}%`;
+}
+
+/**
  * 数据对比 Section：根据指标与周期，展示当前 vs 上一周期的对比柱状图。
+ * 切换指标/周期时保留旧数据显示，新数据加载完成后无缝替换，避免页面抖动。
  * @param showToast - 弹出提示函数
  */
 export function HealthComparisonSection({ showToast }: HealthComparisonSectionProps) {
@@ -117,9 +142,7 @@ export function HealthComparisonSection({ showToast }: HealthComparisonSectionPr
       ]
     : [];
 
-  const changeText = data?.changePercentage === null
-    ? '上一周期无数据可比'
-    : `${data?.changePercentage && data.changePercentage > 0 ? '+' : ''}${data?.changePercentage}%`;
+  const changeText = formatChange(data?.changePercentage ?? null);
 
   return (
     <SectionCard
@@ -140,21 +163,19 @@ export function HealthComparisonSection({ showToast }: HealthComparisonSectionPr
         </div>
       )}
     >
-      {loading ? (
-        <div className="skeleton-block" />
-      ) : !data ? (
+      {!data ? (
         <EmptyState title="暂无对比数据" description="请稍后重试。" />
       ) : (
         <>
           <div className="health-comparison-summary">
             <div className="health-comparison-card">
               <span>{data.previous.label}</span>
-              <strong>{data.previous.value.toFixed(2)} {METRIC_UNITS[metric]}</strong>
+              <strong>{formatValue(data.previous.value, metric)} {METRIC_UNITS[metric]}</strong>
               <span className="muted">{data.previous.recordCount} 条记录</span>
             </div>
             <div className="health-comparison-card">
               <span>{data.current.label}</span>
-              <strong>{data.current.value.toFixed(2)} {METRIC_UNITS[metric]}</strong>
+              <strong>{formatValue(data.current.value, metric)} {METRIC_UNITS[metric]}</strong>
               <span className="muted">{data.current.recordCount} 条记录</span>
             </div>
             <div className="health-comparison-card">
@@ -163,7 +184,16 @@ export function HealthComparisonSection({ showToast }: HealthComparisonSectionPr
               <span className="muted">{METRIC_LABELS[metric]}</span>
             </div>
           </div>
-          <div style={{ width: '100%', height: 280, marginTop: 16 }}>
+          <div
+            style={{
+              width: '100%',
+              height: 280,
+              marginTop: 16,
+              opacity: loading ? 0.6 : 1,
+              transition: 'opacity 0.15s ease',
+              pointerEvents: loading ? 'none' : 'auto',
+            }}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-hairline)" />

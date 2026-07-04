@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import dayjs from 'dayjs';
 
 import { EmptyState, SectionCard } from '../../page';
 import { Tag } from '../../ui';
@@ -46,6 +47,16 @@ function describeBmi(bmi: number | null) {
   if (bmi <= 24) return { tone: 'green' as const, text: '正常' };
   if (bmi <= 28) return { tone: 'orange' as const, text: '超重' };
   return { tone: 'red' as const, text: '肥胖' };
+}
+
+/**
+ * 格式化日期为中文短格式。
+ * @param dateStr - 日期字符串
+ * @returns 格式化后的日期，如「2026年6月15日」
+ */
+function formatDateShort(dateStr: string | null) {
+  if (!dateStr) return '';
+  return dayjs(dateStr).format('YYYY年M月D日');
 }
 
 /**
@@ -97,7 +108,7 @@ export function HealthOverviewSection({ overview, loading }: HealthOverviewSecti
       key: 'weight',
       label: '最新体重',
       value: overview.weight.latestWeightKg !== null ? `${overview.weight.latestWeightKg.toFixed(1)} kg` : '-',
-      helper: overview.weight.latestDate ? `录入于 ${overview.weight.latestDate}` : '尚未录入',
+      helper: overview.weight.latestDate ? `录入于 ${formatDateShort(overview.weight.latestDate)}` : '尚未录入',
       accent: overview.weight.bmi !== null && overview.weight.bmi >= 18.5 && overview.weight.bmi <= 24 ? '#27a644' : '#f59e0b',
       link: '/health/fitness',
       linkText: '查看明细',
@@ -133,7 +144,7 @@ export function HealthOverviewSection({ overview, loading }: HealthOverviewSecti
       key: 'checkup',
       label: '体检记录',
       value: overview.checkup.totalRecords > 0 ? overview.checkup.totalRecords.toLocaleString() : '0',
-      helper: overview.checkup.latestDate ? `最近体检 ${overview.checkup.latestDate}` : '尚未录入',
+      helper: overview.checkup.latestDate ? `最近体检 ${formatDateShort(overview.checkup.latestDate)}` : '尚未录入',
       link: '/health/checkup',
       linkText: '查看明细',
       tag: checkupTag,

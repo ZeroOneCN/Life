@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import dayjs from 'dayjs';
 import {
   CartesianGrid,
   PolarAngleAxis,
@@ -85,7 +86,7 @@ export function HealthRadarSection({ radar, loading }: HealthRadarSectionProps) 
           {
             label: '统计周期',
             value: '近 30 天',
-            helper: `起始 ${radar.last30DaysStart}`,
+            helper: `起始 ${dayjs(radar.last30DaysStart).format('YYYY年M月D日')}`,
           },
         ]}
       />

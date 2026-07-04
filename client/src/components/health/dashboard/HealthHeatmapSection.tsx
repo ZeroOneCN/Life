@@ -19,8 +19,20 @@ const WEEK_ROWS = 7;
 const MONTH_LABEL_HEIGHT = 16;
 const WEEKDAY_LABEL_WIDTH = 22;
 
+const WEEKDAY_CHINESE = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 const MONTH_LABELS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
 const WEEKDAY_LABELS = ['一', '三', '五'];
+
+/**
+ * 格式化日期为中文展示格式。
+ * @param dateStr - ISO 日期字符串（YYYY-MM-DD）
+ * @returns 格式化后的日期字符串，如「2026年7月4日 周六」
+ */
+function formatDateZh(dateStr: string) {
+  const d = dayjs(dateStr);
+  const weekday = WEEKDAY_CHINESE[d.day()];
+  return `${d.format('YYYY年M月D日')} ${weekday}`;
+}
 
 /**
  * 根据步数返回热力图颜色。
@@ -200,7 +212,7 @@ export function HealthHeatmapSection({ items, year, loading, onYearChange }: Hea
                     onMouseEnter={() => setHovered(cell)}
                     onMouseLeave={() => setHovered(null)}
                   >
-                    <title>{`${cell.date} · ${cell.steps.toLocaleString()} 步 · ${cell.distanceKm} 公里`}</title>
+                    <title>{`${formatDateZh(cell.date)} · ${cell.steps.toLocaleString()} 步 · ${cell.distanceKm} 公里`}</title>
                   </rect>
                 );
               })}
@@ -228,10 +240,10 @@ export function HealthHeatmapSection({ items, year, loading, onYearChange }: Hea
               </svg>
               <span>多</span>
               {hovered ? (
-                <span className="health-heatmap-tooltip">
-                  {hovered.date} · {hovered.steps.toLocaleString()} 步 · {hovered.distanceKm} 公里
-                </span>
-              ) : null}
+                    <span className="health-heatmap-tooltip">
+                      {formatDateZh(hovered.date)} · {hovered.steps.toLocaleString()} 步 · {hovered.distanceKm} 公里
+                    </span>
+                  ) : null}
             </div>
           </div>
         </>
