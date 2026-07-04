@@ -16,6 +16,7 @@ const RentPage = lazyWithProgress(() => import('../pages/finance/Rent'));
 const FinanceReportPage = lazyWithProgress(() => import('../pages/finance/FinanceReport'));
 const BudgetPage = lazyWithProgress(() => import('../pages/finance/Budget'));
 const BillPage = lazyWithProgress(() => import('../pages/finance/Bill'));
+const GoalPage = lazyWithProgress(() => import('../pages/finance/Goal'));
 const StoragePage = lazyWithProgress(() => import('../pages/life/Storage'));
 const CardPage = lazyWithProgress(() => import('../pages/life/Card'));
 const TodoPage = lazyWithProgress(() => import('../pages/life/Todo'));
@@ -49,6 +50,7 @@ export const menuItems: MenuItemConfig[] = [
       { key: '/finance/rent', icon: 'box', label: '房租水电' },
       { key: '/finance/bill', icon: 'bell', label: '账单提醒' },
       { key: '/finance/budget', icon: 'wallet', label: '预算管理' },
+      { key: '/finance/goal', icon: 'chart', label: '储蓄目标' },
       { key: '/finance/report', icon: 'chart', label: '财务月报' },
     ],
   },
@@ -89,6 +91,7 @@ export const routes: RouteConfig[] = [
   { path: '/finance/rent', label: '房租水电', breadcrumb: ['财务中心', '房租水电'], menuKey: '/finance/rent', component: RentPage },
   { path: '/finance/bill', label: '账单提醒', breadcrumb: ['财务中心', '账单提醒'], menuKey: '/finance/bill', component: BillPage },
   { path: '/finance/budget', label: '预算管理', breadcrumb: ['财务中心', '预算管理'], menuKey: '/finance/budget', component: BudgetPage },
+  { path: '/finance/goal', label: '储蓄目标', breadcrumb: ['财务中心', '储蓄目标'], menuKey: '/finance/goal', component: GoalPage },
   { path: '/finance/report', label: '财务月报', breadcrumb: ['财务中心', '财务月报'], menuKey: '/finance/report', component: FinanceReportPage },
   { path: '/life/storage', label: '物品追踪', breadcrumb: ['生活中心', '物品追踪'], menuKey: '/life/storage', component: StoragePage },
   { path: '/life/card', label: '号卡中心', breadcrumb: ['生活中心', '号卡中心'], menuKey: '/life/card', component: CardPage },
