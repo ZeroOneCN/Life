@@ -2,317 +2,496 @@ import { useCallback, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { PageHeader } from '../../components/page';
-import { DeleteModal, Modal, Toast, useToastState } from '../../components/ui';
+import { DeleteModal, Modal, PillTabs, Toast, useToastState } from '../../components/ui';
 import { buildApiErrorMessage } from '../../lib/api';
 import { vitalApi } from '../../services/vitalApi';
+import { sleepApi } from '../../services/sleepApi';
 import { VitalEntrySection } from '../../components/health/vital/VitalEntrySection';
 import { VitalOverviewSection } from '../../components/health/vital/VitalOverviewSection';
 import { VitalTrendSection } from '../../components/health/vital/VitalTrendSection';
 import { VitalRecordsSection } from '../../components/health/vital/VitalRecordsSection';
+import { SleepEntrySection } from '../../components/health/sleep/SleepEntrySection';
+import { SleepOverviewSection } from '../../components/health/sleep/SleepOverviewSection';
+import { SleepTrendSection } from '../../components/health/sleep/SleepTrendSection';
+import { SleepRecordsSection } from '../../components/health/sleep/SleepRecordsSection';
 import type { VitalMetricInfo, VitalMetricKey, VitalRecord, VitalTrend, VitalOverview } from '../../types/vital';
+import type { SleepOverview, SleepRecord, SleepTrend } from '../../types/sleep';
+
+type TabKey = 'vital' | 'sleep';
+
+const TAB_OPTIONS = [
+  { value: 'vital', label: '日常体征' },
+  { value: 'sleep', label: '睡眠记录' },
+] as const;
 
 /**
- * 日常体征页面：心率、血压、血氧、血糖、体温等生命体征记录与趋势分析。
+ * 健康记录页面：日常体征 + 睡眠记录，通过 Tab 切换。
  *
- * 包含 4 个 Section：
- * 1. 体征录入 — 快速录入各指标
- * 2. 体征概览 — 各指标最新值与异常统计
- * 3. 趋势分析 — 折线图 + 参考范围线
- * 4. 体征记录 — 历史记录列表（筛选 + 分页）
+ * 体征 Tab：心率、血压、血氧、血糖、体温等生命体征
+ * 睡眠 Tab：睡眠时长、质量评分、趋势分析
  */
 export default function VitalPage() {
   const { toast, showToast } = useToastState();
+  const [activeTab, setActiveTab] = useState<TabKey>('vital');
 
+  // ===== 体征状态 =====
   const [metrics, setMetrics] = useState<VitalMetricInfo[]>([]);
-  const [overview, setOverview] = useState<VitalOverview | null>(null);
-  const [trend, setTrend] = useState<VitalTrend | null>(null);
-
-  const [overviewLoading, setOverviewLoading] = useState(true);
-  const [trendLoading, setTrendLoading] = useState(true);
-  const [entryLoading, setEntryLoading] = useState(false);
-
+  const [vitalOverview, setVitalOverview] = useState<VitalOverview | null>(null);
+  const [vitalTrend, setVitalTrend] = useState<VitalTrend | null>(null);
+  const [vitalOverviewLoading, setVitalOverviewLoading] = useState(true);
+  const [vitalTrendLoading, setVitalTrendLoading] = useState(true);
+  const [vitalEntryLoading, setVitalEntryLoading] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<VitalMetricKey>('heart_rate');
   const [trendPeriod, setTrendPeriod] = useState<'week' | 'month' | 'year'>('week');
-
-  const [records, setRecords] = useState<VitalRecord[]>([]);
-  const [recordsTotal, setRecordsTotal] = useState(0);
-  const [recordsLoading, setRecordsLoading] = useState(false);
+  const [vitalRecords, setVitalRecords] = useState<VitalRecord[]>([]);
+  const [vitalRecordsTotal, setVitalRecordsTotal] = useState(0);
+  const [vitalRecordsLoading, setVitalRecordsLoading] = useState(false);
   const [filterMetric, setFilterMetric] = useState<VitalMetricKey | 'all'>('all');
-  const [page, setPage] = useState(1);
-  const pageSize = 20;
+  const [vitalPage, setVitalPage] = useState(1);
+  const vitalPageSize = 20;
 
+  // ===== 睡眠状态 =====
+  const [sleepOverview, setSleepOverview] = useState<SleepOverview | null>(null);
+  const [sleepTrend, setSleepTrend] = useState<SleepTrend | null>(null);
+  const [sleepOverviewLoading, setSleepOverviewLoading] = useState(true);
+  const [sleepTrendLoading, setSleepTrendLoading] = useState(true);
+  const [sleepEntryLoading, setSleepEntryLoading] = useState(false);
+  const [sleepPeriod, setSleepPeriod] = useState<'week' | 'month' | 'year'>('week');
+  const [sleepRecords, setSleepRecords] = useState<SleepRecord[]>([]);
+  const [sleepRecordsTotal, setSleepRecordsTotal] = useState(0);
+  const [sleepRecordsLoading, setSleepRecordsLoading] = useState(false);
+  const [sleepPage, setSleepPage] = useState(1);
+  const sleepPageSize = 20;
+
+  // ===== 通用弹窗状态 =====
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deletingRecord, setDeletingRecord] = useState<VitalRecord | null>(null);
+  const [deletingVitalRecord, setDeletingVitalRecord] = useState<VitalRecord | null>(null);
+  const [deletingSleepRecord, setDeletingSleepRecord] = useState<SleepRecord | null>(null);
 
-  const [editOpen, setEditOpen] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<VitalRecord | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const [editNotes, setEditNotes] = useState('');
-  const [editRecordTime, setEditRecordTime] = useState('');
-  const [editSaving, setEditSaving] = useState(false);
+  const [editVitalOpen, setEditVitalOpen] = useState(false);
+  const [editingVitalRecord, setEditingVitalRecord] = useState<VitalRecord | null>(null);
+  const [editVitalValue, setEditVitalValue] = useState('');
+  const [editVitalNotes, setEditVitalNotes] = useState('');
+  const [editVitalRecordTime, setEditVitalRecordTime] = useState('');
+  const [editVitalSaving, setEditVitalSaving] = useState(false);
 
-  /**
-   * 加载指标列表（只加载一次）。
-   */
+  const [editSleepOpen, setEditSleepOpen] = useState(false);
+  const [editingSleepRecord, setEditingSleepRecord] = useState<SleepRecord | null>(null);
+  const [editSleepBedtime, setEditSleepBedtime] = useState('');
+  const [editSleepWakeTime, setEditSleepWakeTime] = useState('');
+  const [editSleepQuality, setEditSleepQuality] = useState<number | null>(null);
+  const [editSleepIsNap, setEditSleepIsNap] = useState(false);
+  const [editSleepNotes, setEditSleepNotes] = useState('');
+  const [editSleepSaving, setEditSleepSaving] = useState(false);
+
+  // ===== 体征数据加载 =====
   useEffect(() => {
     void vitalApi.getMetrics().then(setMetrics).catch((error) => {
       showToast(buildApiErrorMessage(error, '体征指标加载失败。'), 'error');
     });
   }, [showToast]);
 
-  /**
-   * 加载概览数据（仅页面初始化加载一次）。
-   */
   useEffect(() => {
     let cancelled = false;
-    setOverviewLoading(true);
+    setVitalOverviewLoading(true);
     void vitalApi.getOverview().then((data) => {
-      if (!cancelled) setOverview(data);
+      if (!cancelled) setVitalOverview(data);
     }).catch((error) => {
       if (!cancelled) showToast(buildApiErrorMessage(error, '体征概览加载失败。'), 'error');
     }).finally(() => {
-      if (!cancelled) setOverviewLoading(false);
+      if (!cancelled) setVitalOverviewLoading(false);
     });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [showToast]);
 
-  /**
-   * 加载趋势数据（指标/周期变化时重新加载）。
-   */
   useEffect(() => {
     let cancelled = false;
-    setTrendLoading(true);
+    setVitalTrendLoading(true);
     void vitalApi.getTrend(selectedMetric, trendPeriod).then((data) => {
-      if (!cancelled) setTrend(data);
+      if (!cancelled) setVitalTrend(data);
     }).catch((error) => {
       if (!cancelled) showToast(buildApiErrorMessage(error, '趋势数据加载失败。'), 'error');
     }).finally(() => {
-      if (!cancelled) setTrendLoading(false);
+      if (!cancelled) setVitalTrendLoading(false);
     });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [selectedMetric, trendPeriod, showToast]);
 
-  /**
-   * 加载记录列表（筛选条件/页码变化时重新加载）。
-   */
   useEffect(() => {
     let cancelled = false;
-    setRecordsLoading(true);
+    setVitalRecordsLoading(true);
     void vitalApi.listRecords({
       metric: filterMetric === 'all' ? undefined : filterMetric,
-      page,
-      pageSize,
+      page: vitalPage,
+      pageSize: vitalPageSize,
     }).then((data) => {
       if (!cancelled) {
-        setRecords(data.items);
-        setRecordsTotal(data.total);
+        setVitalRecords(data.items);
+        setVitalRecordsTotal(data.total);
       }
     }).catch((error) => {
       if (!cancelled) showToast(buildApiErrorMessage(error, '体征记录加载失败。'), 'error');
     }).finally(() => {
-      if (!cancelled) setRecordsLoading(false);
+      if (!cancelled) setVitalRecordsLoading(false);
     });
-    return () => {
-      cancelled = true;
-    };
-  }, [filterMetric, page, pageSize, showToast]);
+    return () => { cancelled = true; };
+  }, [filterMetric, vitalPage, showToast]);
 
-  /**
-   * 刷新所有数据（录入/编辑/删除后调用）。
-   */
-  const refreshAll = useCallback(() => {
-    void vitalApi.getOverview().then(setOverview).catch(() => {});
-    void vitalApi.getTrend(selectedMetric, trendPeriod).then(setTrend).catch(() => {});
+  // ===== 睡眠数据加载 =====
+  useEffect(() => {
+    if (activeTab !== 'sleep') return;
+    let cancelled = false;
+    setSleepOverviewLoading(true);
+    void sleepApi.getOverview().then((data) => {
+      if (!cancelled) setSleepOverview(data);
+    }).catch((error) => {
+      if (!cancelled) showToast(buildApiErrorMessage(error, '睡眠概览加载失败。'), 'error');
+    }).finally(() => {
+      if (!cancelled) setSleepOverviewLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [activeTab, showToast]);
+
+  useEffect(() => {
+    if (activeTab !== 'sleep') return;
+    let cancelled = false;
+    setSleepTrendLoading(true);
+    void sleepApi.getTrend(sleepPeriod).then((data) => {
+      if (!cancelled) setSleepTrend(data);
+    }).catch((error) => {
+      if (!cancelled) showToast(buildApiErrorMessage(error, '睡眠趋势加载失败。'), 'error');
+    }).finally(() => {
+      if (!cancelled) setSleepTrendLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [activeTab, sleepPeriod, showToast]);
+
+  useEffect(() => {
+    if (activeTab !== 'sleep') return;
+    let cancelled = false;
+    setSleepRecordsLoading(true);
+    void sleepApi.listRecords({
+      page: sleepPage,
+      pageSize: sleepPageSize,
+    }).then((data) => {
+      if (!cancelled) {
+        setSleepRecords(data.items);
+        setSleepRecordsTotal(data.total);
+      }
+    }).catch((error) => {
+      if (!cancelled) showToast(buildApiErrorMessage(error, '睡眠记录加载失败。'), 'error');
+    }).finally(() => {
+      if (!cancelled) setSleepRecordsLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [activeTab, sleepPage, showToast]);
+
+  // ===== 体征操作 =====
+  const refreshVital = useCallback(() => {
+    void vitalApi.getOverview().then(setVitalOverview).catch(() => {});
+    void vitalApi.getTrend(selectedMetric, trendPeriod).then(setVitalTrend).catch(() => {});
     void vitalApi.listRecords({
       metric: filterMetric === 'all' ? undefined : filterMetric,
-      page,
-      pageSize,
+      page: vitalPage,
+      pageSize: vitalPageSize,
     }).then((data) => {
-      setRecords(data.items);
-      setRecordsTotal(data.total);
+      setVitalRecords(data.items);
+      setVitalRecordsTotal(data.total);
     }).catch(() => {});
-  }, [selectedMetric, trendPeriod, filterMetric, page, pageSize]);
+  }, [selectedMetric, trendPeriod, filterMetric, vitalPage]);
 
-  /**
-   * 提交新体征记录。
-   */
-  const handleSubmitEntry = useCallback(async (payload: {
+  const handleVitalSubmit = useCallback(async (payload: {
     metric: VitalMetricKey;
     value: number;
     recordTime: string;
     notes: string;
   }) => {
-    setEntryLoading(true);
+    setVitalEntryLoading(true);
     try {
       await vitalApi.createRecord(payload);
       showToast('体征记录已保存。');
-      refreshAll();
+      refreshVital();
     } catch (error) {
       showToast(buildApiErrorMessage(error, '体征记录保存失败。'), 'error');
     } finally {
-      setEntryLoading(false);
+      setVitalEntryLoading(false);
     }
-  }, [refreshAll, showToast]);
+  }, [refreshVital, showToast]);
 
-  /**
-   * 打开编辑对话框。
-   */
-  const handleEdit = useCallback((record: VitalRecord) => {
-    setEditingRecord(record);
-    setEditValue(String(record.value));
-    setEditNotes(record.notes);
-    setEditRecordTime(dayjs(record.recordTime).format('YYYY-MM-DDTHH:mm'));
-    setEditOpen(true);
+  const handleVitalEdit = useCallback((record: VitalRecord) => {
+    setEditingVitalRecord(record);
+    setEditVitalValue(String(record.value));
+    setEditVitalNotes(record.notes);
+    setEditVitalRecordTime(dayjs(record.recordTime).format('YYYY-MM-DDTHH:mm'));
+    setEditVitalOpen(true);
   }, []);
 
-  /**
-   * 保存编辑。
-   */
-  const handleSaveEdit = useCallback(async () => {
-    if (!editingRecord) return;
-    setEditSaving(true);
+  const handleVitalSaveEdit = useCallback(async () => {
+    if (!editingVitalRecord) return;
+    setEditVitalSaving(true);
     try {
-      await vitalApi.updateRecord(editingRecord.id, {
-        value: Number(editValue),
-        notes: editNotes,
-        recordTime: dayjs(editRecordTime).format('YYYY-MM-DD HH:mm'),
+      await vitalApi.updateRecord(editingVitalRecord.id, {
+        value: Number(editVitalValue),
+        notes: editVitalNotes,
+        recordTime: dayjs(editVitalRecordTime).format('YYYY-MM-DD HH:mm'),
       });
       showToast('记录已更新。');
-      setEditOpen(false);
-      refreshAll();
+      setEditVitalOpen(false);
+      refreshVital();
     } catch (error) {
       showToast(buildApiErrorMessage(error, '记录更新失败。'), 'error');
     } finally {
-      setEditSaving(false);
+      setEditVitalSaving(false);
     }
-  }, [editingRecord, editValue, editNotes, editRecordTime, refreshAll, showToast]);
+  }, [editingVitalRecord, editVitalValue, editVitalNotes, editVitalRecordTime, refreshVital, showToast]);
 
-  /**
-   * 打开删除确认。
-   */
-  const handleDelete = useCallback((record: VitalRecord) => {
-    setDeletingRecord(record);
+  const handleVitalDelete = useCallback((record: VitalRecord) => {
+    setDeletingVitalRecord(record);
     setDeleteOpen(true);
   }, []);
 
-  /**
-   * 确认删除。
-   */
-  const confirmDelete = useCallback(async () => {
-    if (!deletingRecord) return;
-    try {
-      await vitalApi.deleteRecord(deletingRecord.id);
-      showToast('记录已删除。');
-      setDeleteOpen(false);
-      setDeletingRecord(null);
-      refreshAll();
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '删除失败。'), 'error');
-    }
-  }, [deletingRecord, refreshAll, showToast]);
-
-  /**
-   * 切指标时重置页码。
-   */
-  const handleFilterChange = useCallback((metric: VitalMetricKey | 'all') => {
+  const handleVitalFilterChange = useCallback((metric: VitalMetricKey | 'all') => {
     setFilterMetric(metric);
-    setPage(1);
+    setVitalPage(1);
   }, []);
 
-  /**
-   * 趋势指标切换。
-   */
-  const handleTrendMetricChange = useCallback((metric: VitalMetricKey) => {
+  const handleVitalTrendMetricChange = useCallback((metric: VitalMetricKey) => {
     setSelectedMetric(metric);
   }, []);
 
-  /**
-   * 趋势周期切换。
-   */
-  const handleTrendPeriodChange = useCallback((period: 'week' | 'month' | 'year') => {
+  const handleVitalTrendPeriodChange = useCallback((period: 'week' | 'month' | 'year') => {
     setTrendPeriod(period);
   }, []);
+
+  // ===== 睡眠操作 =====
+  const refreshSleep = useCallback(() => {
+    void sleepApi.getOverview().then(setSleepOverview).catch(() => {});
+    void sleepApi.getTrend(sleepPeriod).then(setSleepTrend).catch(() => {});
+    void sleepApi.listRecords({
+      page: sleepPage,
+      pageSize: sleepPageSize,
+    }).then((data) => {
+      setSleepRecords(data.items);
+      setSleepRecordsTotal(data.total);
+    }).catch(() => {});
+  }, [sleepPeriod, sleepPage]);
+
+  const handleSleepSubmit = useCallback(async (payload: {
+    date: string;
+    bedtime: string;
+    wakeTime: string;
+    qualityScore: number | null;
+    isNap: boolean;
+    notes: string;
+  }) => {
+    setSleepEntryLoading(true);
+    try {
+      await sleepApi.createRecord(payload);
+      showToast('睡眠记录已保存。');
+      refreshSleep();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '睡眠记录保存失败。'), 'error');
+    } finally {
+      setSleepEntryLoading(false);
+    }
+  }, [refreshSleep, showToast]);
+
+  const handleSleepEdit = useCallback((record: SleepRecord) => {
+    setEditingSleepRecord(record);
+    setEditSleepBedtime(dayjs(record.bedtime).format('YYYY-MM-DDTHH:mm'));
+    setEditSleepWakeTime(dayjs(record.wakeTime).format('YYYY-MM-DDTHH:mm'));
+    setEditSleepQuality(record.qualityScore);
+    setEditSleepIsNap(record.isNap);
+    setEditSleepNotes(record.notes);
+    setEditSleepOpen(true);
+  }, []);
+
+  const handleSleepSaveEdit = useCallback(async () => {
+    if (!editingSleepRecord) return;
+    setEditSleepSaving(true);
+    try {
+      await sleepApi.updateRecord(editingSleepRecord.id, {
+        bedtime: dayjs(editSleepBedtime).format('YYYY-MM-DD HH:mm'),
+        wakeTime: dayjs(editSleepWakeTime).format('YYYY-MM-DD HH:mm'),
+        qualityScore: editSleepQuality,
+        isNap: editSleepIsNap,
+        notes: editSleepNotes,
+      });
+      showToast('记录已更新。');
+      setEditSleepOpen(false);
+      refreshSleep();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '记录更新失败。'), 'error');
+    } finally {
+      setEditSleepSaving(false);
+    }
+  }, [editingSleepRecord, editSleepBedtime, editSleepWakeTime, editSleepQuality, editSleepIsNap, editSleepNotes, refreshSleep, showToast]);
+
+  const handleSleepDelete = useCallback((record: SleepRecord) => {
+    setDeletingSleepRecord(record);
+    setDeleteOpen(true);
+  }, []);
+
+  const handleSleepPeriodChange = useCallback((period: 'week' | 'month' | 'year') => {
+    setSleepPeriod(period);
+  }, []);
+
+  // ===== 删除确认（通用）=====
+  const confirmDelete = useCallback(async () => {
+    if (deletingVitalRecord) {
+      try {
+        await vitalApi.deleteRecord(deletingVitalRecord.id);
+        showToast('记录已删除。');
+        setDeleteOpen(false);
+        setDeletingVitalRecord(null);
+        refreshVital();
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '删除失败。'), 'error');
+      }
+    } else if (deletingSleepRecord) {
+      try {
+        await sleepApi.deleteRecord(deletingSleepRecord.id);
+        showToast('记录已删除。');
+        setDeleteOpen(false);
+        setDeletingSleepRecord(null);
+        refreshSleep();
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '删除失败。'), 'error');
+      }
+    }
+  }, [deletingVitalRecord, deletingSleepRecord, refreshVital, refreshSleep, showToast]);
+
+  const deleteTitle = deletingVitalRecord
+    ? '删除体征记录'
+    : deletingSleepRecord
+      ? '删除睡眠记录'
+      : '删除记录';
+
+  const deleteMessage = deletingVitalRecord
+    ? `确定删除 ${deletingVitalRecord.metricLabel}（${deletingVitalRecord.value} ${deletingVitalRecord.unit}）的记录吗？此操作不可恢复。`
+    : deletingSleepRecord
+      ? `确定删除 ${deletingSleepRecord.date} 的睡眠记录吗？此操作不可恢复。`
+      : '确定删除这条记录吗？此操作不可恢复。';
+
+  const QUALITY_OPTIONS = [
+    { value: 1, label: '很差', emoji: '😫' },
+    { value: 2, label: '较差', emoji: '😔' },
+    { value: 3, label: '一般', emoji: '😐' },
+    { value: 4, label: '较好', emoji: '😊' },
+    { value: 5, label: '很好', emoji: '😴' },
+  ];
 
   return (
     <div className="page-stack">
       <PageHeader
-        title="日常体征"
-        subtitle="记录心率、血压、血氧、血糖、体温等生命体征，追踪健康趋势"
+        title="健康记录"
+        subtitle="记录日常体征与睡眠情况，追踪健康趋势"
+        actions={(
+          <div style={{ width: 320 }}>
+            <PillTabs
+              options={TAB_OPTIONS.map((t) => ({ value: t.value, label: t.label }))}
+              value={activeTab}
+              onChange={(v) => setActiveTab(v as TabKey)}
+            />
+          </div>
+        )}
       />
 
-      <VitalEntrySection
-        metrics={metrics}
-        loading={entryLoading}
-        onSubmit={handleSubmitEntry}
-      />
+      {activeTab === 'vital' ? (
+        <>
+          <VitalEntrySection
+            metrics={metrics}
+            loading={vitalEntryLoading}
+            onSubmit={handleVitalSubmit}
+          />
+          <VitalOverviewSection
+            overview={vitalOverview}
+            loading={vitalOverviewLoading}
+          />
+          <VitalTrendSection
+            trend={vitalTrend}
+            loading={vitalTrendLoading}
+            metrics={metrics}
+            selectedMetric={selectedMetric}
+            period={trendPeriod}
+            onMetricChange={handleVitalTrendMetricChange}
+            onPeriodChange={handleVitalTrendPeriodChange}
+          />
+          <VitalRecordsSection
+            records={vitalRecords}
+            total={vitalRecordsTotal}
+            loading={vitalRecordsLoading}
+            metrics={metrics}
+            filterMetric={filterMetric}
+            page={vitalPage}
+            pageSize={vitalPageSize}
+            onFilterChange={handleVitalFilterChange}
+            onPageChange={setVitalPage}
+            onEdit={handleVitalEdit}
+            onDelete={handleVitalDelete}
+          />
+        </>
+      ) : (
+        <>
+          <SleepEntrySection
+            loading={sleepEntryLoading}
+            onSubmit={handleSleepSubmit}
+          />
+          <SleepOverviewSection
+            overview={sleepOverview}
+            loading={sleepOverviewLoading}
+          />
+          <SleepTrendSection
+            trend={sleepTrend}
+            loading={sleepTrendLoading}
+            period={sleepPeriod}
+            onPeriodChange={handleSleepPeriodChange}
+          />
+          <SleepRecordsSection
+            records={sleepRecords}
+            total={sleepRecordsTotal}
+            loading={sleepRecordsLoading}
+            page={sleepPage}
+            pageSize={sleepPageSize}
+            onPageChange={setSleepPage}
+            onEdit={handleSleepEdit}
+            onDelete={handleSleepDelete}
+          />
+        </>
+      )}
 
-      <VitalOverviewSection
-        overview={overview}
-        loading={overviewLoading}
-      />
-
-      <VitalTrendSection
-        trend={trend}
-        loading={trendLoading}
-        metrics={metrics}
-        selectedMetric={selectedMetric}
-        period={trendPeriod}
-        onMetricChange={handleTrendMetricChange}
-        onPeriodChange={handleTrendPeriodChange}
-      />
-
-      <VitalRecordsSection
-        records={records}
-        total={recordsTotal}
-        loading={recordsLoading}
-        metrics={metrics}
-        filterMetric={filterMetric}
-        page={page}
-        pageSize={pageSize}
-        onFilterChange={handleFilterChange}
-        onPageChange={setPage}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
-
-      {/* 编辑弹窗 */}
+      {/* 体征编辑弹窗 */}
       <Modal
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
+        open={editVitalOpen}
+        onClose={() => setEditVitalOpen(false)}
         title="编辑体征记录"
         width={460}
         footer={
           <>
-            <button type="button" className="btn btn-secondary" onClick={() => setEditOpen(false)}>取消</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setEditVitalOpen(false)}>取消</button>
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => void handleSaveEdit()}
-              disabled={editSaving}
+              onClick={() => void handleVitalSaveEdit()}
+              disabled={editVitalSaving}
             >
-              {editSaving ? '保存中…' : '保存'}
+              {editVitalSaving ? '保存中…' : '保存'}
             </button>
           </>
         }
       >
-        {editingRecord ? (
+        {editingVitalRecord ? (
           <div className="form-stack">
             <div className="form-field">
               <label>指标</label>
-              <input type="text" value={editingRecord.metricLabel} disabled className="form-input" />
+              <input type="text" value={editingVitalRecord.metricLabel} disabled className="form-input" />
             </div>
             <div className="form-field">
-              <label>
-                数值 ({editingRecord.unit})
-              </label>
+              <label>数值 ({editingVitalRecord.unit})</label>
               <input
                 type="number"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
+                value={editVitalValue}
+                onChange={(e) => setEditVitalValue(e.target.value)}
                 step="0.1"
                 className="form-input"
               />
@@ -321,8 +500,8 @@ export default function VitalPage() {
               <label>记录时间</label>
               <input
                 type="datetime-local"
-                value={editRecordTime}
-                onChange={(e) => setEditRecordTime(e.target.value)}
+                value={editVitalRecordTime}
+                onChange={(e) => setEditVitalRecordTime(e.target.value)}
                 className="form-input"
               />
             </div>
@@ -330,8 +509,8 @@ export default function VitalPage() {
               <label>备注</label>
               <input
                 type="text"
-                value={editNotes}
-                onChange={(e) => setEditNotes(e.target.value)}
+                value={editVitalNotes}
+                onChange={(e) => setEditVitalNotes(e.target.value)}
                 placeholder="可选"
                 className="form-input"
               />
@@ -340,16 +519,106 @@ export default function VitalPage() {
         ) : null}
       </Modal>
 
-      {/* 删除确认 */}
+      {/* 睡眠编辑弹窗 */}
+      <Modal
+        open={editSleepOpen}
+        onClose={() => setEditSleepOpen(false)}
+        title="编辑睡眠记录"
+        width={460}
+        footer={
+          <>
+            <button type="button" className="btn btn-secondary" onClick={() => setEditSleepOpen(false)}>取消</button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => void handleSleepSaveEdit()}
+              disabled={editSleepSaving}
+            >
+              {editSleepSaving ? '保存中…' : '保存'}
+            </button>
+          </>
+        }
+      >
+        {editingSleepRecord ? (
+          <div className="form-stack">
+            <div className="form-field">
+              <label>日期</label>
+              <input type="text" value={editingSleepRecord.date} disabled className="form-input" />
+            </div>
+            <div className="form-field">
+              <label>类型</label>
+              <div className="vital-entry-metric-tabs">
+                <button
+                  type="button"
+                  className={`vital-entry-metric-tab ${!editSleepIsNap ? 'active' : ''}`}
+                  onClick={() => setEditSleepIsNap(false)}
+                >
+                  夜间睡眠
+                </button>
+                <button
+                  type="button"
+                  className={`vital-entry-metric-tab ${editSleepIsNap ? 'active' : ''}`}
+                  onClick={() => setEditSleepIsNap(true)}
+                >
+                  午睡
+                </button>
+              </div>
+            </div>
+            <div className="form-field">
+              <label>就寝时间</label>
+              <input
+                type="datetime-local"
+                value={editSleepBedtime}
+                onChange={(e) => setEditSleepBedtime(e.target.value)}
+                className="form-input"
+              />
+            </div>
+            <div className="form-field">
+              <label>起床时间</label>
+              <input
+                type="datetime-local"
+                value={editSleepWakeTime}
+                onChange={(e) => setEditSleepWakeTime(e.target.value)}
+                className="form-input"
+              />
+            </div>
+            <div className="form-field">
+              <label>睡眠质量</label>
+              <div className="vital-entry-metric-tabs">
+                {QUALITY_OPTIONS.map((q) => (
+                  <button
+                    key={q.value}
+                    type="button"
+                    className={`vital-entry-metric-tab ${editSleepQuality === q.value ? 'active' : ''}`}
+                    onClick={() => setEditSleepQuality(editSleepQuality === q.value ? null : q.value)}
+                  >
+                    {q.emoji} {q.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="form-field">
+              <label>备注</label>
+              <input
+                type="text"
+                value={editSleepNotes}
+                onChange={(e) => setEditSleepNotes(e.target.value)}
+                placeholder="可选"
+                className="form-input"
+              />
+            </div>
+          </div>
+        ) : null}
+      </Modal>
+
+      {/* 删除确认（通用） */}
       <DeleteModal
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={() => void confirmDelete()}
-        title="删除体征记录"
+        title={deleteTitle}
       >
-        {deletingRecord
-          ? `确定删除 ${deletingRecord.metricLabel}（${deletingRecord.value} ${deletingRecord.unit}）的记录吗？此操作不可恢复。`
-          : '确定删除这条记录吗？此操作不可恢复。'}
+        {deleteMessage}
       </DeleteModal>
 
       <Toast toast={toast} />
