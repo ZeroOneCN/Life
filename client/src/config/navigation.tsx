@@ -31,11 +31,12 @@ const HKStockPage = lazyWithProgress(() => import('../pages/investment/HKStock')
 const USStockPage = lazyWithProgress(() => import('../pages/investment/USStock'));
 
 export const menuItems: MenuItemConfig[] = [
-  { key: '/dashboard', icon: 'dashboard', label: '首页' },
+  { key: '/dashboard', icon: 'dashboard', label: '首页', groupLabel: '概览' },
   {
     key: 'health',
     icon: 'heart',
     label: '健康中心',
+    groupLabel: '生活管理',
     children: [
       { key: '/health/overview', icon: 'dashboard', label: '健康概览' },
       { key: '/health/vital', icon: 'heart', label: '健康记录' },
@@ -59,6 +60,7 @@ export const menuItems: MenuItemConfig[] = [
     key: 'life',
     icon: 'box',
     label: '生活中心',
+    groupLabel: '效率工具',
     children: [
       { key: '/life/storage', icon: 'box', label: '物品追踪' },
       { key: '/life/card', icon: 'card', label: '号卡中心' },
@@ -70,6 +72,7 @@ export const menuItems: MenuItemConfig[] = [
     key: 'investment',
     icon: 'chart',
     label: '投资中心',
+    groupLabel: '投资行情',
     children: [
       { key: '/investment/forex', icon: 'trend', label: '外汇市场' },
       { key: '/investment/crypto', icon: 'shield', label: '加密市场' },
@@ -77,7 +80,7 @@ export const menuItems: MenuItemConfig[] = [
       { key: '/investment/us-stock', icon: 'chart', label: '美股市场' },
     ],
   },
-  { key: '/notifications', icon: 'bell', label: '通知中心' },
+  { key: '/notifications', icon: 'bell', label: '通知中心', groupLabel: '系统' },
 ];
 
 export const routes: RouteConfig[] = [

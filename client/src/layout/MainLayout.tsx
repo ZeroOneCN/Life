@@ -104,10 +104,28 @@ function MenuNode({
   const isRouteActive = item.key === pathname || item.children?.some((child) => child.key === pathname);
   const isOpen = openGroups.includes(item.key);
   const isActive = item.children?.length ? activeMenuKey === item.key : activeMenuKey === item.key || isRouteActive;
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const itemRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    if (collapsed) {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      setTooltipPos({ x: rect.right + 12, y: rect.top + rect.height / 2 - 16 });
+      setShowTooltip(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setShowTooltip(false);
+  };
 
   if (item.children?.length) {
     return (
-      <div className="menu-group">
+      <div className="menu-group" ref={itemRef}>
+        {collapsed ? null : item.groupLabel ? (
+          <div className="menu-group-label">{item.groupLabel}</div>
+        ) : null}
         <button
           type="button"
           className={`menu-link ${isActive ? 'is-active' : ''}`}
@@ -115,6 +133,8 @@ function MenuNode({
             setActiveMenuKey(item.key);
             setOpenGroups((previous) => (previous.includes(item.key) ? [] : [item.key]));
           }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
           aria-expanded={isOpen}
         >
           <span className="menu-link-main">
@@ -123,6 +143,14 @@ function MenuNode({
           </span>
           {!collapsed ? <ChevronIcon open={isOpen} /> : null}
         </button>
+        {showTooltip && collapsed ? (
+          <div
+            className="menu-tooltip"
+            style={{ left: tooltipPos.x, top: tooltipPos.y }}
+          >
+            {item.label}
+          </div>
+        ) : null}
         {isOpen && !collapsed ? (
           <div className="submenu">
             {item.children.map((child) => (
@@ -145,16 +173,28 @@ function MenuNode({
   }
 
   return (
-    <Link
-      to={item.key}
-      className={`menu-link ${isActive ? 'is-active' : ''}`}
-      onClick={() => setActiveMenuKey(item.key)}
-    >
-      <span className="menu-link-main">
-        <Icon name={item.icon} />
-        {!collapsed ? <span className="menu-label">{item.label}</span> : null}
-      </span>
-    </Link>
+    <div ref={itemRef} style={{ position: 'relative' }}>
+      <Link
+        to={item.key}
+        className={`menu-link ${isActive ? 'is-active' : ''}`}
+        onClick={() => setActiveMenuKey(item.key)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <span className="menu-link-main">
+          <Icon name={item.icon} />
+          {!collapsed ? <span className="menu-label">{item.label}</span> : null}
+        </span>
+      </Link>
+      {showTooltip && collapsed ? (
+        <div
+          className="menu-tooltip"
+          style={{ left: tooltipPos.x, top: tooltipPos.y }}
+        >
+          {item.label}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

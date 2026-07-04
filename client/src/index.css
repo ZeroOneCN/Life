@@ -705,14 +705,25 @@ textarea {
 .menu-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
+}
+
+.menu-group-label {
+  padding: 12px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-ink-mute);
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .submenu {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-left: 14px;
+  gap: 2px;
+  padding-left: 8px;
 }
 
 .menu-link {
@@ -721,9 +732,9 @@ textarea {
   justify-content: space-between;
   gap: 10px;
   width: 100%;
-  min-height: 44px;
-  padding: 10px 12px;
-  border-radius: 12px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 10px;
   color: var(--color-ink-secondary);
   background: transparent;
   border: 1px solid transparent;
@@ -747,15 +758,16 @@ textarea {
 }
 
 .menu-link.is-active {
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
   border-color: var(--color-primary);
-  color: var(--color-ink);
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 .menu-link-main {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
   flex: 1;
 }
@@ -768,10 +780,12 @@ textarea {
   transition:
     opacity 120ms ease,
     transform 180ms var(--sidebar-transition-easing);
+  font-size: 14px;
 }
 
 .menu-child {
-  padding-left: 14px;
+  padding-left: 12px;
+  min-height: 34px;
 }
 
 .menu-chevron {
@@ -786,6 +800,32 @@ textarea {
 .menu-chevron.is-open {
   transform: rotate(90deg);
   color: var(--color-ink);
+}
+
+/* 折叠态 tooltip */
+.menu-tooltip {
+  position: fixed;
+  z-index: 1000;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--color-ink-primary);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: menu-tooltip-in 0.15s ease;
+}
+
+@keyframes menu-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .page-stack {

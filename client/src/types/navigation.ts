@@ -19,6 +19,7 @@ export interface MenuItemConfig {
   label: string;
   icon: IconKey;
   description?: string;
+  groupLabel?: string;
   children?: MenuItemConfig[];
 }
 
