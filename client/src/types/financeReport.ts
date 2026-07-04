@@ -36,6 +36,34 @@ export interface FinanceReportPushResult {
   report: FinanceMonthlyReport;
 }
 
+export interface FinanceReportInvestmentBreakdownItem {
+  instrument: string;
+  tradeCount: number;
+  netPnl: number;
+  commission: number;
+  overnightFee: number;
+}
+
+export interface FinanceReportInvestmentSummary {
+  netPnl: number;
+  grossPnl: number;
+  totalCommission: number;
+  totalOvernightFee: number;
+  tradeCount: number;
+  deposits: number;
+  withdrawals: number;
+  netCapital: number;
+  equity: number;
+  roi: number;
+  breakdown: FinanceReportInvestmentBreakdownItem[];
+}
+
+export interface FinanceReportNetWorthSummary {
+  investmentEquity: number;
+  unpaidLoanTotal: number;
+  netWorth: number;
+}
+
 export interface FinanceMonthlyReport {
   month: string;
   startDate: string;
@@ -50,6 +78,8 @@ export interface FinanceMonthlyReport {
   moduleBreakdown: FinanceReportModuleBreakdown[];
   categoryBreakdown: FinanceReportCategoryBreakdown[];
   topExpenses: FinanceReportTopExpense[];
+  investment: FinanceReportInvestmentSummary;
+  netWorth: FinanceReportNetWorthSummary;
   generatedAt: string;
 }
 

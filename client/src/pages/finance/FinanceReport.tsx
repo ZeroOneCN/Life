@@ -156,7 +156,7 @@ export default function FinanceReportPage() {
       { label: '总支出', value: formatCurrency(report.totalExpense) },
       { label: '环比上月', value: formatChange(report.monthOverMonthChange, report.monthOverMonthChangePercent), helper: `上月 ${formatCurrency(report.previousMonthExpense)}`, tone: momTone },
       { label: '同比去年', value: formatChange(report.yearOverYearChange, report.yearOverYearChangePercent), helper: `去年同月 ${formatCurrency(report.lastYearSameMonthExpense)}`, tone: yoyTone },
-      { label: '覆盖模块', value: `${report.moduleBreakdown.filter((item) => item.count > 0).length} / 5`, helper: `${report.topExpenses.length} 笔 Top3 支出` },
+      { label: '覆盖模块', value: `${report.moduleBreakdown.filter((item) => item.count > 0).length} / 5`, helper: report.investment?.tradeCount ? `投资 ${report.investment.tradeCount} 笔` : `${report.topExpenses.length} 笔 Top3` },
     ];
   }, [report]);
 
@@ -164,11 +164,11 @@ export default function FinanceReportPage() {
     <div className="page-stack">
       <PageHeader
         title="财务月报 / 年报"
-        subtitle="跨购物、旅行、贷款、订阅、房租 5 个模块自动汇总，按月生成支出、同环比与 Top 3 重点支出。"
+        subtitle="跨购物、旅行、贷款、订阅、房租 5 个模块自动汇总，并整合投资净收益与净资产追踪。"
         actions={(
           <>
             <Tag tone="blue">月度自动推送</Tag>
-            <Tag tone="green">5 模块聚合</Tag>
+            <Tag tone="green">5 模块 + 投资聚合</Tag>
           </>
         )}
       />
@@ -284,6 +284,58 @@ export default function FinanceReportPage() {
           <EmptyState title="暂无数据" description="请先在财务各模块录入数据。" icon="📊" />
         )}
       </SectionCard>
+
+      {report?.investment && report.investment.tradeCount > 0 && (
+        <SectionCard
+          title="投资概览"
+          description={`${formatMonth(report.month)} 投资交易汇总，净收益 = 毛盈亏 + 手续费 + 隔夜费。`}
+          action={<Tag tone={report.investment.netPnl >= 0 ? 'green' : 'red'}>{report.investment.netPnl >= 0 ? '盈利' : '亏损'}</Tag>}
+        >
+          <StatGrid
+            items={[
+              {
+                label: '净收益',
+                value: `${report.investment.netPnl >= 0 ? '+' : ''}${formatCurrency(report.investment.netPnl)}`,
+                helper: `ROI ${report.investment.roi.toFixed(1)}%`,
+              },
+              { label: '账户净值', value: formatCurrency(report.investment.equity), helper: `净入金 ${formatCurrency(report.investment.netCapital)}` },
+              { label: '交易笔数', value: `${report.investment.tradeCount}` },
+              { label: '手续费', value: formatCurrency(report.investment.totalCommission), helper: `隔夜费 ${formatCurrency(report.investment.totalOvernightFee)}` },
+            ]}
+          />
+          {report.investment.breakdown.length > 0 && (
+            <DataTable
+              data={report.investment.breakdown}
+              rowKey="instrument"
+              columns={[
+                { key: 'instrument', title: '品种', render: (_, row) => row.instrument },
+                { key: 'netPnl', title: '净收益', align: 'right' as const, render: (_, row) => `${row.netPnl >= 0 ? '+' : ''}${formatCurrency(row.netPnl)}` },
+                { key: 'tradeCount', title: '笔数', align: 'right' as const, render: (_, row) => `${row.tradeCount}` },
+                { key: 'commission', title: '手续费', align: 'right' as const, render: (_, row) => formatCurrency(row.commission) },
+              ]}
+            />
+          )}
+        </SectionCard>
+      )}
+
+      {report?.netWorth && (
+        <SectionCard
+          title="净资产追踪"
+          description="净资产 = 投资账户净值 - 未还贷款总额。"
+        >
+          <StatGrid
+            items={[
+              {
+                label: '净资产',
+                value: formatCurrency(report.netWorth.netWorth),
+                accent: report.netWorth.netWorth >= 0 ? 'var(--color-success-strong)' : 'var(--color-danger-strong)',
+              },
+              { label: '投资账户净值', value: formatCurrency(report.netWorth.investmentEquity) },
+              { label: '未还贷款', value: formatCurrency(report.netWorth.unpaidLoanTotal) },
+            ]}
+          />
+        </SectionCard>
+      )}
 
       <SectionCard
         title="年度趋势"
