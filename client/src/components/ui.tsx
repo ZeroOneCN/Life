@@ -229,6 +229,161 @@ export function PageLoading({ tip = '加载中...' }: { tip?: string }) {
   );
 }
 
+export function SearchInput({
+  value,
+  onChange,
+  placeholder = '搜索...',
+  onClear,
+  disabled = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  onClear?: () => void;
+  disabled?: boolean;
+}) {
+  const inputId = useId();
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onClear) {
+      onClear();
+    } else {
+      onChange('');
+    }
+  };
+
+  return (
+    <div className={`search-input-wrapper ${disabled ? 'is-disabled' : ''}`}>
+      <span className="search-input-icon" aria-hidden="true">🔍</span>
+      <input
+        id={inputId}
+        type="text"
+        className="search-input"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        disabled={disabled}
+      />
+      {value && !disabled ? (
+        <button
+          type="button"
+          className="search-input-clear"
+          onClick={handleClear}
+          aria-label="清除搜索"
+        >
+          ×
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+export function FilterBar({
+  children,
+  rightSlot,
+}: {
+  children: React.ReactNode;
+  rightSlot?: React.ReactNode;
+}) {
+  return (
+    <div className="filter-bar">
+      <div className="filter-bar-left">{children}</div>
+      {rightSlot ? <div className="filter-bar-right">{rightSlot}</div> : null}
+    </div>
+  );
+}
+
+export function FilterTag({
+  label,
+  active = false,
+  onClick,
+  count,
+}: {
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+  count?: number;
+}) {
+  return (
+    <button
+      type="button"
+      className={`filter-tag ${active ? 'is-active' : ''}`}
+      onClick={onClick}
+    >
+      <span>{label}</span>
+      {count !== undefined ? <span className="filter-tag-count">{count}</span> : null}
+    </button>
+  );
+}
+
+export function ExportButton({
+  onExport,
+  label = '导出',
+  disabled = false,
+  options,
+}: {
+  onExport: (format: 'csv' | 'excel' | 'json') => void;
+  label?: string;
+  disabled?: boolean;
+  options?: Array<{ value: 'csv' | 'excel' | 'json'; label: string }>;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const defaultOptions = options ?? [
+    { value: 'csv', label: '导出 CSV' },
+    { value: 'excel', label: '导出 Excel' },
+    { value: 'json', label: '导出 JSON' },
+  ];
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const handleExport = (format: 'csv' | 'excel' | 'json') => {
+    onExport(format);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="export-button-wrapper" ref={containerRef}>
+      <button
+        type="button"
+        className="btn-secondary export-button"
+        onClick={() => setIsOpen(!isOpen)}
+        disabled={disabled}
+      >
+        <span aria-hidden="true">📤</span>
+        {label}
+        <span className="export-button-arrow" aria-hidden="true">▾</span>
+      </button>
+      {isOpen && !disabled ? (
+        <div className="export-dropdown">
+          {defaultOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className="export-dropdown-item"
+              onClick={() => handleExport(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 type TrendDirection = 'up' | 'down' | 'flat';
 
 export function TrendArrow({ direction, value }: { direction: TrendDirection; value?: string }) {
