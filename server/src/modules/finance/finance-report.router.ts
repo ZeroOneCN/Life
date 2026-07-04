@@ -132,7 +132,7 @@ function diffPercent(current: number, previous: number) {
  * 公式：总可摊销成本 ÷ 总居住天数 × 当月在住天数
  * 其中总成本 = 房租 + 电费 + 水费 + 燃气 + 服务费 + 保洁费 + 洗衣费（不含押金和中介费）
  */
-function calculateRentMonthlyCost(
+export function calculateRentMonthlyCost(
   row: FinanceRentRecordEntity,
   monthStart: dayjs.Dayjs,
   monthEnd: dayjs.Dayjs,

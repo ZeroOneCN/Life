@@ -120,6 +120,8 @@ const SCENE_SEED: ReadonlyArray<{
   { scene_id: 'subscription.renewal_upcoming', label: '订阅即将到期', enabled: false, summary: '', description: '' },
   { scene_id: 'subscription.expired', label: '订阅到期或逾期', enabled: false, summary: '', description: '' },
   { scene_id: 'finance.report.monthly', label: '月度财务报告', enabled: false, summary: '', description: '' },
+  { scene_id: 'finance.budget.warning', label: '预算预警提醒', enabled: false, summary: '', description: '' },
+  { scene_id: 'finance.budget.overspend', label: '预算超支警告', enabled: false, summary: '', description: '' },
   { scene_id: 'travel.followup', label: '旅行归档跟进', enabled: false, summary: '', description: '' },
 ];
 
@@ -355,6 +357,48 @@ const TEMPLATE_SEED = [
   <div style="padding: 18px 22px; color: #1f2937; line-height: 1.7;">
     <pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: #f8fafc; border-radius: 8px; padding: 12px 14px; white-space: pre-wrap; font-size: 13px; color: #0f172a; margin: 0;">{{message}}</pre>
     <div style="font-size: 11px; color: #94a3b8; margin-top: 10px;">生成时间：{{date}}</div>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'finance.budget.warning',
+    title: '⚠️ 预算预警：{{title}}',
+    body: '{{message}}\n\n预算金额：¥ {{meta.budgetAmount}}\n实际支出：¥ {{meta.actualAmount}}\n进度：{{meta.progressPercent}}%\n分类：{{meta.categoryName}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #fbbf24; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #f59e0b, #f97316); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 预算预警</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">⚠️ {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">{{message}}</p>
+    <table style="width: 100%; font-size: 13px;">
+      <tr><td style="padding: 4px 0; color: #64748b;">预算金额</td><td style="padding: 4px 0; font-weight: 600; text-align: right;">¥ {{meta.budgetAmount}}</td></tr>
+      <tr><td style="padding: 4px 0; color: #64748b;">实际支出</td><td style="padding: 4px 0; font-weight: 600; text-align: right; color: #d97706;">¥ {{meta.actualAmount}}</td></tr>
+      <tr><td style="padding: 4px 0; color: #64748b;">进度</td><td style="padding: 4px 0; font-weight: 600; text-align: right; color: #d97706;">{{meta.progressPercent}}%</td></tr>
+      <tr><td style="padding: 4px 0; color: #64748b;">分类</td><td style="padding: 4px 0; text-align: right;">{{meta.categoryName}}</td></tr>
+    </table>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'finance.budget.overspend',
+    title: '🚨 预算超支：{{title}}',
+    body: '{{message}}\n\n预算金额：¥ {{meta.budgetAmount}}\n实际支出：¥ {{meta.actualAmount}}\n超支金额：¥ {{meta.overAmount}}\n分类：{{meta.categoryName}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #ef4444; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 预算超支</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">🚨 {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">{{message}}</p>
+    <table style="width: 100%; font-size: 13px;">
+      <tr><td style="padding: 4px 0; color: #64748b;">预算金额</td><td style="padding: 4px 0; font-weight: 600; text-align: right;">¥ {{meta.budgetAmount}}</td></tr>
+      <tr><td style="padding: 4px 0; color: #64748b;">实际支出</td><td style="padding: 4px 0; font-weight: 600; text-align: right; color: #dc2626;">¥ {{meta.actualAmount}}</td></tr>
+      <tr><td style="padding: 4px 0; color: #64748b;">超支金额</td><td style="padding: 4px 0; font-weight: 600; text-align: right; color: #dc2626;">¥ {{meta.overAmount}}</td></tr>
+      <tr><td style="padding: 4px 0; color: #64748b;">分类</td><td style="padding: 4px 0; text-align: right;">{{meta.categoryName}}</td></tr>
+    </table>
   </div>
 </div>`,
   },

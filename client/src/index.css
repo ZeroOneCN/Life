@@ -8455,6 +8455,170 @@ textarea {
   transition: width 0.6s ease;
 }
 
+/* ===== 预算管理：进度条 / 柱状图 / 筛选栏 / 分类弹窗 ===== */
+.filter-grid,
+.form-grid-2 {
+  display: grid;
+  gap: 12px;
+  align-items: end;
+}
+
+.filter-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.form-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.budget-progress-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.budget-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.budget-progress-name {
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+  color: var(--color-ink-secondary);
+}
+
+.budget-progress-track {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-3);
+  overflow: hidden;
+}
+
+.budget-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width 0.4s ease;
+}
+
+.budget-progress-percent {
+  font-size: var(--fs-overline);
+  text-align: right;
+}
+
+.budget-chart-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 200px;
+  padding: 0 4px;
+}
+
+.budget-chart-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.budget-chart-bars {
+  width: 100%;
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 160px;
+  justify-content: center;
+}
+
+.budget-chart-bar {
+  width: 12px;
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  transition: height 0.3s ease;
+}
+
+.budget-chart-bar-budget {
+  background: var(--color-primary-soft);
+}
+
+.budget-chart-bar-actual {
+  /* background 由内联 style 按超支/正常动态设置 */
+}
+
+.budget-chart-label {
+  font-size: var(--fs-overline);
+  color: var(--color-ink-mute);
+}
+
+.budget-chart-legend {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  font-size: var(--fs-caption);
+}
+
+.budget-chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-ink-secondary);
+}
+
+.budget-chart-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.category-add-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(100px, auto) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.category-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+}
+
+.category-item-row span {
+  font-size: var(--fs-label);
+  color: var(--color-ink-secondary);
+}
+
+@media (max-width: 768px) {
+  .filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .category-add-row {
+    grid-template-columns: 1fr;
+  }
+
+  .budget-chart-row {
+    height: 160px;
+  }
+
+  .budget-chart-bars {
+    height: 120px;
+  }
+
+  .budget-chart-bar {
+    width: 8px;
+  }
+}
+
 /* ===== 迷你图表占位 ===== */
 .dash-chart-placeholder {
   height: 140px;
