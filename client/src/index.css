@@ -13118,3 +13118,154 @@ select:focus-visible {
     justify-content: space-between;
   }
 }
+
+/* ============================================================
+   账单日历 (Bill Calendar)
+   ============================================================ */
+
+.bill-calendar {
+  width: 100%;
+}
+
+.bill-calendar-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 4px;
+}
+
+.bill-calendar-weekday {
+  padding: 8px 4px;
+  text-align: center;
+  font-size: var(--fs-caption);
+  font-weight: 500;
+  color: var(--color-ink-mute);
+}
+
+.bill-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.bill-calendar-day {
+  min-height: 100px;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-canvas);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background 0.15s ease;
+}
+
+.bill-calendar-day:hover {
+  background: var(--color-surface);
+}
+
+.bill-calendar-day.is-other-month {
+  opacity: 0.4;
+}
+
+.bill-calendar-day.is-today {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-alpha);
+}
+
+.bill-calendar-day-num {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.bill-calendar-day.is-today .bill-calendar-day-num {
+  color: var(--color-primary);
+}
+
+.bill-calendar-day-bills {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.bill-calendar-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  border-left: 3px solid var(--color-primary);
+  background: var(--color-surface);
+  transition: filter 0.15s ease;
+}
+
+.bill-calendar-item:hover {
+  filter: brightness(0.95);
+}
+
+.bill-calendar-item.bill-type-loan {
+  border-left-color: #0ea5e9;
+  background: #f0f9ff;
+}
+
+.bill-calendar-item.bill-type-subscription {
+  border-left-color: #6366f1;
+  background: #eef2ff;
+}
+
+.bill-calendar-item.bill-type-rent {
+  border-left-color: #10b981;
+  background: #ecfdf5;
+}
+
+.bill-calendar-item.bill-status-paid {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+.bill-calendar-item.bill-status-overdue {
+  border-left-color: #ef4444;
+  background: #fef2f2;
+}
+
+.bill-calendar-item-title {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  margin-right: 4px;
+}
+
+.bill-calendar-item-amount {
+  font-weight: 600;
+  color: var(--color-ink);
+  flex-shrink: 0;
+}
+
+.bill-calendar-more {
+  font-size: 11px;
+  color: var(--color-ink-mute);
+  text-align: center;
+  padding: 2px 0;
+}
+
+@media (max-width: 720px) {
+  .bill-calendar-day {
+    min-height: 80px;
+    padding: 4px;
+  }
+
+  .bill-calendar-item-title {
+    display: none;
+  }
+
+  .bill-calendar-item-amount {
+    font-size: 10px;
+  }
+}
