@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 
 import { EmptyState, SectionCard } from '../../page';
-import { Btn, Tag } from '../../ui';
+import { Btn, FilterBar, FilterTag, Tag } from '../../ui';
 import { EditIcon, DeleteIcon } from '../../ui';
 import type { VitalRecord, VitalMetricInfo, VitalMetricKey } from '../../../types/vital';
 
@@ -59,21 +59,24 @@ export function VitalRecordsSection({
     <SectionCard
       title="体征记录"
       description={`共 ${total} 条记录`}
-      action={
-        <div className="vital-records-filter">
-          <select
-            className="vital-select"
-            value={filterMetric}
-            onChange={(e) => onFilterChange(e.target.value as VitalMetricKey | 'all')}
-          >
-            <option value="all">全部指标</option>
-            {metrics.map((m) => (
-              <option key={m.key} value={m.key}>{m.label}</option>
-            ))}
-          </select>
-        </div>
-      }
     >
+      <FilterBar>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+          <FilterTag
+            label="全部指标"
+            active={filterMetric === 'all'}
+            onClick={() => onFilterChange('all')}
+          />
+          {metrics.map((m) => (
+            <FilterTag
+              key={m.key}
+              label={m.label}
+              active={filterMetric === m.key}
+              onClick={() => onFilterChange(m.key as VitalMetricKey | 'all')}
+            />
+          ))}
+        </div>
+      </FilterBar>
       {loading ? (
         <div className="skeleton-block" />
       ) : records.length === 0 ? (

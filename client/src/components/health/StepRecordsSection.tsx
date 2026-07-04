@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
-import { DateTimePickerField } from '../date';
-import { DeleteIcon, DeleteModal, EditIcon, IconBtn, Modal, Pagination, Btn, Field, SelectField, TableSkeleton } from '../ui';
+import { DatePickerField, DateTimePickerField } from '../date';
+import { DeleteIcon, DeleteModal, EditIcon, ExportButton, FilterBar, IconBtn, Modal, Pagination, Btn, Field, SelectField, TableSkeleton } from '../ui';
 import { EmptyState } from '../page';
 import {
   STEP_HOURS,
@@ -177,10 +177,22 @@ export function StepRecordsSection({
   };
 
   return (
-    <SectionCard title="记录管理" description="支持按用户筛选、排序、分页、编辑和批量删除。">
+    <SectionCard title="记录管理" description="支持排序、分页、编辑和批量删除。">
       <div className="page-stack">
-        <div className="step-filter-grid">
-        </div>
+        <FilterBar
+          rightSlot={
+            <ExportButton
+              label="导出"
+              onExport={(format) => {
+                showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
+              }}
+            />
+          }
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+            <span className="subtle-text">共 {totalRecords} 条记录</span>
+          </div>
+        </FilterBar>
 
         <div className="step-records-toolbar">
           <div className="step-records-selection">
@@ -207,10 +219,9 @@ export function StepRecordsSection({
               {batchDeleting ? '删除中...' : '批量删除'}
             </Btn>
           </div>
-          <span className="subtle-text">
-            共 {totalRecords} 条记录
-            {selectedIds.length ? `，已选择 ${selectedIds.length} 条` : ''}
-          </span>
+          {selectedIds.length ? (
+            <span className="subtle-text">已选择 {selectedIds.length} 条</span>
+          ) : null}
         </div>
 
         {loading ? (

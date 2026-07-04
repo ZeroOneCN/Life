@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
+import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, ExportButton, Field, FilterBar, FilterTag, IconBtn, Modal, Pagination, SearchInput, SelectField, Tag, TextArea } from '../ui';
 import {
   TRAVEL_ALL_BOOKS,
   TRAVEL_RECORD_PAGE_SIZE,
@@ -447,35 +447,69 @@ export function TravelDetailsSection({
           </div>
         </div>
 
-        <div className="travel-filter-grid">
-          <SelectField label="筛选账本" value={detailsBookId} onChange={(event) => onDetailsBookIdChange(event.target.value)}>
-            <option value={TRAVEL_ALL_BOOKS}>全部行程账本</option>
-            {books
-              .map((book) => (
-                <option key={book.id} value={book.id}>{book.name}</option>
-              ))}
-          </SelectField>
-          <DatePickerField label="开始日期" value={startDate} onChange={setStartDate} placeholder="不限" />
-          <DatePickerField label="结束日期" value={endDate} onChange={setEndDate} placeholder="不限" />
-          <SelectField label="分类筛选" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
-            <option value="">全部分类</option>
-            {CATEGORY_OPTIONS.map((category) => (
-              <option key={category} value={category}>{getTravelCategoryLabel(category)}</option>
+        <FilterBar
+          rightSlot={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <SelectField
+                value={payChannelFilter}
+                onChange={(event) => setPayChannelFilter(event.target.value)}
+                style={{ width: 120 }}
+              >
+                <option value="">全部支付</option>
+                {payChannels.map((channel) => (
+                  <option key={channel.id} value={channel.value}>{channel.label}</option>
+                ))}
+              </SelectField>
+              <DatePickerField value={startDate} onChange={setStartDate} placeholder="开始日期" />
+              <DatePickerField value={endDate} onChange={setEndDate} placeholder="结束日期" />
+              <ExportButton
+                label="导出"
+                onExport={(format) => {
+                  showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
+                }}
+              />
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+            <div style={{ width: 260, flexShrink: 0 }}>
+              <SearchInput
+                value={keyword}
+                onChange={setKeyword}
+                placeholder="搜索项目、交通、优惠或备注..."
+              />
+            </div>
+            <FilterTag
+              label="全部行程"
+              active={detailsBookId === TRAVEL_ALL_BOOKS}
+              onClick={() => onDetailsBookIdChange(TRAVEL_ALL_BOOKS)}
+              count={records.length}
+            />
+            {books.slice(0, 4).map((book) => (
+              <FilterTag
+                key={book.id}
+                label={book.name}
+                active={detailsBookId === book.id}
+                onClick={() => onDetailsBookIdChange(book.id)}
+                count={records.filter((r) => r.bookId === book.id).length}
+              />
             ))}
-          </SelectField>
-          <SelectField label="支付方式" value={payChannelFilter} onChange={(event) => setPayChannelFilter(event.target.value)}>
-            <option value="">全部方式</option>
-            {payChannels.map((channel) => (
-              <option key={channel.id} value={channel.value}>{channel.label}</option>
+            <div style={{ width: 1, height: 20, background: 'var(--color-border)', margin: '0 4px' }} />
+            <FilterTag
+              label="全部分类"
+              active={!categoryFilter}
+              onClick={() => setCategoryFilter('')}
+            />
+            {CATEGORY_OPTIONS.slice(0, 5).map((category) => (
+              <FilterTag
+                key={category}
+                label={getTravelCategoryLabel(category)}
+                active={categoryFilter === category}
+                onClick={() => setCategoryFilter(category)}
+              />
             ))}
-          </SelectField>
-          <Field
-            label="关键词"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="搜索项目、交通信息、优惠说明或备注"
-          />
-        </div>
+          </div>
+        </FilterBar>
 
         <div className="travel-summary-bar">
           <span className="subtle-text">共 {summary.count} 条记录</span>
