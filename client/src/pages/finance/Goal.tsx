@@ -344,11 +344,9 @@ export default function GoalPage() {
             title="暂无目标"
             description="创建你的第一个储蓄目标，开始存钱之旅吧！"
             action={
-              <Btn tone="primary" onClick={handleCreateGoal}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <PlusIcon size={16} />
-                  新建目标
-                </span>
+              <Btn tone="primary" onClick={handleCreateGoal} style={{ padding: '7px 14px', fontSize: '13px' }}>
+                <PlusIcon size={14} />
+                新建目标
               </Btn>
             }
           />
