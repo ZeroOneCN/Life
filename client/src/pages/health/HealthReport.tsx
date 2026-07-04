@@ -36,20 +36,13 @@ export default function HealthReportPage() {
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [abnormalLoading, setAbnormalLoading] = useState(true);
   const [aiGenerating, setAiGenerating] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
 
   /**
    * 加载报告汇总与异常识别。
-   * 首次加载显示骨架屏；切换周期时保留旧数据，仅降低透明度。
    */
   const loadReport = useCallback(async () => {
-    const isFirstLoad = summary === null;
-    if (isFirstLoad) {
-      setSummaryLoading(true);
-      setAbnormalLoading(true);
-    } else {
-      setRefreshing(true);
-    }
+    setSummaryLoading(true);
+    setAbnormalLoading(true);
     try {
       const [summaryData, abnormalData] = await Promise.all([
         healthReportApi.getSummary(period, date),
@@ -60,14 +53,10 @@ export default function HealthReportPage() {
     } catch (error) {
       showToast(buildApiErrorMessage(error, '健康报告加载失败。'), 'error');
     } finally {
-      if (isFirstLoad) {
-        setSummaryLoading(false);
-        setAbnormalLoading(false);
-      } else {
-        setRefreshing(false);
-      }
+      setSummaryLoading(false);
+      setAbnormalLoading(false);
     }
-  }, [period, date, showToast, summary]);
+  }, [period, date, showToast]);
 
   useEffect(() => {
     void loadReport();
@@ -112,15 +101,7 @@ export default function HealthReportPage() {
 
   return (
     <div className="page-stack">
-      <div
-        ref={reportRef}
-        className="page-stack"
-        style={{
-          opacity: refreshing ? 0.6 : 1,
-          transition: 'opacity 0.15s ease',
-          pointerEvents: refreshing ? 'none' : 'auto',
-        }}
-      >
+      <div ref={reportRef} className="page-stack">
         <HealthReportHeaderSection
           period={period}
           date={date}
