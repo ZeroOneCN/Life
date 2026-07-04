@@ -124,6 +124,8 @@ const SCENE_SEED: ReadonlyArray<{
   { scene_id: 'finance.budget.overspend', label: '预算超支警告', enabled: false, summary: '', description: '' },
   { scene_id: 'finance.bill.upcoming', label: '账单即将到期提醒', enabled: false, summary: '', description: '' },
   { scene_id: 'finance.bill.overdue', label: '账单逾期提醒', enabled: false, summary: '', description: '' },
+  { scene_id: 'finance.goal.completed', label: '储蓄目标达成庆祝', enabled: false, summary: '', description: '' },
+  { scene_id: 'finance.goal.warning', label: '储蓄目标进度预警', enabled: false, summary: '', description: '' },
   { scene_id: 'travel.followup', label: '旅行归档跟进', enabled: false, summary: '', description: '' },
 ];
 
@@ -440,6 +442,52 @@ const TEMPLATE_SEED = [
       <div style="font-size: 13px; color: #64748b;">逾期金额</div>
       <div style="font-size: 22px; font-weight: 700; color: #b91c1c;">¥ {{meta.overdueAmount}}</div>
       <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">逾期 {{meta.overdueCount}} 笔 / 共 {{meta.billCount}} 笔待付</div>
+    </div>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'finance.goal.completed',
+    title: '🎉 目标达成：{{title}}',
+    body: '{{message}}\n\n目标名称：{{meta.goalName}}\n目标金额：¥ {{meta.targetAmount}}\n已存金额：¥ {{meta.currentAmount}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #10b981; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 财务目标</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">🎉 {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px; white-space: pre-line;">{{message}}</p>
+    <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 10px 14px; border-radius: 6px; margin-top: 12px;">
+      <div style="font-size: 13px; color: #64748b;">目标名称</div>
+      <div style="font-size: 16px; font-weight: 600; color: #065f46; margin-top: 2px;">{{meta.goalName}}</div>
+      <div style="font-size: 13px; color: #64748b; margin-top: 8px;">目标金额</div>
+      <div style="font-size: 22px; font-weight: 700; color: #059669;">¥ {{meta.targetAmount}}</div>
+      <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">已达成 🎊</div>
+    </div>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'finance.goal.warning',
+    title: '💰 储蓄进度预警：{{title}}',
+    body: '{{message}}\n\n目标名称：{{meta.goalName}}\n当前进度：{{meta.progressPercent}}%\n时间进度：{{meta.timeProgressPercent}}%\n剩余天数：{{meta.daysRemaining}} 天',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #f59e0b; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 财务目标</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">💰 {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px; white-space: pre-line;">{{message}}</p>
+    <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 6px; margin-top: 12px;">
+      <div style="font-size: 13px; color: #64748b;">目标名称</div>
+      <div style="font-size: 16px; font-weight: 600; color: #92400e; margin-top: 2px;">{{meta.goalName}}</div>
+      <table style="width: 100%; font-size: 13px; margin-top: 8px;">
+        <tr><td style="padding: 4px 0; color: #64748b;">储蓄进度</td><td style="padding: 4px 0; font-weight: 600; text-align: right;">{{meta.progressPercent}}%</td></tr>
+        <tr><td style="padding: 4px 0; color: #64748b;">时间进度</td><td style="padding: 4px 0; font-weight: 600; text-align: right;">{{meta.timeProgressPercent}}%</td></tr>
+        <tr><td style="padding: 4px 0; color: #64748b;">剩余天数</td><td style="padding: 4px 0; font-weight: 600; text-align: right; color: #d97706;">{{meta.daysRemaining}} 天</td></tr>
+      </table>
     </div>
   </div>
 </div>`,
