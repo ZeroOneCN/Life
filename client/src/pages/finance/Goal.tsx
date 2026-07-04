@@ -343,12 +343,6 @@ export default function GoalPage() {
           <EmptyState
             title="暂无目标"
             description="创建你的第一个储蓄目标，开始存钱之旅吧！"
-            action={
-              <Btn tone="primary" onClick={handleCreateGoal} style={{ padding: '7px 14px', fontSize: '13px' }}>
-                <PlusIcon size={14} />
-                新建目标
-              </Btn>
-            }
           />
         ) : (
           <div className="goal-grid">
