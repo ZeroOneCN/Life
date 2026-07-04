@@ -137,7 +137,7 @@ export function HealthOverviewSection({ overview, loading }: HealthOverviewSecti
       value: `${overview.medication.recordDays30} / ${overview.medication.plannedDays30} 天`,
       helper: '已记录天数 / 计划天数',
       accent: overview.medication.recordDays30 / Math.max(1, overview.medication.plannedDays30) >= 0.8 ? '#27a644' : '#f59e0b',
-      link: '/health/medication',
+      link: '/health/checkup',
       linkText: '查看明细',
     },
     {
