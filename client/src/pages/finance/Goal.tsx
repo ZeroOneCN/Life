@@ -11,8 +11,10 @@ import {
   IconBtn,
   Modal,
   PillTabs,
+  SelectField,
   Switch,
   Tag,
+  TextArea,
   Toast,
   useToastState,
 } from '../../components/ui';
@@ -306,7 +308,7 @@ export default function GoalPage() {
   };
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 20px' }}>
+    <div className="page-stack">
       <PageHeader
         title="储蓄目标"
         subtitle="设定目标，追踪进度，实现财务自由"
@@ -465,84 +467,71 @@ export default function GoalPage() {
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Field label="目标名称">
-            <input
-              type="text"
-              className="form-input"
-              value={goalForm.name ?? ''}
-              onChange={(e) => setGoalForm({ ...goalForm, name: e.target.value })}
-              placeholder="例如：旅行基金"
+          <Field
+            label="目标名称"
+            type="text"
+            value={goalForm.name ?? ''}
+            onChange={(e) => setGoalForm({ ...goalForm, name: e.target.value })}
+            placeholder="例如：旅行基金"
+          />
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <SelectField
+              label="目标类型"
+              value={goalForm.type ?? 'saving'}
+              onChange={(e) => setGoalForm({ ...goalForm, type: e.target.value as GoalType })}
+            >
+              {Object.entries(GOAL_TYPE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </SelectField>
+            <SelectField
+              label="目标状态"
+              value={goalForm.status ?? 'active'}
+              onChange={(e) => setGoalForm({ ...goalForm, status: e.target.value as GoalStatus })}
+            >
+              {Object.entries(GOAL_STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </SelectField>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <Field
+              label="目标金额 (¥)"
+              type="number"
+              value={goalForm.targetAmount ?? ''}
+              onChange={(e) => setGoalForm({ ...goalForm, targetAmount: Number(e.target.value) })}
+              min={0}
+              step={0.01}
             />
-          </Field>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <Field label="目标类型">
-              <select
-                className="form-input"
-                value={goalForm.type ?? 'saving'}
-                onChange={(e) => setGoalForm({ ...goalForm, type: e.target.value as GoalType })}
-              >
-                {Object.entries(GOAL_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="目标状态">
-              <select
-                className="form-input"
-                value={goalForm.status ?? 'active'}
-                onChange={(e) => setGoalForm({ ...goalForm, status: e.target.value as GoalStatus })}
-              >
-                {Object.entries(GOAL_STATUS_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </Field>
+            <Field
+              label="已存金额 (¥)"
+              type="number"
+              value={goalForm.currentAmount ?? ''}
+              onChange={(e) => setGoalForm({ ...goalForm, currentAmount: Number(e.target.value) })}
+              min={0}
+              step={0.01}
+            />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <Field label="目标金额 (¥)">
-              <input
-                type="number"
-                className="form-input"
-                value={goalForm.targetAmount ?? ''}
-                onChange={(e) => setGoalForm({ ...goalForm, targetAmount: Number(e.target.value) })}
-                min={0}
-                step={0.01}
-              />
-            </Field>
-            <Field label="已存金额 (¥)">
-              <input
-                type="number"
-                className="form-input"
-                value={goalForm.currentAmount ?? ''}
-                onChange={(e) => setGoalForm({ ...goalForm, currentAmount: Number(e.target.value) })}
-                min={0}
-                step={0.01}
-              />
-            </Field>
+            <Field
+              label="开始日期"
+              type="date"
+              value={goalForm.startDate ?? ''}
+              onChange={(e) => setGoalForm({ ...goalForm, startDate: e.target.value })}
+            />
+            <Field
+              label="目标日期"
+              type="date"
+              value={goalForm.targetDate ?? ''}
+              onChange={(e) => setGoalForm({ ...goalForm, targetDate: e.target.value })}
+            />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <Field label="开始日期">
-              <input
-                type="date"
-                className="form-input"
-                value={goalForm.startDate ?? ''}
-                onChange={(e) => setGoalForm({ ...goalForm, startDate: e.target.value })}
-              />
-            </Field>
-            <Field label="目标日期">
-              <input
-                type="date"
-                className="form-input"
-                value={goalForm.targetDate ?? ''}
-                onChange={(e) => setGoalForm({ ...goalForm, targetDate: e.target.value })}
-              />
-            </Field>
-          </div>
-
-          <Field label="主题颜色">
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>主题颜色</div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input
                 type="color"
@@ -554,36 +543,30 @@ export default function GoalPage() {
                 {goalForm.color ?? '#3b82f6'}
               </span>
             </div>
-          </Field>
-
-          <Field label="预警阈值 (%)">
-            <input
-              type="number"
-              className="form-input"
-              value={goalForm.warningThresholdPercent ?? 80}
-              onChange={(e) => setGoalForm({ ...goalForm, warningThresholdPercent: Number(e.target.value) })}
-              min={0}
-              max={200}
-            />
-          </Field>
-
-          <Field label="目标描述">
-            <textarea
-              className="form-input"
-              style={{ minHeight: 80, resize: 'vertical' }}
-              value={goalForm.description ?? ''}
-              onChange={(e) => setGoalForm({ ...goalForm, description: e.target.value })}
-              placeholder="描述一下这个目标..."
-            />
-          </Field>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Switch
-              checked={goalForm.alertEnabled ?? true}
-              onChange={(v) => setGoalForm({ ...goalForm, alertEnabled: v })}
-            />
-            <span style={{ fontSize: 14 }}>开启提醒通知</span>
           </div>
+
+          <Field
+            label="预警阈值 (%)"
+            type="number"
+            value={goalForm.warningThresholdPercent ?? 80}
+            onChange={(e) => setGoalForm({ ...goalForm, warningThresholdPercent: Number(e.target.value) })}
+            min={0}
+            max={200}
+          />
+
+          <TextArea
+            label="目标描述"
+            value={goalForm.description ?? ''}
+            onChange={(e) => setGoalForm({ ...goalForm, description: e.target.value })}
+            placeholder="描述一下这个目标..."
+            style={{ minHeight: 80, resize: 'vertical' }}
+          />
+
+          <Switch
+            label="开启提醒通知"
+            checked={goalForm.alertEnabled ?? true}
+            onChange={(v) => setGoalForm({ ...goalForm, alertEnabled: v })}
+          />
         </div>
       </Modal>
 
@@ -763,7 +746,8 @@ export default function GoalPage() {
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Field label="操作类型">
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>操作类型</div>
             <div style={{ display: 'flex', gap: 8 }}>
               <Btn
                 tone={contribForm.type === 'deposit' ? 'primary' : 'ghost'}
@@ -782,39 +766,33 @@ export default function GoalPage() {
                 取出
               </Btn>
             </div>
-          </Field>
+          </div>
 
-          <Field label="金额 (¥)">
-            <input
-              type="number"
-              className="form-input"
-              value={contribForm.amount || ''}
-              onChange={(e) => setContribForm({ ...contribForm, amount: Number(e.target.value) })}
-              min={0}
-              step={0.01}
-              placeholder="请输入金额"
-              autoFocus
-            />
-          </Field>
+          <Field
+            label="金额 (¥)"
+            type="number"
+            value={contribForm.amount || ''}
+            onChange={(e) => setContribForm({ ...contribForm, amount: Number(e.target.value) })}
+            min={0}
+            step={0.01}
+            placeholder="请输入金额"
+            autoFocus
+          />
 
-          <Field label="日期">
-            <input
-              type="date"
-              className="form-input"
-              value={contribForm.contributionDate}
-              onChange={(e) => setContribForm({ ...contribForm, contributionDate: e.target.value })}
-            />
-          </Field>
+          <Field
+            label="日期"
+            type="date"
+            value={contribForm.contributionDate}
+            onChange={(e) => setContribForm({ ...contribForm, contributionDate: e.target.value })}
+          />
 
-          <Field label="备注">
-            <input
-              type="text"
-              className="form-input"
-              value={contribForm.description}
-              onChange={(e) => setContribForm({ ...contribForm, description: e.target.value })}
-              placeholder="可选，记录这笔钱的来源/用途"
-            />
-          </Field>
+          <Field
+            label="备注"
+            type="text"
+            value={contribForm.description}
+            onChange={(e) => setContribForm({ ...contribForm, description: e.target.value })}
+            placeholder="可选，记录这笔钱的来源/用途"
+          />
         </div>
       </Modal>
 

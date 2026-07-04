@@ -4,12 +4,14 @@ import dayjs from 'dayjs';
 import { EmptyState, PageHeader, SectionCard, StatGrid } from '../../components/page';
 import {
   Btn,
+  Checkbox,
   DataTable,
   EyeIcon,
   Field,
   IconBtn,
   Modal,
   PillTabs,
+  SelectField,
   Switch,
   Tag,
   Toast,
@@ -264,7 +266,7 @@ export default function BillPage() {
   const WEEK_DAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className="page-stack">
       <PageHeader
         title="账单提醒"
         subtitle="统一管理贷款、订阅、房租等账单，避免逾期"
@@ -281,20 +283,17 @@ export default function BillPage() {
         title="账单日历"
         description={`${dayjs(selectedMonth).format('YYYY年M月')} 共 ${filteredBills.length} 笔账单`}
         action={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Field>
-              <select
-                className="select-themed"
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                style={{ width: 120 }}
-              >
-                <option value="all">全部类型</option>
-                <option value="loan">贷款还款</option>
-                <option value="subscription">服务订阅</option>
-                <option value="rent">房租水电</option>
-              </select>
-            </Field>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <SelectField
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              style={{ width: 120 }}
+            >
+              <option value="all">全部类型</option>
+              <option value="loan">贷款还款</option>
+              <option value="subscription">服务订阅</option>
+              <option value="rent">房租水电</option>
+            </SelectField>
             <PillTabs
               value={viewMode}
               onChange={(v) => setViewMode(v as ViewMode)}
@@ -443,69 +442,64 @@ export default function BillPage() {
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Field label="开启账单提醒">
-            <Switch
-              checked={settingForm.reminder_enabled ?? true}
-              onChange={(v) => setSettingForm({ ...settingForm, reminder_enabled: v })}
-            />
-          </Field>
+          <Switch
+            label="开启账单提醒"
+            checked={settingForm.reminder_enabled ?? true}
+            onChange={(v) => setSettingForm({ ...settingForm, reminder_enabled: v })}
+          />
 
-          <Field label="提前提醒天数">
-            <select
-              className="select-themed"
-              value={String(settingForm.lead_days ?? 7)}
-              onChange={(e) => setSettingForm({ ...settingForm, lead_days: Number(e.target.value) })}
-            >
-              <option value="1">提前 1 天</option>
-              <option value="3">提前 3 天</option>
-              <option value="7">提前 7 天</option>
-              <option value="14">提前 14 天</option>
-              <option value="30">提前 30 天</option>
-            </select>
-          </Field>
+          <SelectField
+            label="提前提醒天数"
+            value={String(settingForm.lead_days ?? 7)}
+            onChange={(e) => setSettingForm({ ...settingForm, lead_days: Number(e.target.value) })}
+          >
+            <option value="1">提前 1 天</option>
+            <option value="3">提前 3 天</option>
+            <option value="7">提前 7 天</option>
+            <option value="14">提前 14 天</option>
+            <option value="30">提前 30 天</option>
+          </SelectField>
 
-          <Field label="提醒的账单类型">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>提醒的账单类型</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
               {(['loan', 'subscription', 'rent'] as BillType[]).map((type) => {
                 const types = (settingForm.enabled_types ?? 'loan,subscription,rent').split(',').filter(Boolean);
                 const checked = types.includes(type);
                 return (
-                  <label key={type} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(e) => {
-                        const current = (settingForm.enabled_types ?? 'loan,subscription,rent').split(',').filter(Boolean);
-                        if (e.target.checked) {
-                          setSettingForm({ ...settingForm, enabled_types: [...current, type].join(',') });
-                        } else {
-                          setSettingForm({ ...settingForm, enabled_types: current.filter((t) => t !== type).join(',') });
-                        }
-                      }}
-                    />
-                    <span>{BILL_TYPE_LABELS[type]}</span>
-                  </label>
+                  <Checkbox
+                    key={type}
+                    checked={checked}
+                    onChange={(v) => {
+                      const current = (settingForm.enabled_types ?? 'loan,subscription,rent').split(',').filter(Boolean);
+                      if (v) {
+                        setSettingForm({ ...settingForm, enabled_types: [...current, type].join(',') });
+                      } else {
+                        setSettingForm({ ...settingForm, enabled_types: current.filter((t) => t !== type).join(',') });
+                      }
+                    }}
+                  >
+                    {BILL_TYPE_LABELS[type]}
+                  </Checkbox>
                 );
               })}
             </div>
-          </Field>
+          </div>
 
-          <Field label="每日提醒时间">
-            <select
-              className="select-themed"
-              value={settingForm.reminder_time ?? '09:00'}
-              onChange={(e) => setSettingForm({ ...settingForm, reminder_time: e.target.value })}
-            >
-              <option value="07:00">07:00</option>
-              <option value="08:00">08:00</option>
-              <option value="09:00">09:00</option>
-              <option value="10:00">10:00</option>
-              <option value="12:00">12:00</option>
-              <option value="18:00">18:00</option>
-              <option value="20:00">20:00</option>
-              <option value="21:00">21:00</option>
-            </select>
-          </Field>
+          <SelectField
+            label="每日提醒时间"
+            value={settingForm.reminder_time ?? '09:00'}
+            onChange={(e) => setSettingForm({ ...settingForm, reminder_time: e.target.value })}
+          >
+            <option value="07:00">07:00</option>
+            <option value="08:00">08:00</option>
+            <option value="09:00">09:00</option>
+            <option value="10:00">10:00</option>
+            <option value="12:00">12:00</option>
+            <option value="18:00">18:00</option>
+            <option value="20:00">20:00</option>
+            <option value="21:00">21:00</option>
+          </SelectField>
 
           <div
             style={{
