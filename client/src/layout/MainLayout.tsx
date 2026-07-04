@@ -172,6 +172,7 @@ export default function MainLayout() {
     return parent ? [parent] : [];
   });
   const [activeMenuKey, setActiveMenuKey] = useState(() => getActiveMenuKey(location.pathname));
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
 
   const route = routes.find((item) => item.path === location.pathname);
@@ -229,6 +230,20 @@ export default function MainLayout() {
       window.removeEventListener('mousedown', handlePointerDown);
     };
   }, [userMenuOpen]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 400);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className={`layout-shell ${collapsed ? 'is-collapsed' : ''}`}>
@@ -427,6 +442,18 @@ export default function MainLayout() {
           <span>我的</span>
         </Link>
       </nav>
+
+      {showBackToTop ? (
+        <button
+          type="button"
+          className="back-to-top show"
+          onClick={scrollToTop}
+          aria-label="返回顶部"
+          title="返回顶部"
+        >
+          ↑
+        </button>
+      ) : null}
     </div>
   );
 }
