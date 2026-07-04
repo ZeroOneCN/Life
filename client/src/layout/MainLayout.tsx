@@ -160,7 +160,7 @@ function MenuNode({
 
 export default function MainLayout() {
   const navigate = useNavigate();
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark, mode, toggleTheme } = useTheme();
   const authState = useAuthState();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -297,11 +297,11 @@ export default function MainLayout() {
             <button
               className="icon-button theme-toggle"
               type="button"
-              aria-label={isDark ? '切换到浅色模式' : '切换到深色模式'}
-              title={isDark ? '切换到浅色模式' : '切换到深色模式'}
+              aria-label={mode === 'auto' ? '跟随系统' : isDark ? '切换到浅色模式' : '切换到深色模式'}
+              title={mode === 'auto' ? '跟随系统' : isDark ? '切换到浅色模式' : '切换到深色模式'}
               onClick={toggleTheme}
             >
-              {isDark ? '☀️' : '🌙'}
+              {mode === 'auto' ? '🔄' : isDark ? '☀️' : '🌙'}
             </button>
 
             <div className="topbar-user-menu" ref={userMenuRef}>

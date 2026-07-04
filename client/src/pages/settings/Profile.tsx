@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { PageHeader, SectionCard } from '../../components/page';
-import { Btn, Field, PillTabs, Tag, Toast, useToastState } from '../../components/ui';
+import { Btn, Field, PillTabs, SelectField, Tag, Toast, useToastState } from '../../components/ui';
 import { DeepseekUsageWidget } from '../../components/settings/DeepseekUsageWidget';
 import TelegramBindWidget from '../../components/settings/TelegramBindWidget';
 import { buildApiErrorMessage, getApiFieldErrors } from '../../lib/api';
 import { changePassword, updateAuthProfile, useAuthState } from '../../services/auth';
+import { useTheme } from '../../hooks/useTheme';
 
 type ProfileTab = 'profile' | 'security';
 
@@ -18,6 +19,7 @@ const TAB_OPTIONS: Array<{ value: ProfileTab; label: string }> = [
 export default function ProfileSettingsPage() {
   const authState = useAuthState();
   const { toast, showToast } = useToastState();
+  const { mode, setMode } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') === 'security' ? 'security' : 'profile') as ProfileTab;
   const [tab, setTab] = useState<ProfileTab>(initialTab);
@@ -252,6 +254,28 @@ export default function ProfileSettingsPage() {
 
       {tab === 'profile' ? <DeepseekUsageWidget /> : null}
       {tab === 'profile' ? <TelegramBindWidget /> : null}
+
+      {tab === 'profile' ? (
+        <SectionCard
+          title="显示设置"
+          description="调整界面主题和显示偏好，设置会自动保存到本地。"
+        >
+          <div className="form-grid">
+            <div className="auth-field-stack">
+              <SelectField
+                label="主题模式"
+                value={mode}
+                onChange={(e) => setMode(e.target.value as 'light' | 'dark' | 'auto')}
+                hint="选择自动时，将跟随系统主题自动切换。"
+              >
+                <option value="auto">跟随系统</option>
+                <option value="light">浅色模式</option>
+                <option value="dark">深色模式</option>
+              </SelectField>
+            </div>
+          </div>
+        </SectionCard>
+      ) : null}
 
       {tab === 'security' ? (
         <SectionCard
