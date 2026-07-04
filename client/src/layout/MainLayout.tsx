@@ -21,6 +21,7 @@ const iconMap: Record<IconKey, string> = {
   shield: 'M12 2 4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3zm0 9 4 4-1.41 1.41L12 13.83l-2.59 2.58L8 15l4-4z',
   chart: 'M5 9.2h3V19H5zm5.5-4h3V19h-3zm5.5 7h3V19h-3z',
   box: 'M3 6.5 12 2l9 4.5V17l-9 5-9-5V6.5zm9-2.3L6.2 7 12 9.9 17.8 7 12 4.2zm-7 4.5v7L11 19v-7.1L5 8.7zm14 0-6 3.2V19l6-3.3V8.7z',
+  calendar: 'M7 2v2H4a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-3V2h-2v2H9V2H7zm-2 7h14v10H5V9z',
 };
 
 function Icon({ name }: { name: IconKey }) {

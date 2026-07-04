@@ -11,7 +11,8 @@ export type NotificationSceneId =
   | 'medication.dose_reminder'
   | 'medication.stock_low'
   | 'subscription.renewal_upcoming'
-  | 'subscription.expired';
+  | 'subscription.expired'
+  | 'schedule.reminder';
 
 export type NotificationTemplateFormat = 'text' | 'html';
 

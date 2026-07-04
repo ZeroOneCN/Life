@@ -24,6 +24,7 @@ const PlanningPage = lazyWithProgress(() => import('../pages/finance/Planning'))
 const StoragePage = lazyWithProgress(() => import('../pages/life/Storage'));
 const CardPage = lazyWithProgress(() => import('../pages/life/Card'));
 const TodoPage = lazyWithProgress(() => import('../pages/life/Todo'));
+const SchedulePage = lazyWithProgress(() => import('../pages/life/Schedule'));
 const ForexPage = lazyWithProgress(() => import('../pages/investment/Forex'));
 const CryptoPage = lazyWithProgress(() => import('../pages/investment/Crypto'));
 const HKStockPage = lazyWithProgress(() => import('../pages/investment/HKStock'));
@@ -62,6 +63,7 @@ export const menuItems: MenuItemConfig[] = [
       { key: '/life/storage', icon: 'box', label: '物品追踪' },
       { key: '/life/card', icon: 'card', label: '号卡中心' },
       { key: '/life/todo', icon: 'task', label: '待办事项' },
+      { key: '/life/schedule', icon: 'calendar', label: '日程管理' },
     ],
   },
   {
@@ -92,6 +94,7 @@ export const routes: RouteConfig[] = [
   { path: '/life/storage', label: '物品追踪', breadcrumb: ['生活中心', '物品追踪'], menuKey: '/life/storage', component: StoragePage },
   { path: '/life/card', label: '号卡中心', breadcrumb: ['生活中心', '号卡中心'], menuKey: '/life/card', component: CardPage },
   { path: '/life/todo', label: '待办事项', breadcrumb: ['生活中心', '待办事项'], menuKey: '/life/todo', component: TodoPage },
+  { path: '/life/schedule', label: '日程管理', breadcrumb: ['生活中心', '日程管理'], menuKey: '/life/schedule', component: SchedulePage },
   { path: '/investment/forex', label: '外汇市场', breadcrumb: ['投资中心', '外汇市场'], menuKey: '/investment/forex', component: ForexPage },
   { path: '/investment/crypto', label: '加密市场', breadcrumb: ['投资中心', '加密市场'], menuKey: '/investment/crypto', component: CryptoPage },
   { path: '/investment/hk-stock', label: '港股市场', breadcrumb: ['投资中心', '港股市场'], menuKey: '/investment/hk-stock', component: HKStockPage },

@@ -143,6 +143,14 @@ const emptyState: NotificationCenterState = {
       summary: '',
       description: '',
     },
+    'schedule.reminder': {
+      id: 'schedule.reminder',
+      label: '日程提醒',
+      enabled: false,
+      channels: [],
+      summary: '',
+      description: '',
+    },
   },
   templates: {
     'todo.reminder': { sceneId: 'todo.reminder', title: '', body: '', format: 'text', htmlBody: '' },
@@ -156,6 +164,7 @@ const emptyState: NotificationCenterState = {
     'medication.stock_low': { sceneId: 'medication.stock_low', title: '', body: '', format: 'text', htmlBody: '' },
     'subscription.renewal_upcoming': { sceneId: 'subscription.renewal_upcoming', title: '', body: '', format: 'text', htmlBody: '' },
     'subscription.expired': { sceneId: 'subscription.expired', title: '', body: '', format: 'text', htmlBody: '' },
+    'schedule.reminder': { sceneId: 'schedule.reminder', title: '', body: '', format: 'text', htmlBody: '' },
   },
   logs: [],
 };

@@ -6,6 +6,7 @@ import { createDashboardRouter } from '../modules/system/dashboard.router';
 import { createTodoRouter } from '../modules/life/todo.router';
 import { createStorageRouter } from '../modules/life/storage.router';
 import { createCardRouter } from '../modules/life/card.router';
+import { createScheduleRouter } from '../modules/life/schedule.router';
 import { createSubscriptionRouter } from '../modules/finance/subscription.router';
 import { createLoanRouter } from '../modules/finance/loan.router';
 import { createRentRouter } from '../modules/finance/rent.router';
@@ -48,6 +49,7 @@ export function createApiRouter() {
   router.use('/life/todo', createTodoRouter());
   router.use('/life/storage', createStorageRouter());
   router.use('/life/card', createCardRouter());
+  router.use('/life/schedule', createScheduleRouter());
   router.use('/finance/subscription', createSubscriptionRouter());
   router.use('/finance/loan', createLoanRouter());
   router.use('/finance/rent', createRentRouter());

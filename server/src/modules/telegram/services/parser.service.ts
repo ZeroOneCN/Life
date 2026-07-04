@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 /** 解析后的命令结构 */
 export interface ParsedCommand {
   /** 命令类型 */
-  type: 'step' | 'weight' | 'diet' | 'exercise' | 'medication' | 'shopping' | 'todo' | 'help' | 'unknown';
+  type: 'step' | 'weight' | 'diet' | 'exercise' | 'medication' | 'shopping' | 'todo' | 'schedule' | 'help' | 'unknown';
   /** 原始输入文本 */
   raw: string;
   /** 解析出的结构化数据 */
@@ -24,6 +24,8 @@ export interface ParsedCommand {
  *   花 289 显示器支架     → shopping { item: 显示器支架, price: 289 }
  *   + 提交周报 明天18:00   → todo { action: add, text: 提交周报, due: 明天18:00 }
  *   - 买菜                → todo { action: done, text: 买菜 }
+ *   日 明天 14:00 开会     → schedule { action: add, text: 开会, startAt: 明天 14:00 }
+ *   日 09:00 晨会 30min   → schedule { action: add, text: 晨会, startAt: 09:00, durationMinutes: 30 }
  */
 
 // 步数：步 <数字> [全天]
@@ -46,6 +48,10 @@ const SHOPPING_PATTERN = /^(买|花)\s+(.+?)(?:\s+(\d+(?:\.\d+)?\s*(g|kg|克|公
 
 // 待办：(+|-) <内容> [时间]
 const TODO_PATTERN = /^([+-])\s+(.+?)(?:\s+(明天|后天|今天|下周.*|\d{1,2}:\d{2}.*))?$/i;
+
+// 日程：日 <时间> <内容> [持续时长] [提醒分钟]
+// 时间支持：HH:mm / 明天 HH:mm / 后天 HH:mm
+const SCHEDULE_PATTERN = /^日\s+(今天|明天|后天|今日|明日|后日)?\s*(\d{1,2}:\d{2})\s+(.+?)(?:\s+(\d+)\s*(min|分钟|h|小时))?$/i;
 
 /**
  * 解析用户发送的快捷指令文本
@@ -147,6 +153,35 @@ export function parseQuickCommand(text: string): ParsedCommand {
         action: todoMatch[1] === '+' ? 'add' : 'done',
         text: todoMatch[2].trim(),
         due: todoMatch[3]?.trim(),
+      },
+    };
+  }
+
+  // 日程
+  const scheduleMatch = trimmed.match(SCHEDULE_PATTERN);
+  if (scheduleMatch) {
+    const dayLabel = scheduleMatch[1] ?? '今天';
+    const time = scheduleMatch[2];
+    const text = scheduleMatch[3].trim();
+    const durationRaw = scheduleMatch[4];
+    const durationUnit = scheduleMatch[5];
+    let durationMinutes: number | undefined;
+    if (durationRaw) {
+      const value = Number(durationRaw);
+      if (durationUnit === 'h' || durationUnit === '小时') {
+        durationMinutes = value * 60;
+      } else {
+        durationMinutes = value;
+      }
+    }
+    return {
+      type: 'schedule',
+      raw: trimmed,
+      data: {
+        action: 'add',
+        text,
+        startAt: `${dayLabel} ${time}`,
+        durationMinutes,
       },
     };
   }

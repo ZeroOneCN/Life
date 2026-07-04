@@ -10,6 +10,7 @@ import { handleExercise } from './commands/exercise.command';
 import { handleMedication } from './commands/medication.command';
 import { handleShopping } from './commands/shopping.command';
 import { handleTodo } from './commands/todo.command';
+import { handleSchedule } from './commands/schedule.command';
 import { getHelpText } from './commands/help.command';
 
 /** 命令处理器映射表 */
@@ -21,6 +22,7 @@ const commandHandlers: Record<string, (userId: string, data: Record<string, unkn
   medication: handleMedication,
   shopping: handleShopping,
   todo: handleTodo,
+  schedule: handleSchedule,
 };
 
 /** Bot 菜单命令列表 */
@@ -35,6 +37,7 @@ const BOT_COMMANDS = [
   { command: 'exercise', description: '记录运动：跑 30min' },
   { command: 'meds', description: '记录用药：药 维C' },
   { command: 'shop', description: '记录购物：买 牛奶 28元' },
+  { command: 'schedule', description: '记录日程：日 明天 14:00 开会' },
 ];
 
 // 初始化 Bot 实例

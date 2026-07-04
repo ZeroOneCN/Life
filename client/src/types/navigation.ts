@@ -11,7 +11,8 @@ export type IconKey =
   | 'card'
   | 'shield'
   | 'chart'
-  | 'box';
+  | 'box'
+  | 'calendar';
 
 export interface MenuItemConfig {
   key: string;

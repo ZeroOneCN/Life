@@ -127,6 +127,7 @@ const SCENE_SEED: ReadonlyArray<{
   { scene_id: 'finance.goal.completed', label: '储蓄目标达成庆祝', enabled: false, summary: '', description: '' },
   { scene_id: 'finance.goal.warning', label: '储蓄目标进度预警', enabled: false, summary: '', description: '' },
   { scene_id: 'travel.followup', label: '旅行归档跟进', enabled: false, summary: '', description: '' },
+  { scene_id: 'schedule.reminder', label: '日程提醒', enabled: false, summary: '', description: '' },
 ];
 
 /**
@@ -507,6 +508,26 @@ const TEMPLATE_SEED = [
     <table style="width: 100%; font-size: 13px;">
       <tr><td style="padding: 4px 0; color: #64748b;">旅行日期</td><td style="padding: 4px 0; font-weight: 600; text-align: right;">{{meta.travelDate}}</td></tr>
       <tr><td style="padding: 4px 0; color: #64748b;">总花费</td><td style="padding: 4px 0; font-weight: 600; text-align: right; color: #1d4ed8;">¥ {{meta.amount}}</td></tr>
+    </table>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'schedule.reminder',
+    title: '📅 日程提醒：{{title}}',
+    body: '{{message}}\n\n日期：{{meta.today}}\n今日日程：{{meta.todayCount}} 项\n明日预告：{{meta.tomorrowCount}} 项',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #6366f1, #4338ca); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 日程提醒</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">📅 {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">{{message}}</p>
+    <table style="width: 100%; font-size: 13px;">
+      <tr><td style="padding: 4px 0; color: #64748b;">日期</td><td style="padding: 4px 0; font-weight: 600; text-align: right;">{{meta.today}}</td></tr>
+      <tr><td style="padding: 4px 0; color: #64748b;">今日日程</td><td style="padding: 4px 0; font-weight: 600; text-align: right; color: #4338ca;">{{meta.todayCount}} 项</td></tr>
+      <tr><td style="padding: 4px 0; color: #64748b;">明日预告</td><td style="padding: 4px 0; font-weight: 600; text-align: right;">{{meta.tomorrowCount}} 项</td></tr>
     </table>
   </div>
 </div>`,

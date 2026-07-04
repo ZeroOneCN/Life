@@ -17,6 +17,7 @@ import { InvestmentForexCapitalFlowEntity } from '../investment/entities/investm
 import { LifeTodoTaskEntity } from '../life/entities/life-todo-task.entity';
 import { LifeStorageItemEntity } from '../life/entities/life-storage-item.entity';
 import { LifeCardRecordEntity } from '../life/entities/life-card-record.entity';
+import { LifeScheduleEventEntity } from '../life/entities/life-schedule-event.entity';
 
 dayjs.extend(isBetween);
 
@@ -303,10 +304,11 @@ async function queryInvestment(userId: string, filters: QueryFilters) {
 async function queryLife(userId: string, filters: QueryFilters) {
   const { start, end } = resolveRange(filters);
   const moduleFilter = filters.module;
-  const [todos, items, cards] = await Promise.all([
+  const [todos, items, cards, schedules] = await Promise.all([
     appDataSource.getRepository(LifeTodoTaskEntity).find({ where: { user_id: userId } }),
     appDataSource.getRepository(LifeStorageItemEntity).find({ where: { user_id: userId } }),
     appDataSource.getRepository(LifeCardRecordEntity).find({ where: { user_id: userId } }),
+    appDataSource.getRepository(LifeScheduleEventEntity).find({ where: { user_id: userId } }),
   ]);
 
   const activeTodos = todos.filter((row) => !row.trashed_at && !row.completed);
@@ -326,6 +328,22 @@ async function queryLife(userId: string, filters: QueryFilters) {
     return dayjs(row.activation_date).isAfter(dayjs().subtract(30, 'day'), 'day');
   });
 
+  // 日程统计：区分今日 / 区间内 / 重复事件
+  const activeSchedules = schedules.filter((row) => !row.trashed_at);
+  const todaySchedules = activeSchedules.filter((row) => {
+    if (row.recurrence_type === 'none') {
+      return dayjs(row.start_at).isSame(dayjs(), 'day');
+    }
+    return true; // 重复事件按今日可能有实例处理
+  });
+  const inRangeSchedules = activeSchedules.filter((row) => {
+    if (row.recurrence_type === 'none') {
+      return dayjs(row.start_at).isBetween(start, end, 'day', '[]');
+    }
+    return true;
+  });
+  const recurringSchedules = activeSchedules.filter((row) => row.recurrence_type !== 'none');
+
   return {
     range: { start, end },
     summary: {
@@ -344,8 +362,15 @@ async function queryLife(userId: string, filters: QueryFilters) {
         total: cards.length,
         recentlyActivated: recentActivationCards.length,
       },
+      schedule: {
+        total: activeSchedules.length,
+        today: todaySchedules.length,
+        inRange: inRangeSchedules.length,
+        recurring: recurringSchedules.length,
+        completed: activeSchedules.filter((row) => row.completed).length,
+      },
     },
-    hint: '待办仅统计未完成未删除；物品追踪区分在用 / 归档；卡片仅给出 30 天内新激活数量。',
+    hint: '待办仅统计未完成未删除；物品追踪区分在用 / 归档；卡片仅给出 30 天内新激活数量；日程区分今日 / 区间内 / 重复事件。',
     moduleFilter,
   };
 }
@@ -407,11 +432,11 @@ export const ASSISTANT_TOOLS: Array<{
     type: 'function',
     function: {
       name: 'query_life',
-      description: '查询用户生活数据：待办、物品追踪、号卡。',
+      description: '查询用户生活数据：待办、物品追踪、号卡、日程。',
       parameters: {
         type: 'object',
         properties: {
-          module: { type: 'string', enum: ['todo', 'storage', 'card'], description: '指定模块' },
+          module: { type: 'string', enum: ['todo', 'storage', 'card', 'schedule'], description: '指定模块' },
         },
       },
     },
