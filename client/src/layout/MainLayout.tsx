@@ -415,10 +415,12 @@ export default function MainLayout() {
             </div>
           </div>
         </header>
-        <main className="content">
-          <ErrorBoundary>
-            <Outlet />
-          </ErrorBoundary>
+        <main className="content" key={location.pathname}>
+          <div className="page-transition">
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
+          </div>
         </main>
       </div>
 
