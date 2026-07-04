@@ -7,6 +7,7 @@ const ProfileSettingsPage = lazyWithProgress(() => import('../pages/settings/Pro
 const HealthDashboardPage = lazyWithProgress(() => import('../pages/health/HealthDashboard'));
 const HealthReportPage = lazyWithProgress(() => import('../pages/health/HealthReport'));
 const StepPage = lazyWithProgress(() => import('../pages/health/Step'));
+const VitalPage = lazyWithProgress(() => import('../pages/health/Vital'));
 const FitnessPage = lazyWithProgress(() => import('../pages/health/Fitness'));
 const CheckupPage = lazyWithProgress(() => import('../pages/health/Checkup'));
 const MedicationPage = lazyWithProgress(() => import('../pages/health/Medication'));
@@ -34,6 +35,7 @@ export const menuItems: MenuItemConfig[] = [
       { key: '/health/dashboard', icon: 'dashboard', label: '健康概览' },
       { key: '/health/report', icon: 'chart', label: '健康报告' },
       { key: '/health/step', icon: 'spark', label: '运动步数' },
+      { key: '/health/vital', icon: 'heart', label: '日常体征' },
       { key: '/health/fitness', icon: 'trend', label: '健身减脂' },
       { key: '/health/checkup', icon: 'task', label: '体检指标' },
       { key: '/health/medication', icon: 'shield', label: '日常用药' },
@@ -81,6 +83,7 @@ export const routes: RouteConfig[] = [
   { path: '/health/dashboard', label: '健康概览', breadcrumb: ['健康中心', '健康概览'], menuKey: '/health/dashboard', component: HealthDashboardPage },
   { path: '/health/report', label: '健康报告', breadcrumb: ['健康中心', '健康报告'], menuKey: '/health/report', component: HealthReportPage },
   { path: '/health/step', label: '运动步数', breadcrumb: ['健康中心', '运动步数'], menuKey: '/health/step', component: StepPage },
+  { path: '/health/vital', label: '日常体征', breadcrumb: ['健康中心', '日常体征'], menuKey: '/health/vital', component: VitalPage },
   { path: '/health/fitness', label: '健身减脂', breadcrumb: ['健康中心', '健身减脂'], menuKey: '/health/fitness', component: FitnessPage },
   { path: '/health/checkup', label: '体检指标', breadcrumb: ['健康中心', '体检指标'], menuKey: '/health/checkup', component: CheckupPage },
   { path: '/health/medication', label: '日常用药', breadcrumb: ['健康中心', '日常用药'], menuKey: '/health/medication', component: MedicationPage },

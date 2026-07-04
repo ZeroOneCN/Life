@@ -17,6 +17,7 @@ import { createMedicationRouter } from '../modules/health/medication.router';
 import { createCheckupRouter } from '../modules/health/checkup.router';
 import { createHealthDashboardRouter } from '../modules/health/dashboard.router';
 import { createHealthReportRouter } from '../modules/health/health-report.router';
+import { createHealthVitalRouter } from '../modules/health/health-vital.router';
 import { createForexRouter } from '../modules/investment/forex.router';
 import { createAnalysisRouter } from '../modules/system/analysis.router';
 import { createAssistantRouter } from '../modules/system/assistant.router';
@@ -54,6 +55,7 @@ export function createApiRouter() {
   router.use('/health/checkup', createCheckupRouter());
   router.use('/health/dashboard', createHealthDashboardRouter());
   router.use('/health/report', createHealthReportRouter());
+  router.use('/health/vital', createHealthVitalRouter());
   router.use('/investment/forex', createForexRouter());
   router.use('/analysis', createAnalysisRouter());
   router.use('/assistant', createAssistantRouter());
