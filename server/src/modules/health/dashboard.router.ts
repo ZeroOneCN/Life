@@ -382,16 +382,17 @@ export function createHealthDashboardRouter() {
      */
     async function fetchMetricSummary(start: string, end: string, dateColumn: 'record_time' | 'date'): Promise<RangeSummary> {
       if (metric === 'step') {
+        // 步数：按天取 MAX（同一天可能有多条记录），再对所有天求 SUM 得到周期总步数
         const rows = await appDataSource.getRepository(HealthStepRecordEntity).query(
-          `SELECT MAX(steps) as maxPerDay, COUNT(*) as cnt
-           FROM (SELECT MAX(r.steps) as steps FROM health_step_record r
+          `SELECT SUM(daily.maxSteps) as totalSteps, COUNT(*) as cnt
+           FROM (SELECT MAX(r.steps) as maxSteps FROM health_step_record r
                  WHERE r.user_id = ? AND r.${dateColumn} BETWEEN ? AND ?
                  GROUP BY DATE(r.${dateColumn})) daily`,
           [userId, start, end],
         );
         return {
           label: '',
-          value: Number(rows?.[0]?.maxPerDay ?? 0),
+          value: Number(rows?.[0]?.totalSteps ?? 0),
           recordCount: Number(rows?.[0]?.cnt ?? 0),
         };
       }

@@ -1404,11 +1404,13 @@ textarea {
 
 .health-heatmap-wrapper {
   margin-top: 4px;
+  width: 100%;
 }
 
 .health-heatmap-svg {
   display: block;
-  max-width: 100%;
+  width: 100%;
+  height: auto;
 }
 
 .health-heatmap-cell {

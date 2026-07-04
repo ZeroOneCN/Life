@@ -164,9 +164,17 @@ export function HealthHeatmapSection({ items, year, loading, onYearChange }: Hea
             <span>日均 <strong>{summary.avgSteps.toLocaleString()}</strong> 步</span>
             <span>达标 ≥1 万步 <strong>{summary.goalHitDays}</strong> 天</span>
           </div>
-          <div className="health-heatmap-wrapper" style={{ overflowX: 'auto' }}>
-            <svg width={totalWidth} height={totalHeight} className="health-heatmap-svg" role="img" aria-label={`${year} 年步数热力图`}>
-              {MONTH_LABELS.map((label, index) => {
+          <div className="health-heatmap-wrapper">
+            <svg
+              viewBox={`0 0 ${totalWidth} ${totalHeight}`}
+              preserveAspectRatio="xMidYMid meet"
+              width="100%"
+              height={totalHeight}
+              className="health-heatmap-svg"
+              role="img"
+              aria-label={`${year} 年步数热力图`}
+            >
+              {MONTH_LABELS.map((label) => {
                 const cell = cells.find((c) => c.monthLabel === label);
                 if (!cell) return null;
                 const x = WEEKDAY_LABEL_WIDTH + cell.column * (CELL_SIZE + CELL_GAP);
@@ -240,10 +248,10 @@ export function HealthHeatmapSection({ items, year, loading, onYearChange }: Hea
               </svg>
               <span>多</span>
               {hovered ? (
-                    <span className="health-heatmap-tooltip">
-                      {formatDateZh(hovered.date)} · {hovered.steps.toLocaleString()} 步 · {hovered.distanceKm} 公里
-                    </span>
-                  ) : null}
+                <span className="health-heatmap-tooltip">
+                  {formatDateZh(hovered.date)} · {hovered.steps.toLocaleString()} 步 · {hovered.distanceKm} 公里
+                </span>
+              ) : null}
             </div>
           </div>
         </>
