@@ -35,6 +35,7 @@ interface ModalProps {
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   hint?: string;
+  children?: ReactNode;
 }
 
 interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
@@ -345,11 +346,11 @@ export function PillTabs({
   );
 }
 
-export function Field({ label, hint, ...rest }: FieldProps) {
+export function Field({ label, hint, children, ...rest }: FieldProps) {
   return (
     <label className="field">
       {label ? <span className="field-label">{label}</span> : null}
-      <input {...rest} />
+      {children ?? <input {...rest} />}
       {hint ? <span className="field-hint">{hint}</span> : null}
     </label>
   );
