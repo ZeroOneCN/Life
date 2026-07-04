@@ -36,7 +36,7 @@ export const menuItems: MenuItemConfig[] = [
     icon: 'heart',
     label: '健康中心',
     children: [
-      { key: '/health/dashboard', icon: 'dashboard', label: '健康概览' },
+      { key: '/health/overview', icon: 'dashboard', label: '健康概览' },
       { key: '/health/vital', icon: 'heart', label: '健康记录' },
       { key: '/health/fitness', icon: 'spark', label: '运动健身' },
       { key: '/health/checkup', icon: 'task', label: '体检用药' },
@@ -80,7 +80,7 @@ export const menuItems: MenuItemConfig[] = [
 
 export const routes: RouteConfig[] = [
   { path: '/dashboard', label: '首页', breadcrumb: ['首页'], menuKey: '/dashboard', component: Dashboard },
-  { path: '/health/dashboard', label: '健康概览', breadcrumb: ['健康中心', '健康概览'], menuKey: '/health/dashboard', component: HealthDashboardPage },
+  { path: '/health/overview', label: '健康概览', breadcrumb: ['健康中心', '健康概览'], menuKey: '/health/overview', component: HealthDashboardPage },
   { path: '/health/vital', label: '健康记录', breadcrumb: ['健康中心', '健康记录'], menuKey: '/health/vital', component: VitalPage },
   { path: '/health/fitness', label: '运动健身', breadcrumb: ['健康中心', '运动健身'], menuKey: '/health/fitness', component: FitnessPage },
   { path: '/health/checkup', label: '体检用药', breadcrumb: ['健康中心', '体检用药'], menuKey: '/health/checkup', component: CheckupPage },
