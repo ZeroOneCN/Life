@@ -97,12 +97,20 @@ export function VitalTrendSection({
         </div>
       }
     >
-      {loading ? (
-        <div className="skeleton-block" />
-      ) : !trend || trend.items.every((i) => i.avgValue === null) ? (
-        <EmptyState title="暂无趋势数据" description="请先录入体征记录后查看趋势分析。" />
+      {!trend ? (
+        loading ? (
+          <div className="skeleton-block" />
+        ) : (
+          <EmptyState title="暂无趋势数据" description="请先录入体征记录后查看趋势分析。" />
+        )
       ) : (
-        <>
+        <div
+          style={{
+            opacity: loading ? 0.6 : 1,
+            transition: 'opacity 0.15s ease',
+            pointerEvents: loading ? 'none' : 'auto',
+          }}
+        >
           <div style={{ width: '100%', height: 320 }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
@@ -168,7 +176,7 @@ export function VitalTrendSection({
               </strong>
             </div>
           </div>
-        </>
+        </div>
       )}
     </SectionCard>
   );

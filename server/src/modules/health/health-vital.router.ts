@@ -317,7 +317,8 @@ export function createHealthVitalRouter() {
     // 补齐缺失的日期
     const dataMap = new Map<string, { avgValue: number; minValue: number; maxValue: number }>();
     rows.forEach((row) => {
-      dataMap.set(String(row.date), {
+      const dateKey = dayjs(row.date).format('YYYY-MM-DD');
+      dataMap.set(dateKey, {
         avgValue: Number(row.avgValue),
         minValue: Number(row.minValue),
         maxValue: Number(row.maxValue),
