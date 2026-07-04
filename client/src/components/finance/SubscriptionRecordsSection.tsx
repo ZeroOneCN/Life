@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard, StatGrid } from '../page';
-import { Btn, Checkbox, DataTable, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
+import { Btn, Checkbox, DataTable, DeleteIcon, DeleteModal, EditIcon, ExportButton, Field, FilterBar, FilterTag, IconBtn, Modal, Pagination, SearchInput, SelectField, Tag, TextArea } from '../ui';
 import {
   SUBSCRIPTION_ALL_CATEGORIES,
   SUBSCRIPTION_PAGE_SIZE,
@@ -305,55 +305,89 @@ export function SubscriptionRecordsSection({
           placeholder="可记录取消原因、预算备注或替代方案"
         />
 
-        <div className="subscription-filter-grid">
-          <Field
-            label="关键词"
-            value={settings.recordsKeyword}
-            onChange={(event) => onSettingsChange({ recordsKeyword: event.target.value })}
-            placeholder="搜索服务名、方案名、分类或备注"
-          />
-          <SelectField
-            label="分类筛选"
-            value={settings.recordsCategoryId}
-            onChange={(event) => onSettingsChange({ recordsCategoryId: event.target.value })}
-          >
-            <option value={SUBSCRIPTION_ALL_CATEGORIES}>全部分类</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>{category.name}</option>
+        <FilterBar
+          rightSlot={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <SelectField
+                value={settings.recordsAutoRenewFilter}
+                onChange={(event) => onSettingsChange({ recordsAutoRenewFilter: event.target.value as SubscriptionPageState['settings']['recordsAutoRenewFilter'] })}
+                style={{ width: 110 }}
+              >
+                <option value="all">全部续费</option>
+                <option value="auto">自动续费</option>
+                <option value="manual">手动续费</option>
+              </SelectField>
+              <DatePickerField
+                value={settings.recordsExpiryStartDate}
+                onChange={(value) => onSettingsChange({ recordsExpiryStartDate: value })}
+                placeholder="到期开始"
+                clearable
+              />
+              <DatePickerField
+                value={settings.recordsExpiryEndDate}
+                onChange={(value) => onSettingsChange({ recordsExpiryEndDate: value })}
+                placeholder="到期结束"
+                clearable
+              />
+              <ExportButton
+                label="导出"
+                onExport={(format) => {
+                  showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
+                }}
+              />
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+            <div style={{ width: 260, flexShrink: 0 }}>
+              <SearchInput
+                value={settings.recordsKeyword}
+                onChange={(value) => onSettingsChange({ recordsKeyword: value })}
+                placeholder="搜索服务名、方案名、分类..."
+              />
+            </div>
+            <FilterTag
+              label="全部分类"
+              active={settings.recordsCategoryId === SUBSCRIPTION_ALL_CATEGORIES}
+              onClick={() => onSettingsChange({ recordsCategoryId: SUBSCRIPTION_ALL_CATEGORIES })}
+              count={records.length}
+            />
+            {categories.slice(0, 5).map((category) => (
+              <FilterTag
+                key={category.id}
+                label={category.name}
+                active={settings.recordsCategoryId === category.id}
+                onClick={() => onSettingsChange({ recordsCategoryId: category.id })}
+                count={records.filter((r) => r.categoryId === category.id).length}
+              />
             ))}
-          </SelectField>
-          <SelectField
-            label="状态"
-            value={settings.recordsStatus}
-            onChange={(event) => onSettingsChange({ recordsStatus: event.target.value as SubscriptionPageState['settings']['recordsStatus'] })}
-          >
-            <option value="all">全部状态</option>
-            <option value="active">进行中</option>
-            <option value="upcoming">即将到期</option>
-            <option value="expired">已过期</option>
-          </SelectField>
-          <SelectField
-            label="续费方式"
-            value={settings.recordsAutoRenewFilter}
-            onChange={(event) => onSettingsChange({ recordsAutoRenewFilter: event.target.value as SubscriptionPageState['settings']['recordsAutoRenewFilter'] })}
-          >
-            <option value="all">全部</option>
-            <option value="auto">自动续费</option>
-            <option value="manual">手动续费</option>
-          </SelectField>
-          <DatePickerField
-            label="到期开始"
-            value={settings.recordsExpiryStartDate}
-            onChange={(value) => onSettingsChange({ recordsExpiryStartDate: value })}
-            clearable
-          />
-          <DatePickerField
-            label="到期结束"
-            value={settings.recordsExpiryEndDate}
-            onChange={(value) => onSettingsChange({ recordsExpiryEndDate: value })}
-            clearable
-          />
-        </div>
+            <div style={{ width: 1, height: 20, background: 'var(--color-border)', margin: '0 4px' }} />
+            <FilterTag
+              label="全部状态"
+              active={settings.recordsStatus === 'all'}
+              onClick={() => onSettingsChange({ recordsStatus: 'all' })}
+              count={filteredRecords.length}
+            />
+            <FilterTag
+              label="进行中"
+              active={settings.recordsStatus === 'active'}
+              onClick={() => onSettingsChange({ recordsStatus: 'active' })}
+              count={filteredRecords.filter((r) => getSubscriptionStatus(r, settings.leadDays) === 'active').length}
+            />
+            <FilterTag
+              label="即将到期"
+              active={settings.recordsStatus === 'upcoming'}
+              onClick={() => onSettingsChange({ recordsStatus: 'upcoming' })}
+              count={filteredRecords.filter((r) => getSubscriptionStatus(r, settings.leadDays) === 'upcoming').length}
+            />
+            <FilterTag
+              label="已过期"
+              active={settings.recordsStatus === 'expired'}
+              onClick={() => onSettingsChange({ recordsStatus: 'expired' })}
+              count={filteredRecords.filter((r) => getSubscriptionStatus(r, settings.leadDays) === 'expired').length}
+            />
+          </div>
+        </FilterBar>
 
         <StatGrid
           className="subscription-records-summary"

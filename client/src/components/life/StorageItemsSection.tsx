@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard, StatGrid } from '../page';
-import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
+import { Btn, DataTable, DeleteModal, ExportButton, Field, FilterBar, FilterTag, Modal, Pagination, SearchInput, SelectField, Tag, TextArea } from '../ui';
 import { buildApiErrorMessage } from '../../lib/api';
 import { calculateStorageDailyCost, calculateStorageUsageDays, formatStorageMoney, getStorageStatusLabel } from '../../services/storage';
 import { storageApi } from '../../services/storageApi';
@@ -275,52 +275,54 @@ export function StorageItemsSection({
           </div>
         </form>
 
-        <div className="storage-filter-grid">
-          <Field
-            label="关键词"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="搜索物品名称或备注"
-          />
-          <SelectField
-            label="状态"
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}
-          >
-            <option value="active">仅使用中</option>
-            <option value="all">全部状态</option>
-            <option value="archived">仅已归档</option>
-          </SelectField>
-          <SelectField
-            label="来源"
-            value={sourceFilter}
-            onChange={(event) => setSourceFilter(event.target.value as typeof sourceFilter)}
-          >
-            <option value="all">全部来源</option>
-            <option value="manual">手动添加</option>
-            <option value="shopping">购物导入</option>
-          </SelectField>
-          <DatePickerField label="购买开始" value={purchaseStartDate} onChange={setPurchaseStartDate} clearable popoverStrategy="floating" />
-          <DatePickerField label="购买结束" value={purchaseEndDate} onChange={setPurchaseEndDate} clearable popoverStrategy="floating" />
-          <Field
-            label="最低价格"
-            type="number"
-            min="0"
-            step="0.01"
-            value={minPrice}
-            onChange={(event) => setMinPrice(event.target.value)}
-            placeholder="不限"
-          />
-          <Field
-            label="最高价格"
-            type="number"
-            min="0"
-            step="0.01"
-            value={maxPrice}
-            onChange={(event) => setMaxPrice(event.target.value)}
-            placeholder="不限"
-          />
-        </div>
+        <FilterBar
+          rightSlot={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <SelectField
+                value={sourceFilter}
+                onChange={(event) => setSourceFilter(event.target.value as typeof sourceFilter)}
+                style={{ width: 110 }}
+              >
+                <option value="all">全部来源</option>
+                <option value="manual">手动添加</option>
+                <option value="shopping">购物导入</option>
+              </SelectField>
+              <DatePickerField value={purchaseStartDate} onChange={setPurchaseStartDate} placeholder="购买开始" clearable />
+              <DatePickerField value={purchaseEndDate} onChange={setPurchaseEndDate} placeholder="购买结束" clearable />
+              <ExportButton
+                label="导出"
+                onExport={(format) => {
+                  showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
+                }}
+              />
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+            <div style={{ width: 260, flexShrink: 0 }}>
+              <SearchInput
+                value={keyword}
+                onChange={setKeyword}
+                placeholder="搜索物品名称或备注..."
+              />
+            </div>
+            <FilterTag
+              label="使用中"
+              active={statusFilter === 'active'}
+              onClick={() => setStatusFilter('active')}
+            />
+            <FilterTag
+              label="全部"
+              active={statusFilter === 'all'}
+              onClick={() => setStatusFilter('all')}
+            />
+            <FilterTag
+              label="已归档"
+              active={statusFilter === 'archived'}
+              onClick={() => setStatusFilter('archived')}
+            />
+          </div>
+        </FilterBar>
 
         {items.length ? (
           <>

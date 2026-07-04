@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
-import { Btn, Checkbox, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
+import { Btn, Checkbox, DataTable, DeleteModal, ExportButton, Field, FilterBar, FilterTag, Modal, Pagination, SearchInput, SelectField, Tag, TextArea } from '../ui';
 import { buildApiErrorMessage } from '../../lib/api';
 import {
   TODO_PRIORITY_TAG_TONES,
@@ -442,51 +442,91 @@ export function TodoTasksSection({
               <Tag>{loading ? '加载中' : `当前 ${total} 项`}</Tag>
               {selectedTaskIds.length ? <Tag tone="blue">已选 {selectedTaskIds.length} 项</Tag> : null}
               <Btn tone="ghost" disabled={!hasActiveFilters} onClick={resetFilters}>重置筛选</Btn>
+              <ExportButton
+                label="导出"
+                onExport={(format) => {
+                  showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
+                }}
+              />
             </div>
           </div>
 
-          <div className="todo-filter-grid">
-            <Field
-              label="关键词"
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-              placeholder="搜索标题、描述或标签"
-            />
-            <SelectField label="状态" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}>
-              <option value="all">全部状态</option>
-              <option value="active">进行中</option>
-              <option value="completed">已完成</option>
-              <option value="overdue">已逾期</option>
-              <option value="daily">每日任务</option>
-              <option value="recurring">重复任务</option>
-            </SelectField>
-            <SelectField label="优先级" value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value as typeof priorityFilter)}>
-              <option value="all">全部优先级</option>
-              <option value="high">高优先级</option>
-              <option value="medium">中优先级</option>
-              <option value="low">低优先级</option>
-            </SelectField>
-            <SelectField label="标签筛选" value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
-              <option value="all">全部标签</option>
-              {availableTags.map((tag) => (
-                <option key={tag} value={tag}>{tag}</option>
-              ))}
-            </SelectField>
-            <DatePickerField
-              label="到期开始"
-              value={dueStartDate}
-              onChange={setDueStartDate}
-              clearable
-              popoverStrategy="floating"
-            />
-            <DatePickerField
-              label="到期结束"
-              value={dueEndDate}
-              onChange={setDueEndDate}
-              clearable
-              popoverStrategy="floating"
-            />
-          </div>
+          <FilterBar>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+              <div style={{ width: 260, flexShrink: 0 }}>
+                <SearchInput
+                  value={keyword}
+                  onChange={setKeyword}
+                  placeholder="搜索标题、描述或标签..."
+                />
+              </div>
+              <FilterTag
+                label="全部"
+                active={statusFilter === 'all'}
+                onClick={() => setStatusFilter('all')}
+              />
+              <FilterTag
+                label="进行中"
+                active={statusFilter === 'active'}
+                onClick={() => setStatusFilter('active')}
+              />
+              <FilterTag
+                label="已完成"
+                active={statusFilter === 'completed'}
+                onClick={() => setStatusFilter('completed')}
+              />
+              <FilterTag
+                label="已逾期"
+                active={statusFilter === 'overdue'}
+                onClick={() => setStatusFilter('overdue')}
+              />
+              <div style={{ width: 1, height: 20, background: 'var(--color-border)', margin: '0 4px' }} />
+              <FilterTag
+                label="全部优先级"
+                active={priorityFilter === 'all'}
+                onClick={() => setPriorityFilter('all')}
+              />
+              <FilterTag
+                label="高"
+                active={priorityFilter === 'high'}
+                onClick={() => setPriorityFilter('high')}
+              />
+              <FilterTag
+                label="中"
+                active={priorityFilter === 'medium'}
+                onClick={() => setPriorityFilter('medium')}
+              />
+              <FilterTag
+                label="低"
+                active={priorityFilter === 'low'}
+                onClick={() => setPriorityFilter('low')}
+              />
+              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <SelectField
+                  value={tagFilter}
+                  onChange={(event) => setTagFilter(event.target.value)}
+                  style={{ width: 130 }}
+                >
+                  <option value="all">全部标签</option>
+                  {availableTags.map((tag) => (
+                    <option key={tag} value={tag}>{tag}</option>
+                  ))}
+                </SelectField>
+                <DatePickerField
+                  value={dueStartDate}
+                  onChange={setDueStartDate}
+                  placeholder="到期开始"
+                  clearable
+                />
+                <DatePickerField
+                  value={dueEndDate}
+                  onChange={setDueEndDate}
+                  placeholder="到期结束"
+                  clearable
+                />
+              </div>
+            </div>
+          </FilterBar>
         </div>
 
         {hasSelection ? (

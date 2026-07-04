@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { EmptyState, SectionCard, StatGrid } from '../page';
-import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, EyeIcon, Field, IconBtn, Modal, Pagination, SelectField, Tag } from '../ui';
+import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, ExportButton, EyeIcon, FilterBar, FilterTag, IconBtn, Modal, Pagination, SearchInput, SelectField, Tag } from '../ui';
 import {
   RENT_ALL_CHANNELS,
   RENT_RECORD_PAGE_SIZE,
@@ -174,33 +174,55 @@ export function RentRecordsSection({
           押金会保留展示，但不会混入总成本、单日成本和渠道统计。
         </div>
 
-        <div className="rent-records-filter-grid">
-          <Field
-            label="地址关键词"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="搜索地址、渠道或备注"
-          />
-          <SelectField
-            label="渠道筛选"
-            value={channelFilter}
-            onChange={(event) => setChannelFilter(event.target.value)}
-          >
-            <option value={RENT_ALL_CHANNELS}>全部渠道</option>
-            {availableChannels.map((channel) => (
-              <option key={channel.id} value={channel.id}>{channel.name}</option>
-            ))}
-          </SelectField>
-          <SelectField
-            label="在住状态"
-            value={occupancyFilter}
-            onChange={(event) => setOccupancyFilter(event.target.value as 'all' | 'active' | 'ended')}
-          >
-            <option value="all">全部</option>
-            <option value="active">在住</option>
-            <option value="ended">已退租</option>
-          </SelectField>
-        </div>
+        <FilterBar
+          rightSlot={
+            <ExportButton
+              label="导出"
+              onExport={(format) => {
+                showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
+              }}
+            />
+          }
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+            <div style={{ width: 260, flexShrink: 0 }}>
+              <SearchInput
+                value={keyword}
+                onChange={setKeyword}
+                placeholder="搜索地址、渠道、备注..."
+              />
+            </div>
+            <FilterTag
+              label="全部状态"
+              active={occupancyFilter === 'all'}
+              onClick={() => setOccupancyFilter('all')}
+              count={filteredRecords.length}
+            />
+            <FilterTag
+              label="在住"
+              active={occupancyFilter === 'active'}
+              onClick={() => setOccupancyFilter('active')}
+              count={filteredRecords.filter((r) => buildRentRecordSnapshot(r).occupancyStatus === 'active').length}
+            />
+            <FilterTag
+              label="已退租"
+              active={occupancyFilter === 'ended'}
+              onClick={() => setOccupancyFilter('ended')}
+              count={filteredRecords.filter((r) => buildRentRecordSnapshot(r).occupancyStatus === 'ended').length}
+            />
+            <div style={{ width: 1, height: 20, background: 'var(--color-border)', margin: '0 4px' }} />
+            <SelectField
+              value={channelFilter}
+              onChange={(event) => setChannelFilter(event.target.value)}
+              style={{ width: 130 }}
+            >
+              <option value={RENT_ALL_CHANNELS}>全部渠道</option>
+              {availableChannels.map((channel) => (
+                <option key={channel.id} value={channel.id}>{channel.name}</option>
+              ))}
+            </SelectField>
+          </div>
+        </FilterBar>
 
         <StatGrid
           className="rent-summary-grid rent-record-summary-grid"

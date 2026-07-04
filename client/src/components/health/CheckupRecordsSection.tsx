@@ -12,7 +12,7 @@ import {
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
+import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, ExportButton, Field, FilterBar, FilterTag, IconBtn, Modal, Pagination, SearchInput, SelectField, Tag, TextArea } from '../ui';
 import {
   CHECKUP_RECORD_PAGE_SIZE,
   CHECKUP_STATUS_META,
@@ -352,33 +352,60 @@ export function CheckupRecordsSection({
           </div>
         </div>
 
-        <div className="checkup-filter-grid">
-          <Field
-            label="关键词"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="搜索项目、类型、备注"
-          />
-          <SelectField
-            label="状态筛选"
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as 'all' | CheckupStatus)}
-          >
-            <option value="all">全部状态</option>
-            <option value="normal">正常</option>
-            <option value="attention">关注</option>
-            <option value="abnormal">异常</option>
-            <option value="unknown">待判断</option>
-          </SelectField>
-          <DatePickerField label="开始日期" value={startDate} onChange={setStartDate} placeholder="不限" />
-          <DatePickerField label="结束日期" value={endDate} onChange={setEndDate} placeholder="不限" />
-        </div>
-
-        <div className="step-records-toolbar">
-          <span className="subtle-text">
-            共 {filteredRecords.length} 条记录
-          </span>
-        </div>
+        <FilterBar
+          rightSlot={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <DatePickerField value={startDate} onChange={setStartDate} placeholder="开始日期" />
+              <DatePickerField value={endDate} onChange={setEndDate} placeholder="结束日期" />
+              <ExportButton
+                label="导出"
+                onExport={(format) => {
+                  showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
+                }}
+              />
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+            <div style={{ width: 260, flexShrink: 0 }}>
+              <SearchInput
+                value={keyword}
+                onChange={setKeyword}
+                placeholder="搜索项目、类型、备注..."
+              />
+            </div>
+            <FilterTag
+              label="全部状态"
+              active={statusFilter === 'all'}
+              onClick={() => setStatusFilter('all')}
+              count={filteredRecords.length}
+            />
+            <FilterTag
+              label="正常"
+              active={statusFilter === 'normal'}
+              onClick={() => setStatusFilter('normal')}
+              count={filteredRecords.filter((r) => r.status === 'normal').length}
+            />
+            <FilterTag
+              label="关注"
+              active={statusFilter === 'attention'}
+              onClick={() => setStatusFilter('attention')}
+              count={filteredRecords.filter((r) => r.status === 'attention').length}
+            />
+            <FilterTag
+              label="异常"
+              active={statusFilter === 'abnormal'}
+              onClick={() => setStatusFilter('abnormal')}
+              count={filteredRecords.filter((r) => r.status === 'abnormal').length}
+            />
+            <FilterTag
+              label="待判断"
+              active={statusFilter === 'unknown'}
+              onClick={() => setStatusFilter('unknown')}
+              count={filteredRecords.filter((r) => r.status === 'unknown').length}
+            />
+          </div>
+        </FilterBar>
 
         {filteredRecords.length ? (
           <>

@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Pagination } from '../ui';
+import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, ExportButton, Field, FilterBar, IconBtn, Modal, Pagination, SearchInput } from '../ui';
 import {
   MEDICATION_RECORD_PAGE_SIZE,
   createMedicationRecord,
@@ -239,32 +239,30 @@ export function MedicationRecordsSection({
           </div>
         </form>
 
-        <div className="medication-filter-grid">
-          <Field
-            label="药品名称"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="搜索药品名称"
-          />
-          <DatePickerField label="开始日期" value={startDate} onChange={setStartDate} placeholder="不限" />
-          <DatePickerField label="结束日期" value={endDate} onChange={setEndDate} placeholder="不限" />
-          <Field
-            label="最小总用量"
-            type="number"
-            min="0"
-            value={minTotal}
-            onChange={(event) => setMinTotal(event.target.value)}
-            placeholder="例如：1"
-          />
-          <Field
-            label="最大总用量"
-            type="number"
-            min="0"
-            value={maxTotal}
-            onChange={(event) => setMaxTotal(event.target.value)}
-            placeholder="例如：6"
-          />
-        </div>
+        <FilterBar
+          rightSlot={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <DatePickerField value={startDate} onChange={setStartDate} placeholder="开始日期" />
+              <DatePickerField value={endDate} onChange={setEndDate} placeholder="结束日期" />
+              <ExportButton
+                label="导出"
+                onExport={(format) => {
+                  showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
+                }}
+              />
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+            <div style={{ width: 260, flexShrink: 0 }}>
+              <SearchInput
+                value={keyword}
+                onChange={setKeyword}
+                placeholder="搜索药品名称..."
+              />
+            </div>
+          </div>
+        </FilterBar>
 
         {filteredRecords.length ? (
           <>
