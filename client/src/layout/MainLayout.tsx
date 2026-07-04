@@ -387,10 +387,46 @@ export default function MainLayout() {
           </>
         )}
       >
-        <p className="subtle-text">退出后需要重新登录，当前会话不会继续保留。</p>
+        <p>确定要退出当前账户吗？退出后需要重新登录才能使用。</p>
       </Modal>
 
-      <AssistantLauncher />
+      <nav className="bottom-nav" aria-label="底部导航">
+        <Link
+          to="/dashboard"
+          className={`bottom-nav-item ${activeMenuKey === '/dashboard' ? 'is-active' : ''}`}
+        >
+          <Icon name="dashboard" />
+          <span>首页</span>
+        </Link>
+        <Link
+          to="/health/overview"
+          className={`bottom-nav-item ${activeMenuKey.startsWith('/health') ? 'is-active' : ''}`}
+        >
+          <Icon name="heart" />
+          <span>健康</span>
+        </Link>
+        <Link
+          to="/finance/overview"
+          className={`bottom-nav-item ${activeMenuKey.startsWith('/finance') ? 'is-active' : ''}`}
+        >
+          <Icon name="wallet" />
+          <span>财务</span>
+        </Link>
+        <Link
+          to="/life/todo"
+          className={`bottom-nav-item ${activeMenuKey.startsWith('/life') ? 'is-active' : ''}`}
+        >
+          <Icon name="task" />
+          <span>生活</span>
+        </Link>
+        <Link
+          to="/settings/profile"
+          className={`bottom-nav-item ${activeMenuKey.startsWith('/settings') ? 'is-active' : ''}`}
+        >
+          <Icon name="shield" />
+          <span>我的</span>
+        </Link>
+      </nav>
     </div>
   );
 }
