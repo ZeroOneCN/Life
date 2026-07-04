@@ -674,6 +674,31 @@ textarea {
   grid-template-columns: repeat(4, 1fr);
 }
 
+.health-stat-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.stat-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stat-card-link {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.stat-card-link:hover {
+  opacity: 0.8;
+}
+
 .stat-card {
   background: var(--color-canvas);
   border: 1px solid var(--color-hairline);
@@ -1341,6 +1366,167 @@ textarea {
   height: 10px;
   border-radius: 999px;
   flex-shrink: 0;
+}
+
+/* ===== 健康仪表盘（概览/热力图/雷达图/对比图） ===== */
+
+.health-heatmap-year-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.health-heatmap-year-label {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--color-ink-primary);
+  min-width: 56px;
+  text-align: center;
+}
+
+.health-heatmap-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-hairline);
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+}
+
+.health-heatmap-summary strong {
+  color: var(--color-ink-primary);
+  font-weight: 700;
+  font-size: var(--fs-body);
+  margin: 0 4px;
+}
+
+.health-heatmap-wrapper {
+  margin-top: 4px;
+}
+
+.health-heatmap-svg {
+  display: block;
+  max-width: 100%;
+}
+
+.health-heatmap-cell {
+  transition: transform 0.12s ease;
+  cursor: pointer;
+}
+
+.health-heatmap-cell:hover {
+  transform: scale(1.2);
+}
+
+.health-heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+}
+
+.health-heatmap-tooltip {
+  margin-left: 16px;
+  color: var(--color-ink-primary);
+  font-weight: 500;
+}
+
+.health-radar-dimensions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.health-radar-dimension {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-hairline);
+  border-radius: 10px;
+}
+
+.health-radar-dimension-label {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+  letter-spacing: 0.02em;
+}
+
+.health-radar-dimension-score {
+  font-size: var(--fs-title);
+  font-weight: 700;
+  margin: 4px 0;
+  color: var(--color-primary);
+}
+
+.health-radar-dimension-detail {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-secondary);
+}
+
+.health-comparison-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.health-comparison-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.health-comparison-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-hairline);
+  border-radius: 10px;
+}
+
+.health-comparison-card span:first-child {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+  letter-spacing: 0.02em;
+}
+
+.health-comparison-card strong {
+  font-size: var(--fs-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-ink-primary);
+}
+
+.health-comparison-card .muted {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+}
+
+@media (max-width: 768px) {
+  .health-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .health-radar-dimensions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .health-comparison-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .health-comparison-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .step-record-checkbox {

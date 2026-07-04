@@ -7,7 +7,7 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { TabOption, TableColumn } from '../types/ui';
@@ -383,8 +383,9 @@ export function SelectField({ label, hint, children, className = '', ...rest }: 
 export function Tag({
   children,
   tone = 'default',
-}: PropsWithChildren<{ tone?: 'default' | 'pink' | 'green' | 'orange' | 'blue' | 'red' }>) {
-  return <span className={`tag tag-${tone}`}>{children}</span>;
+  size = 'md',
+}: PropsWithChildren<{ tone?: 'default' | 'pink' | 'green' | 'orange' | 'blue' | 'red'; size?: 'sm' | 'md' }>) {
+  return <span className={`tag tag-${tone}${size === 'sm' ? ' tag-sm' : ''}`}>{children}</span>;
 }
 
 export function DataTable<T extends object>({
@@ -532,11 +533,15 @@ export function TextArea({
 
 export function useToastState() {
   const [toast, setToast] = useState<ToastState | null>(null);
+  const timerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
 
-  const showToast = (message: string, type: ToastState['type'] = 'success') => {
+  const showToast = useCallback((message: string, type: ToastState['type'] = 'success') => {
+    if (timerRef.current) {
+      window.clearTimeout(timerRef.current);
+    }
     setToast({ message, type });
-    window.setTimeout(() => setToast(null), 2800);
-  };
+    timerRef.current = window.setTimeout(() => setToast(null), 2800);
+  }, []);
 
   return { toast, showToast };
 }

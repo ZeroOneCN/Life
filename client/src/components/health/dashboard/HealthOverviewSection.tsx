@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-import { EmptyState, SectionCard, StatGrid } from '../../page';
+import { EmptyState, SectionCard } from '../../page';
 import { Tag } from '../../ui';
 import type { HealthDashboardOverview } from '../../../types/healthDashboard';
 
@@ -50,12 +50,24 @@ function describeBmi(bmi: number | null) {
 
 /**
  * 健康概览 Section：展示步数 / 体重 / 运动 / 饮食 / 用药 / 体检六大维度的关键指标。
+ * 每个指标卡片内嵌状态标签与「查看明细」链接，布局与现有 stat-card 风格一致。
  * @param overview - 后端返回的概览数据
  * @param loading - 是否处于加载中
  */
 export function HealthOverviewSection({ overview, loading }: HealthOverviewSectionProps) {
   if (loading) {
-    return <SectionCard title="健康概览" description="正在加载综合指标…"><div className="stat-grid" /></SectionCard>;
+    return (
+      <SectionCard title="健康概览" description="正在加载综合指标…">
+        <div className="stat-grid health-stat-grid">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div className="stat-card" key={index}>
+              <span className="stat-label">加载中</span>
+              <strong className="stat-value skeleton-text">—</strong>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+    );
   }
 
   if (!overview) {
@@ -133,29 +145,30 @@ export function HealthOverviewSection({ overview, loading }: HealthOverviewSecti
       title="健康概览"
       description="跨子模块综合指标，点击「查看明细」可跳转到对应模块"
     >
-      <StatGrid
-        items={cards.map((card) => ({
-          label: card.label,
-          value: card.value,
-          helper: card.helper,
-          accent: card.accent,
-        }))}
-      />
-      <div className="health-overview-actions">
+      <div className="stat-grid health-stat-grid">
         {cards.map((card) => (
-          <div key={card.key} className="health-overview-cell">
-            <div className="health-overview-cell-tag">
-              {card.tag ? <Tag tone={card.tag.tone}>{card.tag.text}</Tag> : <span />}
-              {card.link ? (
-                <Link className="health-overview-cell-link" to={card.link}>
-                  {card.linkText ?? '查看明细'}
-                </Link>
-              ) : null}
+          <div className="stat-card" key={card.key}>
+            <div className="stat-card-header">
+              <span className="stat-label">{card.label}</span>
+              {card.tag ? <Tag tone={card.tag.tone} size="sm">{card.tag.text}</Tag> : null}
             </div>
+            <strong
+              className="stat-value"
+              style={card.accent ? { color: card.accent } : undefined}
+            >
+              {card.value}
+            </strong>
+            <span className="stat-helper">{card.helper}</span>
+            {card.link ? (
+              <Link className="stat-card-link" to={card.link}>
+                {card.linkText ?? '查看明细'} →
+              </Link>
+            ) : null}
           </div>
         ))}
       </div>
     </SectionCard>
   );
 }
+
 
