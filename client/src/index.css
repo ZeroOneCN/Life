@@ -12517,6 +12517,10 @@ select:focus-visible {
   font-size: var(--fs-overline);
   color: var(--color-ink-tertiary);
 }
+
+.finance-merged-page .merged-content .page-header {
+  display: none;
+}
 .assistant-launcher {
   position: fixed;
   right: 24px;

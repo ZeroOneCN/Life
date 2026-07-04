@@ -17,6 +17,9 @@ const FinanceReportPage = lazyWithProgress(() => import('../pages/finance/Financ
 const BudgetPage = lazyWithProgress(() => import('../pages/finance/Budget'));
 const BillPage = lazyWithProgress(() => import('../pages/finance/Bill'));
 const GoalPage = lazyWithProgress(() => import('../pages/finance/Goal'));
+const ExpensePage = lazyWithProgress(() => import('../pages/finance/Expense'));
+const BillManagementPage = lazyWithProgress(() => import('../pages/finance/BillManagement'));
+const PlanningPage = lazyWithProgress(() => import('../pages/finance/Planning'));
 const StoragePage = lazyWithProgress(() => import('../pages/life/Storage'));
 const CardPage = lazyWithProgress(() => import('../pages/life/Card'));
 const TodoPage = lazyWithProgress(() => import('../pages/life/Todo'));
@@ -43,15 +46,11 @@ export const menuItems: MenuItemConfig[] = [
     icon: 'wallet',
     label: '财务中心',
     children: [
-      { key: '/finance/shopping', icon: 'task', label: '网上购物' },
-      { key: '/finance/travel', icon: 'spark', label: '旅行游玩' },
-      { key: '/finance/loan', icon: 'wallet', label: '贷款还款' },
-      { key: '/finance/subscription', icon: 'bell', label: '服务订阅' },
-      { key: '/finance/rent', icon: 'box', label: '房租水电' },
+      { key: '/finance/expense', icon: 'task', label: '消费记录' },
+      { key: '/finance/bill-mgmt', icon: 'wallet', label: '账单管理' },
       { key: '/finance/bill', icon: 'bell', label: '账单提醒' },
-      { key: '/finance/budget', icon: 'wallet', label: '预算管理' },
-      { key: '/finance/goal', icon: 'chart', label: '储蓄目标' },
-      { key: '/finance/report', icon: 'chart', label: '财务月报' },
+      { key: '/finance/planning', icon: 'spark', label: '财务规划' },
+      { key: '/finance/report', icon: 'chart', label: '财务报告' },
     ],
   },
   {
@@ -84,15 +83,11 @@ export const routes: RouteConfig[] = [
   { path: '/health/vital', label: '健康记录', breadcrumb: ['健康中心', '健康记录'], menuKey: '/health/vital', component: VitalPage },
   { path: '/health/fitness', label: '运动健身', breadcrumb: ['健康中心', '运动健身'], menuKey: '/health/fitness', component: FitnessPage },
   { path: '/health/checkup', label: '体检用药', breadcrumb: ['健康中心', '体检用药'], menuKey: '/health/checkup', component: CheckupPage },
-  { path: '/finance/shopping', label: '网上购物', breadcrumb: ['财务中心', '网上购物'], menuKey: '/finance/shopping', component: ShoppingPage },
-  { path: '/finance/travel', label: '旅行游玩', breadcrumb: ['财务中心', '旅行游玩'], menuKey: '/finance/travel', component: TravelPage },
-  { path: '/finance/loan', label: '贷款还款', breadcrumb: ['财务中心', '贷款还款'], menuKey: '/finance/loan', component: LoanPage },
-  { path: '/finance/subscription', label: '服务订阅', breadcrumb: ['财务中心', '服务订阅'], menuKey: '/finance/subscription', component: SubscriptionPage },
-  { path: '/finance/rent', label: '房租水电', breadcrumb: ['财务中心', '房租水电'], menuKey: '/finance/rent', component: RentPage },
+  { path: '/finance/expense', label: '消费记录', breadcrumb: ['财务中心', '消费记录'], menuKey: '/finance/expense', component: ExpensePage },
+  { path: '/finance/bill-mgmt', label: '账单管理', breadcrumb: ['财务中心', '账单管理'], menuKey: '/finance/bill-mgmt', component: BillManagementPage },
   { path: '/finance/bill', label: '账单提醒', breadcrumb: ['财务中心', '账单提醒'], menuKey: '/finance/bill', component: BillPage },
-  { path: '/finance/budget', label: '预算管理', breadcrumb: ['财务中心', '预算管理'], menuKey: '/finance/budget', component: BudgetPage },
-  { path: '/finance/goal', label: '储蓄目标', breadcrumb: ['财务中心', '储蓄目标'], menuKey: '/finance/goal', component: GoalPage },
-  { path: '/finance/report', label: '财务月报', breadcrumb: ['财务中心', '财务月报'], menuKey: '/finance/report', component: FinanceReportPage },
+  { path: '/finance/planning', label: '财务规划', breadcrumb: ['财务中心', '财务规划'], menuKey: '/finance/planning', component: PlanningPage },
+  { path: '/finance/report', label: '财务报告', breadcrumb: ['财务中心', '财务报告'], menuKey: '/finance/report', component: FinanceReportPage },
   { path: '/life/storage', label: '物品追踪', breadcrumb: ['生活中心', '物品追踪'], menuKey: '/life/storage', component: StoragePage },
   { path: '/life/card', label: '号卡中心', breadcrumb: ['生活中心', '号卡中心'], menuKey: '/life/card', component: CardPage },
   { path: '/life/todo', label: '待办事项', breadcrumb: ['生活中心', '待办事项'], menuKey: '/life/todo', component: TodoPage },
