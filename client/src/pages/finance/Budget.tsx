@@ -54,7 +54,7 @@ const HISTORY_PAGE_SIZE = 20;
  * - 对比分析：年度预算 vs 实际对比趋势图
  * - 调整历史：预算金额调整记录
  */
-export default function BudgetPage() {
+export default function BudgetPage({ embedded = false }: { embedded?: boolean }) {
   const { toast, showToast } = useToastState();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format('YYYY-MM'));
@@ -277,16 +277,23 @@ export default function BudgetPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader
-        title="预算管理"
-        subtitle="设置分类预算，追踪执行进度，控制支出"
-        actions={
-          <>
-            <Btn tone="secondary" onClick={handleTriggerAlerts}>检查预警</Btn>
-            <Btn tone="primary" onClick={handleAddBudget}>新增预算</Btn>
-          </>
-        }
-      />
+      {embedded ? (
+        <div className="merged-toolbar">
+          <Btn tone="secondary" onClick={handleTriggerAlerts}>检查预警</Btn>
+          <Btn tone="primary" onClick={handleAddBudget}>新增预算</Btn>
+        </div>
+      ) : (
+        <PageHeader
+          title="预算管理"
+          subtitle="设置分类预算，追踪执行进度，控制支出"
+          actions={
+            <>
+              <Btn tone="secondary" onClick={handleTriggerAlerts}>检查预警</Btn>
+              <Btn tone="primary" onClick={handleAddBudget}>新增预算</Btn>
+            </>
+          }
+        />
+      )}
 
       {activeTab === 'overview' && progressOverview && (
         <StatGrid items={overviewCards} />

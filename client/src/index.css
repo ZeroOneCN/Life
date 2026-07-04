@@ -698,10 +698,37 @@ textarea {
 .breadcrumb {
   color: var(--color-ink-mute);
   font-size: var(--fs-label);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .breadcrumb .is-current {
   color: var(--color-ink);
+  font-weight: 500;
+}
+
+.breadcrumb-sep {
+  color: var(--color-ink-mute);
+  opacity: 0.6;
+  margin: 0 2px;
+}
+
+.breadcrumb-link {
+  background: none;
+  border: none;
+  color: var(--color-ink-mute);
+  font-size: inherit;
+  cursor: pointer;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.breadcrumb-link:hover {
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
 }
 
 .menu {
@@ -2961,6 +2988,33 @@ textarea {
   background: var(--color-canvas);
   box-shadow: 0 1px 3px rgba(0,55,112,0.06);
 }
+
+/* ========== 列表项入场动画 ========== */
+@keyframes list-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.list-enter-animation > * {
+  animation: list-item-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.list-enter-animation > *:nth-child(1) { animation-delay: 0.02s; }
+.list-enter-animation > *:nth-child(2) { animation-delay: 0.05s; }
+.list-enter-animation > *:nth-child(3) { animation-delay: 0.08s; }
+.list-enter-animation > *:nth-child(4) { animation-delay: 0.11s; }
+.list-enter-animation > *:nth-child(5) { animation-delay: 0.14s; }
+.list-enter-animation > *:nth-child(6) { animation-delay: 0.17s; }
+.list-enter-animation > *:nth-child(7) { animation-delay: 0.20s; }
+.list-enter-animation > *:nth-child(8) { animation-delay: 0.23s; }
+.list-enter-animation > *:nth-child(9) { animation-delay: 0.26s; }
+.list-enter-animation > *:nth-child(10) { animation-delay: 0.29s; }
 
 .tag {
   display: inline-flex;
@@ -6184,6 +6238,66 @@ img {
 
 .toast.is-info .toast-title {
   color: var(--color-primary);
+}
+
+.toast-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--color-surface-2);
+  border-radius: 0 0 14px 14px;
+  overflow: hidden;
+}
+
+.toast-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-success), var(--color-success-600));
+  border-radius: 0 0 0 14px;
+  transition: width 0.05s linear;
+}
+
+.toast.is-warning .toast-progress-bar {
+  background: linear-gradient(90deg, var(--color-warning), var(--color-warning-600));
+}
+
+.toast.is-error .toast-progress-bar {
+  background: linear-gradient(90deg, var(--color-danger), var(--color-danger-600));
+}
+
+.toast.is-info .toast-progress-bar {
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-600));
+}
+
+/* ========== 可调整列宽表格 ========== */
+.table-wrap.is-resizable .data-table th {
+  position: relative;
+}
+
+.th-content {
+  display: inline-block;
+  width: 100%;
+  padding-right: 8px;
+  box-sizing: border-box;
+}
+
+.col-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.15s ease;
+  z-index: 1;
+}
+
+.col-resize-handle:hover,
+.col-resize-handle:active {
+  background: var(--color-primary);
+  opacity: 0.6;
 }
 
 .skeleton-line {

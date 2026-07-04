@@ -21,7 +21,7 @@ export default function PlanningPage() {
         title="财务规划"
         subtitle="预算管理与储蓄目标，规划你的财务未来"
         actions={(
-          <div style={{ width: 240 }}>
+          <div className="merged-page-tabs">
             <PillTabs
               options={TAB_OPTIONS}
               value={activeTab}
@@ -32,8 +32,8 @@ export default function PlanningPage() {
       />
 
       <div className="merged-content">
-        {activeTab === 'budget' ? <BudgetPage /> : null}
-        {activeTab === 'goal' ? <GoalPage /> : null}
+        {activeTab === 'budget' ? <BudgetPage embedded /> : null}
+        {activeTab === 'goal' ? <GoalPage embedded /> : null}
       </div>
     </div>
   );

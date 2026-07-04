@@ -21,7 +21,7 @@ export default function ExpensePage() {
         title="消费记录"
         subtitle="购物消费与旅行支出统一管理"
         actions={(
-          <div style={{ width: 240 }}>
+          <div className="merged-page-tabs">
             <PillTabs
               options={TAB_OPTIONS}
               value={activeTab}

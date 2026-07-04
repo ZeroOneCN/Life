@@ -86,7 +86,7 @@ export default function FinanceOverviewPage() {
         title="财务概览"
         subtitle="实时财务数据概览与周期报告"
         actions={
-          <div style={{ width: 280 }}>
+          <div className="merged-page-tabs">
             <PillTabs
               options={[
                 { value: 'overview', label: '本期概览' },

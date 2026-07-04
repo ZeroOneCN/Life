@@ -130,7 +130,7 @@ export default function CheckupPage() {
         title="体检用药"
         subtitle="体检指标记录与日常用药管理"
         actions={(
-          <div style={{ width: 280 }}>
+          <div className="merged-page-tabs">
             <PillTabs
               options={[
                 { value: 'checkup', label: '体检指标' },

@@ -170,8 +170,8 @@ export default function FitnessPage() {
         title="运动健身"
         subtitle="步数记录与健身减脂管理"
         actions={(
-          <>
-            <div style={{ width: 280 }}>
+          <div className="fitness-page-actions">
+            <div className="merged-page-tabs">
               <PillTabs
                 options={[
                   { value: 'step', label: '运动步数' },
@@ -182,7 +182,7 @@ export default function FitnessPage() {
               />
             </div>
             <Btn tone="secondary" onClick={() => setInsightsOpen(true)}>查看健康建议</Btn>
-          </>
+          </div>
         )}
       />
 

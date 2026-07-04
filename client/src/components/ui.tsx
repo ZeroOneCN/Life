@@ -7,10 +7,67 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react';
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { TabOption, TableColumn } from '../types/ui';
+
+export function useUndo<T>(initialValue: T, maxHistory = 50) {
+  const [history, setHistory] = useState<T[]>([initialValue]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  const current = history[historyIndex];
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
+
+  const setValue = useCallback((nextValue: T | ((prev: T) => T)) => {
+    setHistory((prev) => {
+      const currentValue = prev[historyIndex];
+      const computed = typeof nextValue === 'function'
+        ? (nextValue as (prev: T) => T)(currentValue)
+        : nextValue;
+      if (computed === currentValue) return prev;
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push(computed);
+      if (newHistory.length > maxHistory) {
+        newHistory.shift();
+        return newHistory;
+      }
+      return newHistory;
+    });
+    setHistoryIndex((prev) => Math.min(prev + 1, maxHistory - 1));
+  }, [historyIndex, maxHistory]);
+
+  const undo = useCallback(() => {
+    setHistoryIndex((prev) => Math.max(0, prev - 1));
+  }, []);
+
+  const redo = useCallback(() => {
+    setHistoryIndex((prev) => Math.min(history.length - 1, prev + 1));
+  }, [history.length]);
+
+  const reset = useCallback((value: T) => {
+    setHistory([value]);
+    setHistoryIndex(0);
+  }, []);
+
+  return { current, setValue, undo, redo, canUndo, canRedo, reset };
+}
+
+export function useFormKeyboardSubmit(onSubmit: () => void, enabled = true) {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!enabled) return;
+    if (e.key === 'Enter' && !e.shiftKey && !e.isDefaultPrevented()) {
+      const target = e.target as HTMLElement;
+      const tagName = target.tagName.toLowerCase();
+      if (tagName === 'textarea') return;
+      e.preventDefault();
+      onSubmit();
+    }
+  }, [onSubmit, enabled]);
+
+  return { handleKeyDown };
+}
 
 type ButtonTone = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-fill';
 
@@ -85,6 +142,42 @@ const TOAST_LABELS: Record<NonNullable<ToastState['type']>, string> = {
 
 export function Toast({ toast }: { toast: ToastState | null }) {
   const [showDetail, setShowDetail] = useState(false);
+  const [progress, setProgress] = useState(100);
+  const startTimeRef = useRef<number>(0);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!toast) {
+      setProgress(100);
+      setShowDetail(false);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      return undefined;
+    }
+
+    const duration = toast.duration ?? (toast.type === 'error' ? 4000 : 2800);
+    startTimeRef.current = Date.now();
+    setProgress(100);
+
+    const animate = () => {
+      const elapsed = Date.now() - startTimeRef.current;
+      const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
+      setProgress(remaining);
+      if (remaining > 0) {
+        rafRef.current = requestAnimationFrame(animate);
+      }
+    };
+    rafRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, [toast]);
 
   if (!toast) {
     return null;
@@ -128,6 +221,9 @@ export function Toast({ toast }: { toast: ToastState | null }) {
             {showDetail ? <span className="toast-detail">{toast.detail}</span> : null}
           </>
         ) : null}
+      </div>
+      <div className="toast-progress" aria-hidden="true">
+        <div className="toast-progress-bar" style={{ width: `${progress}%` }} />
       </div>
     </div>
   );
@@ -413,6 +509,15 @@ export function Modal({ open, onClose, title, width = 560, footer, children }: M
 
     overlayRef.current?.focus();
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
     // 计算当前滚动条宽度，用于补偿 overflow:hidden 导致的布局偏移
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
 
@@ -428,12 +533,13 @@ export function Modal({ open, onClose, title, width = 560, footer, children }: M
     document.documentElement.style.paddingRight = `${scrollbarWidth}px`;
 
     return () => {
+      window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = previousBodyOverflow;
       document.body.style.paddingRight = previousBodyPaddingRight;
       document.documentElement.style.overflow = previousHtmlOverflow;
       document.documentElement.style.paddingRight = previousHtmlPaddingRight;
     };
-  }, [open]);
+  }, [open, onClose]);
 
   if (!open || typeof document === 'undefined') {
     return null;
@@ -487,6 +593,16 @@ export function DeleteModal({
   confirmLabel?: string;
   confirmTone?: 'danger-fill' | 'primary' | 'secondary' | 'danger';
 }) {
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => confirmRef.current?.focus(), 100);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [open]);
+
   return (
     <Modal
       open={open}
@@ -496,7 +612,7 @@ export function DeleteModal({
       footer={(
         <>
           <Btn tone="secondary" onClick={onClose}>取消</Btn>
-          <Btn tone={confirmTone} onClick={onConfirm}>{confirmLabel}</Btn>
+          <Btn ref={confirmRef} tone={confirmTone} onClick={onConfirm}>{confirmLabel}</Btn>
         </>
       )}
     >
@@ -505,18 +621,18 @@ export function DeleteModal({
   );
 }
 
-export function Btn({
+export const Btn = forwardRef<HTMLButtonElement, PropsWithChildren<ButtonProps>>(function Btn({
   tone = 'secondary',
   className = '',
   children,
   ...rest
-}: PropsWithChildren<ButtonProps>) {
+}, ref) {
   return (
-    <button className={`btn btn-${tone} ${className}`.trim()} {...rest}>
+    <button ref={ref} className={`btn btn-${tone} ${className}`.trim()} {...rest}>
       {children}
     </button>
   );
-}
+});
 
 const ICON_SIZE = 16;
 
@@ -644,19 +760,72 @@ export function DataTable<T extends object>({
   rowKey,
   emptyText = '暂无数据',
   className,
+  resizable = false,
 }: {
   columns: TableColumn<T>[];
   data: T[];
   rowKey: keyof T;
   emptyText?: ReactNode;
   className?: string;
+  resizable?: boolean;
 }) {
+  const [columnWidths, setColumnWidths] = useState<Record<string, number | string>>(() => {
+    const widths: Record<string, number | string> = {};
+    columns.forEach((col) => {
+      if (col.width !== undefined) {
+        widths[col.key] = col.width;
+      }
+    });
+    return widths;
+  });
+
+  const resizeStateRef = useRef<{
+    columnKey: string;
+    startX: number;
+    startWidth: number;
+  } | null>(null);
+
+  const handleResizeStart = useCallback((e: React.MouseEvent, columnKey: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const currentWidth = columnWidths[columnKey];
+    const startWidth = typeof currentWidth === 'number' ? currentWidth : 120;
+    resizeStateRef.current = {
+      columnKey,
+      startX: e.clientX,
+      startWidth,
+    };
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!resizeStateRef.current) return;
+      const diff = moveEvent.clientX - resizeStateRef.current.startX;
+      const newWidth = Math.max(60, resizeStateRef.current.startWidth + diff);
+      setColumnWidths((prev) => ({
+        ...prev,
+        [resizeStateRef.current!.columnKey]: newWidth,
+      }));
+    };
+
+    const handleMouseUp = () => {
+      resizeStateRef.current = null;
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [columnWidths]);
+
   if (!data.length) {
     return <div className="empty-state">{emptyText}</div>;
   }
 
   return (
-    <div className={`table-wrap${className ? ` ${className}` : ''}`}>
+    <div className={`table-wrap${className ? ` ${className}` : ''}${resizable ? ' is-resizable' : ''}`}>
       <table className="data-table">
         <thead>
           <tr>
@@ -664,11 +833,19 @@ export function DataTable<T extends object>({
               <th
                 key={column.key}
                 style={{
-                  width: column.width,
+                  width: columnWidths[column.key] ?? column.width,
                   textAlign: column.align,
                 }}
               >
-                {column.title}
+                <span className="th-content">{column.title}</span>
+                {resizable ? (
+                  <div
+                    className="col-resize-handle"
+                    onMouseDown={(e) => handleResizeStart(e, column.key)}
+                    aria-hidden="true"
+                    title="拖拽调整列宽"
+                  />
+                ) : null}
               </th>
             ))}
           </tr>
@@ -682,7 +859,10 @@ export function DataTable<T extends object>({
                 return (
                   <td
                     key={column.key}
-                    style={{ textAlign: column.align as CSSProperties['textAlign'] }}
+                    style={{
+                      textAlign: column.align as CSSProperties['textAlign'],
+                      width: columnWidths[column.key] ?? column.width,
+                    }}
                   >
                     {column.render ? column.render(value, row, index) : String(value ?? '-')}
                   </td>

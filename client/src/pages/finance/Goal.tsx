@@ -78,7 +78,7 @@ const ArrowLeftIcon = ({ size = 16 }: { size?: number }) => (
  * 提供储蓄目标管理、进度追踪、自动储蓄计算等功能，
  * 支持多目标并行管理和贡献记录追踪。
  */
-export default function GoalPage() {
+export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
   const { toast, showToast } = useToastState();
   const [activeTab, setActiveTab] = useState<TabKey>('all');
 
@@ -309,18 +309,29 @@ export default function GoalPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader
-        title="储蓄目标"
-        subtitle="设定目标，追踪进度，实现财务自由"
-        actions={
+      {embedded ? (
+        <div className="merged-toolbar">
           <Btn tone="primary" onClick={handleCreateGoal}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <PlusIcon size={16} />
               新建目标
             </span>
           </Btn>
-        }
-      />
+        </div>
+      ) : (
+        <PageHeader
+          title="储蓄目标"
+          subtitle="设定目标，追踪进度，实现财务自由"
+          actions={
+            <Btn tone="primary" onClick={handleCreateGoal}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <PlusIcon size={16} />
+                新建目标
+              </span>
+            </Btn>
+          }
+        />
+      )}
 
       <StatGrid items={statItems} />
 

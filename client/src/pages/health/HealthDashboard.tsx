@@ -100,7 +100,7 @@ export default function HealthDashboardPage() {
         title="健康概览"
         subtitle="实时健康数据概览与周期报告"
         actions={
-          <div style={{ width: 280 }}>
+          <div className="merged-page-tabs">
             <PillTabs
               options={[
                 { value: 'overview', label: '本期概览' },

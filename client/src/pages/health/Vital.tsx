@@ -387,7 +387,7 @@ export default function VitalPage() {
         title="健康记录"
         subtitle="记录日常体征与睡眠情况，追踪健康趋势"
         actions={(
-          <div style={{ width: 320 }}>
+          <div className="merged-page-tabs">
             <PillTabs
               options={TAB_OPTIONS.map((t) => ({ value: t.value, label: t.label }))}
               value={activeTab}

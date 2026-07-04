@@ -1083,8 +1083,11 @@ export function filterLifeCardBills(
   });
 }
 
-export function formatLifeCardMoney(value: number) {
-  return `¥${value.toFixed(2)}`;
+export function formatLifeCardMoney(value: number | null | undefined) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return '¥0.00';
+  }
+  return `¥${Number(value).toFixed(2)}`;
 }
 
 export function getCardTabLabel(tab: CardTab) {

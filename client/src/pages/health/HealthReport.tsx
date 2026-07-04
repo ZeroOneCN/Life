@@ -6,6 +6,7 @@ import { HealthReportSummarySection } from '../../components/health/report/Healt
 import { HealthReportTrendSection } from '../../components/health/report/HealthReportTrendSection';
 import { HealthReportAbnormalSection } from '../../components/health/report/HealthReportAbnormalSection';
 import { HealthReportAISuggestionSection } from '../../components/health/report/HealthReportAISuggestionSection';
+import { HealthReportExportButton } from '../../components/health/report/HealthReportExportButton';
 import { Toast, useToastState } from '../../components/ui';
 import { buildApiErrorMessage } from '../../lib/api';
 import { healthReportApi } from '../../services/healthReportApi';
@@ -134,6 +135,15 @@ export default function HealthReportPage() {
           loading={false}
           generating={aiGenerating}
           onGenerate={handleGenerateAISuggestion}
+        />
+      </div>
+
+      <div className="health-report-export-bar">
+        <HealthReportExportButton
+          targetRef={reportRef}
+          fileName={exportFileName}
+          disabled={!canExport}
+          showToast={showToast}
         />
       </div>
 

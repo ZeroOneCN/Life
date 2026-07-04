@@ -23,7 +23,7 @@ export default function BillManagementPage() {
         title="账单管理"
         subtitle="贷款、订阅、房租等周期性账单统一管理"
         actions={(
-          <div style={{ width: 320 }}>
+          <div className="merged-page-tabs">
             <PillTabs
               options={TAB_OPTIONS}
               value={activeTab}

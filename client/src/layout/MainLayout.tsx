@@ -217,6 +217,29 @@ export default function MainLayout() {
 
   const route = routes.find((item) => item.path === location.pathname);
   const breadcrumb = route?.breadcrumb ?? ['页面'];
+
+  const breadcrumbItems = useMemo(() => {
+    const items: Array<{ label: string; path?: string }> = [];
+    const pathParts = location.pathname.split('/').filter(Boolean);
+
+    breadcrumb.forEach((label, index) => {
+      if (index === breadcrumb.length - 1) {
+        items.push({ label });
+      } else if (index === 0 && pathParts.length >= 2) {
+        const module = pathParts[0];
+        const overviewPath = `/${module}/overview`;
+        const hasOverview = routes.some((r) => r.path === overviewPath);
+        items.push({
+          label,
+          path: hasOverview ? overviewPath : '/dashboard',
+        });
+      } else {
+        items.push({ label });
+      }
+    });
+
+    return items;
+  }, [breadcrumb, location.pathname]);
   const sidebarWidth = collapsed ? 88 : 260;
   const currentUser = authState.session?.user ?? null;
   const userDisplayName = useMemo(
@@ -338,11 +361,24 @@ export default function MainLayout() {
             >
               <SidebarToggleIcon collapsed={collapsed} />
             </button>
-            <div className="breadcrumb">
-              {breadcrumb.map((item, index) => (
-                <span key={item} className={index === breadcrumb.length - 1 ? 'is-current' : ''}>
-                  {index ? ' / ' : ''}
-                  {item}
+            <div className="breadcrumb" aria-label="面包屑导航">
+              {breadcrumbItems.map((item, index) => (
+                <span key={item.label} className={index === breadcrumbItems.length - 1 ? 'is-current' : ''}>
+                  {index ? <span className="breadcrumb-sep" aria-hidden="true">/</span> : null}
+                  {item.path ? (
+                    <button
+                      type="button"
+                      className="breadcrumb-link"
+                      onClick={() => navigate(item.path!)}
+                      aria-label={`跳转到${item.label}`}
+                    >
+                      {item.label}
+                    </button>
+                  ) : (
+                    <span aria-current={index === breadcrumbItems.length - 1 ? 'page' : undefined}>
+                      {item.label}
+                    </span>
+                  )}
                 </span>
               ))}
             </div>
