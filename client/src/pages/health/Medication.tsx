@@ -227,17 +227,6 @@ export default function MedicationPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader
-        title="日常用药"
-        subtitle={loading ? '正在加载数据...' : '追踪用药记录、购药信息和服药提醒。'}
-        actions={(
-          <>
-            <Tag tone="blue">通知中心联动</Tag>
-            <Btn tone="secondary" onClick={() => setTab('summary')}>查看提醒</Btn>
-          </>
-        )}
-      />
-
       <StatGrid
         items={[
           { label: '累计用量', value: `${overview.totalDosage}`, helper: `共 ${overview.trackedDays} 天追踪` },

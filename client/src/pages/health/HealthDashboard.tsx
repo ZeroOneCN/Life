@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { HealthOverviewSection } from '../../components/health/dashboard/HealthOverviewSection';
@@ -6,7 +6,7 @@ import { HealthHeatmapSection } from '../../components/health/dashboard/HealthHe
 import { HealthRadarSection } from '../../components/health/dashboard/HealthRadarSection';
 import { HealthComparisonSection } from '../../components/health/dashboard/HealthComparisonSection';
 import { PageHeader } from '../../components/page';
-import { Toast, useToastState } from '../../components/ui';
+import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { buildApiErrorMessage } from '../../lib/api';
 import { healthDashboardApi } from '../../services/healthDashboardApi';
 import type {
@@ -14,6 +14,8 @@ import type {
   HealthRadarSummary,
   HealthStepHeatmapItem,
 } from '../../types/healthDashboard';
+
+const HealthReportPage = lazy(() => import('./HealthReport'));
 
 /**
  * 健康概览页面：跨子模块综合展示健康数据。
@@ -34,6 +36,8 @@ export default function HealthDashboardPage() {
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [heatmapLoading, setHeatmapLoading] = useState(true);
   const [radarLoading, setRadarLoading] = useState(true);
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'report'>('overview');
 
   /**
    * 加载综合概览数据。
@@ -94,21 +98,41 @@ export default function HealthDashboardPage() {
     <div className="page-stack">
       <PageHeader
         title="健康概览"
-        subtitle="跨子模块健康数据综合视图 · 步数 / 体重 / 运动 / 用药 / 体检"
+        subtitle="实时健康数据概览与周期报告"
+        actions={
+          <div style={{ width: 280 }}>
+            <PillTabs
+              options={[
+                { value: 'overview', label: '本期概览' },
+                { value: 'report', label: '周期报告' },
+              ]}
+              value={activeTab}
+              onChange={(v) => setActiveTab(v as 'overview' | 'report')}
+            />
+          </div>
+        }
       />
 
-      <HealthOverviewSection overview={overview} loading={overviewLoading} />
+      {activeTab === 'overview' ? (
+        <>
+          <HealthOverviewSection overview={overview} loading={overviewLoading} />
 
-      <HealthHeatmapSection
-        items={heatmapItems}
-        year={heatmapYear}
-        loading={heatmapLoading}
-        onYearChange={setHeatmapYear}
-      />
+          <HealthHeatmapSection
+            items={heatmapItems}
+            year={heatmapYear}
+            loading={heatmapLoading}
+            onYearChange={setHeatmapYear}
+          />
 
-      <HealthRadarSection radar={radar} loading={radarLoading} />
+          <HealthRadarSection radar={radar} loading={radarLoading} />
 
-      <HealthComparisonSection showToast={showToast} />
+          <HealthComparisonSection showToast={showToast} />
+        </>
+      ) : (
+        <Suspense fallback={<div className="skeleton-block" />}>
+          <HealthReportPage />
+        </Suspense>
+      )}
 
       <Toast toast={toast} />
     </div>

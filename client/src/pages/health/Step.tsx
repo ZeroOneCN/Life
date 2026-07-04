@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import { StepEntryForm } from '../../components/health/StepEntryForm';
 import { StepRecordsSection } from '../../components/health/StepRecordsSection';
 import { StepTrendSection } from '../../components/health/StepTrendSection';
-import { PageHeader, StatGrid } from '../../components/page';
+import { StatGrid } from '../../components/page';
 import { Btn, Modal, Toast, useToastState } from '../../components/ui';
 import { buildApiErrorMessage } from '../../lib/api';
 import { getAuthUserDisplayName, useAuthState } from '../../services/auth';
@@ -259,11 +259,6 @@ export default function StepPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader
-        title="运动步数"
-        subtitle={loading ? '正在加载步数数据...' : '记录每日步数，统计运动趋势和健康目标。'}
-      />
-
       <StatGrid
         items={[
           {

@@ -7,7 +7,6 @@ import { HealthReportTrendSection } from '../../components/health/report/HealthR
 import { HealthReportAbnormalSection } from '../../components/health/report/HealthReportAbnormalSection';
 import { HealthReportAISuggestionSection } from '../../components/health/report/HealthReportAISuggestionSection';
 import { HealthReportExportButton } from '../../components/health/report/HealthReportExportButton';
-import { PageHeader } from '../../components/page';
 import { Toast, useToastState } from '../../components/ui';
 import { buildApiErrorMessage } from '../../lib/api';
 import { healthReportApi } from '../../services/healthReportApi';
@@ -103,19 +102,6 @@ export default function HealthReportPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader
-        title="健康报告"
-        subtitle="周/月/年度健康数据汇总 · AI 个性化建议 · PDF 导出"
-        actions={
-          <HealthReportExportButton
-            targetRef={reportRef}
-            fileName={exportFileName}
-            disabled={!canExport}
-            showToast={showToast}
-          />
-        }
-      />
-
       <div ref={reportRef} className="page-stack">
         <HealthReportHeaderSection
           period={period}

@@ -5,12 +5,9 @@ const Dashboard = lazyWithProgress(() => import('../pages/Dashboard'));
 const NotificationCenterPage = lazyWithProgress(() => import('../pages/notifications/NotificationCenterPage'));
 const ProfileSettingsPage = lazyWithProgress(() => import('../pages/settings/Profile'));
 const HealthDashboardPage = lazyWithProgress(() => import('../pages/health/HealthDashboard'));
-const HealthReportPage = lazyWithProgress(() => import('../pages/health/HealthReport'));
-const StepPage = lazyWithProgress(() => import('../pages/health/Step'));
 const VitalPage = lazyWithProgress(() => import('../pages/health/Vital'));
 const FitnessPage = lazyWithProgress(() => import('../pages/health/Fitness'));
 const CheckupPage = lazyWithProgress(() => import('../pages/health/Checkup'));
-const MedicationPage = lazyWithProgress(() => import('../pages/health/Medication'));
 const ShoppingPage = lazyWithProgress(() => import('../pages/finance/Shopping'));
 const TravelPage = lazyWithProgress(() => import('../pages/finance/Travel'));
 const LoanPage = lazyWithProgress(() => import('../pages/finance/Loan'));
@@ -33,12 +30,9 @@ export const menuItems: MenuItemConfig[] = [
     label: '健康中心',
     children: [
       { key: '/health/dashboard', icon: 'dashboard', label: '健康概览' },
-      { key: '/health/report', icon: 'chart', label: '健康报告' },
-      { key: '/health/step', icon: 'spark', label: '运动步数' },
       { key: '/health/vital', icon: 'heart', label: '健康记录' },
-      { key: '/health/fitness', icon: 'trend', label: '健身减脂' },
-      { key: '/health/checkup', icon: 'task', label: '体检指标' },
-      { key: '/health/medication', icon: 'shield', label: '日常用药' },
+      { key: '/health/fitness', icon: 'spark', label: '运动健身' },
+      { key: '/health/checkup', icon: 'task', label: '体检用药' },
     ],
   },
   {
@@ -81,12 +75,9 @@ export const menuItems: MenuItemConfig[] = [
 export const routes: RouteConfig[] = [
   { path: '/dashboard', label: '首页', breadcrumb: ['首页'], menuKey: '/dashboard', component: Dashboard },
   { path: '/health/dashboard', label: '健康概览', breadcrumb: ['健康中心', '健康概览'], menuKey: '/health/dashboard', component: HealthDashboardPage },
-  { path: '/health/report', label: '健康报告', breadcrumb: ['健康中心', '健康报告'], menuKey: '/health/report', component: HealthReportPage },
-  { path: '/health/step', label: '运动步数', breadcrumb: ['健康中心', '运动步数'], menuKey: '/health/step', component: StepPage },
   { path: '/health/vital', label: '健康记录', breadcrumb: ['健康中心', '健康记录'], menuKey: '/health/vital', component: VitalPage },
-  { path: '/health/fitness', label: '健身减脂', breadcrumb: ['健康中心', '健身减脂'], menuKey: '/health/fitness', component: FitnessPage },
-  { path: '/health/checkup', label: '体检指标', breadcrumb: ['健康中心', '体检指标'], menuKey: '/health/checkup', component: CheckupPage },
-  { path: '/health/medication', label: '日常用药', breadcrumb: ['健康中心', '日常用药'], menuKey: '/health/medication', component: MedicationPage },
+  { path: '/health/fitness', label: '运动健身', breadcrumb: ['健康中心', '运动健身'], menuKey: '/health/fitness', component: FitnessPage },
+  { path: '/health/checkup', label: '体检用药', breadcrumb: ['健康中心', '体检用药'], menuKey: '/health/checkup', component: CheckupPage },
   { path: '/finance/shopping', label: '网上购物', breadcrumb: ['财务中心', '网上购物'], menuKey: '/finance/shopping', component: ShoppingPage },
   { path: '/finance/travel', label: '旅行游玩', breadcrumb: ['财务中心', '旅行游玩'], menuKey: '/finance/travel', component: TravelPage },
   { path: '/finance/loan', label: '贷款还款', breadcrumb: ['财务中心', '贷款还款'], menuKey: '/finance/loan', component: LoanPage },

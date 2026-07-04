@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 
 import { FitnessDashboardSection } from '../../components/health/FitnessDashboardSection';
 import { FitnessDietSection } from '../../components/health/FitnessDietSection';
@@ -20,6 +20,8 @@ import type {
   FitnessTab,
   WeightRecord,
 } from '../../types/fitness';
+
+const StepPage = lazy(() => import('./Step'));
 
 const TAB_OPTIONS: Array<{ value: FitnessTab; label: string }> = [
   { value: 'diet', label: '饮食记录' },
@@ -54,7 +56,8 @@ function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
 }
 
 export default function FitnessPage() {
-  const [activeTab, setActiveTab] = usePageTab<FitnessTab>('diet', TAB_OPTIONS.map((item) => item.value), 'fitnessTab');
+  const [innerTab, setInnerTab] = usePageTab<FitnessTab>('diet', TAB_OPTIONS.map((item) => item.value), 'fitnessTab');
+  const [activeTab, setActiveTab] = useState<'step' | 'fitness'>('step');
   const [dietRecords, setDietRecords] = useState<DietRecord[]>([]);
   const [exerciseRecords, setExerciseRecords] = useState<ExerciseRecord[]>([]);
   const [shoppingRecords, setShoppingRecords] = useState<FitnessShoppingRecord[]>([]);
@@ -164,21 +167,41 @@ export default function FitnessPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        title="健身减脂"
-        subtitle={loading ? '正在加载数据...' : '记录饮食、运动、食材采购和体重变化。'}
-        actions={<Btn tone="secondary" onClick={() => setInsightsOpen(true)}>查看健康建议</Btn>}
+        title="运动健身"
+        subtitle="步数记录与健身减脂管理"
+        actions={(
+          <>
+            <div style={{ width: 280 }}>
+              <PillTabs
+                options={[
+                  { value: 'step', label: '运动步数' },
+                  { value: 'fitness', label: '健身减脂' },
+                ]}
+                value={activeTab}
+                onChange={(v) => setActiveTab(v as 'step' | 'fitness')}
+              />
+            </div>
+            <Btn tone="secondary" onClick={() => setInsightsOpen(true)}>查看健康建议</Btn>
+          </>
+        )}
       />
 
-      <StatGrid className="fitness-overview-grid" items={topSummary} />
+      {activeTab === 'step' ? (
+        <Suspense fallback={<div className="skeleton-block" />}>
+          <StepPage />
+        </Suspense>
+      ) : (
+        <>
+          <StatGrid className="fitness-overview-grid" items={topSummary} />
 
       <SectionCard
         title="业务视图"
         description="饮食、运动、采购、体重和看板都直接基于后端记录工作。"
       >
-        <PillTabs options={TAB_OPTIONS} value={activeTab} onChange={(value) => setActiveTab(value as FitnessTab)} />
+        <PillTabs options={TAB_OPTIONS} value={innerTab} onChange={(value) => setInnerTab(value as FitnessTab)} />
       </SectionCard>
 
-      {activeTab === 'diet' ? (
+      {innerTab === 'diet' ? (
         <FitnessDietSection
           records={dietRecords}
           onChangeRecords={(updater) => {
@@ -198,7 +221,7 @@ export default function FitnessPage() {
         />
       ) : null}
 
-      {activeTab === 'exercise' ? (
+      {innerTab === 'exercise' ? (
         <FitnessExerciseSection
           records={exerciseRecords}
           onChangeRecords={(updater) => {
@@ -218,7 +241,7 @@ export default function FitnessPage() {
         />
       ) : null}
 
-      {activeTab === 'shopping' ? (
+      {innerTab === 'shopping' ? (
         <FitnessShoppingSection
           records={shoppingRecords}
           onChangeRecords={(updater) => {
@@ -238,7 +261,7 @@ export default function FitnessPage() {
         />
       ) : null}
 
-      {activeTab === 'weight' ? (
+      {innerTab === 'weight' ? (
         <FitnessWeightSection
           defaultHeightCm={settings.defaultHeightCm ?? 170}
           records={weightRecords}
@@ -262,7 +285,7 @@ export default function FitnessPage() {
         />
       ) : null}
 
-      {activeTab === 'dashboard' ? (
+      {innerTab === 'dashboard' ? (
         <FitnessDashboardSection
           defaultHeightCm={settings.defaultHeightCm ?? 170}
           dietRecords={dietRecords}
@@ -292,6 +315,8 @@ export default function FitnessPage() {
       </Modal>
 
       <Toast toast={toast} />
+        </>
+      )}
     </div>
   );
 }
