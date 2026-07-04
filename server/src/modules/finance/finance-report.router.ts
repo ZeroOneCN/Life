@@ -17,6 +17,9 @@ import { FinanceTravelExpenseRecordEntity } from '../finance/entities/finance-tr
 import { FinanceLoanRepaymentEntity } from '../finance/entities/finance-loan-repayment.entity';
 import { FinanceSubscriptionRecordEntity } from '../finance/entities/finance-subscription-record.entity';
 import { FinanceRentRecordEntity } from '../finance/entities/finance-rent-record.entity';
+import { FinanceLoanBillEntity } from '../finance/entities/finance-loan-bill.entity';
+import { InvestmentForexTradeRecordEntity } from '../investment/entities/investment-forex-trade-record.entity';
+import { InvestmentForexCapitalFlowEntity } from '../investment/entities/investment-forex-capital-flow.entity';
 import { startFinanceMonthlyReportScheduler } from './finance-report.scheduler';
 import { startFinanceFollowupScheduler } from './finance-followup.scheduler';
 
@@ -57,6 +60,34 @@ interface ModuleBreakdown {
   percentage: number;
 }
 
+interface InvestmentBreakdownItem {
+  instrument: string;
+  tradeCount: number;
+  netPnl: number;
+  commission: number;
+  overnightFee: number;
+}
+
+interface InvestmentSummary {
+  netPnl: number;
+  grossPnl: number;
+  totalCommission: number;
+  totalOvernightFee: number;
+  tradeCount: number;
+  deposits: number;
+  withdrawals: number;
+  netCapital: number;
+  equity: number;
+  roi: number;
+  breakdown: InvestmentBreakdownItem[];
+}
+
+interface NetWorthSummary {
+  investmentEquity: number;
+  unpaidLoanTotal: number;
+  netWorth: number;
+}
+
 interface MonthlyReportSummary {
   month: string;
   startDate: string;
@@ -71,6 +102,8 @@ interface MonthlyReportSummary {
   moduleBreakdown: ModuleBreakdown[];
   categoryBreakdown: CategoryBreakdown[];
   topExpenses: TopExpense[];
+  investment: InvestmentSummary;
+  netWorth: NetWorthSummary;
   generatedAt: string;
 }
 
@@ -195,8 +228,11 @@ export async function buildMonthlyReport(
     const loanRepo = manager.getRepository(FinanceLoanRepaymentEntity);
     const subscriptionRepo = manager.getRepository(FinanceSubscriptionRecordEntity);
     const rentRepo = manager.getRepository(FinanceRentRecordEntity);
+    const forexTradeRepo = manager.getRepository(InvestmentForexTradeRecordEntity);
+    const forexFlowRepo = manager.getRepository(InvestmentForexCapitalFlowEntity);
+    const loanBillRepo = manager.getRepository(FinanceLoanBillEntity);
 
-    const [shoppingRows, travelRows, loanRows, subscriptionRows, rentRows] = await Promise.all([
+    const [shoppingRows, travelRows, loanRows, subscriptionRows, rentRows, forexTradeRows, forexFlowRows, unpaidLoanBills] = await Promise.all([
       shoppingRepo.find({
         where: {
           user_id: userId,
@@ -227,6 +263,24 @@ export async function buildMonthlyReport(
         .andWhere('rent.move_in_date <= :end', { end })
         .andWhere('(rent.move_out_date IS NULL OR rent.move_out_date >= :start)', { start })
         .getMany(),
+      forexTradeRepo.find({
+        where: {
+          user_id: userId,
+          trade_date: Between(start, end),
+        },
+      }),
+      forexFlowRepo.find({
+        where: {
+          user_id: userId,
+          flow_date: Between(start, end),
+        },
+      }),
+      loanBillRepo.find({
+        where: {
+          user_id: userId,
+          is_paid: false,
+        },
+      }),
     ]);
 
     // --- module breakdown
@@ -337,6 +391,69 @@ export async function buildMonthlyReport(
 
     const totalExpense = Object.values(moduleTotals).reduce((sum, item) => sum + item.amount, 0);
 
+    // --- 投资维度聚合（独立于 totalExpense）
+    const investmentBreakdownMap = new Map<string, { tradeCount: number; grossPnl: number; commission: number; overnightFee: number }>();
+    let investmentGrossPnl = 0;
+    let investmentTotalCommission = 0;
+    let investmentTotalOvernightFee = 0;
+
+    for (const row of forexTradeRows) {
+      const pnl = toNumber(row.pnl);
+      const commission = toNumber(row.commission);
+      const overnightFee = toNumber(row.overnight_fee);
+      const instrument = row.instrument || 'unknown';
+
+      investmentGrossPnl += pnl;
+      investmentTotalCommission += commission;
+      investmentTotalOvernightFee += overnightFee;
+
+      const current = investmentBreakdownMap.get(instrument) ?? { tradeCount: 0, grossPnl: 0, commission: 0, overnightFee: 0 };
+      current.tradeCount += 1;
+      current.grossPnl += pnl;
+      current.commission += commission;
+      current.overnightFee += overnightFee;
+      investmentBreakdownMap.set(instrument, current);
+    }
+
+    const investmentNetPnl = investmentGrossPnl + investmentTotalCommission + investmentTotalOvernightFee;
+    const deposits = forexFlowRows.filter((r) => r.flow_type === 'deposit').reduce((sum, r) => sum + toNumber(r.amount), 0);
+    const withdrawals = forexFlowRows.filter((r) => r.flow_type === 'withdrawal').reduce((sum, r) => sum + toNumber(r.amount), 0);
+    const netCapital = deposits - withdrawals;
+    const investmentEquity = netCapital + investmentNetPnl;
+    const investmentRoi = netCapital > 0 ? investmentNetPnl / netCapital : 0;
+
+    const investmentBreakdown: InvestmentBreakdownItem[] = [...investmentBreakdownMap.entries()]
+      .map(([instrument, value]) => ({
+        instrument,
+        tradeCount: value.tradeCount,
+        netPnl: round2(value.grossPnl + value.commission + value.overnightFee),
+        commission: round2(value.commission),
+        overnightFee: round2(value.overnightFee),
+      }))
+      .sort((a, b) => b.netPnl - a.netPnl);
+
+    const investment: InvestmentSummary = {
+      netPnl: round2(investmentNetPnl),
+      grossPnl: round2(investmentGrossPnl),
+      totalCommission: round2(investmentTotalCommission),
+      totalOvernightFee: round2(investmentTotalOvernightFee),
+      tradeCount: forexTradeRows.length,
+      deposits: round2(deposits),
+      withdrawals: round2(withdrawals),
+      netCapital: round2(netCapital),
+      equity: round2(investmentEquity),
+      roi: round2(investmentRoi * 100) / 100,
+      breakdown: investmentBreakdown,
+    };
+
+    // --- 净资产计算
+    const unpaidLoanTotal = unpaidLoanBills.reduce((sum, bill) => sum + toNumber(bill.amount) + toNumber(bill.interest), 0);
+    const netWorth: NetWorthSummary = {
+      investmentEquity: round2(investmentEquity),
+      unpaidLoanTotal: round2(unpaidLoanTotal),
+      netWorth: round2(investmentEquity - unpaidLoanTotal),
+    };
+
     const moduleBreakdown: ModuleBreakdown[] = (Object.keys(moduleTotals) as ModuleBreakdown['module'][])
       .map((key) => ({
         module: key,
@@ -382,6 +499,8 @@ export async function buildMonthlyReport(
       moduleBreakdown,
       categoryBreakdown,
       topExpenses,
+      investment,
+      netWorth,
       generatedAt: dayjs().toISOString(),
     };
   });
@@ -481,6 +600,27 @@ export function buildMonthlyReportMessage(report: MonthlyReportSummary) {
     report.topExpenses.forEach((item, index) => {
       lines.push(`${index + 1}. ${item.title} — ¥${item.amount.toLocaleString('zh-CN', { maximumFractionDigits: 2 })} (${item.date})`);
     });
+  }
+  // 投资维度
+  if (report.investment && report.investment.tradeCount > 0) {
+    lines.push('');
+    lines.push('📈 投资概览：');
+    lines.push(`净收益：${report.investment.netPnl >= 0 ? '+' : ''}¥${report.investment.netPnl.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}（${report.investment.tradeCount} 笔交易，ROI ${report.investment.roi.toFixed(1)}%）`);
+    lines.push(`账户净值：¥${report.investment.equity.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}（净入金 ¥${report.investment.netCapital.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}）`);
+    if (report.investment.breakdown.length > 0) {
+      lines.push('品种明细：');
+      report.investment.breakdown.forEach((item) => {
+        lines.push(`- ${item.instrument}：${item.netPnl >= 0 ? '+' : ''}¥${item.netPnl.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}（${item.tradeCount} 笔）`);
+      });
+    }
+  }
+  // 净资产
+  if (report.netWorth) {
+    lines.push('');
+    lines.push('💰 净资产：');
+    lines.push(`投资账户净值：¥${report.netWorth.investmentEquity.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`);
+    lines.push(`未还贷款：¥${report.netWorth.unpaidLoanTotal.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`);
+    lines.push(`净资产：¥${report.netWorth.netWorth.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`);
   }
   return lines.join('\n');
 }
