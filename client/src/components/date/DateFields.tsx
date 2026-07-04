@@ -1,7 +1,5 @@
 import { useId, useRef, useState, useEffect } from 'react';
-import { DayPicker } from 'react-day-picker';
 import dayjs from 'dayjs';
-import 'react-day-picker/dist/style.css';
 
 import type {
   DatePickerFieldProps,
@@ -10,9 +8,132 @@ import type {
 } from '../../types/ui';
 import { useTheme } from '../../hooks/useTheme';
 
+const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
+const MONTH_LABELS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+
+/**
+ * 日历面板组件 - 纯dayjs实现，无第三方依赖
+ * 提供跨浏览器一致的日期选择体验
+ */
+function CalendarPanel({
+  selectedDate,
+  viewMonth,
+  onMonthChange,
+  onDateSelect,
+  minDate,
+  maxDate,
+}: {
+  selectedDate?: Date;
+  viewMonth: Date;
+  onMonthChange: (date: Date) => void;
+  onDateSelect: (date: Date) => void;
+  minDate?: Date;
+  maxDate?: Date;
+}) {
+  const startOfMonth = dayjs(viewMonth).startOf('month');
+  const endOfMonth = dayjs(viewMonth).endOf('month');
+  const startDay = startOfMonth.day();
+  const startDayAdjusted = startDay === 0 ? 6 : startDay - 1;
+
+  const daysInMonth = endOfMonth.date();
+  const prevMonthDays = dayjs(viewMonth).subtract(1, 'month').daysInMonth();
+
+  const cells: Array<{ date: dayjs.Dayjs; isCurrentMonth: boolean }> = [];
+
+  for (let i = startDayAdjusted - 1; i >= 0; i--) {
+    cells.push({
+      date: dayjs(viewMonth).subtract(1, 'month').date(prevMonthDays - i),
+      isCurrentMonth: false,
+    });
+  }
+
+  for (let i = 1; i <= daysInMonth; i++) {
+    cells.push({
+      date: dayjs(viewMonth).date(i),
+      isCurrentMonth: true,
+    });
+  }
+
+  const remaining = 42 - cells.length;
+  for (let i = 1; i <= remaining; i++) {
+    cells.push({
+      date: dayjs(viewMonth).add(1, 'month').date(i),
+      isCurrentMonth: false,
+    });
+  }
+
+  const isDateDisabled = (date: dayjs.Dayjs) => {
+    if (minDate && date.isBefore(dayjs(minDate).startOf('day'))) return true;
+    if (maxDate && date.isAfter(dayjs(maxDate).endOf('day'))) return true;
+    return false;
+  };
+
+  const isSelected = (date: dayjs.Dayjs) => {
+    if (!selectedDate) return false;
+    return date.isSame(dayjs(selectedDate), 'day');
+  };
+
+  const isToday = (date: dayjs.Dayjs) => {
+    return date.isSame(dayjs(), 'day');
+  };
+
+  return (
+    <div className="custom-calendar">
+      <div className="custom-calendar-header">
+        <button
+          type="button"
+          className="custom-calendar-nav"
+          onClick={() => onMonthChange(dayjs(viewMonth).subtract(1, 'month').toDate())}
+          aria-label="上个月"
+        >
+          ‹
+        </button>
+        <span className="custom-calendar-title">
+          {dayjs(viewMonth).format('YYYY年 M月')}
+        </span>
+        <button
+          type="button"
+          className="custom-calendar-nav"
+          onClick={() => onMonthChange(dayjs(viewMonth).add(1, 'month').toDate())}
+          aria-label="下个月"
+        >
+          ›
+        </button>
+      </div>
+      <div className="custom-calendar-weekdays">
+        {WEEKDAYS.map((d) => (
+          <div key={d} className="custom-calendar-weekday">{d}</div>
+        ))}
+      </div>
+      <div className="custom-calendar-grid">
+        {cells.map(({ date, isCurrentMonth }, idx) => {
+          const disabled = isDateDisabled(date);
+          const selected = isSelected(date);
+          const today = isToday(date);
+          return (
+            <button
+              key={idx}
+              type="button"
+              className={`custom-calendar-day
+                ${!isCurrentMonth ? 'is-outside' : ''}
+                ${selected ? 'is-selected' : ''}
+                ${today ? 'is-today' : ''}
+                ${disabled ? 'is-disabled' : ''}`}
+              onClick={() => !disabled && onDateSelect(date.toDate())}
+              disabled={disabled}
+            >
+              {date.date()}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /**
  * 统一日期选择器字段
- * 使用 react-day-picker 提供跨浏览器一致的日期选择体验
+ * 使用自定义日历面板提供跨浏览器一致的日期选择体验
  */
 export function DatePickerField({
   value,
@@ -29,11 +150,20 @@ export function DatePickerField({
   const fieldId = useId();
   const { isDark } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const [viewMonth, setViewMonth] = useState<Date>(() => {
+    return value ? dayjs(value).toDate() : dayjs().toDate();
+  });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedDate = value ? dayjs(value).toDate() : undefined;
   const minDate = minValue ? dayjs(minValue).toDate() : undefined;
   const maxDate = maxValue ? dayjs(maxValue).toDate() : undefined;
+
+  useEffect(() => {
+    if (value && isOpen) {
+      setViewMonth(dayjs(value).toDate());
+    }
+  }, [value, isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -48,12 +178,8 @@ export function DatePickerField({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  const handleSelect = (date: Date | undefined) => {
-    if (date) {
-      onChange(dayjs(date).format('YYYY-MM-DD'));
-    } else {
-      onChange('');
-    }
+  const handleSelect = (date: Date) => {
+    onChange(dayjs(date).format('YYYY-MM-DD'));
     setIsOpen(false);
   };
 
@@ -93,15 +219,14 @@ export function DatePickerField({
         ) : null}
       </div>
       {isOpen && !disabled ? (
-        <div className={`date-picker-popover ${isDark ? 'rdp-dark' : ''}`}>
-          <DayPicker
-            mode="single"
-            selected={selectedDate}
-            onSelect={handleSelect}
-            disabled={disabled ? true : undefined}
-            fromDate={minDate}
-            toDate={maxDate}
-            weekStartsOn={1}
+        <div className={`date-picker-popover ${isDark ? 'is-dark' : ''}`}>
+          <CalendarPanel
+            selectedDate={selectedDate}
+            viewMonth={viewMonth}
+            onMonthChange={setViewMonth}
+            onDateSelect={handleSelect}
+            minDate={minDate}
+            maxDate={maxDate}
           />
         </div>
       ) : null}
@@ -149,8 +274,6 @@ export function MonthPickerField({
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
-
-  const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
 
   const isMonthDisabled = (year: number, monthIndex: number) => {
     if (minYear !== undefined && minMonth !== undefined) {
@@ -227,7 +350,7 @@ export function MonthPickerField({
             </button>
           </div>
           <div className="month-picker-grid">
-            {months.map((month, index) => {
+            {MONTH_LABELS.map((month, index) => {
               const isSelected = value && dayjs(value).year() === viewYear && dayjs(value).month() === index;
               const isDisabled = isMonthDisabled(viewYear, index);
               return (
@@ -270,6 +393,10 @@ export function DateTimePickerField({
   const fieldId = useId();
   const { isDark } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const [viewMonth, setViewMonth] = useState<Date>(() => {
+    const datePart = value ? value.split('T')[0] : '';
+    return datePart ? dayjs(datePart).toDate() : dayjs().toDate();
+  });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const datePart = value ? value.split('T')[0] : '';
@@ -278,6 +405,12 @@ export function DateTimePickerField({
   const selectedDate = datePart ? dayjs(datePart).toDate() : undefined;
   const minDate = minValue ? dayjs(minValue.split('T')[0]).toDate() : undefined;
   const maxDate = maxValue ? dayjs(maxValue.split('T')[0]).toDate() : undefined;
+
+  useEffect(() => {
+    if (datePart && isOpen) {
+      setViewMonth(dayjs(datePart).toDate());
+    }
+  }, [datePart, isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -292,12 +425,10 @@ export function DateTimePickerField({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      const newDate = dayjs(date).format('YYYY-MM-DD');
-      const finalTime = timePart || '00:00';
-      onChange(`${newDate}T${finalTime}`);
-    }
+  const handleDateSelect = (date: Date) => {
+    const newDate = dayjs(date).format('YYYY-MM-DD');
+    const finalTime = timePart || '00:00';
+    onChange(`${newDate}T${finalTime}`);
     setIsOpen(false);
   };
 
@@ -355,15 +486,14 @@ export function DateTimePickerField({
         ) : null}
       </div>
       {isOpen && !disabled ? (
-        <div className={`date-picker-popover ${isDark ? 'rdp-dark' : ''}`}>
-          <DayPicker
-            mode="single"
-            selected={selectedDate}
-            onSelect={handleDateSelect}
-            disabled={disabled ? true : undefined}
-            fromDate={minDate}
-            toDate={maxDate}
-            weekStartsOn={1}
+        <div className={`date-picker-popover ${isDark ? 'is-dark' : ''}`}>
+          <CalendarPanel
+            selectedDate={selectedDate}
+            viewMonth={viewMonth}
+            onMonthChange={setViewMonth}
+            onDateSelect={handleDateSelect}
+            minDate={minDate}
+            maxDate={maxDate}
           />
         </div>
       ) : null}
@@ -392,6 +522,7 @@ export function DateRangePicker({
 }) {
   const { isDark } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const [viewMonth, setViewMonth] = useState<Date>(() => dayjs().toDate());
   const containerRef = useRef<HTMLDivElement>(null);
 
   const fromDate = startDate ? dayjs(startDate).toDate() : undefined;
@@ -422,9 +553,65 @@ export function DateRangePicker({
     onChange('', '');
   };
 
+  const handleDateClick = (date: Date) => {
+    const dateStr = dayjs(date).format('YYYY-MM-DD');
+    if (!startDate || endDate) {
+      onChange(dateStr, '');
+    } else {
+      if (dayjs(dateStr).isBefore(startDate)) {
+        onChange(dateStr, startDate);
+      } else {
+        onChange(startDate, dateStr);
+      }
+      setIsOpen(false);
+    }
+  };
+
+  const isInRange = (date: dayjs.Dayjs) => {
+    if (!startDate || !endDate) return false;
+    return date.isAfter(dayjs(startDate).subtract(1, 'day')) && date.isBefore(dayjs(endDate).add(1, 'day'));
+  };
+
+  const isStart = (date: dayjs.Dayjs) => {
+    return startDate && date.isSame(dayjs(startDate), 'day');
+  };
+
+  const isEnd = (date: dayjs.Dayjs) => {
+    return endDate && date.isSame(dayjs(endDate), 'day');
+  };
+
   const displayValue = startDate && endDate
     ? `${dayjs(startDate).format('MM/DD')} - ${dayjs(endDate).format('MM/DD')}`
     : '';
+
+  const startOfMonth = dayjs(viewMonth).startOf('month');
+  const endOfMonth = dayjs(viewMonth).endOf('month');
+  const startDay = startOfMonth.day();
+  const startDayAdjusted = startDay === 0 ? 6 : startDay - 1;
+  const daysInMonth = endOfMonth.date();
+  const prevMonthDays = dayjs(viewMonth).subtract(1, 'month').daysInMonth();
+
+  const cells: Array<{ date: dayjs.Dayjs; isCurrentMonth: boolean }> = [];
+
+  for (let i = startDayAdjusted - 1; i >= 0; i--) {
+    cells.push({
+      date: dayjs(viewMonth).subtract(1, 'month').date(prevMonthDays - i),
+      isCurrentMonth: false,
+    });
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    cells.push({
+      date: dayjs(viewMonth).date(i),
+      isCurrentMonth: true,
+    });
+  }
+  const remaining = 42 - cells.length;
+  for (let i = 1; i <= remaining; i++) {
+    cells.push({
+      date: dayjs(viewMonth).add(1, 'month').date(i),
+      isCurrentMonth: false,
+    });
+  }
 
   return (
     <div className={`date-range-picker ${disabled ? 'is-disabled' : ''}`} ref={containerRef}>
@@ -453,7 +640,7 @@ export function DateRangePicker({
         ) : null}
       </div>
       {isOpen && !disabled ? (
-        <div className={`date-picker-popover date-range-popover ${isDark ? 'rdp-dark' : ''}`}>
+        <div className={`date-picker-popover date-range-popover ${isDark ? 'is-dark' : ''}`}>
           <div className="date-range-shortcuts">
             <button type="button" onClick={() => handleQuickSelect(7)}>近7天</button>
             <button type="button" onClick={() => handleQuickSelect(30)}>近30天</button>
@@ -465,21 +652,57 @@ export function DateRangePicker({
               setIsOpen(false);
             }}>本月</button>
           </div>
-          <DayPicker
-            selected={fromDate}
-            onDayClick={(date) => {
-              if (!startDate || endDate) {
-                onChange(dayjs(date).format('YYYY-MM-DD'), '');
-              } else {
-                const start = dayjs(startDate).isBefore(date) ? startDate : dayjs(date).format('YYYY-MM-DD');
-                const end = dayjs(startDate).isBefore(date) ? dayjs(date).format('YYYY-MM-DD') : startDate;
-                onChange(start, end);
-                setIsOpen(false);
-              }
-            }}
-            weekStartsOn={1}
-            numberOfMonths={2}
-          />
+          <div className="custom-calendar">
+            <div className="custom-calendar-header">
+              <button
+                type="button"
+                className="custom-calendar-nav"
+                onClick={() => setViewMonth(dayjs(viewMonth).subtract(1, 'month').toDate())}
+                aria-label="上个月"
+              >
+                ‹
+              </button>
+              <span className="custom-calendar-title">
+                {dayjs(viewMonth).format('YYYY年 M月')}
+              </span>
+              <button
+                type="button"
+                className="custom-calendar-nav"
+                onClick={() => setViewMonth(dayjs(viewMonth).add(1, 'month').toDate())}
+                aria-label="下个月"
+              >
+                ›
+              </button>
+            </div>
+            <div className="custom-calendar-weekdays">
+              {WEEKDAYS.map((d) => (
+                <div key={d} className="custom-calendar-weekday">{d}</div>
+              ))}
+            </div>
+            <div className="custom-calendar-grid">
+              {cells.map(({ date, isCurrentMonth }, idx) => {
+                const selected = isStart(date) || isEnd(date);
+                const inRange = isInRange(date);
+                const today = date.isSame(dayjs(), 'day');
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    className={`custom-calendar-day
+                      ${!isCurrentMonth ? 'is-outside' : ''}
+                      ${selected ? 'is-selected' : ''}
+                      ${inRange ? 'is-in-range' : ''}
+                      ${isStart(date) ? 'is-range-start' : ''}
+                      ${isEnd(date) ? 'is-range-end' : ''}
+                      ${today ? 'is-today' : ''}`}
+                    onClick={() => handleDateClick(date.toDate())}
+                  >
+                    {date.date()}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       ) : null}
     </div>
