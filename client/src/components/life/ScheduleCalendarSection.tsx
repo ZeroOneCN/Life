@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import isBetween from 'dayjs/plugin/isBetween';
 
 import { DateTimePickerField } from '../date';
 import { SectionCard } from '../page';
@@ -26,8 +25,6 @@ import type {
   ScheduleRecurrenceType,
   ScheduleSettings,
 } from '../../types/schedule';
-
-dayjs.extend(isBetween);
 
 interface ScheduleCalendarSectionProps {
   settings: ScheduleSettings;
