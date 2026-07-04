@@ -3,7 +3,24 @@ import dayjs from 'dayjs';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
+import {
+  Btn,
+  DataTable,
+  DeleteIcon,
+  DeleteModal,
+  EditIcon,
+  ExportButton,
+  Field,
+  FilterBar,
+  FilterTag,
+  IconBtn,
+  Modal,
+  Pagination,
+  SearchInput,
+  SelectField,
+  Tag,
+  TextArea,
+} from '../ui';
 import {
   SHOPPING_ALL_LEDGERS,
   SHOPPING_RECORD_PAGE_SIZE,
@@ -329,31 +346,58 @@ export function ShoppingRecordsSection({
           </div>
         </form>
 
-        <div className="shopping-filter-grid">
-          <SelectField
-            label="筛选账本"
-            value={filterLedgerId}
-            onChange={(event) => onFilterLedgerIdChange(event.target.value)}
-          >
-            <option value={SHOPPING_ALL_LEDGERS}>全部账本</option>
-            {ledgers.map((ledger) => (
-              <option key={ledger.id} value={ledger.id}>{ledger.name}</option>
+        <FilterBar
+          rightSlot={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <SelectField
+                value={platformFilter}
+                onChange={(event) => setPlatformFilter(event.target.value)}
+                style={{ width: 120 }}
+              >
+                <option value="">全部平台</option>
+                {platforms.map((platform) => (
+                  <option key={platform.id} value={platform.name}>{platform.name}</option>
+                ))}
+              </SelectField>
+              <DatePickerField
+                value={dateFilter}
+                onChange={setDateFilter}
+                placeholder="日期筛选"
+              />
+              <ExportButton
+                label="导出"
+                onExport={(format) => {
+                  showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
+                }}
+              />
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+            <div style={{ width: 260, flexShrink: 0 }}>
+              <SearchInput
+                value={keyword}
+                onChange={setKeyword}
+                placeholder="搜索商品、订单号、备注..."
+              />
+            </div>
+            <FilterTag
+              label="全部账本"
+              active={filterLedgerId === SHOPPING_ALL_LEDGERS}
+              onClick={() => onFilterLedgerIdChange(SHOPPING_ALL_LEDGERS)}
+              count={records.length}
+            />
+            {ledgers.slice(0, 4).map((ledger) => (
+              <FilterTag
+                key={ledger.id}
+                label={ledger.name}
+                active={filterLedgerId === ledger.id}
+                onClick={() => onFilterLedgerIdChange(ledger.id)}
+                count={records.filter((r) => r.ledgerId === ledger.id).length}
+              />
             ))}
-          </SelectField>
-          <SelectField label="平台筛选" value={platformFilter} onChange={(event) => setPlatformFilter(event.target.value)}>
-            <option value="">全部平台</option>
-            {platforms.map((platform) => (
-              <option key={platform.id} value={platform.name}>{platform.name}</option>
-            ))}
-          </SelectField>
-          <DatePickerField label="日期筛选" value={dateFilter} onChange={setDateFilter} placeholder="不限日期" />
-          <Field
-            label="关键词"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="搜索商品、规格、订单号或备注"
-          />
-        </div>
+          </div>
+        </FilterBar>
 
         <div className="shopping-summary-bar">
           <span className="subtle-text">
