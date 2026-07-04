@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 
 import { DatePickerField, MonthPickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
+import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, ExportButton, Field, FilterBar, FilterTag, IconBtn, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
 import { LOAN_ALL_PLATFORMS, LOAN_BILL_PAGE_SIZE, formatLoanAmount, getLoanBillStatus, suggestLoanDueDate } from '../../services/loan';
 import type { LoanBill, LoanBillDraft, LoanPlatform } from '../../types/loan';
 
@@ -311,32 +311,60 @@ export function LoanBillsSection({
           </div>
         </div>
 
-        <div className="loan-filter-grid loan-filter-grid-bills">
-          <SelectField label="平台筛选" value={platformFilter} onChange={(event) => setPlatformFilter(event.target.value)}>
-            <option value={LOAN_ALL_PLATFORMS}>全部平台</option>
-            {platforms.map((platform) => (
-              <option key={platform.id} value={platform.id}>{platform.name}</option>
-            ))}
-          </SelectField>
-          <SelectField
-            label="状态筛选"
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}
-          >
-            <option value="all">全部状态</option>
-            <option value="unpaid">待还</option>
-            <option value="overdue">已逾期</option>
-            <option value="paid">已还</option>
-          </SelectField>
-          <div className="loan-modal-date-slot loan-modal-date-slot-end">
-            <MonthPickerField
-              label="账单月份"
-              value={monthFilter}
-              onChange={setMonthFilter}
-              placeholder="不限月份"
+        <FilterBar
+          rightSlot={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <MonthPickerField
+                value={monthFilter}
+                onChange={setMonthFilter}
+                placeholder="不限月份"
+              />
+              <ExportButton
+                label="导出"
+                onExport={(format) => {
+                  showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
+                }}
+              />
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+            <SelectField
+              value={platformFilter}
+              onChange={(event) => setPlatformFilter(event.target.value)}
+              style={{ width: 140 }}
+            >
+              <option value={LOAN_ALL_PLATFORMS}>全部平台</option>
+              {platforms.map((platform) => (
+                <option key={platform.id} value={platform.id}>{platform.name}</option>
+              ))}
+            </SelectField>
+            <FilterTag
+              label="全部状态"
+              active={statusFilter === 'all'}
+              onClick={() => setStatusFilter('all')}
+              count={filteredBills.length}
+            />
+            <FilterTag
+              label="待还"
+              active={statusFilter === 'unpaid'}
+              onClick={() => setStatusFilter('unpaid')}
+              count={filteredBills.filter((bill) => !bill.isPaid && getLoanBillStatus(bill) !== 'overdue').length}
+            />
+            <FilterTag
+              label="已逾期"
+              active={statusFilter === 'overdue'}
+              onClick={() => setStatusFilter('overdue')}
+              count={filteredBills.filter((bill) => getLoanBillStatus(bill) === 'overdue').length}
+            />
+            <FilterTag
+              label="已还"
+              active={statusFilter === 'paid'}
+              onClick={() => setStatusFilter('paid')}
+              count={filteredBills.filter((bill) => bill.isPaid).length}
             />
           </div>
-        </div>
+        </FilterBar>
 
         <div className="loan-summary-bar">
           <span className="subtle-text">共 {filteredBills.length} 笔账单</span>
