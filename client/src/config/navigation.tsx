@@ -5,6 +5,7 @@ const Dashboard = lazyWithProgress(() => import('../pages/Dashboard'));
 const NotificationCenterPage = lazyWithProgress(() => import('../pages/notifications/NotificationCenterPage'));
 const ProfileSettingsPage = lazyWithProgress(() => import('../pages/settings/Profile'));
 const HealthDashboardPage = lazyWithProgress(() => import('../pages/health/HealthDashboard'));
+const HealthReportPage = lazyWithProgress(() => import('../pages/health/HealthReport'));
 const StepPage = lazyWithProgress(() => import('../pages/health/Step'));
 const FitnessPage = lazyWithProgress(() => import('../pages/health/Fitness'));
 const CheckupPage = lazyWithProgress(() => import('../pages/health/Checkup'));
@@ -31,6 +32,7 @@ export const menuItems: MenuItemConfig[] = [
     label: '健康中心',
     children: [
       { key: '/health/dashboard', icon: 'dashboard', label: '健康概览' },
+      { key: '/health/report', icon: 'chart', label: '健康报告' },
       { key: '/health/step', icon: 'spark', label: '运动步数' },
       { key: '/health/fitness', icon: 'trend', label: '健身减脂' },
       { key: '/health/checkup', icon: 'task', label: '体检指标' },
@@ -77,6 +79,7 @@ export const menuItems: MenuItemConfig[] = [
 export const routes: RouteConfig[] = [
   { path: '/dashboard', label: '首页', breadcrumb: ['首页'], menuKey: '/dashboard', component: Dashboard },
   { path: '/health/dashboard', label: '健康概览', breadcrumb: ['健康中心', '健康概览'], menuKey: '/health/dashboard', component: HealthDashboardPage },
+  { path: '/health/report', label: '健康报告', breadcrumb: ['健康中心', '健康报告'], menuKey: '/health/report', component: HealthReportPage },
   { path: '/health/step', label: '运动步数', breadcrumb: ['健康中心', '运动步数'], menuKey: '/health/step', component: StepPage },
   { path: '/health/fitness', label: '健身减脂', breadcrumb: ['健康中心', '健身减脂'], menuKey: '/health/fitness', component: FitnessPage },
   { path: '/health/checkup', label: '体检指标', breadcrumb: ['健康中心', '体检指标'], menuKey: '/health/checkup', component: CheckupPage },
