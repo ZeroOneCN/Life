@@ -122,6 +122,8 @@ const SCENE_SEED: ReadonlyArray<{
   { scene_id: 'finance.report.monthly', label: '月度财务报告', enabled: false, summary: '', description: '' },
   { scene_id: 'finance.budget.warning', label: '预算预警提醒', enabled: false, summary: '', description: '' },
   { scene_id: 'finance.budget.overspend', label: '预算超支警告', enabled: false, summary: '', description: '' },
+  { scene_id: 'finance.bill.upcoming', label: '账单即将到期提醒', enabled: false, summary: '', description: '' },
+  { scene_id: 'finance.bill.overdue', label: '账单逾期提醒', enabled: false, summary: '', description: '' },
   { scene_id: 'travel.followup', label: '旅行归档跟进', enabled: false, summary: '', description: '' },
 ];
 
@@ -399,6 +401,46 @@ const TEMPLATE_SEED = [
       <tr><td style="padding: 4px 0; color: #64748b;">超支金额</td><td style="padding: 4px 0; font-weight: 600; text-align: right; color: #dc2626;">¥ {{meta.overAmount}}</td></tr>
       <tr><td style="padding: 4px 0; color: #64748b;">分类</td><td style="padding: 4px 0; text-align: right;">{{meta.categoryName}}</td></tr>
     </table>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'finance.bill.upcoming',
+    title: '📅 账单提醒：{{title}}',
+    body: '{{message}}\n\n账单数量：{{meta.billCount}}\n待付总金额：¥ {{meta.totalAmount}}\n提醒天数：{{meta.leadDays}} 天',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #6366f1, #4f46e5); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 账单提醒</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">📅 {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px; white-space: pre-line;">{{message}}</p>
+    <div style="background: #eef2ff; border-left: 4px solid #6366f1; padding: 10px 14px; border-radius: 6px; margin-top: 12px;">
+      <div style="font-size: 13px; color: #64748b;">待付总金额</div>
+      <div style="font-size: 22px; font-weight: 700; color: #4338ca;">¥ {{meta.totalAmount}}</div>
+      <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">共 {{meta.billCount}} 笔账单</div>
+    </div>
+  </div>
+</div>`,
+  },
+  {
+    scene_id: 'finance.bill.overdue',
+    title: '⚠️ 账单逾期：{{title}}',
+    body: '{{message}}\n\n逾期数量：{{meta.overdueCount}}\n逾期金额：¥ {{meta.overdueAmount}}\n待付总金额：¥ {{meta.totalAmount}}',
+    format: 'html' as const,
+    html_body: `<div style="font-family: -apple-system, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #ef4444; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; padding: 14px 20px;">
+    <div style="font-size: 12px; opacity: .85; letter-spacing: .08em;">LifeOS · 账单逾期</div>
+    <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">⚠️ {{title}}</div>
+  </div>
+  <div style="padding: 16px 20px; color: #1f2937; line-height: 1.6;">
+    <p style="margin: 0 0 12px; white-space: pre-line;">{{message}}</p>
+    <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 10px 14px; border-radius: 6px; margin-top: 12px;">
+      <div style="font-size: 13px; color: #64748b;">逾期金额</div>
+      <div style="font-size: 22px; font-weight: 700; color: #b91c1c;">¥ {{meta.overdueAmount}}</div>
+      <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">逾期 {{meta.overdueCount}} 笔 / 共 {{meta.billCount}} 笔待付</div>
+    </div>
   </div>
 </div>`,
   },

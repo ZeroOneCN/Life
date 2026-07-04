@@ -25,6 +25,7 @@ import { createAssistantRouter } from '../modules/system/assistant.router';
 import { createFinanceReportRouter } from '../modules/finance/finance-report.router';
 import { createExchangeRateRouter } from '../modules/finance/exchange-rate.router';
 import { createBudgetRouter } from '../modules/finance/budget.router';
+import { createBillRouter } from '../modules/finance/bill.router';
 import { createTelegramRouter } from '../modules/telegram/telegram.router';
 import { requireJwtAuth } from '../shared/http/auth-middleware';
 import { asyncHandler } from '../shared/http/async-handler';
@@ -65,6 +66,7 @@ export function createApiRouter() {
   router.use('/finance/report', createFinanceReportRouter());
   router.use('/finance/exchange-rate', createExchangeRateRouter());
   router.use('/finance/budget', createBudgetRouter());
+  router.use('/finance/bill', createBillRouter());
   router.use('/telegram', createTelegramRouter());
 
   return router;
