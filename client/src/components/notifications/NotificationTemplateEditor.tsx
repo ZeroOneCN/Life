@@ -85,8 +85,21 @@ export function NotificationTemplateEditor({ scene, template, onSaved }: Notific
   const [htmlBody, setHtmlBody] = useState(template.htmlBody || '');
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+  const [focusedField, setFocusedField] = useState<'title' | 'body' | 'htmlBody'>('body');
 
-  const previewText = useMemo(() => renderPreview(body, SAMPLE_VARS), [body]);
+  const handleInsertVariable = (token: string) => {
+    switch (focusedField) {
+      case 'title':
+        setTitle((prev) => prev + token);
+        break;
+      case 'body':
+        setBody((prev) => prev + token);
+        break;
+      case 'htmlBody':
+        setHtmlBody((prev) => prev + token);
+        break;
+    }
+  };
   const previewHtml = useMemo(() => renderPreview(htmlBody, SAMPLE_VARS), [htmlBody]);
   const previewTitle = useMemo(() => renderPreview(title, SAMPLE_VARS), [title]);
 
@@ -163,6 +176,7 @@ export function NotificationTemplateEditor({ scene, template, onSaved }: Notific
           rows={1}
           value={title}
           onChange={(event) => setTitle(event.target.value)}
+          onFocus={() => setFocusedField('title')}
           hint={`示例：{{title}} → ${previewTitle}`}
         />
       </div>
@@ -195,6 +209,7 @@ export function NotificationTemplateEditor({ scene, template, onSaved }: Notific
                     rows={10}
                     value={htmlBody}
                     onChange={(event) => setHtmlBody(event.target.value)}
+                    onFocus={() => setFocusedField('htmlBody')}
                     hint="支持 inline-style 样式，{{title}} / {{message}} / {{date}} / {{userId}} / {{meta.xxx}} 等占位符"
                   />
                   <div className="nt-preset-list">
@@ -219,6 +234,7 @@ export function NotificationTemplateEditor({ scene, template, onSaved }: Notific
                   rows={10}
                   value={body}
                   onChange={(event) => setBody(event.target.value)}
+                  onFocus={() => setFocusedField('body')}
                   hint="支持 {{title}} / {{message}} / {{date}} / {{userId}} / {{meta.xxx}} 插值"
                 />
               )}
@@ -243,11 +259,19 @@ export function NotificationTemplateEditor({ scene, template, onSaved }: Notific
 
         <div className="nt-editor-side">
           <div className="nt-side-title">可用变量</div>
+          <div className="nt-side-hint">点击变量快速插入到当前编辑字段</div>
           <ul className="nt-variable-list">
             {TEMPLATE_VARIABLES.map((variable) => (
               <li key={variable.token}>
-                <code>{variable.token}</code>
-                <span>{variable.description}</span>
+                <button
+                  type="button"
+                  className="nt-variable-chip"
+                  onClick={() => handleInsertVariable(variable.token)}
+                  title={`插入 ${variable.token}`}
+                >
+                  <code>{variable.token}</code>
+                  <span>{variable.description}</span>
+                </button>
               </li>
             ))}
           </ul>
