@@ -9507,7 +9507,14 @@ img {
   color: inherit;
   font-size: var(--fs-body);
   transition: all 0.15s;
+  animation: dashItemFadeIn 0.3s ease both;
 }
+.dash-agenda-item:nth-child(1) { animation-delay: 0.05s; }
+.dash-agenda-item:nth-child(2) { animation-delay: 0.10s; }
+.dash-agenda-item:nth-child(3) { animation-delay: 0.15s; }
+.dash-agenda-item:nth-child(4) { animation-delay: 0.20s; }
+.dash-agenda-item:nth-child(5) { animation-delay: 0.25s; }
+.dash-agenda-item:nth-child(6) { animation-delay: 0.30s; }
 .dash-agenda-item:hover {
   background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface-2));
   border-color: var(--color-primary);
@@ -9647,8 +9654,30 @@ img {
 .dash-timeline-row {
   padding: 12px 0;
   border-bottom: 1px solid var(--color-surface-3);
+  animation: dashItemFadeIn 0.25s ease both;
 }
+.dash-timeline-row:nth-child(1) { animation-delay: 0.05s; }
+.dash-timeline-row:nth-child(2) { animation-delay: 0.08s; }
+.dash-timeline-row:nth-child(3) { animation-delay: 0.11s; }
+.dash-timeline-row:nth-child(4) { animation-delay: 0.14s; }
+.dash-timeline-row:nth-child(5) { animation-delay: 0.17s; }
+.dash-timeline-row:nth-child(6) { animation-delay: 0.20s; }
+.dash-timeline-row:nth-child(7) { animation-delay: 0.23s; }
+.dash-timeline-row:nth-child(8) { animation-delay: 0.26s; }
 .dash-timeline-row:last-child { border-bottom: none; }
+
+@keyframes dashItemFadeIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-agenda-item,
+  .dash-upcoming-sub-item,
+  .dash-timeline-row {
+    animation: none;
+  }
+}
 
 .dash-timeline-cell-time {
   font-size: var(--fs-caption);
@@ -14553,7 +14582,13 @@ select:focus-visible {
   padding: 10px 12px;
   background: var(--color-surface-2);
   border-radius: 8px;
+  animation: dashItemFadeIn 0.3s ease both;
 }
+.dash-upcoming-sub-item:nth-child(1) { animation-delay: 0.05s; }
+.dash-upcoming-sub-item:nth-child(2) { animation-delay: 0.10s; }
+.dash-upcoming-sub-item:nth-child(3) { animation-delay: 0.15s; }
+.dash-upcoming-sub-item:nth-child(4) { animation-delay: 0.20s; }
+.dash-upcoming-sub-item:nth-child(5) { animation-delay: 0.25s; }
 
 .dash-upcoming-sub-main {
   display: flex;
