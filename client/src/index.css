@@ -9406,18 +9406,24 @@ img {
   border: 1px solid var(--color-hairline);
   border-radius: var(--radius-lg, 16px);
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .dash-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+  border-color: color-mix(in srgb, var(--color-primary) 25%, var(--color-hairline));
 }
 
 .dash-card-link {
   text-decoration: none;
   color: inherit;
   display: block;
+}
+
+.dash-card-link:hover .dash-card-icon {
+  transform: scale(1.08);
+  transition: transform 0.2s ease;
 }
 
 .dash-arrow {
@@ -9677,6 +9683,16 @@ img {
   .dash-timeline-row {
     animation: none;
   }
+  .dash-card,
+  .dash-quick-btn,
+  .dash-card-icon,
+  .qa-icon {
+    transition: none;
+  }
+  .dash-card:hover,
+  .dash-quick-btn:hover {
+    transform: none;
+  }
 }
 
 .dash-timeline-cell-time {
@@ -9840,7 +9856,7 @@ img {
   background: var(--color-surface-2);
   border: 1px solid var(--color-hairline);
   border-radius: 14px;
-  cursor: pointer; transition: all 0.15s;
+  cursor: pointer; transition: all 0.18s ease;
   text-decoration: none; color: inherit;
 }
 
@@ -9848,6 +9864,16 @@ img {
   background: color-mix(in srgb, var(--color-primary) 8%, transparent);
   border-color: var(--color-primary);
   color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.dash-quick-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.dash-quick-btn:hover .qa-icon {
+  transform: scale(1.1);
+  transition: transform 0.18s ease;
 }
 
 .dash-quick-btn .qa-icon {
