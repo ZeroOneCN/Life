@@ -4,7 +4,7 @@ import { NotificationChannelCard } from '../../components/NotificationChannelCar
 import { NotificationLogTable } from '../../components/NotificationLogTable';
 import { NotificationTemplateEditor } from '../../components/notifications/NotificationTemplateEditor';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
-import { Btn, Checkbox, DeleteModal, PillTabs, Switch, Tag, Toast, useToastState } from '../../components/ui';
+import { Btn, Checkbox, DeleteModal, FilterTag, PillTabs, SearchInput, Switch, Tag, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import {
@@ -51,6 +51,9 @@ export default function NotificationCenterPage() {
   const [logTotalPages, setLogTotalPages] = useState(1);
   const [paginatedLogs, setPaginatedLogs] = useState<NotificationLogEntry[]>([]);
   const [activeTemplateSceneId, setActiveTemplateSceneId] = useState<NotificationSceneId | null>(null);
+  const [sceneFilter, setSceneFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
+  const [logSearch, setLogSearch] = useState('');
+  const [logStatusFilter, setLogStatusFilter] = useState<'all' | 'success' | 'error' | 'skipped'>('all');
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
@@ -101,6 +104,11 @@ export default function NotificationCenterPage() {
   }, [notificationState.channels, notificationState.scenes, notificationState.templates]);
 
   const sceneList = Object.values(notificationState.scenes);
+  const filteredSceneList = sceneList.filter((scene) => {
+    if (sceneFilter === 'enabled') return scene.enabled;
+    if (sceneFilter === 'disabled') return !scene.enabled;
+    return true;
+  });
   const latestLogs = notificationState.logs.slice(0, 5);
   const currentTemplateSceneId: NotificationSceneId | null = activeTemplateSceneId ?? sceneList[0]?.id ?? null;
   const currentTemplateScene = currentTemplateSceneId ? notificationState.scenes[currentTemplateSceneId] : null;
@@ -222,42 +230,64 @@ export default function NotificationCenterPage() {
       ) : null}
 
       {tab === 'scenes' ? (
-        <div className="scene-grid">
-          {sceneList.map((scene) => (
-            <SectionCard key={scene.id} title={scene.label} description={scene.description}>
-              <div className="page-stack">
-                <Switch
-                  checked={scene.enabled}
-                  onChange={(enabled) => {
-                    void updateSceneConfig(scene.id, { enabled })
-                      .then(() => {
-                        showToast(`${scene.label} 已${enabled ? '启用' : '停用'}。`);
-                      })
-                      .catch((error) => {
-                        showToast(buildApiErrorMessage(error, `${scene.label} 更新失败。`), 'error');
-                      });
-                  }}
-                  label="场景开关"
-                  description={scene.summary}
-                  statusText={scene.enabled ? '已启用' : '已停用'}
-                />
-                <div className="channel-checkbox-group">
-                  {Object.values(notificationState.channels).map((channel) => (
-                    <Checkbox
-                      key={`${scene.id}-${channel.type}`}
-                      checked={scene.channels.includes(channel.type)}
-                      onChange={() => {
-                        void toggleSceneChannel(scene.id, channel.type);
-                      }}
-                    >
-                      {channelLabels[channel.type]}
-                    </Checkbox>
-                  ))}
+        <>
+          <div className="scene-filter-bar">
+            <FilterTag
+              label="全部"
+              active={sceneFilter === 'all'}
+              onClick={() => setSceneFilter('all')}
+              count={sceneList.length}
+            />
+            <FilterTag
+              label="已启用"
+              active={sceneFilter === 'enabled'}
+              onClick={() => setSceneFilter('enabled')}
+              count={sceneList.filter((s) => s.enabled).length}
+            />
+            <FilterTag
+              label="已停用"
+              active={sceneFilter === 'disabled'}
+              onClick={() => setSceneFilter('disabled')}
+              count={sceneList.filter((s) => !s.enabled).length}
+            />
+          </div>
+          <div className="scene-grid">
+            {filteredSceneList.map((scene) => (
+              <SectionCard key={scene.id} title={scene.label} description={scene.description || scene.summary}>
+                <div className="page-stack">
+                  <Switch
+                    checked={scene.enabled}
+                    onChange={(enabled) => {
+                      void updateSceneConfig(scene.id, { enabled })
+                        .then(() => {
+                          showToast(`${scene.label} 已${enabled ? '启用' : '停用'}。`);
+                        })
+                        .catch((error) => {
+                          showToast(buildApiErrorMessage(error, `${scene.label} 更新失败。`), 'error');
+                        });
+                    }}
+                    label="场景开关"
+                    description={scene.summary}
+                    statusText={scene.enabled ? '已启用' : '已停用'}
+                  />
+                  <div className="channel-checkbox-group">
+                    {Object.values(notificationState.channels).map((channel) => (
+                      <Checkbox
+                        key={`${scene.id}-${channel.type}`}
+                        checked={scene.channels.includes(channel.type)}
+                        onChange={() => {
+                          void toggleSceneChannel(scene.id, channel.type);
+                        }}
+                      >
+                        {channelLabels[channel.type]}
+                      </Checkbox>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </SectionCard>
-          ))}
-        </div>
+              </SectionCard>
+            ))}
+          </div>
+        </>
       ) : null}
 
       {tab === 'templates' ? (
@@ -319,6 +349,42 @@ export default function NotificationCenterPage() {
             </Btn>
           ) : undefined}
         >
+          <div className="log-filter-bar">
+            <SearchInput
+              value={logSearch}
+              onChange={setLogSearch}
+              placeholder="搜索日志标题或消息..."
+            />
+            <div className="log-status-filters">
+              <FilterTag
+                label="全部"
+                active={logStatusFilter === 'all'}
+                onClick={() => setLogStatusFilter('all')}
+                count={notificationState.logs.length}
+              />
+              <FilterTag
+                label="成功"
+                active={logStatusFilter === 'success'}
+                onClick={() => setLogStatusFilter('success')}
+                count={notificationState.logs.filter((l) => l.status === 'success').length}
+                tone="green"
+              />
+              <FilterTag
+                label="失败"
+                active={logStatusFilter === 'error'}
+                onClick={() => setLogStatusFilter('error')}
+                count={notificationState.logs.filter((l) => l.status === 'error').length}
+                tone="red"
+              />
+              <FilterTag
+                label="跳过"
+                active={logStatusFilter === 'skipped'}
+                onClick={() => setLogStatusFilter('skipped')}
+                count={notificationState.logs.filter((l) => l.status === 'skipped').length}
+                tone="orange"
+              />
+            </div>
+          </div>
           <NotificationLogTable
             logs={paginatedLogs}
             page={logPage}

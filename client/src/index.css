@@ -1038,6 +1038,33 @@ textarea {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
+  margin-top: 16px;
+}
+
+.scene-filter-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.log-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.log-filter-bar .search-input-wrapper {
+  flex: 1;
+  min-width: 200px;
+  max-width: 320px;
+}
+
+.log-status-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .scene-grid .section-card {
