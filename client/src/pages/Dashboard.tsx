@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { EmptyState, PageHeader } from '../components/page';
-import { PageLoading, Skeleton, Tag } from '../components/ui';
+import { PageLoading, Skeleton, Tag, Toast, useToastState } from '../components/ui';
 import { buildApiErrorMessage, apiGet } from '../lib/api';
 import type {
   DashboardAgendaItem,
@@ -131,10 +131,15 @@ export default function Dashboard() {
   const [summary, setSummary] = useState<DashboardPageSummary | null>(null);
   const [netPnlRaw, setNetPnlRaw] = useState<number>(0);
   const [loadingError, setLoadingError] = useState<string>('');
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const { toast, showToast } = useToastState();
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
+      const isFirstLoad = !hasLoadedRef.current;
+      if (!isFirstLoad) setIsRefreshing(true);
       try {
         const raw = await apiGet<RawDashboardSummaryResponse>('/dashboard/summary');
         if (cancelled) return;
@@ -194,10 +199,19 @@ export default function Dashboard() {
           })),
           connectedModuleCount: Number(raw.overviewCards.find((item) => item.key === 'modules')?.value ?? 0),
         });
+        hasLoadedRef.current = true;
         setLoadingError('');
       } catch (error) {
         if (cancelled) return;
-        setLoadingError(buildApiErrorMessage(error, '首页数据加载失败'));
+        const message = buildApiErrorMessage(error, '首页数据加载失败');
+        if (hasLoadedRef.current) {
+          /* 后续刷新失败：保留旧数据，仅 Toast 提示 */
+          showToast(message, 'error');
+        } else {
+          setLoadingError(message);
+        }
+      } finally {
+        if (!cancelled) setIsRefreshing(false);
       }
     };
     void load();
@@ -266,7 +280,14 @@ export default function Dashboard() {
   const isPnlPositive = netPnlRaw >= 0;
 
   return (
-    <div className="page-stack dashboard-page">
+    <div className={`page-stack dashboard-page${isRefreshing ? ' is-refreshing' : ''}`}>
+      {isRefreshing && (
+        <div className="dash-refresh-indicator" aria-live="polite">
+          <span className="dash-refresh-spinner" />
+          <span>同步中…</span>
+        </div>
+      )}
+      <Toast toast={toast} />
       <PageHeader
         title="LifeOS 控制台"
         subtitle="一目了然，快速行动"
