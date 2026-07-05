@@ -9608,6 +9608,25 @@ img {
 }
 
 /* ===== 最近动态：表格化时间线 ===== */
+.dash-timeline-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.dash-timeline-controls .search-input-wrapper {
+  flex: 1;
+  min-width: 160px;
+}
+
+.dash-timeline-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .dash-timeline-grid {
   display: grid;
   grid-template-columns: minmax(160px, auto) minmax(60px, auto) 1fr;

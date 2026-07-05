@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { EmptyState, PageHeader } from '../components/page';
-import { PageLoading, Skeleton, Tag, Toast, useToastState } from '../components/ui';
+import { FilterTag, PageLoading, SearchInput, Skeleton, Tag, Toast, useToastState } from '../components/ui';
 import { buildApiErrorMessage, apiGet } from '../lib/api';
 import type {
   DashboardAgendaItem,
@@ -137,6 +137,8 @@ export default function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const { toast, showToast } = useToastState();
   const hasLoadedRef = useRef(false);
+  const [timelineSearch, setTimelineSearch] = useState('');
+  const [timelineFilter, setTimelineFilter] = useState<'all' | 'notif' | 'agenda'>('all');
 
   useEffect(() => {
     let cancelled = false;
@@ -232,8 +234,8 @@ export default function Dashboard() {
 
   const timelineItems = useMemo(() => {
     if (!summary) return [];
-    const items: Array<{ time: string; module: string; moduleClass: string; title: string; sortKey: number }> = [];
-    summary.notifications.recentLogs.slice(0, 6).forEach((log) => {
+    const items: Array<{ time: string; module: string; moduleClass: string; title: string; sortKey: number; type: 'notif' | 'agenda' }> = [];
+    summary.notifications.recentLogs.forEach((log) => {
       const d = new Date(log.createdAt);
       const year = d.getFullYear();
       const month = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -241,17 +243,32 @@ export default function Dashboard() {
       const hour = d.getHours().toString().padStart(2, '0');
       const minute = d.getMinutes().toString().padStart(2, '0');
       const second = d.getSeconds().toString().padStart(2, '0');
-      items.push({ time: `${year}-${month}-${day} ${hour}:${minute}:${second}`, module: '通知', moduleClass: 'is-notif', title: log.title, sortKey: d.getTime() });
+      items.push({ time: `${year}-${month}-${day} ${hour}:${minute}:${second}`, module: '通知', moduleClass: 'is-notif', title: log.title, sortKey: d.getTime(), type: 'notif' });
     });
-    summary.agenda.slice(0, 4).forEach((item) => {
+    summary.agenda.forEach((item) => {
       const sortKey = item.targetDate ? new Date(item.targetDate).getTime() : 0;
       const raw = item.targetDate ? item.targetDate.replace('T', ' ').slice(0, 19) : '-';
       /* 日期只有 YYYY-MM-DD 时补全为 00:00:00 */
       const time = raw !== '-' && raw.length <= 10 ? `${raw} 00:00:00` : raw;
-      items.push({ time, module: item.module, moduleClass: 'is-agenda', title: item.title, sortKey });
+      items.push({ time, module: item.module, moduleClass: 'is-agenda', title: item.title, sortKey, type: 'agenda' });
     });
     return items.sort((a, b) => b.sortKey - a.sortKey);
   }, [summary]);
+
+  /* 搜索 + 类型筛选后的动态列表 */
+  const filteredTimelineItems = useMemo(() => {
+    const keyword = timelineSearch.trim().toLowerCase();
+    return timelineItems
+      .filter((item) => timelineFilter === 'all' || item.type === timelineFilter)
+      .filter((item) => !keyword || item.title.toLowerCase().includes(keyword) || item.module.toLowerCase().includes(keyword))
+      .slice(0, 20);
+  }, [timelineItems, timelineSearch, timelineFilter]);
+
+  const timelineCounts = useMemo(() => {
+    const notifCount = timelineItems.filter((i) => i.type === 'notif').length;
+    const agendaCount = timelineItems.filter((i) => i.type === 'agenda').length;
+    return { all: timelineItems.length, notif: notifCount, agenda: agendaCount };
+  }, [timelineItems]);
 
   /* 从最近日志中判断各渠道是否有最近活动（非配置状态） */
   const channelActivity = useMemo(() => {
@@ -517,7 +534,7 @@ export default function Dashboard() {
           </div>
         </Link>
 
-        {/* ====== 6. 最近动态（表格）====== */}
+        {/* ====== 6. 最近动态（表格 + 搜索筛选）====== */}
         <div className="dash-masonry-item dash-card">
           <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-notif"><IconBell /></div>
@@ -529,18 +546,36 @@ export default function Dashboard() {
           <div className="dash-card-bd">
             {timelineItems.length > 0 ? (
               <>
-                <div className="dash-timeline-grid dash-timeline-header">
-                  <span>日期时间</span>
-                  <span>类型</span>
-                  <span>具体内容</span>
-                </div>
-                {timelineItems.map((item, i) => (
-                  <div key={i} className="dash-timeline-grid dash-timeline-row">
-                    <span className="dash-timeline-cell-time">{item.time}</span>
-                    <span className={`dash-timeline-cell-module ${item.moduleClass}`}>{item.module}</span>
-                    <span className="dash-timeline-cell-title">{item.title}</span>
+                <div className="dash-timeline-controls">
+                  <SearchInput
+                    value={timelineSearch}
+                    onChange={setTimelineSearch}
+                    placeholder="搜索动态..."
+                  />
+                  <div className="dash-timeline-filters">
+                    <FilterTag label="全部" active={timelineFilter === 'all'} onClick={() => setTimelineFilter('all')} count={timelineCounts.all} />
+                    <FilterTag label="通知" active={timelineFilter === 'notif'} onClick={() => setTimelineFilter('notif')} count={timelineCounts.notif} />
+                    <FilterTag label="待办" active={timelineFilter === 'agenda'} onClick={() => setTimelineFilter('agenda')} count={timelineCounts.agenda} />
                   </div>
-                ))}
+                </div>
+                {filteredTimelineItems.length > 0 ? (
+                  <>
+                    <div className="dash-timeline-grid dash-timeline-header">
+                      <span>日期时间</span>
+                      <span>类型</span>
+                      <span>具体内容</span>
+                    </div>
+                    {filteredTimelineItems.map((item, i) => (
+                      <div key={i} className="dash-timeline-grid dash-timeline-row">
+                        <span className="dash-timeline-cell-time">{item.time}</span>
+                        <span className={`dash-timeline-cell-module ${item.moduleClass}`}>{item.module}</span>
+                        <span className="dash-timeline-cell-title" title={item.title}>{item.title}</span>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <EmptyState title="未找到匹配的动态" description="尝试调整搜索关键词或筛选条件" />
+                )}
               </>
             ) : (
               <EmptyState title="暂无动态" description="当有新活动时会在这里显示" />
