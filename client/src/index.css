@@ -9695,6 +9695,35 @@ img {
   }
 }
 
+/* ===== Dashboard 暗色模式适配（DASH-08）===== */
+[data-theme="dark"] .dash-card:hover {
+  box-shadow: 0 12px 28px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2);
+}
+
+[data-theme="dark"] .dash-refresh-indicator {
+  box-shadow: 0 4px 12px rgba(83, 58, 253, 0.4);
+}
+
+[data-theme="dark"] .dash-agenda-item:hover {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface-3));
+}
+
+/* 暗色模式：模块主题色使用更暗的背景 + 更亮的文字 */
+[data-theme="dark"] {
+  --color-module-step-bg: #1e1b3e;
+  --color-module-step-ink: #a594fc;
+  --color-module-finance-bg: #0c1e3a;
+  --color-module-finance-ink: #60a5fa;
+  --color-module-life-bg: #3a0f2a;
+  --color-module-life-ink: #f472b6;
+  --color-module-invest-bg: #0a2a1e;
+  --color-module-invest-ink: #34d399;
+  --color-module-notif-bg: #2a1e0a;
+  --color-module-notif-ink: #fbbf24;
+  --color-module-health-bg: #0a2a1a;
+  --color-module-health-ink: #4ade80;
+}
+
 .dash-timeline-cell-time {
   font-size: var(--fs-caption);
   color: var(--color-ink-secondary);
