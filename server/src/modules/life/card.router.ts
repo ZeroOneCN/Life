@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import dayjs from 'dayjs';
+import type { DeepPartial } from 'typeorm';
 
 import { appDataSource } from '../../db/data-source';
 import { LifeCardRecordEntity } from './entities/life-card-record.entity';
@@ -773,12 +774,12 @@ export function createCardRouter() {
   router.patch('/settings', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const payload = validateBody(settingsSchema, request.body);
-    const settings = await settingService.update(userId, {
-      balance_low_enabled: payload.balanceLowEnabled,
-      billing_upcoming_enabled: payload.billingUpcomingEnabled,
-      balance_threshold: payload.balanceThreshold,
-      notification_days_before: payload.notificationDaysBefore,
-    }, {
+    const updatePayload: Record<string, unknown> = {};
+    if (payload.balanceLowEnabled !== undefined) updatePayload.balance_low_enabled = payload.balanceLowEnabled;
+    if (payload.billingUpcomingEnabled !== undefined) updatePayload.billing_upcoming_enabled = payload.billingUpcomingEnabled;
+    if (payload.balanceThreshold !== undefined) updatePayload.balance_threshold = payload.balanceThreshold;
+    if (payload.notificationDaysBefore !== undefined) updatePayload.notification_days_before = payload.notificationDaysBefore;
+    const settings = await settingService.update(userId, updatePayload as DeepPartial<LifeCardSettingEntity>, {
       balance_low_enabled: true,
       billing_upcoming_enabled: true,
       balance_threshold: 10,

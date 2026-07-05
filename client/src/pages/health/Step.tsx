@@ -13,7 +13,6 @@ import {
   buildStepRecordTime,
   findNextEmptyHour,
   getCurrentTimeDefault,
-  getNextStepHour,
   getTodayEndDateTime,
   inferStepHourFromRecordTime,
 } from '../../services/stepRecords';
@@ -197,29 +196,19 @@ export default function StepPage() {
     setSelectedHour(inferStepHourFromRecordTime(value));
   };
 
-  const resetEntryState = (hour: StepHour) => {
+  const resetEntryState = async (hour: StepHour) => {
     setStepsInput('');
 
-    // 23 点保存后：跳到全天模式（recordTime = 录入日期的结束，而非今天结束）
-    if (hour === 23) {
-      setSelectedHour(null);
-      setRecordTime(buildStepRecordTime(recordTime, null));
-      focusStepsInput();
-      return;
+    try {
+      const response = await stepApi.getTodayHours();
+      const nextEmpty = findNextEmptyHour(response.hours);
+      setSelectedHour(nextEmpty.hour);
+      setRecordTime(nextEmpty.recordTime);
+    } catch {
+      const current = getCurrentTimeDefault();
+      setSelectedHour(current.hour);
+      setRecordTime(current.recordTime);
     }
-
-    // 全天保存后：跳到录入日期的次日 08:00（不是今天的次日）
-    if (hour === null) {
-      setSelectedHour(8);
-      const nextDay = dayjs(recordTime).add(1, 'day').format('YYYY-MM-DDTHH:mm');
-      setRecordTime(buildStepRecordTime(nextDay, 8));
-      focusStepsInput();
-      return;
-    }
-
-    const nextHour = getNextStepHour(hour);
-    setSelectedHour(nextHour);
-    setRecordTime((previous) => buildStepRecordTime(previous || getTodayEndDateTime(), nextHour));
     focusStepsInput();
   };
 

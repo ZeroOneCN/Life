@@ -19,6 +19,7 @@ import {
 } from '../../components/ui';
 import { buildApiErrorMessage } from '../../lib/api';
 import { billApi } from '../../services/billApi';
+import { loanApi } from '../../services/loanApi';
 import type { UnifiedBill, BillSummary, BillReminderSetting, BillType, BillStatus } from '../../types/bill';
 import { BILL_TYPE_LABELS, BILL_STATUS_LABELS } from '../../types/bill';
 import type { TableColumn } from '../../types/ui';
@@ -200,8 +201,8 @@ export default function BillPage() {
         return;
       }
       const sourceId = bill.id.replace('loan_', '');
-      await billApi.markPaid('loan', sourceId);
-      showToast('已标记为已支付', 'success');
+      await loanApi.markBillPaid(sourceId);
+      showToast('已标记为已支付，还款记录已同步创建。', 'success');
       void loadBills(selectedMonth, selectedType);
       void loadSummary(selectedMonth);
       setDetailModalOpen(false);
