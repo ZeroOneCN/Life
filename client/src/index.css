@@ -3730,6 +3730,8 @@ textarea {
   gap: 8px;
   font-size: var(--fs-caption);
   color: var(--color-ink-tertiary);
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 .nt-template-item-title {
@@ -3738,7 +3740,8 @@ textarea {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 160px;
+  flex: 1;
+  min-width: 0;
 }
 
 .nt-template-item-empty {
