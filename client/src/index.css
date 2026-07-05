@@ -4009,6 +4009,8 @@ textarea {
   border-radius: 8px;
   padding: 18px;
   min-height: 220px;
+  max-height: 480px;
+  overflow-y: auto;
 }
 
 .nt-preview-html-frame {
@@ -4017,6 +4019,7 @@ textarea {
   padding: 8px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
   overflow-x: auto;
+  max-width: 100%;
 }
 
 .nt-preview-html-frame * {

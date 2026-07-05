@@ -16,7 +16,14 @@ import {
   clearNotificationLogs,
   getNotificationLogs,
 } from '../../services/notificationCenter';
-import type { NotificationChannelType, NotificationSceneId, NotificationLogEntry } from '../../types/notifications';
+import type { NotificationChannelType, NotificationSceneId, NotificationLogEntry, NotificationTemplate } from '../../types/notifications';
+
+const DEFAULT_TEMPLATE: NotificationTemplate = {
+  title: '{{title}}',
+  body: '{{message}}',
+  format: 'text',
+  htmlBody: '',
+};
 
 const tabOptions = [
   { value: 'overview', label: '总览' },
@@ -97,7 +104,9 @@ export default function NotificationCenterPage() {
   const latestLogs = notificationState.logs.slice(0, 5);
   const currentTemplateSceneId: NotificationSceneId | null = activeTemplateSceneId ?? sceneList[0]?.id ?? null;
   const currentTemplateScene = currentTemplateSceneId ? notificationState.scenes[currentTemplateSceneId] : null;
-  const currentTemplate = currentTemplateSceneId ? notificationState.templates[currentTemplateSceneId] : null;
+  const currentTemplate = currentTemplateSceneId
+    ? notificationState.templates[currentTemplateSceneId] ?? DEFAULT_TEMPLATE
+    : null;
 
   const toggleSceneChannel = async (sceneId: NotificationSceneId, channel: NotificationChannelType) => {
     const current = notificationState.scenes[sceneId];
@@ -258,7 +267,7 @@ export default function NotificationCenterPage() {
             <div className="nt-template-sidebar-hint">选择场景以编辑对应的标题与正文模板。HTML 模板将下发到所有渠道。</div>
             <ul className="nt-template-list">
               {sceneList.map((scene) => {
-                const template = notificationState.templates[scene.id];
+                const template = notificationState.templates[scene.id] ?? DEFAULT_TEMPLATE;
                 const isActive = currentTemplateSceneId === scene.id;
                 return (
                   <li key={scene.id}>
@@ -269,10 +278,10 @@ export default function NotificationCenterPage() {
                     >
                       <span className="nt-template-item-name">{scene.label}</span>
                       <span className="nt-template-item-meta">
-                        <Tag tone={template?.format === 'html' ? 'blue' : 'default'}>
-                          {template?.format === 'html' ? 'HTML' : '文本'}
+                        <Tag tone={template.format === 'html' ? 'blue' : 'default'}>
+                          {template.format === 'html' ? 'HTML' : '文本'}
                         </Tag>
-                        {template?.title ? <span className="nt-template-item-title">{template.title}</span> : <span className="nt-template-item-empty">未配置</span>}
+                        <span className="nt-template-item-title">{template.title}</span>
                       </span>
                     </button>
                   </li>
