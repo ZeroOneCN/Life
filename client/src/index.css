@@ -9547,6 +9547,7 @@ img {
 }
 .dash-step-meta-label { font-size: var(--fs-body); color: var(--color-ink-secondary); }
 .dash-step-meta-value { font-size: var(--fs-body); font-weight: var(--fw-semibold); color: var(--color-success); }
+.dash-step-hint { font-size: var(--fs-caption); color: var(--color-primary); font-weight: var(--fw-semibold); }
 
 /* ===== 健康中心：指标 2x2 网格 ===== */
 .dash-mini-grid {

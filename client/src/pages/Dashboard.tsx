@@ -130,6 +130,9 @@ const SEVERITY_DOT_CLASS: Record<string, string> = {
 export default function Dashboard() {
   const [summary, setSummary] = useState<DashboardPageSummary | null>(null);
   const [netPnlRaw, setNetPnlRaw] = useState<number>(0);
+  const [hasInvestmentData, setHasInvestmentData] = useState<boolean>(false);
+  const [hasFinanceAlerts, setHasFinanceAlerts] = useState<boolean>(false);
+  const [hasLifeAlerts, setHasLifeAlerts] = useState<boolean>(false);
   const [loadingError, setLoadingError] = useState<string>('');
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const { toast, showToast } = useToastState();
@@ -149,6 +152,9 @@ export default function Dashboard() {
         });
 
         setNetPnlRaw(raw.investment.stats.netPnl);
+        setHasInvestmentData(raw.investment.stats.netCapital !== 0 || raw.investment.stats.activeTradeCount > 0);
+        setHasFinanceAlerts(raw.finance.stats.totalUnpaidLoanAmount > 0 || raw.finance.stats.overdueLoanCount > 0);
+        setHasLifeAlerts(raw.life.stats.pendingTodoCount > 0 || raw.life.stats.dueTodayTodoCount > 0);
         setSummary({
           overviewCards: raw.overviewCards.map((item) => ({ id: item.key, label: item.label, value: String(item.value), helper: '' })),
           agenda: raw.agenda,
@@ -343,8 +349,14 @@ export default function Dashboard() {
                 {h[0]?.value?.toLocaleString() || '0'}
               </div>
               <div className="dash-step-meta">
-                <span className="dash-step-meta-label">今日已录入</span>
-                <span className="dash-step-meta-value">{stepsNum.toLocaleString()} 步</span>
+                {stepsNum > 0 ? (
+                  <>
+                    <span className="dash-step-meta-label">今日已录入</span>
+                    <span className="dash-step-meta-value">{stepsNum.toLocaleString()} 步</span>
+                  </>
+                ) : (
+                  <span className="dash-step-hint">点击录入今日步数 →</span>
+                )}
               </div>
             </div>
             <div className="dash-mini-grid">
@@ -414,7 +426,9 @@ export default function Dashboard() {
             ))}
             <div className="dash-trend-cta">
               <span className={`dash-trend-cta-pill ${isPnlPositive ? 'is-positive' : 'is-negative'}`}>
-                {isPnlPositive ? '盈利中' : '亏损中'} · 查看详情 →
+                {hasInvestmentData
+                  ? `${isPnlPositive ? '盈利中' : '亏损中'} · 查看详情 →`
+                  : '暂无交易记录 · 点击开始 →'}
               </span>
             </div>
           </div>
@@ -438,7 +452,9 @@ export default function Dashboard() {
               </div>
             ))}
             <div className="dash-trend-cta">
-              <span className="dash-trend-cta-pill is-negative">管理财务 →</span>
+              <span className={`dash-trend-cta-pill ${hasFinanceAlerts ? 'is-negative' : 'is-primary'}`}>
+                {hasFinanceAlerts ? '管理财务 →' : '暂无待处理账单 →'}
+              </span>
             </div>
           </div>
         </Link>
@@ -494,7 +510,9 @@ export default function Dashboard() {
               </div>
             ))}
             <div className="dash-trend-cta">
-              <span className="dash-trend-cta-pill is-primary">管理生活 →</span>
+              <span className="dash-trend-cta-pill is-primary">
+                {hasLifeAlerts ? '管理生活 →' : '今日无待办 →'}
+              </span>
             </div>
           </div>
         </Link>
@@ -540,30 +558,41 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="dash-card-bd">
-            <div className="dash-notif-stats">
-              <div className="dash-notif-stat">
-                <div className="dash-notif-stat-value is-primary">{summary.notifications.enabledChannels}</div>
-                <div className="dash-notif-stat-label">已启用渠道</div>
-              </div>
-              <div className="dash-notif-stat">
-                <div className="dash-notif-stat-value">{summary.notifications.logCount}</div>
-                <div className="dash-notif-stat-label">最近日志数</div>
-              </div>
-            </div>
-            <div className="dash-notif-channel-list">
-              <div className="dash-notif-channel-row">
-                <span className="dash-notif-channel-row-label">邮件通道</span>
-                <Tag tone={channelActivity.email ? 'green' : 'default'}>{channelActivity.email ? '有日志' : '静默'}</Tag>
-              </div>
-              <div className="dash-notif-channel-row">
-                <span className="dash-notif-channel-row-label">企业微信</span>
-                <Tag tone={channelActivity.wechatWork ? 'green' : 'default'}>{channelActivity.wechatWork ? '有日志' : '静默'}</Tag>
-              </div>
-              <div className="dash-notif-channel-row">
-                <span className="dash-notif-channel-row-label">Webhook</span>
-                <Tag tone={channelActivity.webhook ? 'green' : 'default'}>{channelActivity.webhook ? '有日志' : '静默'}</Tag>
-              </div>
-            </div>
+            {summary.notifications.enabledChannels === 0 ? (
+              <EmptyState
+                icon={<IconBell />}
+                title="尚未启用通知渠道"
+                description="前往通知中心配置，及时接收提醒"
+                action={<Link to="/settings/notifications" className="dash-link-primary">前往配置 →</Link>}
+              />
+            ) : (
+              <>
+                <div className="dash-notif-stats">
+                  <div className="dash-notif-stat">
+                    <div className="dash-notif-stat-value is-primary">{summary.notifications.enabledChannels}</div>
+                    <div className="dash-notif-stat-label">已启用渠道</div>
+                  </div>
+                  <div className="dash-notif-stat">
+                    <div className="dash-notif-stat-value">{summary.notifications.logCount}</div>
+                    <div className="dash-notif-stat-label">最近日志数</div>
+                  </div>
+                </div>
+                <div className="dash-notif-channel-list">
+                  <div className="dash-notif-channel-row">
+                    <span className="dash-notif-channel-row-label">邮件通道</span>
+                    <Tag tone={channelActivity.email ? 'green' : 'default'}>{channelActivity.email ? '有日志' : '静默'}</Tag>
+                  </div>
+                  <div className="dash-notif-channel-row">
+                    <span className="dash-notif-channel-row-label">企业微信</span>
+                    <Tag tone={channelActivity.wechatWork ? 'green' : 'default'}>{channelActivity.wechatWork ? '有日志' : '静默'}</Tag>
+                  </div>
+                  <div className="dash-notif-channel-row">
+                    <span className="dash-notif-channel-row-label">Webhook</span>
+                    <Tag tone={channelActivity.webhook ? 'green' : 'default'}>{channelActivity.webhook ? '有日志' : '静默'}</Tag>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
