@@ -80,6 +80,10 @@ export default function StepPage() {
     showToastRef.current(...args);
   }, []);
 
+  /** 用 ref 稳定 stepsInput 引用，避免 visibilitychange 监听器频繁重建 */
+  const stepsInputRef2 = useRef(stepsInput);
+  stepsInputRef2.current = stepsInput;
+
   /**
    * 加载页面核心数据（设置、摘要、环比）。
    * 不再一次性加载全部 records，改为各子组件按需请求后端分页 API。
@@ -145,7 +149,7 @@ export default function StepPage() {
    */
   useEffect(() => {
     const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && !stepsInput.trim()) {
+      if (document.visibilityState === 'visible' && !stepsInputRef2.current.trim()) {
         try {
           const response = await stepApi.getTodayHours();
           const nextEmpty = findNextEmptyHour(response.hours);
@@ -163,7 +167,7 @@ export default function StepPage() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [stepsInput]);
+  }, []);
 
   const focusStepsInput = () => {
     window.setTimeout(() => {
