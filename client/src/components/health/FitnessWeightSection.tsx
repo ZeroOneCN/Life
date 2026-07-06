@@ -251,7 +251,7 @@ export function FitnessWeightSection({
       <div className="page-stack">
         {/* 录入表单 */}
         <form
-          className="form-grid fitness-entry-grid"
+          className="form-grid fitness-entry-grid fitness-entry-grid-weight"
           onSubmit={(event) => {
             event.preventDefault();
             handleCreate();
@@ -473,7 +473,7 @@ export function FitnessWeightSection({
         }
       >
         <form
-          className="form-grid fitness-entry-grid"
+          className="form-grid fitness-entry-grid fitness-entry-grid-weight"
           onSubmit={(event) => {
             event.preventDefault();
             handleSaveEdit();

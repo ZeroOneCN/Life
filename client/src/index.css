@@ -2012,7 +2012,15 @@ textarea {
 }
 
 .fitness-entry-grid-weight {
-  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.fitness-entry-grid-weight input[type="number"] {
+  max-width: 100px;
+}
+
+.fitness-entry-grid-weight .form-grid-spacer {
+  grid-column: span 4;
 }
 
 /* 一行式表单中的按钮与输入框底部对齐 */
