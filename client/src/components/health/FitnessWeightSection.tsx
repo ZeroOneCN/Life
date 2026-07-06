@@ -450,33 +450,152 @@ export function FitnessWeightSection({
             handleSaveEdit();
           }}
         >
-          <DatePickerField
-            label="记录日期"
-            value={editingForm.date}
-            onChange={(value) => setEditingForm((previous) => ({ ...previous, date: value }))}
-            clearable={false}
-          />
-          <Field
-            label="体重（kg）"
-            type="number"
-            step="0.01"
-            value={editingForm.weight}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, weight: event.target.value }))}
-          />
-          <Field
-            label="身高（cm）"
-            type="number"
-            step="0.1"
-            value={editingForm.height}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, height: event.target.value }))}
-          />
-          <Field
-            label="体脂率（%）"
-            type="number"
-            step="0.1"
-            value={editingForm.bodyFat}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, bodyFat: event.target.value }))}
-          />
+          <div className="weight-form-row-main">
+            <Field
+              label="体重（kg）"
+              type="number"
+              step="0.01"
+              value={editingForm.weight}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, weight: event.target.value }))}
+              className="weight-field-primary"
+            />
+            <Field
+              label="身高（cm）"
+              type="number"
+              step="0.1"
+              value={editingForm.height}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, height: event.target.value }))}
+              className="weight-field-secondary"
+            />
+            <DatePickerField
+              label="记录日期"
+              value={editingForm.date}
+              onChange={(value) => setEditingForm((previous) => ({ ...previous, date: value }))}
+              clearable={false}
+            />
+          </div>
+          <div className="weight-form-row-advanced">
+            <Field
+              label="体脂率（%）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={editingForm.bodyFat}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, bodyFat: event.target.value }))}
+            />
+            <Field
+              label="内脏脂肪"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={editingForm.visceralFat}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, visceralFat: event.target.value }))}
+            />
+            <Field
+              label="脂肪量（kg）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={editingForm.fatMass}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, fatMass: event.target.value }))}
+            />
+            <Field
+              label="肌肉率（%）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={editingForm.muscleRate}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, muscleRate: event.target.value }))}
+            />
+            <Field
+              label="肌肉量（kg）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={editingForm.muscleMass}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, muscleMass: event.target.value }))}
+            />
+            <Field
+              label="体水分率（%）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={editingForm.bodyWaterRate}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, bodyWaterRate: event.target.value }))}
+            />
+            <Field
+              label="体水分量（kg）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={editingForm.bodyWaterMass}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, bodyWaterMass: event.target.value }))}
+            />
+            <Field
+              label="蛋白量占比（%）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={editingForm.proteinRate}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, proteinRate: event.target.value }))}
+            />
+            <Field
+              label="蛋白量含量（kg）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={editingForm.proteinMass}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, proteinMass: event.target.value }))}
+            />
+            <Field
+              label="骨量占比（%）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={editingForm.boneRate}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, boneRate: event.target.value }))}
+            />
+            <Field
+              label="骨量（kg）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={editingForm.boneMass}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, boneMass: event.target.value }))}
+            />
+            <Field
+              label="骨骼肌率（%）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={editingForm.skeletalMuscleRate}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, skeletalMuscleRate: event.target.value }))}
+            />
+            <Field
+              label="骨骼肌量（kg）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={editingForm.skeletalMuscleMass}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, skeletalMuscleMass: event.target.value }))}
+            />
+            <Field
+              label="皮下脂肪率（%）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={editingForm.subcutaneousFatRate}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, subcutaneousFatRate: event.target.value }))}
+            />
+            <Field
+              label="皮下脂肪量（kg）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={editingForm.subcutaneousFatMass}
+              onChange={(event) => setEditingForm((previous) => ({ ...previous, subcutaneousFatMass: event.target.value }))}
+            />
+          </div>
         </form>
       </Modal>
 
