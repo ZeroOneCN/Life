@@ -249,33 +249,6 @@ export function FitnessWeightSection({
       description="记录体重、体脂率和身体成分变化，用于趋势追踪和健康建议分析。"
     >
       <div className="page-stack">
-        {/* 最新概览 */}
-        {latest ? (
-          <div className="weight-summary-row">
-            <div className="weight-summary-item">
-              <span className="weight-summary-label">最新体重</span>
-              <div className="weight-summary-value-row">
-                <strong className="weight-summary-value">{latest.weight} kg</strong>
-                {weightDelta !== 0 && (
-                  <span className={`weight-summary-delta ${weightDelta < 0 ? 'is-down' : 'is-up'}`}>
-                    {weightDelta > 0 ? '+' : ''}{weightDelta} kg
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="weight-summary-item">
-              <span className="weight-summary-label">BMI</span>
-              <strong className="weight-summary-value">{latestBmi ? latestBmi.toFixed(1) : '—'}</strong>
-            </div>
-            {latest.bodyFat && (
-              <div className="weight-summary-item">
-                <span className="weight-summary-label">体脂率</span>
-                <strong className="weight-summary-value">{latest.bodyFat}%</strong>
-              </div>
-            )}
-          </div>
-        ) : null}
-
         {/* 录入表单 */}
         <div className="weight-entry-form">
           <div className="weight-form-row-main">
