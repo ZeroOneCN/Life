@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { DatePickerField, DateTimePickerField } from '../date';
@@ -143,12 +143,12 @@ export function StepRecordsSection({
     setEditingRecordTime(record.recordTime);
   };
 
-  const closeEditModal = () => {
+  const closeEditModal = useCallback(() => {
     setEditingRecord(null);
     setEditingSteps('');
     setEditingHour(null);
     setEditingRecordTime('');
-  };
+  }, []);
 
   const handleSaveEdit = () => {
     if (!editingRecord) {
