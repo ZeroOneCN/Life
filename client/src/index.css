@@ -2045,15 +2045,50 @@ textarea {
 }
 
 .weight-form-row-advanced {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 12px;
+  display: none;
+}
+
+.weight-form-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   margin-bottom: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--color-border);
 }
 
-.weight-form-row-advanced input[type="number"] {
+.weight-form-group {
+  background: var(--color-surface-2);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.weight-form-group-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-secondary);
+  margin-bottom: 10px;
+  padding-left: 2px;
+}
+
+.weight-form-group-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.weight-form-group-fields.cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.weight-form-group-fields.cols-5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.weight-form-group-fields.cols-6 {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.weight-form-group-fields input[type="number"] {
   max-width: 80px;
 }
 
