@@ -580,7 +580,7 @@ textarea {
 .back-to-top {
   position: fixed;
   right: 24px;
-  bottom: 96px;
+  bottom: 112px;
   width: 44px;
   height: 44px;
   display: flex;
@@ -622,7 +622,7 @@ textarea {
 
   .back-to-top {
     right: 16px;
-    bottom: 88px;
+    bottom: 104px;
     width: 40px;
     height: 40px;
     font-size: 16px;
