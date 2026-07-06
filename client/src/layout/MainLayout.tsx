@@ -532,6 +532,8 @@ export default function MainLayout() {
           ↑
         </button>
       ) : null}
+
+      <AssistantLauncher />
     </div>
   );
 }
