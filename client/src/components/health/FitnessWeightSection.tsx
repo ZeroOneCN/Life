@@ -110,7 +110,6 @@ export function FitnessWeightSection({
   const [editingRecord, setEditingRecord] = useState<WeightRecord | null>(null);
   const [editingForm, setEditingForm] = useState<WeightFormState>(() => defaultFormState(defaultHeightCm));
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const filteredRecords = useMemo(() => {
     if (!filterDate) {
@@ -219,7 +218,6 @@ export function FitnessWeightSection({
 
     onChangeRecords((previous) => createWeightRecord(previous, draft));
     setForm(defaultFormState(defaultHeightCm));
-    setShowAdvanced(false);
     showToast('体重记录已新增。');
   };
 
@@ -251,210 +249,171 @@ export function FitnessWeightSection({
       description="记录体重、体脂率和身体成分变化，用于趋势追踪和健康建议分析。"
     >
       <div className="page-stack">
-        {/* 最新概览卡片 */}
+        {/* 最新概览 */}
         {latest ? (
-          <div className="weight-summary-card">
-            <div className="weight-summary-main">
-              <div className="weight-summary-label">最新体重</div>
-              <div className="weight-summary-value">{latest.weight} <span className="weight-summary-unit">kg</span></div>
-              <div className={`weight-summary-delta ${weightDelta < 0 ? 'is-down' : weightDelta > 0 ? 'is-up' : ''}`.trim()}>
-                {weightDelta > 0 ? '+' : ''}{weightDelta} kg
+          <div className="weight-summary-row">
+            <div className="weight-summary-item">
+              <span className="weight-summary-label">最新体重</span>
+              <div className="weight-summary-value-row">
+                <strong className="weight-summary-value">{latest.weight} kg</strong>
+                {weightDelta !== 0 && (
+                  <span className={`weight-summary-delta ${weightDelta < 0 ? 'is-down' : 'is-up'}`}>
+                    {weightDelta > 0 ? '+' : ''}{weightDelta} kg
+                  </span>
+                )}
               </div>
             </div>
-            <div className="weight-summary-divider"></div>
-            <div className="weight-summary-stats">
-              <div className="weight-stat-item">
-                <div className="weight-stat-label">BMI</div>
-                <div className="weight-stat-value">{latestBmi ? latestBmi.toFixed(1) : '—'}</div>
-              </div>
-              {latest.bodyFat && (
-                <div className="weight-stat-item">
-                  <div className="weight-stat-label">体脂率</div>
-                  <div className="weight-stat-value">{latest.bodyFat}%</div>
-                </div>
-              )}
+            <div className="weight-summary-item">
+              <span className="weight-summary-label">BMI</span>
+              <strong className="weight-summary-value">{latestBmi ? latestBmi.toFixed(1) : '—'}</strong>
             </div>
+            {latest.bodyFat && (
+              <div className="weight-summary-item">
+                <span className="weight-summary-label">体脂率</span>
+                <strong className="weight-summary-value">{latest.bodyFat}%</strong>
+              </div>
+            )}
           </div>
         ) : null}
 
         {/* 录入表单 */}
-        <div className="weight-entry-card">
-          <form
-            className="weight-entry-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              handleCreate();
-            }}
-          >
-            <div className="weight-entry-main">
-              <DatePickerField
-                label="记录日期"
-                value={form.date}
-                onChange={(value) => setForm((previous) => ({ ...previous, date: value }))}
-                clearable={false}
-              />
-              <div className="weight-entry-row">
-                <Field
-                  label="体重（kg）"
-                  type="number"
-                  step="0.01"
-                  placeholder="73.8"
-                  value={form.weight}
-                  onChange={(event) => setForm((previous) => ({ ...previous, weight: event.target.value }))}
-                  className="weight-field-primary"
-                />
-                <Field
-                  label="身高（cm）"
-                  type="number"
-                  step="0.1"
-                  placeholder="170"
-                  value={form.height}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setForm((previous) => ({ ...previous, height: value }));
-                    const num = Number(value);
-                    if (num > 0 && onDefaultHeightChange) {
-                      onDefaultHeightChange(num);
-                    }
-                  }}
-                  className="weight-field-secondary"
-                />
-              </div>
-              <div className="weight-entry-actions">
-                <Btn type="submit">保存记录</Btn>
-                <Btn tone="secondary" onClick={() => setShowAdvanced(!showAdvanced)}>
-                  {showAdvanced ? '收起' : '+ 更多指标'}
-                </Btn>
-              </div>
-            </div>
+        <div className="weight-entry-form">
+          <div className="weight-form-row-main">
+            <Field
+              label="体重（kg）"
+              type="number"
+              step="0.01"
+              placeholder="73.8"
+              value={form.weight}
+              onChange={(event) => setForm((previous) => ({ ...previous, weight: event.target.value }))}
+              className="weight-field-primary"
+            />
+            <Field
+              label="身高（cm）"
+              type="number"
+              step="0.1"
+              placeholder="170"
+              value={form.height}
+              onChange={(event) => {
+                const value = event.target.value;
+                setForm((previous) => ({ ...previous, height: value }));
+                const num = Number(value);
+                if (num > 0 && onDefaultHeightChange) {
+                  onDefaultHeightChange(num);
+                }
+              }}
+              className="weight-field-secondary"
+            />
+            <DatePickerField
+              label="记录日期"
+              value={form.date}
+              onChange={(value) => setForm((previous) => ({ ...previous, date: value }))}
+              clearable={false}
+            />
+          </div>
 
-            {showAdvanced && (
-              <div className="weight-entry-advanced">
-                <div className="weight-advanced-grid">
-                  <Field
-                    label="体脂率（%）"
-                    type="number"
-                    step="0.1"
-                    placeholder="可选"
-                    value={form.bodyFat}
-                    onChange={(event) => setForm((previous) => ({ ...previous, bodyFat: event.target.value }))}
-                  />
-                  <Field
-                    label="内脏脂肪"
-                    type="number"
-                    step="0.1"
-                    placeholder="可选"
-                    value={form.visceralFat}
-                    onChange={(event) => setForm((previous) => ({ ...previous, visceralFat: event.target.value }))}
-                  />
-                  <Field
-                    label="脂肪量（kg）"
-                    type="number"
-                    step="0.1"
-                    placeholder="可选"
-                    value={form.fatMass}
-                    onChange={(event) => setForm((previous) => ({ ...previous, fatMass: event.target.value }))}
-                  />
-                  <Field
-                    label="肌肉率（%）"
-                    type="number"
-                    step="0.1"
-                    placeholder="可选"
-                    value={form.muscleRate}
-                    onChange={(event) => setForm((previous) => ({ ...previous, muscleRate: event.target.value }))}
-                  />
-                  <Field
-                    label="肌肉量（kg）"
-                    type="number"
-                    step="0.1"
-                    placeholder="可选"
-                    value={form.muscleMass}
-                    onChange={(event) => setForm((previous) => ({ ...previous, muscleMass: event.target.value }))}
-                  />
-                  <Field
-                    label="体水分率（%）"
-                    type="number"
-                    step="0.1"
-                    placeholder="可选"
-                    value={form.bodyWaterRate}
-                    onChange={(event) => setForm((previous) => ({ ...previous, bodyWaterRate: event.target.value }))}
-                  />
-                  <Field
-                    label="体水分量（kg）"
-                    type="number"
-                    step="0.1"
-                    placeholder="可选"
-                    value={form.bodyWaterMass}
-                    onChange={(event) => setForm((previous) => ({ ...previous, bodyWaterMass: event.target.value }))}
-                  />
-                  <Field
-                    label="蛋白量占比（%）"
-                    type="number"
-                    step="0.1"
-                    placeholder="可选"
-                    value={form.proteinRate}
-                    onChange={(event) => setForm((previous) => ({ ...previous, proteinRate: event.target.value }))}
-                  />
-                  <Field
-                    label="蛋白量含量（kg）"
-                    type="number"
-                    step="0.1"
-                    placeholder="可选"
-                    value={form.proteinMass}
-                    onChange={(event) => setForm((previous) => ({ ...previous, proteinMass: event.target.value }))}
-                  />
-                  <Field
-                    label="骨量占比（%）"
-                    type="number"
-                    step="0.1"
-                    placeholder="可选"
-                    value={form.boneRate}
-                    onChange={(event) => setForm((previous) => ({ ...previous, boneRate: event.target.value }))}
-                  />
-                  <Field
-                    label="骨量（kg）"
-                    type="number"
-                    step="0.1"
-                    placeholder="可选"
-                    value={form.boneMass}
-                    onChange={(event) => setForm((previous) => ({ ...previous, boneMass: event.target.value }))}
-                  />
-                  <Field
-                    label="骨骼肌率（%）"
-                    type="number"
-                    step="0.1"
-                    placeholder="可选"
-                    value={form.skeletalMuscleRate}
-                    onChange={(event) => setForm((previous) => ({ ...previous, skeletalMuscleRate: event.target.value }))}
-                  />
-                  <Field
-                    label="骨骼肌量（kg）"
-                    type="number"
-                    step="0.1"
-                    placeholder="可选"
-                    value={form.skeletalMuscleMass}
-                    onChange={(event) => setForm((previous) => ({ ...previous, skeletalMuscleMass: event.target.value }))}
-                  />
-                  <Field
-                    label="皮下脂肪率（%）"
-                    type="number"
-                    step="0.1"
-                    placeholder="可选"
-                    value={form.subcutaneousFatRate}
-                    onChange={(event) => setForm((previous) => ({ ...previous, subcutaneousFatRate: event.target.value }))}
-                  />
-                  <Field
-                    label="皮下脂肪量（kg）"
-                    type="number"
-                    step="0.1"
-                    placeholder="可选"
-                    value={form.subcutaneousFatMass}
-                    onChange={(event) => setForm((previous) => ({ ...previous, subcutaneousFatMass: event.target.value }))}
-                  />
-                </div>
-              </div>
-            )}
-          </form>
+          <div className="weight-form-row-advanced">
+            <Field
+              label="体脂率（%）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={form.bodyFat}
+              onChange={(event) => setForm((previous) => ({ ...previous, bodyFat: event.target.value }))}
+            />
+            <Field
+              label="内脏脂肪"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={form.visceralFat}
+              onChange={(event) => setForm((previous) => ({ ...previous, visceralFat: event.target.value }))}
+            />
+            <Field
+              label="脂肪量（kg）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={form.fatMass}
+              onChange={(event) => setForm((previous) => ({ ...previous, fatMass: event.target.value }))}
+            />
+            <Field
+              label="肌肉率（%）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={form.muscleRate}
+              onChange={(event) => setForm((previous) => ({ ...previous, muscleRate: event.target.value }))}
+            />
+            <Field
+              label="肌肉量（kg）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={form.muscleMass}
+              onChange={(event) => setForm((previous) => ({ ...previous, muscleMass: event.target.value }))}
+            />
+            <Field
+              label="体水分率（%）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={form.bodyWaterRate}
+              onChange={(event) => setForm((previous) => ({ ...previous, bodyWaterRate: event.target.value }))}
+            />
+            <Field
+              label="蛋白量占比（%）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={form.proteinRate}
+              onChange={(event) => setForm((previous) => ({ ...previous, proteinRate: event.target.value }))}
+            />
+            <Field
+              label="骨量（kg）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={form.boneMass}
+              onChange={(event) => setForm((previous) => ({ ...previous, boneMass: event.target.value }))}
+            />
+            <Field
+              label="骨骼肌率（%）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={form.skeletalMuscleRate}
+              onChange={(event) => setForm((previous) => ({ ...previous, skeletalMuscleRate: event.target.value }))}
+            />
+            <Field
+              label="骨骼肌量（kg）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={form.skeletalMuscleMass}
+              onChange={(event) => setForm((previous) => ({ ...previous, skeletalMuscleMass: event.target.value }))}
+            />
+            <Field
+              label="皮下脂肪率（%）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={form.subcutaneousFatRate}
+              onChange={(event) => setForm((previous) => ({ ...previous, subcutaneousFatRate: event.target.value }))}
+            />
+            <Field
+              label="体水分量（kg）"
+              type="number"
+              step="0.1"
+              placeholder="可选"
+              value={form.bodyWaterMass}
+              onChange={(event) => setForm((previous) => ({ ...previous, bodyWaterMass: event.target.value }))}
+            />
+          </div>
+
+          <div className="weight-form-actions">
+            <Btn type="submit" onClick={handleCreate}>保存记录</Btn>
+          </div>
         </div>
 
         {/* 筛选 & 列表 */}
