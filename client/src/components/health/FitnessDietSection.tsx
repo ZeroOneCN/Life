@@ -54,7 +54,7 @@ function parseDraft(form: DietFormState): DietRecordDraft | null {
     return null;
   }
 
-  if (!Number.isFinite(grams) || grams <= 0 || !Number.isFinite(calories) || calories <= 0) {
+  if (!Number.isFinite(grams) || grams < 0 || !Number.isFinite(calories) || calories < 0) {
     return null;
   }
 
@@ -62,8 +62,8 @@ function parseDraft(form: DietFormState): DietRecordDraft | null {
     date: form.date,
     mealType: form.mealType,
     foodName: form.foodName.trim(),
-    grams,
-    calories,
+    grams: grams || 0,
+    calories: calories || 0,
     protein: Number.isFinite(protein) ? protein : 0,
     carbs: Number.isFinite(carbs) ? carbs : 0,
     fat: Number.isFinite(fat) ? fat : 0,
@@ -185,7 +185,7 @@ export function FitnessDietSection({
     const draft = parseDraft(form);
 
     if (!draft) {
-      showToast('请补全饮食记录的日期、食物、重量和热量。', 'error');
+      showToast('请补全饮食记录的日期和食物名称。', 'error');
       return;
     }
 
@@ -251,41 +251,47 @@ export function FitnessDietSection({
       description="记录每日进食结构、热量和三大营养素，用于看板和健康建议分析。"
     >
       <div className="page-stack">
-        <form className="form-grid fitness-entry-grid fitness-entry-grid-diet" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
-          <DatePickerField
-            label="记录日期"
-            value={form.date}
-            onChange={(value) => setForm((previous) => ({ ...previous, date: value }))}
-            clearable={false}
-          />
-          <SelectField
-            label="餐别"
-            value={form.mealType}
-            onChange={(event) => setForm((previous) => ({ ...previous, mealType: event.target.value as MealType }))}
-          >
-            {Object.entries(MEAL_TYPE_META).map(([value, item]) => (
-              <option key={value} value={value}>{item.label}</option>
-            ))}
-          </SelectField>
-          <div className="fitness-name-ai-cell">
-            <Field
-              label="食物名称"
-              placeholder="例如：鸡胸肉沙拉"
-              value={form.foodName}
-              onChange={(event) => setForm((previous) => ({ ...previous, foodName: event.target.value }))}
-            />
-            <Btn
-              tone="secondary"
-              type="button"
-              className="fitness-ai-btn"
-              onClick={() => {
-                void handleAiQuery();
-              }}
-              disabled={aiQuerying || !form.foodName.trim()}
-            >
-              {aiQuerying ? 'AI 估算中…' : 'AI 估算营养'}
-            </Btn>
+        <div className="diet-entry-form">
+          <div className="diet-form-group">
+            <div className="diet-form-group-title">基本信息</div>
+            <div className="diet-form-group-fields">
+              <DatePickerField
+                label="记录日期"
+                value={form.date}
+                onChange={(value) => setForm((previous) => ({ ...previous, date: value }))}
+                clearable={false}
+              />
+              <SelectField
+                label="餐别"
+                value={form.mealType}
+                onChange={(event) => setForm((previous) => ({ ...previous, mealType: event.target.value as MealType }))}
+              >
+                {Object.entries(MEAL_TYPE_META).map(([value, item]) => (
+                  <option key={value} value={value}>{item.label}</option>
+                ))}
+              </SelectField>
+              <div className="fitness-name-ai-cell">
+                <Field
+                  label="食物名称"
+                  placeholder="例如：鸡胸肉沙拉"
+                  value={form.foodName}
+                  onChange={(event) => setForm((previous) => ({ ...previous, foodName: event.target.value }))}
+                />
+                <Btn
+                  tone="secondary"
+                  type="button"
+                  className="fitness-ai-btn"
+                  onClick={() => {
+                    void handleAiQuery();
+                  }}
+                  disabled={aiQuerying || !form.foodName.trim()}
+                >
+                  {aiQuerying ? 'AI 估算中…' : 'AI 估算营养'}
+                </Btn>
+              </div>
+            </div>
           </div>
+
           {aiHint ? (
             <div className="fitness-ai-result">
               <span className={`fitness-ai-result-tag ${aiSource === 'cache' ? 'is-cache' : 'is-ai'}`.trim()}>
@@ -294,48 +300,61 @@ export function FitnessDietSection({
               <span className="fitness-ai-result-text">{aiHint}</span>
             </div>
           ) : null}
-          <Field
-            label="重量（g）"
-            type="number"
-            min="1"
-            value={form.grams}
-            onChange={(event) => setForm((previous) => ({ ...previous, grams: event.target.value }))}
-          />
-          <Field
-            label="热量（kcal）"
-            type="number"
-            min="0"
-            value={form.calories}
-            onChange={(event) => setForm((previous) => ({ ...previous, calories: event.target.value }))}
-          />
-          <Field
-            label="蛋白质（g）"
-            type="number"
-            min="0"
-            step="0.1"
-            value={form.protein}
-            onChange={(event) => setForm((previous) => ({ ...previous, protein: event.target.value }))}
-          />
-          <Field
-            label="碳水（g）"
-            type="number"
-            min="0"
-            step="0.1"
-            value={form.carbs}
-            onChange={(event) => setForm((previous) => ({ ...previous, carbs: event.target.value }))}
-          />
-          <Field
-            label="脂肪（g）"
-            type="number"
-            min="0"
-            step="0.1"
-            value={form.fat}
-            onChange={(event) => setForm((previous) => ({ ...previous, fat: event.target.value }))}
-          />
-          <div className="fitness-save-cell">
-            <Btn tone="primary" type="submit">新增饮食记录</Btn>
+
+          <div className="diet-form-group">
+            <div className="diet-form-group-title">营养成分</div>
+            <div className="diet-form-group-fields cols-5">
+              <Field
+                label="重量（g）"
+                type="number"
+                min="0"
+                placeholder="0"
+                value={form.grams}
+                onChange={(event) => setForm((previous) => ({ ...previous, grams: event.target.value }))}
+              />
+              <Field
+                label="热量（kcal）"
+                type="number"
+                min="0"
+                step="0.1"
+                placeholder="0"
+                value={form.calories}
+                onChange={(event) => setForm((previous) => ({ ...previous, calories: event.target.value }))}
+              />
+              <Field
+                label="蛋白质（g）"
+                type="number"
+                min="0"
+                step="0.1"
+                placeholder="0"
+                value={form.protein}
+                onChange={(event) => setForm((previous) => ({ ...previous, protein: event.target.value }))}
+              />
+              <Field
+                label="碳水（g）"
+                type="number"
+                min="0"
+                step="0.1"
+                placeholder="0"
+                value={form.carbs}
+                onChange={(event) => setForm((previous) => ({ ...previous, carbs: event.target.value }))}
+              />
+              <Field
+                label="脂肪（g）"
+                type="number"
+                min="0"
+                step="0.1"
+                placeholder="0"
+                value={form.fat}
+                onChange={(event) => setForm((previous) => ({ ...previous, fat: event.target.value }))}
+              />
+            </div>
           </div>
-        </form>
+
+          <div className="diet-form-actions">
+            <Btn tone="primary" type="button" onClick={handleCreate}>新增饮食记录</Btn>
+          </div>
+        </div>
 
         <div className="step-filter-grid">
           <DatePickerField
@@ -377,67 +396,77 @@ export function FitnessDietSection({
           </>
         )}
       >
-        <div className="page-stack">
-          <DatePickerField
-            label="记录日期"
-            value={editingForm.date}
-            onChange={(value) => setEditingForm((previous) => ({ ...previous, date: value }))}
-            clearable={false}
-            popoverStrategy="inline"
-          />
-          <div className="form-grid">
-            <SelectField
-              label="餐别"
-              value={editingForm.mealType}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, mealType: event.target.value as MealType }))}
-            >
-              {Object.entries(MEAL_TYPE_META).map(([value, item]) => (
-                <option key={value} value={value}>{item.label}</option>
-              ))}
-            </SelectField>
-            <Field
-              label="食物名称"
-              value={editingForm.foodName}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, foodName: event.target.value }))}
-            />
-            <Field
-              label="重量（g）"
-              type="number"
-              min="1"
-              value={editingForm.grams}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, grams: event.target.value }))}
-            />
-            <Field
-              label="热量（kcal）"
-              type="number"
-              min="0"
-              value={editingForm.calories}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, calories: event.target.value }))}
-            />
-            <Field
-              label="蛋白质（g）"
-              type="number"
-              min="0"
-              step="0.1"
-              value={editingForm.protein}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, protein: event.target.value }))}
-            />
-            <Field
-              label="碳水（g）"
-              type="number"
-              min="0"
-              step="0.1"
-              value={editingForm.carbs}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, carbs: event.target.value }))}
-            />
-            <Field
-              label="脂肪（g）"
-              type="number"
-              min="0"
-              step="0.1"
-              value={editingForm.fat}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, fat: event.target.value }))}
-            />
+        <div className="diet-entry-form">
+          <div className="diet-form-group">
+            <div className="diet-form-group-title">基本信息</div>
+            <div className="diet-form-group-fields">
+              <DatePickerField
+                label="记录日期"
+                value={editingForm.date}
+                onChange={(value) => setEditingForm((previous) => ({ ...previous, date: value }))}
+                clearable={false}
+                popoverStrategy="inline"
+              />
+              <SelectField
+                label="餐别"
+                value={editingForm.mealType}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, mealType: event.target.value as MealType }))}
+              >
+                {Object.entries(MEAL_TYPE_META).map(([value, item]) => (
+                  <option key={value} value={value}>{item.label}</option>
+                ))}
+              </SelectField>
+              <Field
+                label="食物名称"
+                value={editingForm.foodName}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, foodName: event.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="diet-form-group">
+            <div className="diet-form-group-title">营养成分</div>
+            <div className="diet-form-group-fields cols-5">
+              <Field
+                label="重量（g）"
+                type="number"
+                min="0"
+                value={editingForm.grams}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, grams: event.target.value }))}
+              />
+              <Field
+                label="热量（kcal）"
+                type="number"
+                min="0"
+                step="0.1"
+                value={editingForm.calories}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, calories: event.target.value }))}
+              />
+              <Field
+                label="蛋白质（g）"
+                type="number"
+                min="0"
+                step="0.1"
+                value={editingForm.protein}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, protein: event.target.value }))}
+              />
+              <Field
+                label="碳水（g）"
+                type="number"
+                min="0"
+                step="0.1"
+                value={editingForm.carbs}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, carbs: event.target.value }))}
+              />
+              <Field
+                label="脂肪（g）"
+                type="number"
+                min="0"
+                step="0.1"
+                value={editingForm.fat}
+                onChange={(event) => setEditingForm((previous) => ({ ...previous, fat: event.target.value }))}
+              />
+            </div>
           </div>
         </div>
       </Modal>

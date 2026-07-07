@@ -2092,6 +2092,67 @@ textarea {
   max-width: 80px;
 }
 
+.diet-entry-form {
+  background: var(--color-bg-card);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.diet-form-group {
+  margin-bottom: 16px;
+}
+
+.diet-form-group-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-secondary);
+  margin-bottom: 10px;
+  padding-left: 2px;
+}
+
+.diet-form-group-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 1.5fr);
+  gap: 16px;
+}
+
+.diet-form-group-fields.cols-5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.diet-form-group-fields.fitness-name-ai-cell {
+  grid-column: 1 / -1;
+}
+
+.diet-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 1024px) {
+  .diet-form-group-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .diet-form-group-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .diet-form-group-fields > .fitness-name-ai-cell {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .diet-form-group-fields > .fitness-name-ai-cell .fitness-ai-btn {
+    width: 100%;
+  }
+}
+
 .weight-form-actions {
   display: flex;
   justify-content: flex-end;
