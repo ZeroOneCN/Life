@@ -1,0 +1,89 @@
+{
+  "data": [
+    {
+      "id": "image-001",
+      "title": "总览插图",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1783399350000,
+      "devMetadata": {
+        "imageSrc": "assets/dashboard-overview.jpg"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "image-002",
+      "title": "财务模块插图",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1783399350000,
+      "devMetadata": {
+        "imageSrc": "assets/finance-card.jpg"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "image-003",
+      "title": "健康模块插图",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1783399350000,
+      "devMetadata": {
+        "imageSrc": "assets/health-card.jpg"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "image-004",
+      "title": "生活模块插图",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1783399350000,
+      "devMetadata": {
+        "imageSrc": "assets/life-card.jpg"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "page-index",
+      "title": "首页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1783399350000,
+      "devMetadata": {
+        "htmlSrc": "pages/index.html",
+        "interactions": []
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "LifeOS2 设计改版",
+    "designLibrary": {
+      "name": "苹果",
+      "id": "dl_builtin_apple",
+      "version": null,
+      "scope": "built-in-global",
+      "path": "c:\\Users\\Administrator\\.trae-cn\\design_libraries\\dl_builtin_apple",
+      "versionSource": "metadata.json"
+    }
+  }
+}

@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { PageHeader } from '../../components/page';
-import { PillTabs } from '../../components/ui';
+import { Btn, PillTabs } from '../../components/ui';
 import ShoppingPage from './Shopping';
 import TravelPage from './Travel';
 
@@ -14,6 +14,11 @@ const TAB_OPTIONS: Array<{ value: ExpenseTab; label: string }> = [
 
 export default function ExpensePage() {
   const [activeTab, setActiveTab] = useState<ExpenseTab>('shopping');
+  const shoppingRef = useRef<{ openImportModal: () => void }>(null);
+
+  const handleImportExcel = () => {
+    shoppingRef.current?.openImportModal();
+  };
 
   return (
     <div className="page-stack finance-merged-page">
@@ -21,18 +26,23 @@ export default function ExpensePage() {
         title="消费记录"
         subtitle="购物消费与旅行支出统一管理"
         actions={(
-          <div className="merged-page-tabs">
-            <PillTabs
-              options={TAB_OPTIONS}
-              value={activeTab}
-              onChange={(v) => setActiveTab(v as ExpenseTab)}
-            />
+          <div className="inline-row">
+            {activeTab === 'shopping' && (
+              <Btn tone="secondary" onClick={handleImportExcel}>导入 Excel</Btn>
+            )}
+            <div className="merged-page-tabs">
+              <PillTabs
+                options={TAB_OPTIONS}
+                value={activeTab}
+                onChange={(v) => setActiveTab(v as ExpenseTab)}
+              />
+            </div>
           </div>
         )}
       />
 
       <div className="merged-content">
-        {activeTab === 'shopping' ? <ShoppingPage /> : null}
+        {activeTab === 'shopping' ? <ShoppingPage ref={shoppingRef} hideHeader /> : null}
         {activeTab === 'travel' ? <TravelPage /> : null}
       </div>
     </div>

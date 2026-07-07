@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
 import { ShoppingDashboardSection } from '../../components/finance/ShoppingDashboardSection';
 import { ShoppingLedgersSection } from '../../components/finance/ShoppingLedgersSection';
@@ -43,7 +43,10 @@ function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
   return previous.filter((item) => !next.some((record) => record.id === item.id)).map((item) => item.id);
 }
 
-export default function ShoppingPage() {
+export default forwardRef<{ openImportModal: () => void }, { hideHeader?: boolean }>(function ShoppingPage({ hideHeader = false }, ref) {
+  useImperativeHandle(ref, () => ({
+    openImportModal: () => setImportOpen(true),
+  }));
   const [tab, setTab] = usePageTab<ShoppingTab>('records', TAB_OPTIONS.map((item) => item.value), 'shoppingTab');
   const [records, setRecords] = useState<ShoppingRecord[]>([]);
   const [ledgers, setLedgers] = useState<ShoppingLedger[]>([]);
@@ -189,25 +192,27 @@ export default function ShoppingPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader
-        title="网上购物"
-        subtitle={loading ? '正在加载购物数据...' : '记录消费明细、管理账本分类和支出分析。'}
-        actions={(
-          <div className="inline-row">
-            <Btn tone="secondary" onClick={() => setImportOpen(true)}>导入 Excel</Btn>
-            <Btn
-              tone="secondary"
-              onClick={() => {
-                const next = settings.currencyMode === 'CNY' ? 'USDT' : 'CNY';
-                void updateSettings({ currencyMode: next as ShoppingCurrencyMode });
-                showToast(`已切换到 ${next === 'CNY' ? '人民币' : 'USDT'} 视图`);
-              }}
-            >
-              切换到 {settings.currencyMode === 'CNY' ? 'USDT' : '人民币'}
-            </Btn>
-          </div>
-        )}
-      />
+      {!hideHeader && (
+        <PageHeader
+          title="网上购物"
+          subtitle={loading ? '正在加载购物数据...' : '记录消费明细、管理账本分类和支出分析。'}
+          actions={(
+            <div className="inline-row">
+              <Btn tone="secondary" onClick={() => setImportOpen(true)}>导入 Excel</Btn>
+              <Btn
+                tone="secondary"
+                onClick={() => {
+                  const next = settings.currencyMode === 'CNY' ? 'USDT' : 'CNY';
+                  void updateSettings({ currencyMode: next as ShoppingCurrencyMode });
+                  showToast(`已切换到 ${next === 'CNY' ? '人民币' : 'USDT'} 视图`);
+                }}
+              >
+                切换到 {settings.currencyMode === 'CNY' ? 'USDT' : '人民币'}
+              </Btn>
+            </div>
+          )}
+        />
+      )}
 
       {tab !== 'ledgers' ? (
       <SectionCard
@@ -431,4 +436,4 @@ export default function ShoppingPage() {
       <Toast toast={toast} />
     </div>
   );
-}
+});

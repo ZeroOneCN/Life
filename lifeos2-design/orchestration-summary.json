@@ -1,0 +1,76 @@
+{
+  "project": {
+    "name": "LifeOS2 设计改版",
+    "deviceType": "desktop",
+    "operatingMode": "library-bound",
+    "designRead": "Personal life management dashboard / organized individuals / calm Apple-inspired premium / medium density / avoid generic card grids",
+    "designDials": {
+      "layoutVariance": 2,
+      "motionIntensity": 1,
+      "visualDensity": 3
+    },
+    "styleDefinitionBrief": "Life management OS, Apple-inspired premium restraint, DM Sans, restrained surfaces with whitespace hierarchy"
+  },
+  "designSource": {
+    "libraryIdentity": {
+      "name": "苹果",
+      "id": "dl_builtin_apple",
+      "version": "",
+      "scope": "built-in-global",
+      "path": "c:\\Users\\Administrator\\.trae-cn\\design_libraries\\dl_builtin_apple",
+      "versionSource": "metadata.json"
+    },
+    "brandPrefix": "apple",
+    "cssFilePath": "c:\\Users\\Administrator\\.trae-cn\\design_libraries\\dl_builtin_apple\\colors_and_type.css",
+    "designDecisionSummary": {
+      "primaryColor": "#007aff",
+      "backgroundColor": "#f2f2f7",
+      "foreground": "#1d1d1f",
+      "fontFamily": "DM Sans",
+      "monoFont": "JetBrains Mono",
+      "radius": "19.2px",
+      "spacingBase": "3.84px",
+      "tone": "restrained, premium, content-first"
+    },
+    "forbiddenInventedComponents": [],
+    "allowedComponents": ["button", "card", "input", "navigation", "product-grid", "comparison-table"],
+    "styleConstraints": {
+      "radiusMax": 19.2,
+      "spacingBase": 3.84,
+      "fontSizeBody": 14,
+      "controlHeightDefault": 36
+    },
+    "componentCss": "on"
+  },
+  "pages": [
+    {
+      "nodeId": "page-index",
+      "slug": "index",
+      "title": "首页",
+      "htmlSrc": "pages/index.html",
+      "pageIndex": 1,
+      "pageType": "information-dense",
+      "componentPlan": [
+        {
+          "slug": "navigation",
+          "contractKind": "legacy-json",
+          "contractFile": "c:\\Users\\Administrator\\.trae-cn\\design_libraries\\dl_builtin_apple\\components\\navigation.json",
+          "previewFile": "c:\\Users\\Administrator\\.trae-cn\\design_libraries\\dl_builtin_apple\\preview\\component-navigation.html"
+        },
+        {
+          "slug": "card",
+          "contractKind": "legacy-json",
+          "contractFile": "c:\\Users\\Administrator\\.trae-cn\\design_libraries\\dl_builtin_apple\\components\\card.json",
+          "previewFile": "c:\\Users\\Administrator\\.trae-cn\\design_libraries\\dl_builtin_apple\\preview\\component-card.html"
+        },
+        {
+          "slug": "button",
+          "contractKind": "legacy-json",
+          "contractFile": "c:\\Users\\Administrator\\.trae-cn\\design_libraries\\dl_builtin_apple\\components\\button.json",
+          "previewFile": "c:\\Users\\Administrator\\.trae-cn\\design_libraries\\dl_builtin_apple\\preview\\component-button.html"
+        }
+      ],
+      "soulElement": "Dashboard uses asymmetric sidebar + main content split with a personalized greeting section that feels warm yet Apple-refined; module cards use subtle hover lift with whisper-light shadows"
+    }
+  ]
+}
