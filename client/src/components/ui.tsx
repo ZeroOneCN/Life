@@ -501,6 +501,11 @@ export function TrendArrow({ direction, value }: { direction: TrendDirection; va
 export function Modal({ open, onClose, title, width = 560, footer, children }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) {
@@ -512,7 +517,7 @@ export function Modal({ open, onClose, title, width = 560, footer, children }: M
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
       }
     };
 
@@ -539,7 +544,7 @@ export function Modal({ open, onClose, title, width = 560, footer, children }: M
       document.documentElement.style.overflow = previousHtmlOverflow;
       document.documentElement.style.paddingRight = previousHtmlPaddingRight;
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open || typeof document === 'undefined') {
     return null;
