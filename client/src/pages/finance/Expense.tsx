@@ -26,18 +26,16 @@ export default function ExpensePage() {
         title="消费记录"
         subtitle="购物消费与旅行支出统一管理"
         actions={(
-          <div className="inline-row">
+          <>
             {activeTab === 'shopping' && (
               <Btn tone="secondary" onClick={handleImportExcel}>导入 Excel</Btn>
             )}
-            <div className="merged-page-tabs">
-              <PillTabs
-                options={TAB_OPTIONS}
-                value={activeTab}
-                onChange={(v) => setActiveTab(v as ExpenseTab)}
-              />
-            </div>
-          </div>
+            <PillTabs
+              options={TAB_OPTIONS}
+              value={activeTab}
+              onChange={(v) => setActiveTab(v as ExpenseTab)}
+            />
+          </>
         )}
       />
 
