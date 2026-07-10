@@ -177,7 +177,7 @@ export function StepRecordsSection({
   };
 
   return (
-    <SectionCard title="记录管理" description="支持排序、分页、编辑和批量删除。">
+    <SectionCard title="步数记录" description="支持排序、分页、编辑和批量删除。">
       <div className="page-stack">
         <FilterBar
           rightSlot={
@@ -224,10 +224,10 @@ export function StepRecordsSection({
           ) : null}
         </div>
 
-        {loading ? (
-          <TableSkeleton rows={5} cols={6} />
+        {loading && !records.length ? (
+          <TableSkeleton rows={10} cols={6} />
         ) : sortedRecords.length ? (
-          <>
+          <div className={`step-records-table-wrap ${loading ? 'is-loading' : ''}`}>
             <div className="table-wrap">
               <table className="data-table">
                 <thead>
@@ -289,7 +289,7 @@ export function StepRecordsSection({
               </table>
             </div>
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-          </>
+          </div>
         ) : (
           <EmptyState
             title="还没有步数记录"

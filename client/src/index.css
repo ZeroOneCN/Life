@@ -946,7 +946,7 @@ textarea {
   border-radius: 12px;
   padding: 32px;
   box-shadow: none;
-  transition: box-shadow 0.2s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .card:hover {
@@ -1008,7 +1008,7 @@ textarea {
   border-radius: 10px;
   padding: 14px 16px 16px;
   box-shadow: none;
-  transition: box-shadow 0.2s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
   overflow: hidden;
 }
 
@@ -1034,7 +1034,6 @@ textarea {
 .stat-card:hover {
   box-shadow: 0 4px 16px var(--shadow-blue), 0 1px 4px rgba(0,55,112,0.03);
   border-color: var(--color-border);
-  transform: translateY(-1px);
 }
 
 .stat-card:active {
@@ -1412,8 +1411,6 @@ textarea {
 
 .date-picker-popover.is-portal {
   position: fixed;
-  top: 0;
-  left: 0;
   z-index: 2000;
 }
 
@@ -2021,6 +2018,15 @@ textarea {
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+.step-records-table-wrap {
+  transition: opacity 0.2s ease;
+}
+
+.step-records-table-wrap.is-loading {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .fitness-form-actions,

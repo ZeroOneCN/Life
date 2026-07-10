@@ -17,46 +17,74 @@ function usePopoverPosition(
   containerRef: React.RefObject<HTMLElement>,
   popoverRef: React.RefObject<HTMLElement>,
 ) {
-  const [style, setStyle] = useState<React.CSSProperties>({ position: 'fixed', visibility: 'hidden' });
+  const [style, setStyle] = useState<React.CSSProperties>({
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    visibility: 'hidden',
+    zIndex: 2000,
+  });
 
   useLayoutEffect(() => {
     if (!isOpen || !containerRef.current || !popoverRef.current) return;
 
     const updatePosition = () => {
-      const rect = containerRef.current!.getBoundingClientRect();
-      const popRect = popoverRef.current!.getBoundingClientRect();
+      if (!containerRef.current || !popoverRef.current) return;
 
-      let top = rect.bottom + 8;
+      const rect = containerRef.current.getBoundingClientRect();
+      const popRect = popoverRef.current.getBoundingClientRect();
+
+      const gap = 8;
+      const margin = 8;
+
+      let top = rect.bottom + gap;
       let left = rect.left;
 
-      if (top + popRect.height > window.innerHeight - 8) {
-        top = rect.top - popRect.height - 8;
+      const viewportH = window.innerHeight;
+      const viewportW = window.innerWidth;
+
+      // 优先向下弹出，如果底部空间不足则向上
+      if (top + popRect.height > viewportH - margin) {
+        const topPos = rect.top - popRect.height - gap;
+        if (topPos >= margin) {
+          top = topPos;
+        }
       }
 
-      if (left + popRect.width > window.innerWidth - 8) {
-        left = window.innerWidth - popRect.width - 8;
+      // 水平方向边界检测
+      if (left + popRect.width > viewportW - margin) {
+        left = viewportW - popRect.width - margin;
       }
-      if (left < 8) left = 8;
+      if (left < margin) left = margin;
 
       setStyle({
         position: 'fixed',
         top: `${top}px`,
         left: `${left}px`,
         visibility: 'visible',
+        zIndex: 2000,
       });
     };
 
-    updatePosition();
-    popoverRef.current.style.visibility = 'hidden';
+    // 双重 RAF 确保布局完成后再定位
+    let raf1 = 0;
+    let raf2 = 0;
 
-    const rafId = requestAnimationFrame(updatePosition);
-    window.addEventListener('scroll', updatePosition, true);
-    window.addEventListener('resize', updatePosition);
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(updatePosition);
+    });
+
+    const onScroll = () => updatePosition();
+    const onResize = () => updatePosition();
+
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onResize);
 
     return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener('scroll', updatePosition, true);
-      window.removeEventListener('resize', updatePosition);
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onResize);
     };
   }, [isOpen, containerRef, popoverRef]);
 
