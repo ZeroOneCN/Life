@@ -159,7 +159,7 @@ export function FitnessShoppingSection({
     }
 
     onChangeRecords((previous) => createFitnessShoppingRecord(previous, draft));
-    setForm(defaultFormState());
+    setForm((previous) => ({ ...defaultFormState(), date: previous.date }));
     showToast('食材采购记录已新增。');
   };
 

@@ -177,7 +177,7 @@ export function FitnessExerciseSection({
     }
 
     onChangeRecords((previous) => createExerciseRecord(previous, draft));
-    setForm(defaultFormState());
+    setForm((previous) => ({ ...defaultFormState(), date: previous.date }));
     setAiHint('');
     setAiSource(null);
     showToast('运动记录已新增。');

@@ -190,7 +190,7 @@ export function FitnessDietSection({
     }
 
     onChangeRecords((previous) => createDietRecord(previous, draft));
-    setForm(defaultFormState());
+    setForm((previous) => ({ ...defaultFormState(), date: previous.date, mealType: previous.mealType }));
     setAiHint('');
     setAiSource(null);
     showToast('饮食记录已新增。');

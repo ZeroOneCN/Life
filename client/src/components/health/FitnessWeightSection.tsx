@@ -217,7 +217,7 @@ export function FitnessWeightSection({
     }
 
     onChangeRecords((previous) => createWeightRecord(previous, draft));
-    setForm(defaultFormState(defaultHeightCm));
+    setForm((previous) => ({ ...defaultFormState(defaultHeightCm), date: previous.date }));
     showToast('体重记录已新增。');
   };
 

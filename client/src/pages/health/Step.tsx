@@ -200,19 +200,8 @@ export default function StepPage() {
     setSelectedHour(inferStepHourFromRecordTime(value));
   };
 
-  const resetEntryState = async (hour: StepHour) => {
+  const resetEntryState = async () => {
     setStepsInput('');
-
-    try {
-      const response = await stepApi.getTodayHours();
-      const nextEmpty = findNextEmptyHour(response.hours);
-      setSelectedHour(nextEmpty.hour);
-      setRecordTime(nextEmpty.recordTime);
-    } catch {
-      const current = getCurrentTimeDefault();
-      setSelectedHour(current.hour);
-      setRecordTime(current.recordTime);
-    }
     focusStepsInput();
   };
 
@@ -220,7 +209,7 @@ export default function StepPage() {
     try {
       await stepApi.createRecord(draft);
       await reload();
-      resetEntryState(draft.hour);
+      resetEntryState();
       showToast('步数记录已保存。');
     } catch (error) {
       showToast(buildApiErrorMessage(error, '步数记录保存失败。'), 'error');
