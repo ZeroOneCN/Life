@@ -37,21 +37,27 @@ function usePopoverPosition(
       const gap = 8;
       const margin = 8;
 
-      let top = rect.bottom + gap;
-      let left = rect.left;
-
       const viewportH = window.innerHeight;
       const viewportW = window.innerWidth;
 
-      // 优先向下弹出，如果底部空间不足则向上
-      if (top + popRect.height > viewportH - margin) {
-        const topPos = rect.top - popRect.height - gap;
-        if (topPos >= margin) {
-          top = topPos;
-        }
+      const spaceBelow = viewportH - rect.bottom - gap - margin;
+      const spaceAbove = rect.top - gap - margin;
+
+      let top = 0;
+
+      // 优先向上（悬挂）弹出：如果上方空间足够；否则选空间较大的一侧
+      if (spaceAbove >= popRect.height) {
+        top = rect.top - popRect.height - gap;
+      } else if (spaceBelow >= popRect.height) {
+        top = rect.bottom + gap;
+      } else if (spaceAbove >= spaceBelow) {
+        top = margin;
+      } else {
+        top = viewportH - popRect.height - margin;
       }
 
-      // 水平方向边界检测
+      // 水平方向：左对齐输入框，超出视口则右对齐
+      let left = rect.left;
       if (left + popRect.width > viewportW - margin) {
         left = viewportW - popRect.width - margin;
       }
@@ -74,6 +80,15 @@ function usePopoverPosition(
       raf2 = requestAnimationFrame(updatePosition);
     });
 
+    // 监听内容尺寸变化（切换月份高度变化）自动重定位
+    let resizeObserver: ResizeObserver | undefined;
+    if (typeof ResizeObserver !== 'undefined' && popoverRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        updatePosition();
+      });
+      resizeObserver.observe(popoverRef.current);
+    }
+
     const onScroll = () => updatePosition();
     const onResize = () => updatePosition();
 
@@ -83,6 +98,9 @@ function usePopoverPosition(
     return () => {
       cancelAnimationFrame(raf1);
       cancelAnimationFrame(raf2);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       window.removeEventListener('scroll', onScroll, true);
       window.removeEventListener('resize', onResize);
     };
