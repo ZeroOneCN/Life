@@ -194,9 +194,12 @@ export default function FitnessPage() {
         <>
           <StatGrid className="fitness-overview-grid" items={topSummary} />
 
-          <div className="merged-page-tabs">
-            <PillTabs options={TAB_OPTIONS} value={innerTab} onChange={(value) => setInnerTab(value as FitnessTab)} />
-          </div>
+      <SectionCard
+        title="业务视图"
+        description="饮食、运动、采购、体重和看板都直接基于后端记录工作。"
+      >
+        <PillTabs options={TAB_OPTIONS} value={innerTab} onChange={(value) => setInnerTab(value as FitnessTab)} />
+      </SectionCard>
 
       {innerTab === 'diet' ? (
         <FitnessDietSection
