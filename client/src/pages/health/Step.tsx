@@ -134,16 +134,17 @@ export default function StepPage() {
 
   /**
    * 当今日所有时间段（8-23点）都有记录时，自动跳转到全天模式。
-   * 保持用户选择的日期不变，只将时间改为23:59。
+   * 仅当用户当前选择的日期是今天时才触发，避免影响补录其他日期数据。
    */
   useEffect(() => {
-    if (todayHours.length >= STEP_HOURS.length && selectedHour !== null) {
+    const isToday = dayjs(recordTime).isSame(dayjs(), 'day');
+    if (isToday && todayHours.length >= STEP_HOURS.length && selectedHour !== null) {
       setSelectedHour(null);
       setRecordTime((prev) =>
         dayjs(prev).hour(23).minute(59).second(0).millisecond(0).format('YYYY-MM-DDTHH:mm'),
       );
     }
-  }, [todayHours, selectedHour]);
+  }, [todayHours, selectedHour, recordTime]);
 
   /**
    * 监听页面可见性变化：当用户从其他页面切回来时，
