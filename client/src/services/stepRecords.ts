@@ -17,7 +17,7 @@ const DATE_TIME_FORMAT = 'YYYY-MM-DDTHH:mm';
 export const DEFAULT_STRIDE_LENGTH = 0.7;
 export const STEP_AGGREGATE_PAGE_SIZE = 10;
 export const STEP_RECORD_PAGE_SIZE = 10;
-export const STEP_HOURS: StepConcreteHour[] = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+export const STEP_HOURS: StepConcreteHour[] = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
 
 function buildId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -94,14 +94,14 @@ export function getTodayEndDateTime() {
 
 /**
  * 获取当前时间对应的默认时间段和记录时间。
- * - 当前小时在 7-23 点之间：选中当前整点，记录时间为当前小时:00
- * - 当前小时在 0-6 点之间：选中 7 点，记录时间为今天 7:00
+ * - 当前小时在 8-23 点之间：选中当前整点，记录时间为当前小时:00
+ * - 当前小时在 0-7 点之间：选中 8 点，记录时间为今天 8:00
  */
 export function getCurrentTimeDefault(): { hour: StepHour; recordTime: string } {
   const now = dayjs();
   const currentHour = now.hour();
 
-  if (currentHour >= 7 && currentHour <= 23) {
+  if (currentHour >= 8 && currentHour <= 23) {
     const hour = currentHour as StepConcreteHour;
     return {
       hour,
@@ -110,8 +110,8 @@ export function getCurrentTimeDefault(): { hour: StepHour; recordTime: string } 
   }
 
   return {
-    hour: 7 as StepConcreteHour,
-    recordTime: now.hour(7).minute(0).second(0).millisecond(0).format(DATE_TIME_FORMAT),
+    hour: 8 as StepConcreteHour,
+    recordTime: now.hour(8).minute(0).second(0).millisecond(0).format(DATE_TIME_FORMAT),
   };
 }
 
@@ -119,13 +119,13 @@ export function getCurrentTimeDefault(): { hour: StepHour; recordTime: string } 
  * 根据当前时间和已记录的时间段，找到下一个空时间段。
  * - 如果当前时间段没有记录，返回当前时间段
  * - 如果当前时间段已有记录，向后查找最近的空时间段
- * - 如果所有时间段都有记录，返回全天模式（null）
+ * - 如果所有时间段都有记录，返回最后一个时间段（23点），不跳转全天
  */
 export function findNextEmptyHour(existingHours: number[]): { hour: StepHour; recordTime: string } {
   const now = dayjs();
   const currentHour = now.hour();
 
-  let startHour = currentHour >= 7 ? currentHour : 7;
+  let startHour = currentHour >= 8 ? currentHour : 8;
 
   for (let h = startHour; h <= 23; h++) {
     if (!existingHours.includes(h)) {
@@ -136,7 +136,7 @@ export function findNextEmptyHour(existingHours: number[]): { hour: StepHour; re
     }
   }
 
-  for (let h = 7; h < startHour; h++) {
+  for (let h = 8; h < startHour; h++) {
     if (!existingHours.includes(h)) {
       return {
         hour: h as StepConcreteHour,
@@ -145,9 +145,10 @@ export function findNextEmptyHour(existingHours: number[]): { hour: StepHour; re
     }
   }
 
+  // 所有时间段都有记录，返回最后一个时间段（23点），不跳转全天
   return {
-    hour: null,
-    recordTime: now.hour(23).minute(59).second(0).millisecond(0).format(DATE_TIME_FORMAT),
+    hour: 23 as StepConcreteHour,
+    recordTime: now.hour(23).minute(0).second(0).millisecond(0).format(DATE_TIME_FORMAT),
   };
 }
 
