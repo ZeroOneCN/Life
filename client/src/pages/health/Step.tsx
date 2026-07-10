@@ -14,6 +14,7 @@ import {
   getCurrentTimeDefault,
   getTodayEndDateTime,
   inferStepHourFromRecordTime,
+  STEP_HOURS,
 } from '../../services/stepRecords';
 import type {
   StepHour,
@@ -65,6 +66,7 @@ export default function StepPage() {
   const [stepsInput, setStepsInput] = useState('');
   const [selectedHour, setSelectedHour] = useState<StepHour>(() => getCurrentTimeDefault().hour);
   const [recordTime, setRecordTime] = useState<string>(() => getCurrentTimeDefault().recordTime);
+  const [todayHours, setTodayHours] = useState<number[]>([]);
   const [pendingDuplicate, setPendingDuplicate] = useState<{ existing: StepRecord; draft: StepRecordDraft } | null>(null);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
@@ -89,13 +91,15 @@ export default function StepPage() {
   const reload = useCallback(async () => {
     const nextSettings = await stepApi.getSettings();
 
-    const [nextSummary, nextCompare] = await Promise.all([
+    const [nextSummary, nextCompare, nextTodayHours] = await Promise.all([
       stepApi.getSummary(),
       stepApi.getMonthCompare(),
+      stepApi.getTodayHours(),
     ]);
 
     setSummary(nextSummary);
     setCompareSummary(nextCompare);
+    setTodayHours(nextTodayHours.hours);
     setSettings({
       ...EMPTY_SETTINGS,
       ...nextSettings,
@@ -127,6 +131,17 @@ export default function StepPage() {
       cancelled = true;
     };
   }, [reload, showToast]);
+
+  /**
+   * 当今日所有时间段（8-23点）都有记录时，自动跳转到全天模式。
+   * 其他情况保持用户当前选择不变。
+   */
+  useEffect(() => {
+    if (todayHours.length >= STEP_HOURS.length && selectedHour !== null) {
+      setSelectedHour(null);
+      setRecordTime(dayjs().hour(23).minute(59).second(0).millisecond(0).format('YYYY-MM-DDTHH:mm'));
+    }
+  }, [todayHours, selectedHour]);
 
   /**
    * 监听页面可见性变化：当用户从其他页面切回来时，

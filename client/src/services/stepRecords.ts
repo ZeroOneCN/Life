@@ -145,10 +145,10 @@ export function findNextEmptyHour(existingHours: number[]): { hour: StepHour; re
     }
   }
 
-  // 所有时间段都有记录，返回最后一个时间段（23点），不跳转全天
+  // 所有时间段都有记录，返回全天模式
   return {
-    hour: 23 as StepConcreteHour,
-    recordTime: now.hour(23).minute(0).second(0).millisecond(0).format(DATE_TIME_FORMAT),
+    hour: null,
+    recordTime: now.hour(23).minute(59).second(0).millisecond(0).format(DATE_TIME_FORMAT),
   };
 }
 
