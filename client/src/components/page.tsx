@@ -35,7 +35,9 @@ export function SectionCard({
     <section className="card section-card">
       <div className="section-card-header">
         <div>
-          <h2 className="section-title">{title}</h2>
+          <div className="card-title-bar">
+            <h2 className="section-title">{title}</h2>
+          </div>
           {description ? <p className="section-description">{description}</p> : null}
         </div>
         {action ? <div>{action}</div> : null}

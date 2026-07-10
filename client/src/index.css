@@ -905,9 +905,9 @@ textarea {
 .section-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 16px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
 .section-title,
@@ -917,6 +917,21 @@ textarea {
   font-weight: var(--fw-bold);
   line-height: var(--lh-snug);
   letter-spacing: -0.22px;
+}
+
+.card-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title-bar::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--color-primary);
+  flex-shrink: 0;
 }
 
 .section-description {
@@ -940,8 +955,8 @@ textarea {
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
 }
 
 .quick-actions-row {
@@ -987,23 +1002,56 @@ textarea {
 }
 
 .stat-card {
+  position: relative;
   background: var(--color-canvas);
   border: 1px solid var(--color-hairline);
-  border-radius: 12px;
-  padding: 18px;
+  border-radius: 10px;
+  padding: 14px 16px 16px;
   box-shadow: none;
   transition: box-shadow 0.2s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease;
+  overflow: hidden;
 }
 
+.stat-card::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--color-hairline);
+  transition: height 0.2s ease;
+}
+
+.stat-card:hover::after {
+  height: 4px;
+}
+
+.stat-card.is-up::after { background: var(--color-success); }
+.stat-card.is-down::after { background: var(--color-danger); }
+.stat-card.is-neutral::after { background: var(--color-primary-soft); }
+
 .stat-card:hover {
-  box-shadow: 0 8px 24px var(--shadow-blue), 0 2px 6px rgba(0,55,112,0.04);
-  transform: translateY(-2px);
+  box-shadow: 0 4px 16px var(--shadow-blue), 0 1px 4px rgba(0,55,112,0.03);
+  border-color: var(--color-border);
+  transform: translateY(-1px);
 }
 
 .stat-card:active {
   transform: translateY(0) scale(0.99);
   transition-duration: 0.08s;
 }
+
+.stat-card-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.stat-card-trend.is-up { color: var(--color-success-strong); }
+.stat-card-trend.is-down { color: var(--color-danger-strong); }
 
 .stat-label,
 .stat-helper,
@@ -1753,15 +1801,27 @@ textarea {
 }
 
 .step-entry-meta {
-  padding: 16px 18px;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-hairline));
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 10%, transparent), color-mix(in srgb, var(--color-surface-2) 94%, transparent));
+  position: relative;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--color-hairline);
+  background: var(--color-canvas);
 }
 
 .step-entry-meta strong {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 4px;
+}
+
+.step-entry-meta strong::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  flex-shrink: 0;
 }
 
 .step-entry-meta span,
@@ -1911,10 +1971,11 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 18px;
-  border-radius: 18px;
+  padding: 14px 16px;
+  border-radius: 10px;
   border: 1px solid var(--color-hairline);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-3) 94%, transparent), color-mix(in srgb, var(--color-surface-2) 98%, transparent));
+  border-left: 3px solid var(--color-border);
+  background: var(--color-canvas);
 }
 
 .step-compare-card strong,
@@ -1924,15 +1985,15 @@ textarea {
 }
 
 .step-compare-card.is-primary {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 22%, transparent), color-mix(in srgb, var(--color-surface-2) 88%, transparent));
+  border-left-color: var(--color-primary);
 }
 
 .step-compare-card.is-secondary {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-success) 18%, transparent), color-mix(in srgb, var(--color-surface-2) 88%, transparent));
+  border-left-color: var(--color-success);
 }
 
 .step-compare-card.is-highlight {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-warning) 18%, transparent), color-mix(in srgb, var(--color-surface-2) 88%, transparent));
+  border-left-color: var(--color-warning);
 }
 
 .step-compare-label {
@@ -2093,22 +2154,35 @@ textarea {
 }
 
 .diet-entry-form {
-  background: var(--color-bg-card);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-.diet-form-group {
+  background: var(--color-canvas);
+  border: 1px solid var(--color-hairline);
+  border-radius: 10px;
+  padding: 16px 18px;
   margin-bottom: 16px;
 }
 
+.diet-form-group {
+  margin-bottom: 14px;
+}
+
 .diet-form-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
   font-weight: 600;
   color: var(--color-ink-secondary);
   margin-bottom: 10px;
-  padding-left: 2px;
+  padding-left: 0;
+}
+
+.diet-form-group-title::before {
+  content: '';
+  width: 2.5px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--color-primary-soft);
+  flex-shrink: 0;
 }
 
 .diet-form-group-fields {
@@ -2232,11 +2306,11 @@ textarea {
   gap: 10px;
   padding: 10px 14px;
   margin-top: -6px;
-  background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
-  border: 1px dashed #c4b5fd;
-  border-radius: 10px;
+  background: var(--color-primary-subtle);
+  border: 1px solid var(--color-primary-soft);
+  border-radius: 8px;
   font-size: 12.5px;
-  color: #4b5563;
+  color: var(--color-ink-secondary);
   line-height: 1.5;
 }
 
@@ -2252,21 +2326,21 @@ textarea {
 }
 
 .fitness-ai-result-tag.is-cache {
-  background: #ecfdf5;
-  color: #047857;
-  border: 1px solid #a7f3d0;
+  background: var(--color-success-bg);
+  color: var(--color-success-strong);
+  border: 1px solid var(--color-success);
 }
 
 .fitness-ai-result-tag.is-ai {
-  background: #eef2ff;
-  color: #4338ca;
-  border: 1px solid #c7d2fe;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary-press);
+  border: 1px solid var(--color-primary-soft);
 }
 
 .fitness-ai-result-text {
   flex: 1 1 auto;
   word-break: break-word;
-  color: #374151;
+  color: var(--color-ink-secondary);
 }
 
 @media (max-width: 768px) {
@@ -3276,33 +3350,52 @@ textarea {
 
 .table-wrap {
   overflow: auto;
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
 }
 
 .data-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   background: var(--color-canvas);
 }
 
 .data-table th,
 .data-table td {
-  padding: 14px 12px;
+  padding: 11px 12px;
   border-bottom: 1px solid var(--color-hairline);
   text-align: left;
   font-family: var(--font-sans);
 }
 
-.data-table thead {
-  background: var(--color-canvas-soft);
+.data-table thead th {
+  background: var(--color-surface-2);
+  color: var(--color-ink-secondary);
+  font-size: var(--fs-overline);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
-.data-table th {
-  color: var(--color-ink);
-  font-size: var(--fs-label);
-  font-weight: var(--fw-semibold);
-  letter-spacing: 0.02em;
-  text-transform: none;
-  white-space: nowrap;
+.data-table tbody tr:nth-child(even) td {
+  background: var(--color-surface-2);
+}
+
+.data-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.data-table tbody tr:hover td {
+  background: var(--color-primary-subtle) !important;
+}
+
+.data-table tbody tr:active td {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent) !important;
 }
 
 .data-table td {
@@ -3326,16 +3419,9 @@ textarea {
   white-space: nowrap;
 }
 
-.data-table tbody tr {
-  transition: background 0.15s ease;
-}
-
-.data-table tr:hover td {
-  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
-}
-
-.data-table tbody tr:active td {
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+/* 最后一行去掉底部边框，避免与外边框重叠 */
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .data-table tbody tr.clickable-row {
