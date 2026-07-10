@@ -1,4 +1,5 @@
-import { useId, useRef, useState, useEffect } from 'react';
+import { useId, useRef, useState, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import dayjs from 'dayjs';
 
 import type {
@@ -10,6 +11,57 @@ import { useTheme } from '../../hooks/useTheme';
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
 const MONTH_LABELS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+
+function usePopoverPosition(
+  isOpen: boolean,
+  containerRef: React.RefObject<HTMLElement>,
+  popoverRef: React.RefObject<HTMLElement>,
+) {
+  const [style, setStyle] = useState<React.CSSProperties>({ position: 'fixed', visibility: 'hidden' });
+
+  useLayoutEffect(() => {
+    if (!isOpen || !containerRef.current || !popoverRef.current) return;
+
+    const updatePosition = () => {
+      const rect = containerRef.current!.getBoundingClientRect();
+      const popRect = popoverRef.current!.getBoundingClientRect();
+
+      let top = rect.bottom + 8;
+      let left = rect.left;
+
+      if (top + popRect.height > window.innerHeight - 8) {
+        top = rect.top - popRect.height - 8;
+      }
+
+      if (left + popRect.width > window.innerWidth - 8) {
+        left = window.innerWidth - popRect.width - 8;
+      }
+      if (left < 8) left = 8;
+
+      setStyle({
+        position: 'fixed',
+        top: `${top}px`,
+        left: `${left}px`,
+        visibility: 'visible',
+      });
+    };
+
+    updatePosition();
+    popoverRef.current.style.visibility = 'hidden';
+
+    const rafId = requestAnimationFrame(updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [isOpen, containerRef, popoverRef]);
+
+  return style;
+}
 
 /**
  * 日历面板组件 - 纯dayjs实现，无第三方依赖
@@ -154,6 +206,9 @@ export function DatePickerField({
     return value ? dayjs(value).toDate() : dayjs().toDate();
   });
   const containerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  const popoverStyle = usePopoverPosition(isOpen, containerRef, popoverRef);
 
   const selectedDate = value ? dayjs(value).toDate() : undefined;
   const minDate = minValue ? dayjs(minValue).toDate() : undefined;
@@ -167,13 +222,24 @@ export function DatePickerField({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node) &&
+        popoverRef.current &&
+        !popoverRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
 
     const handleTouchOutside = (event: TouchEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        popoverRef.current &&
+        !popoverRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -228,18 +294,21 @@ export function DatePickerField({
           </button>
         ) : null}
       </div>
-      {isOpen && !disabled ? (
-        <div className={`date-picker-popover ${isDark ? 'is-dark' : ''}`}>
-          <CalendarPanel
-            selectedDate={selectedDate}
-            viewMonth={viewMonth}
-            onMonthChange={setViewMonth}
-            onDateSelect={handleSelect}
-            minDate={minDate}
-            maxDate={maxDate}
-          />
-        </div>
-      ) : null}
+      {isOpen && !disabled && typeof document !== 'undefined'
+        ? createPortal(
+            <div ref={popoverRef} className={`date-picker-popover is-portal ${isDark ? 'is-dark' : ''}`} style={popoverStyle}>
+              <CalendarPanel
+                selectedDate={selectedDate}
+                viewMonth={viewMonth}
+                onMonthChange={setViewMonth}
+                onDateSelect={handleSelect}
+                minDate={minDate}
+                maxDate={maxDate}
+              />
+            </div>,
+            document.body,
+          )
+        : null}
       {hint && !error ? <span className="field-hint">{hint}</span> : null}
       {error ? <span className="field-error">{error}</span> : null}
     </div>
@@ -266,6 +335,9 @@ export function MonthPickerField({
   const [isOpen, setIsOpen] = useState(false);
   const [viewYear, setViewYear] = useState(value ? dayjs(value).year() : dayjs().year());
   const containerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  const popoverStyle = usePopoverPosition(isOpen, containerRef, popoverRef);
 
   const minYear = minValue ? dayjs(minValue).year() : undefined;
   const maxYear = maxValue ? dayjs(maxValue).year() : undefined;
@@ -274,13 +346,24 @@ export function MonthPickerField({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node) &&
+        popoverRef.current &&
+        !popoverRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
 
     const handleTouchOutside = (event: TouchEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        popoverRef.current &&
+        !popoverRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -348,46 +431,49 @@ export function MonthPickerField({
           </button>
         ) : null}
       </div>
-      {isOpen && !disabled ? (
-        <div className="date-picker-popover month-picker-popover">
-          <div className="month-picker-header">
-            <button
-              type="button"
-              className="month-picker-nav-btn"
-              onClick={() => setViewYear((y) => y - 1)}
-              disabled={minYear !== undefined && viewYear <= minYear}
-            >
-              ‹
-            </button>
-            <span className="month-picker-year">{viewYear}年</span>
-            <button
-              type="button"
-              className="month-picker-nav-btn"
-              onClick={() => setViewYear((y) => y + 1)}
-              disabled={maxYear !== undefined && viewYear >= maxYear}
-            >
-              ›
-            </button>
-          </div>
-          <div className="month-picker-grid">
-            {MONTH_LABELS.map((month, index) => {
-              const isSelected = value && dayjs(value).year() === viewYear && dayjs(value).month() === index;
-              const isDisabled = isMonthDisabled(viewYear, index);
-              return (
+      {isOpen && !disabled && typeof document !== 'undefined'
+        ? createPortal(
+            <div ref={popoverRef} className="date-picker-popover month-picker-popover is-portal" style={popoverStyle}>
+              <div className="month-picker-header">
                 <button
-                  key={month}
                   type="button"
-                  className={`month-picker-item ${isSelected ? 'is-selected' : ''} ${isDisabled ? 'is-disabled' : ''}`}
-                  onClick={() => handleMonthClick(index)}
-                  disabled={isDisabled}
+                  className="month-picker-nav-btn"
+                  onClick={() => setViewYear((y) => y - 1)}
+                  disabled={minYear !== undefined && viewYear <= minYear}
                 >
-                  {month}
+                  ‹
                 </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
+                <span className="month-picker-year">{viewYear}年</span>
+                <button
+                  type="button"
+                  className="month-picker-nav-btn"
+                  onClick={() => setViewYear((y) => y + 1)}
+                  disabled={maxYear !== undefined && viewYear >= maxYear}
+                >
+                  ›
+                </button>
+              </div>
+              <div className="month-picker-grid">
+                {MONTH_LABELS.map((month, index) => {
+                  const isSelected = value && dayjs(value).year() === viewYear && dayjs(value).month() === index;
+                  const isDisabled = isMonthDisabled(viewYear, index);
+                  return (
+                    <button
+                      key={month}
+                      type="button"
+                      className={`month-picker-item ${isSelected ? 'is-selected' : ''} ${isDisabled ? 'is-disabled' : ''}`}
+                      onClick={() => handleMonthClick(index)}
+                      disabled={isDisabled}
+                    >
+                      {month}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
       {hint && !error ? <span className="field-hint">{hint}</span> : null}
       {error ? <span className="field-error">{error}</span> : null}
     </div>
@@ -418,6 +504,9 @@ export function DateTimePickerField({
     return datePart ? dayjs(datePart).toDate() : dayjs().toDate();
   });
   const containerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  const popoverStyle = usePopoverPosition(isOpen, containerRef, popoverRef);
 
   const datePart = value ? value.split('T')[0] : '';
   const timePart = value ? value.split('T')[1] || '' : '';
@@ -434,13 +523,24 @@ export function DateTimePickerField({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node) &&
+        popoverRef.current &&
+        !popoverRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
 
     const handleTouchOutside = (event: TouchEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        popoverRef.current &&
+        !popoverRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -515,18 +615,21 @@ export function DateTimePickerField({
           </button>
         ) : null}
       </div>
-      {isOpen && !disabled ? (
-        <div className={`date-picker-popover ${isDark ? 'is-dark' : ''}`}>
-          <CalendarPanel
-            selectedDate={selectedDate}
-            viewMonth={viewMonth}
-            onMonthChange={setViewMonth}
-            onDateSelect={handleDateSelect}
-            minDate={minDate}
-            maxDate={maxDate}
-          />
-        </div>
-      ) : null}
+      {isOpen && !disabled && typeof document !== 'undefined'
+        ? createPortal(
+            <div ref={popoverRef} className={`date-picker-popover is-portal ${isDark ? 'is-dark' : ''}`} style={popoverStyle}>
+              <CalendarPanel
+                selectedDate={selectedDate}
+                viewMonth={viewMonth}
+                onMonthChange={setViewMonth}
+                onDateSelect={handleDateSelect}
+                minDate={minDate}
+                maxDate={maxDate}
+              />
+            </div>,
+            document.body,
+          )
+        : null}
       {hint && !error ? <span className="field-hint">{hint}</span> : null}
       {error ? <span className="field-error">{error}</span> : null}
     </div>
@@ -554,19 +657,33 @@ export function DateRangePicker({
   const [isOpen, setIsOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState<Date>(() => dayjs().toDate());
   const containerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  const popoverStyle = usePopoverPosition(isOpen, containerRef, popoverRef);
 
   const fromDate = startDate ? dayjs(startDate).toDate() : undefined;
   const toDate = endDate ? dayjs(endDate).toDate() : undefined;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node) &&
+        popoverRef.current &&
+        !popoverRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
 
     const handleTouchOutside = (event: TouchEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        popoverRef.current &&
+        !popoverRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -679,72 +796,75 @@ export function DateRangePicker({
           </button>
         ) : null}
       </div>
-      {isOpen && !disabled ? (
-        <div className={`date-picker-popover date-range-popover ${isDark ? 'is-dark' : ''}`}>
-          <div className="date-range-shortcuts">
-            <button type="button" onClick={() => handleQuickSelect(7)}>近7天</button>
-            <button type="button" onClick={() => handleQuickSelect(30)}>近30天</button>
-            <button type="button" onClick={() => handleQuickSelect(90)}>近90天</button>
-            <button type="button" onClick={() => {
-              const start = dayjs().startOf('month').format('YYYY-MM-DD');
-              const end = dayjs().endOf('month').format('YYYY-MM-DD');
-              onChange(start, end);
-              setIsOpen(false);
-            }}>本月</button>
-          </div>
-          <div className="custom-calendar">
-            <div className="custom-calendar-header">
-              <button
-                type="button"
-                className="custom-calendar-nav"
-                onClick={() => setViewMonth(dayjs(viewMonth).subtract(1, 'month').toDate())}
-                aria-label="上个月"
-              >
-                ‹
-              </button>
-              <span className="custom-calendar-title">
-                {dayjs(viewMonth).format('YYYY年 M月')}
-              </span>
-              <button
-                type="button"
-                className="custom-calendar-nav"
-                onClick={() => setViewMonth(dayjs(viewMonth).add(1, 'month').toDate())}
-                aria-label="下个月"
-              >
-                ›
-              </button>
-            </div>
-            <div className="custom-calendar-weekdays">
-              {WEEKDAYS.map((d) => (
-                <div key={d} className="custom-calendar-weekday">{d}</div>
-              ))}
-            </div>
-            <div className="custom-calendar-grid">
-              {cells.map(({ date, isCurrentMonth }, idx) => {
-                const selected = isStart(date) || isEnd(date);
-                const inRange = isInRange(date);
-                const today = date.isSame(dayjs(), 'day');
-                return (
+      {isOpen && !disabled && typeof document !== 'undefined'
+        ? createPortal(
+            <div ref={popoverRef} className={`date-picker-popover date-range-popover is-portal ${isDark ? 'is-dark' : ''}`} style={popoverStyle}>
+              <div className="date-range-shortcuts">
+                <button type="button" onClick={() => handleQuickSelect(7)}>近7天</button>
+                <button type="button" onClick={() => handleQuickSelect(30)}>近30天</button>
+                <button type="button" onClick={() => handleQuickSelect(90)}>近90天</button>
+                <button type="button" onClick={() => {
+                  const start = dayjs().startOf('month').format('YYYY-MM-DD');
+                  const end = dayjs().endOf('month').format('YYYY-MM-DD');
+                  onChange(start, end);
+                  setIsOpen(false);
+                }}>本月</button>
+              </div>
+              <div className="custom-calendar">
+                <div className="custom-calendar-header">
                   <button
-                    key={idx}
                     type="button"
-                    className={`custom-calendar-day
-                      ${!isCurrentMonth ? 'is-outside' : ''}
-                      ${selected ? 'is-selected' : ''}
-                      ${inRange ? 'is-in-range' : ''}
-                      ${isStart(date) ? 'is-range-start' : ''}
-                      ${isEnd(date) ? 'is-range-end' : ''}
-                      ${today ? 'is-today' : ''}`}
-                    onClick={() => handleDateClick(date.toDate())}
+                    className="custom-calendar-nav"
+                    onClick={() => setViewMonth(dayjs(viewMonth).subtract(1, 'month').toDate())}
+                    aria-label="上个月"
                   >
-                    {date.date()}
+                    ‹
                   </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      ) : null}
+                  <span className="custom-calendar-title">
+                    {dayjs(viewMonth).format('YYYY年 M月')}
+                  </span>
+                  <button
+                    type="button"
+                    className="custom-calendar-nav"
+                    onClick={() => setViewMonth(dayjs(viewMonth).add(1, 'month').toDate())}
+                    aria-label="下个月"
+                  >
+                    ›
+                  </button>
+                </div>
+                <div className="custom-calendar-weekdays">
+                  {WEEKDAYS.map((d) => (
+                    <div key={d} className="custom-calendar-weekday">{d}</div>
+                  ))}
+                </div>
+                <div className="custom-calendar-grid">
+                  {cells.map(({ date, isCurrentMonth }, idx) => {
+                    const selected = isStart(date) || isEnd(date);
+                    const inRange = isInRange(date);
+                    const today = date.isSame(dayjs(), 'day');
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`custom-calendar-day
+                          ${!isCurrentMonth ? 'is-outside' : ''}
+                          ${selected ? 'is-selected' : ''}
+                          ${inRange ? 'is-in-range' : ''}
+                          ${isStart(date) ? 'is-range-start' : ''}
+                          ${isEnd(date) ? 'is-range-end' : ''}
+                          ${today ? 'is-today' : ''}`}
+                        onClick={() => handleDateClick(date.toDate())}
+                      >
+                        {date.date()}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

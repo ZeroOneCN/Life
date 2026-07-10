@@ -1324,23 +1324,22 @@ textarea {
   display: flex;
   align-items: center;
   width: 100%;
-  min-height: 42px;
-  padding: 0 36px 0 40px;
-  border-radius: 10px;
-  border: 1px solid var(--color-hairline);
-  background: var(--color-surface-2);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  min-height: 38px;
+  padding: 0 32px 0 36px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-canvas);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   cursor: pointer;
 }
 
 .date-picker-input:hover {
-  border-color: var(--color-hairline-strong);
-  background: color-mix(in srgb, var(--color-surface-3) 90%, transparent);
+  border-color: var(--color-primary-soft);
 }
 
 .date-picker-input.is-open {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  box-shadow: 0 0 0 2px var(--color-primary-subtle);
 }
 
 .date-picker-calendar-icon {
@@ -1409,6 +1408,13 @@ textarea {
   border-radius: 12px;
   box-shadow: var(--shadow-soft);
   animation: date-popover-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.date-picker-popover.is-portal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2000;
 }
 
 @keyframes date-popover-in {
@@ -3260,7 +3266,7 @@ textarea {
   cursor: pointer;
   font-size: var(--fs-label);
   font-weight: 500;
-  transition: all 0.15s ease;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
 .tab:hover {
