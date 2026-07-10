@@ -46,9 +46,11 @@ export function StepEntryForm({
       <div className="step-entry-panel">
         <div className="step-entry-meta">
           <strong>{getEntryTitle(selectedHour)}</strong>
+          {getEntryDescription(selectedHour) && (
+            <span className="subtle-text">{getEntryDescription(selectedHour)}</span>
+          )}
         </div>
 
-        {/* 一行：用户 + 步数 + 记录时间 + 保存按钮 */}
         <form className="step-entry-main-row" onSubmit={(event) => {
           event.preventDefault();
           const trimmed = stepsInput.trim();
@@ -65,7 +67,6 @@ export function StepEntryForm({
           }
           onSubmit();
         }}>
-
           <label className="field">
             <span className="field-label">步数</span>
             <input
@@ -90,7 +91,6 @@ export function StepEntryForm({
           </div>
         </form>
 
-        {/* 时间段选择行 */}
         <div className="step-hour-row">
           <div className="step-hour-row-left">
             <span className="field-label">时间段</span>
@@ -113,9 +113,6 @@ export function StepEntryForm({
                 全天
               </button>
             </div>
-          </div>
-          <div className="step-hour-row-right">
-            <span className="subtle-text">{getEntryDescription(selectedHour)}</span>
           </div>
         </div>
 
