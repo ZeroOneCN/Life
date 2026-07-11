@@ -421,7 +421,7 @@ export default function Dashboard() {
         </div>
 
         {/* ====== 3. 投资中心（可点击跳转）====== */}
-        <Link to="/investment/forex?forexTab=trades" className="dash-masonry-item dash-card dash-card-link">
+        <Link to="/investment/forex?forexTab=dashboard" className="dash-masonry-item dash-card dash-card-link">
           <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-invest"><IconTrend /></div>
             <div className="dash-card-title-area">
@@ -454,7 +454,7 @@ export default function Dashboard() {
         </Link>
 
         {/* ====== 4. 财务中心（可点击跳转）====== */}
-        <Link to="/finance/loan" className="dash-masonry-item dash-card dash-card-link">
+        <Link to="/finance/bill-mgmt" className="dash-masonry-item dash-card dash-card-link">
           <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-finance"><IconWallet /></div>
             <div className="dash-card-title-area">
