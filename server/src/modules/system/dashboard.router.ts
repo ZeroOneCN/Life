@@ -99,7 +99,8 @@ function buildForexSummary(trades: InvestmentForexTradeRecordEntity[], capitalFl
 
   const grossPnl = validTrades.reduce((sum, item) => sum + Number(item.pnl), 0);
   const totalCommission = validTrades.reduce((sum, item) => sum + Number(item.commission), 0);
-  const realizedNetPnl = grossPnl + totalCommission;
+  const totalOvernightFee = validTrades.reduce((sum, item) => sum + Number(item.overnight_fee || 0), 0);
+  const realizedNetPnl = grossPnl + totalCommission + totalOvernightFee;
   const deposits = capitalFlows.filter((item) => item.flow_type === 'deposit').reduce((sum, item) => sum + Number(item.amount), 0);
   const withdrawals = capitalFlows.filter((item) => item.flow_type === 'withdrawal').reduce((sum, item) => sum + Number(item.amount), 0);
   const winners = validTrades.filter((item) => Number(item.pnl) > 0).length;
@@ -450,7 +451,7 @@ export function createDashboardRouter() {
           return {
             date: dateStr,
             label: date.format('MM-DD'),
-            netPnl: Number(scoped.reduce((sum, item) => sum + Number(item.pnl || 0) + Number(item.commission || 0), 0).toFixed(2)),
+            netPnl: Number(scoped.reduce((sum, item) => sum + Number(item.pnl || 0) + Number(item.commission || 0) + Number(item.overnight_fee || 0), 0).toFixed(2)),
             tradeCount: scoped.length,
           };
         }),
