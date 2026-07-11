@@ -196,16 +196,16 @@ export default function StepPage() {
     setSelectedHour(inferStepHourFromRecordTime(value));
   };
 
-  const resetEntryState = async () => {
-    setStepsInput('');
-    focusStepsInput();
-  };
-
   const persistCreate = useCallback(async (draft: StepRecordDraft) => {
     try {
       await stepApi.createRecord(draft);
       await reload();
-      resetEntryState();
+      // 保存后自动跳到下一个时间段，方便连续录入
+      const nextHour: StepHour = draft.hour === null || draft.hour >= 23 ? null : (draft.hour + 1) as StepHour;
+      setSelectedHour(nextHour);
+      setRecordTime((prev) => buildStepRecordTime(prev, nextHour, nextHour === null ? 59 : 0));
+      setStepsInput('');
+      focusStepsInput();
       showToast('步数记录已保存。');
     } catch (error) {
       showToast(buildApiErrorMessage(error, '步数记录保存失败。'), 'error');
