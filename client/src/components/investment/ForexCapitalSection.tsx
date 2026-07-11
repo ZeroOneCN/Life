@@ -123,7 +123,7 @@ export function ForexCapitalSection({
       key: 'flowType',
       title: '类型',
       render: (_value: unknown, row: ForexCapitalFlow) => (
-        <Tag tone={row.flowType === 'deposit' ? 'green' : 'orange'}>
+        <Tag tone={row.flowType === 'deposit' ? 'green' : 'red'}>
           {getForexCapitalTypeLabel(row.flowType)}
         </Tag>
       ),
