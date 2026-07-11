@@ -255,7 +255,7 @@ export function ForexCapitalSection({
           items={[
             { label: '记录数', value: `${summary.count} 条` },
             { label: '累计入金', value: formatForexMoney(summary.totalDeposit), accent: 'var(--color-success)' },
-            { label: '累计出金', value: formatForexMoney(summary.totalWithdrawal), accent: 'var(--color-warning)' },
+            { label: '累计出金', value: formatForexMoney(summary.totalWithdrawal), accent: 'var(--color-danger)' },
             { label: '净入金', value: formatForexMoney(summary.netCapital), accent: summary.netCapital >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
           ]}
           className="forex-mini-stat-grid"
