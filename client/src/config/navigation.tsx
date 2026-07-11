@@ -94,6 +94,8 @@ export const routes: RouteConfig[] = [
   { path: '/finance/bill-mgmt', label: '账单管理', breadcrumb: ['财务中心', '账单管理'], menuKey: '/finance/bill-mgmt', component: BillManagementPage },
   { path: '/finance/bill', label: '账单提醒', breadcrumb: ['财务中心', '账单提醒'], menuKey: '/finance/bill', component: BillPage },
   { path: '/finance/planning', label: '财务规划', breadcrumb: ['财务中心', '财务规划'], menuKey: '/finance/planning', component: PlanningPage },
+  { path: '/finance/shopping', label: '购物记录', breadcrumb: ['财务中心', '购物记录'], menuKey: '/finance/shopping', component: ShoppingPage },
+  { path: '/finance/travel', label: '旅行记账', breadcrumb: ['财务中心', '旅行记账'], menuKey: '/finance/travel', component: TravelPage },
   { path: '/life/storage', label: '物品追踪', breadcrumb: ['生活中心', '物品追踪'], menuKey: '/life/storage', component: StoragePage },
   { path: '/life/card', label: '号卡中心', breadcrumb: ['生活中心', '号卡中心'], menuKey: '/life/card', component: CardPage },
   { path: '/life/todo', label: '待办事项', breadcrumb: ['生活中心', '待办事项'], menuKey: '/life/todo', component: TodoPage },
