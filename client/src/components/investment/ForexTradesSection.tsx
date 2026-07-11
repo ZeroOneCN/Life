@@ -200,15 +200,15 @@ export function ForexTradesSection({
   }, [page, totalPages]);
 
   const columns = useMemo(() => [
-    { key: 'tradeDate', title: '日期时间', dataIndex: 'tradeDate' as const },
+    { key: 'tradeDate', title: '日期', dataIndex: 'tradeDate' as const },
     {
       key: 'instrument',
-      title: '交易品种',
+      title: '品种',
       render: (_value: unknown, row: ForexTradeRecord) => getForexInstrumentLabel(row.instrument),
     },
     {
       key: 'orderType',
-      title: '订单类型',
+      title: '类型',
       render: (_value: unknown, row: ForexTradeRecord) => (
         <Tag tone={row.orderType === 'buy' ? 'green' : 'red'}>
           {getForexOrderTypeLabel(row.orderType)}
@@ -217,7 +217,7 @@ export function ForexTradesSection({
     },
     {
       key: 'openPrice',
-      title: '开仓价格',
+      title: '开仓价',
       render: (_value: unknown, row: ForexTradeRecord) => formatForexMoney(row.openPrice),
     },
     {
@@ -232,12 +232,12 @@ export function ForexTradesSection({
     },
     {
       key: 'closePrice',
-      title: '平仓价格',
+      title: '平仓价',
       render: (_value: unknown, row: ForexTradeRecord) => formatForexMoney(row.closePrice),
     },
     {
       key: 'pnl',
-      title: '盈亏金额',
+      title: '盈亏',
       render: (_value: unknown, row: ForexTradeRecord) => (
         <strong style={{ color: row.pnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
           {formatForexAmount(row.pnl)}
@@ -255,11 +255,30 @@ export function ForexTradesSection({
     },
     { key: 'openTime', title: '开仓时间', dataIndex: 'openTime' as const },
     { key: 'closeTime', title: '平仓时间', dataIndex: 'closeTime' as const },
-    { key: 'holdTime', title: '持仓时间', dataIndex: 'holdTime' as const },
+    { key: 'holdTime', title: '持仓', dataIndex: 'holdTime' as const },
     {
       key: 'remark',
       title: '备注',
-      render: (_value: unknown, row: ForexTradeRecord) => row.remark || '-',
+      width: 160,
+      render: (_value: unknown, row: ForexTradeRecord) => {
+        if (!row.remark) return '-';
+        return (
+          <span
+            title={row.remark}
+            style={{
+              display: 'inline-block',
+              maxWidth: 140,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              verticalAlign: 'middle',
+              cursor: 'default',
+            }}
+          >
+            {row.remark}
+          </span>
+        );
+      },
     },
     {
       key: 'actions',

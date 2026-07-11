@@ -240,6 +240,15 @@ function buildSummary(
   const withdrawals = scopedFlows.filter((item) => item.flow_type === 'withdrawal').reduce((sum, item) => sum + Number(item.amount), 0);
   const netCapital = deposits - withdrawals;
 
+  const allGrossPnl = trades.reduce((sum, item) => sum + Number(item.pnl), 0);
+  const allCommission = trades.reduce((sum, item) => sum + Number(item.commission), 0);
+  const allOvernightFee = trades.reduce((sum, item) => sum + Number(item.overnight_fee), 0);
+  const allRealizedNetPnl = allGrossPnl + allCommission + allOvernightFee;
+  const allDeposits = capitalFlows.filter((item) => item.flow_type === 'deposit').reduce((sum, item) => sum + Number(item.amount), 0);
+  const allWithdrawals = capitalFlows.filter((item) => item.flow_type === 'withdrawal').reduce((sum, item) => sum + Number(item.amount), 0);
+  const allNetCapital = allDeposits - allWithdrawals;
+  const equity = allNetCapital + allRealizedNetPnl;
+
   return {
     tradeCount: scopedTrades.length,
     grossPnl: Number(grossPnl.toFixed(2)),
@@ -255,8 +264,8 @@ function buildSummary(
     totalDeposit: Number(deposits.toFixed(2)),
     totalWithdrawal: Number(withdrawals.toFixed(2)),
     netCapital: Number(netCapital.toFixed(2)),
-    equity: Number((netCapital + realizedNetPnl).toFixed(2)),
-    roi: deposits > 0 ? realizedNetPnl / deposits : 0,
+    equity: Number(equity.toFixed(2)),
+    roi: allDeposits > 0 ? allRealizedNetPnl / allDeposits : 0,
   };
 }
 

@@ -1036,11 +1036,6 @@ textarea {
   border-color: var(--color-border);
 }
 
-.stat-card:active {
-  transform: translateY(0) scale(0.99);
-  transition-duration: 0.08s;
-}
-
 .stat-card-trend {
   display: inline-flex;
   align-items: center;
@@ -2395,11 +2390,7 @@ textarea {
   box-shadow: 0 6px 20px var(--shadow-blue);
 }
 
-.chart-card:active,
-.fitness-insight-card:active {
-  transform: translateY(0) scale(0.99);
-  transition-duration: 0.08s;
-}
+
 
 .fitness-chart-header strong,
 .fitness-insight-head strong {
@@ -4501,8 +4492,7 @@ textarea {
 @media (hover: none) and (pointer: coarse) {
   .stat-card:active,
   .dash-card:active {
-    transform: scale(0.98);
-    transition-duration: 0.05s;
+    transform: none;
   }
 
   .card:hover,
@@ -4542,20 +4532,13 @@ button:active:disabled {
 .stat-card,
 .section-card,
 .chart-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .card:hover,
 .stat-card:hover,
 .chart-card:hover {
   transform: translateY(-2px);
-}
-
-.card:active,
-.stat-card:active,
-.chart-card:active {
-  transform: translateY(0) scale(0.995);
-  transition-duration: 0.08s;
 }
 
 input,
@@ -7636,6 +7619,33 @@ img {
   min-height: 300px;
 }
 
+.forex-chart-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  margin-bottom: 14px;
+}
+
+.forex-chart-tab {
+  padding: 5px 14px;
+  font-size: var(--fs-label);
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  background: transparent;
+  color: var(--color-ink-subtle);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.forex-chart-tab.is-active {
+  background: var(--color-surface-1);
+  color: var(--color-ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
 .forex-chart-shell-compact {
   min-height: 220px;
 }
@@ -8039,6 +8049,15 @@ img {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+}
+
+/* 交易笔数 */
+.pnl-cell-count {
+  font-size: var(--fs-tag);
+  font-weight: 400;
+  line-height: 1.1;
+  opacity: 0.7;
+  white-space: nowrap;
 }
 
 /* 入金/出金文字 */
@@ -8452,11 +8471,6 @@ img {
   border-color: var(--color-hairline-strong);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px var(--shadow-blue);
-}
-
-.storage-overview-grid .stat-card:active {
-  transform: translateY(0) scale(0.99);
-  transition-duration: 0.08s;
 }
 
 .storage-overview-grid .stat-label {

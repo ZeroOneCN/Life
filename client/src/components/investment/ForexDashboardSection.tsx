@@ -1,12 +1,14 @@
-﻿import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import dayjs from 'dayjs';
 import {
   Area,
+  AreaChart,
+  Bar,
+  BarChart,
   Cell,
-  Line,
-  LineChart,
   Pie,
   PieChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -21,13 +23,14 @@ import { apiPost } from '../../lib/api';
 import {
   buildForexDailyPnlTrend,
   buildForexDashboardSummary,
+  buildForexEquityCurve,
   buildForexInstrumentSummary,
   formatForexAmount,
   formatForexMoney,
   formatForexPercent,
   getForexInstrumentLabel,
 } from '../../services/forex';
-import type { ForexCapitalFlow, ForexDashboardSummary, ForexTradeRecord } from '../../types/forex';
+import type { ForexCapitalFlow, ForexDashboardSummary, ForexEquityPoint, ForexTradeRecord } from '../../types/forex';
 
 const AI_STORAGE_KEY = 'forex_ai_analysis';
 
@@ -88,6 +91,143 @@ function ChartCard({
       </div>
       {children}
     </div>
+  );
+}
+
+/** 净值曲线图表：0 基线对称布局，红绿渐变，含交叉线 tooltip */
+function EquityCurveChart({ data }: { data: ForexEquityPoint[] }) {
+  const lastEquity = data.length > 0 ? data[data.length - 1].equity : 0;
+  const color = lastEquity >= 0 ? CHART_PNL.up : CHART_PNL.down;
+  const gradId = lastEquity >= 0 ? 'forexEquityGradUp' : 'forexEquityGradDown';
+
+  /** 计算对称 Y 轴域，使 0 居中 */
+  const maxAbs = data.length > 0
+    ? Math.max(...data.map((d) => Math.abs(d.equity)), 1)
+    : 1;
+  const yDomain: [number, number] = [-maxAbs, maxAbs];
+
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <AreaChart data={data} margin={{ top: 12, right: 20, bottom: 4, left: 4 }}>
+        <defs>
+          <linearGradient id="forexEquityGradUp" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={CHART_PNL.up} stopOpacity={0.35} />
+            <stop offset="100%" stopColor={CHART_PNL.up} stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="forexEquityGradDown" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={CHART_PNL.down} stopOpacity={0.35} />
+            <stop offset="100%" stopColor={CHART_PNL.down} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <XAxis
+          dataKey="date"
+          tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-overline)' }}
+          tickFormatter={(value: string) => String(value ?? '').slice(5)}
+          interval="preserveStartEnd"
+          minTickGap={24}
+          angle={-35}
+          textAnchor="end"
+          height={60}
+        />
+        <YAxis
+          domain={yDomain}
+          tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }}
+          tickFormatter={(value: number) => {
+            const v = Number(value ?? 0);
+            if (Math.abs(v) < 1) return `$${v.toFixed(2)}`;
+            if (Math.abs(v) < 10) return `$${v.toFixed(1)}`;
+            return `$${v.toFixed(0)}`;
+          }}
+          width={56}
+        />
+        <ReferenceLine y={0} stroke="var(--color-hairline-strong)" strokeWidth={1.5} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          formatter={((value: number, _name: string, entry: { payload?: ForexEquityPoint }) => {
+            const p = entry?.payload;
+            const lines = [`累计收益: ${value >= 0 ? '+' : ''}$${Number(value ?? 0).toFixed(2)}`];
+            if (p) {
+              lines.push(`当日盈亏: ${p.dailyPnl >= 0 ? '+' : ''}$${p.dailyPnl.toFixed(2)}`);
+            }
+            return [lines.join('  |  '), ''];
+          }) as never}
+          labelFormatter={((label: unknown) => `日期 ${String(label ?? '')}`) as never}
+        />
+        <Area
+          type="monotone"
+          dataKey="equity"
+          stroke={color}
+          strokeWidth={2.5}
+          fill={`url(#${gradId})`}
+          baseValue={0}
+          dot={false}
+          isAnimationActive
+          animationDuration={800}
+          animationEasing="ease-in-out"
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** 每日盈亏图表：柱状图，盈利绿色亏损红色 */
+function DailyPnlChart({ data }: { data: { date: string; netPnl: number; tradeCount: number }[] }) {
+  /** 计算对称 Y 轴域，使 0 居中 */
+  const maxAbs = data.length > 0
+    ? Math.max(...data.map((d) => Math.abs(d.netPnl)), 1)
+    : 1;
+  const yDomain: [number, number] = [-maxAbs, maxAbs];
+
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart data={data} margin={{ top: 12, right: 20, bottom: 4, left: 4 }}>
+        <XAxis
+          dataKey="date"
+          tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-overline)' }}
+          tickFormatter={(value: string) => String(value ?? '').slice(5)}
+          interval="preserveStartEnd"
+          minTickGap={24}
+          angle={-35}
+          textAnchor="end"
+          height={60}
+        />
+        <YAxis
+          domain={yDomain}
+          tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }}
+          tickFormatter={(value: number) => {
+            const v = Number(value ?? 0);
+            if (Math.abs(v) < 1) return `$${v.toFixed(2)}`;
+            if (Math.abs(v) < 10) return `$${v.toFixed(1)}`;
+            return `$${v.toFixed(0)}`;
+          }}
+          width={56}
+        />
+        <ReferenceLine y={0} stroke="var(--color-hairline-strong)" strokeWidth={1.5} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          formatter={((value: number, _name: string, entry: { payload?: { date: string; netPnl: number; tradeCount: number } }) => {
+            const p = entry?.payload;
+            const pnlStr = `${value >= 0 ? '+' : ''}$${Number(value ?? 0).toFixed(2)}`;
+            const countStr = p ? `  |  ${p.tradeCount} 笔` : '';
+            return [pnlStr + countStr, '净盈亏'];
+          }) as never}
+          labelFormatter={((label: unknown) => `日期 ${String(label ?? '')}`) as never}
+        />
+        <Bar
+          dataKey="netPnl"
+          radius={[3, 3, 0, 0]}
+          isAnimationActive
+          animationDuration={800}
+        >
+          {data.map((entry) => (
+            <Cell
+              key={entry.date}
+              fill={entry.netPnl >= 0 ? CHART_PNL.up : CHART_PNL.down}
+            />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -277,6 +417,7 @@ function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCo
             <div
               key={day.date}
               className={`pnl-cell ${colorClass}${!content ? ' pnl-cell-no-data' : ''}`}
+              title={content ? `${day.date} | ${day.tradeCount}笔 | ${formatForexAmount(day.netPnl)}` : day.date}
             >
               <span className="pnl-cell-date">{parseInt(day.date.slice(8), 10)}</span>
               {content && (
@@ -285,6 +426,9 @@ function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCo
                     <span className={`pnl-cell-pnl ${day.netPnl > 0 ? 'pnl-text-profit' : 'pnl-text-loss'}`}>
                       {formatForexAmount(day.netPnl)}
                     </span>
+                  )}
+                  {day.tradeCount > 0 && (
+                    <span className="pnl-cell-count">{day.tradeCount}笔</span>
                   )}
                 </div>
               )}
@@ -324,6 +468,11 @@ export function ForexDashboardSection({
     () => buildForexDailyPnlTrend(trades, startDate, endDate),
     [endDate, startDate, trades],
   );
+  const equityCurve = useMemo(
+    () => buildForexEquityCurve(trades, undefined, startDate, endDate),
+    [endDate, startDate, trades],
+  );
+  const [activeChart, setActiveChart] = useState<'equity' | 'pnl'>('equity');
   const instrumentSummary = useMemo(
     () => buildForexInstrumentSummary(trades, startDate, endDate),
     [endDate, startDate, trades],
@@ -441,55 +590,36 @@ export function ForexDashboardSection({
           ]}
         />
 
-        {/* 每日盈亏曲线 - 独占整行 */}
-        <ChartCard title="每日盈亏曲线" description="按交易日观察净盈亏变化趋势。">
+        {/* 净值曲线 / 每日盈亏 - 独占整行，双标签切换 */}
+        <ChartCard
+          title={activeChart === 'equity' ? '收益曲线' : '每日盈亏'}
+          description={activeChart === 'equity' ? '累计交易盈亏变化趋势（不含出入金）。' : '按交易日观察净盈亏变化趋势。'}
+        >
           {isDataReady && hasTrendData ? (
             <div className="forex-chart-shell">
-              <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={trend}>
-                  <defs>
-                    <linearGradient id="forexPnlGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#5e6ad2" stopOpacity={0.2} />
-                      <stop offset="100%" stopColor="#5e6ad2" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-overline)' }}
-                    tickFormatter={(value) => String(value ?? '').slice(5)}
-                    interval={0}
-                    angle={-40}
-                    textAnchor="end"
-                    height={70}
-                    minTickGap={16}
-                  />
-                  <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    formatter={(value) => [formatForexMoney(Number(value ?? 0)), '净盈亏']}
-                    labelFormatter={(label) => `日期 ${String(label ?? '')}`}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="netPnl"
-                    stroke="none"
-                    fill="url(#forexPnlGradient)"
-                    isAnimationActive
-                    animationDuration={3200}
-                    animationEasing="ease-in-out"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="netPnl"
-                    stroke="#5e6ad2"
-                    strokeWidth={2.5}
-                    dot={false}
-                    isAnimationActive
-                    animationDuration={3600}
-                    animationEasing="ease-in-out"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {/* 标签切换器 */}
+              <div className="forex-chart-tabs">
+                <button
+                  type="button"
+                  className={`forex-chart-tab${activeChart === 'equity' ? ' is-active' : ''}`}
+                  onClick={() => setActiveChart('equity')}
+                >
+                  收益曲线
+                </button>
+                <button
+                  type="button"
+                  className={`forex-chart-tab${activeChart === 'pnl' ? ' is-active' : ''}`}
+                  onClick={() => setActiveChart('pnl')}
+                >
+                  每日盈亏
+                </button>
+              </div>
+
+              {activeChart === 'equity' ? (
+                <EquityCurveChart data={equityCurve} />
+              ) : (
+                <DailyPnlChart data={trend} />
+              )}
             </div>
           ) : (
             <EmptyState

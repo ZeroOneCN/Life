@@ -77,8 +77,8 @@ export default function ForexPage() {
     reloading.current = true;
     try {
       const [nextTrades, nextCapitalFlows, nextSummary, nextSettings] = await Promise.all([
-        forexApi.listTrades({ page: 1, page_size: 500 }),
-        forexApi.listCapitalFlows({ page: 1, page_size: 500 }),
+        forexApi.listTrades({ page: 1, page_size: 5000 }),
+        forexApi.listCapitalFlows({ page: 1, page_size: 5000 }),
         forexApi.getDashboardSummary(),
         forexApi.getSettings(),
       ]);

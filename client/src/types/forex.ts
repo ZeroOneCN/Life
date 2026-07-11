@@ -127,6 +127,13 @@ export interface ForexDailyPnlPoint {
   tradeCount: number;
 }
 
+/** 收益曲线数据点：累计盈亏 + 当日盈亏 */
+export interface ForexEquityPoint {
+  date: string;
+  equity: number;
+  dailyPnl: number;
+}
+
 export interface ForexInstrumentSummary {
   instrument: ForexInstrument;
   tradeCount: number;

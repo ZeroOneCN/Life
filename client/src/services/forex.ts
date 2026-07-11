@@ -9,6 +9,7 @@ import type {
   ForexCapitalFlowType,
   ForexDailyPnlPoint,
   ForexDashboardSummary,
+  ForexEquityPoint,
   ForexImportInvalidRow,
   ForexImportResult,
   ForexInsight,
@@ -640,7 +641,15 @@ export function buildForexDashboardSummary(
   const totalDeposit = roundMoney(scopedCapital.filter((flow) => flow.flowType === 'deposit').reduce((sum, flow) => sum + flow.amount, 0));
   const totalWithdrawal = roundMoney(scopedCapital.filter((flow) => flow.flowType === 'withdrawal').reduce((sum, flow) => sum + flow.amount, 0));
   const netCapital = roundMoney(totalDeposit - totalWithdrawal);
-  const equity = roundMoney(netCapital + realizedNetPnl);
+
+  const allGrossPnl = roundMoney(trades.reduce((sum, trade) => sum + trade.pnl, 0));
+  const allCommission = roundMoney(trades.reduce((sum, trade) => sum + trade.commission, 0));
+  const allOvernightFee = roundMoney(trades.reduce((sum, trade) => sum + trade.overnightFee, 0));
+  const allRealizedNetPnl = roundMoney(allGrossPnl + allCommission + allOvernightFee);
+  const allTotalDeposit = roundMoney(capitalFlows.filter((flow) => flow.flowType === 'deposit').reduce((sum, flow) => sum + flow.amount, 0));
+  const allTotalWithdrawal = roundMoney(capitalFlows.filter((flow) => flow.flowType === 'withdrawal').reduce((sum, flow) => sum + flow.amount, 0));
+  const allNetCapital = roundMoney(allTotalDeposit - allTotalWithdrawal);
+  const equity = roundMoney(allNetCapital + allRealizedNetPnl);
 
   return {
     tradeCount: scopedTrades.length,
@@ -658,7 +667,7 @@ export function buildForexDashboardSummary(
     totalWithdrawal,
     netCapital,
     equity,
-    roi: totalDeposit > 0 ? realizedNetPnl / totalDeposit : 0,
+    roi: allTotalDeposit > 0 ? allRealizedNetPnl / allTotalDeposit : 0,
   };
 }
 
@@ -722,6 +731,59 @@ export function buildForexDailyPnlTrend(
   }
 
   return [...grouped.values()].sort((left, right) => dayjs(left.date).valueOf() - dayjs(right.date).valueOf());
+}
+
+/**
+ * 构建累计收益曲线数据：逐日累计算交易盈亏（不含出入金）
+ * 当日收益 = 前一日收益 + 当日盈亏 + 手续费 + 隔夜费
+ * @param trades - 交易记录数组
+ * @param startDate - 可选开始日期
+ * @param endDate - 可选结束日期
+ * @returns 按日期排序的收益曲线数据点数组
+ */
+export function buildForexEquityCurve(
+  trades: ForexTradeRecord[],
+  _capitalFlows?: ForexCapitalFlow[],
+  startDate?: string,
+  endDate?: string,
+): ForexEquityPoint[] {
+  const scopedTrades = filterTradesByDateRange(trades, startDate, endDate);
+
+  /** 交易记录按日期分组 */
+  const dateMap = new Map<string, {
+    grossPnl: number;
+    commission: number;
+    overnightFee: number;
+  }>();
+
+  scopedTrades.forEach((trade) => {
+    if (!isValidTradeDate(trade.tradeDate)) return;
+    const existing = dateMap.get(trade.tradeDate) ?? {
+      grossPnl: 0, commission: 0, overnightFee: 0,
+    };
+    existing.grossPnl = roundMoney(existing.grossPnl + trade.pnl);
+    existing.commission = roundMoney(existing.commission + trade.commission);
+    existing.overnightFee = roundMoney(existing.overnightFee + trade.overnightFee);
+    dateMap.set(trade.tradeDate, existing);
+  });
+
+  /** 按日期排序后逐日累计算收益 */
+  const sortedDates = [...dateMap.keys()].sort(
+    (left, right) => dayjs(left).valueOf() - dayjs(right).valueOf(),
+  );
+
+  let equity = 0;
+  return sortedDates.map((date) => {
+    const entry = dateMap.get(date)!;
+    /** 当日收益 = 前一日收益 + 盈亏 + 手续费 + 隔夜费 */
+    const dailyPnl = roundMoney(entry.grossPnl + entry.commission + entry.overnightFee);
+    equity = roundMoney(equity + dailyPnl);
+    return {
+      date,
+      equity,
+      dailyPnl,
+    };
+  });
 }
 
 export function buildForexInstrumentSummary(

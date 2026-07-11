@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, ExportButton, Field, FilterBar, IconBtn, Modal, Pagination, SearchInput, SelectField, TextArea } from '../ui';
+import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, TextArea } from '../ui';
 import { LOAN_ALL_PLATFORMS, LOAN_REPAYMENT_PAGE_SIZE, formatLoanAmount } from '../../services/loan';
 import type { LoanBill, LoanPlatform, LoanRepayment, LoanRepaymentDraft } from '../../types/loan';
 
@@ -164,16 +164,16 @@ export function LoanRepaymentsSection({
       title: '操作',
       render: (_value: unknown, row: LoanRepayment) => (
         <div className="fitness-row-actions">
-          <IconBtn
+          <Btn
             tone="secondary"
-            icon={<EditIcon />}
-            title="编辑"
             onClick={() => {
               setEditingRepayment(row);
               setEditingForm(buildFormState(row));
             }}
-          />
-          <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(row.id)} />
+          >
+            编辑
+          </Btn>
+          <Btn tone="danger" onClick={() => setPendingDeleteId(row.id)}>删除</Btn>
         </div>
       ),
     },
@@ -254,6 +254,7 @@ export function LoanRepaymentsSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
+          页面已固定按当前登录用户工作，不再显示用户 ID 输入。
           若选择关联账单，会自动带出平台、本金和利息。
         </div>
 
@@ -312,40 +313,26 @@ export function LoanRepaymentsSection({
           </div>
         </div>
 
-        <FilterBar
-          rightSlot={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <DatePickerField value={startDate} onChange={setStartDate} placeholder="开始日期" />
-              <DatePickerField value={endDate} onChange={setEndDate} placeholder="结束日期" />
-              <ExportButton
-                label="导出"
-                onExport={(format) => {
-                  showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
-                }}
-              />
-            </div>
-          }
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
-            <div style={{ width: 260, flexShrink: 0 }}>
-              <SearchInput
-                value={keyword}
-                onChange={setKeyword}
-                placeholder="搜索平台、关联账单或备注..."
-              />
-            </div>
-            <SelectField
-              value={platformFilter}
-              onChange={(event) => setPlatformFilter(event.target.value)}
-              style={{ width: 140 }}
-            >
-              <option value={LOAN_ALL_PLATFORMS}>全部平台</option>
-              {platforms.map((platform) => (
-                <option key={platform.id} value={platform.id}>{platform.name}</option>
-              ))}
-            </SelectField>
+        <div className="loan-filter-grid loan-filter-grid-repayments">
+          <SelectField label="平台筛选" value={platformFilter} onChange={(event) => setPlatformFilter(event.target.value)}>
+            <option value={LOAN_ALL_PLATFORMS}>全部平台</option>
+            {platforms.map((platform) => (
+              <option key={platform.id} value={platform.id}>{platform.name}</option>
+            ))}
+          </SelectField>
+          <div className="loan-modal-date-slot">
+            <DatePickerField label="开始日期" value={startDate} onChange={setStartDate} placeholder="不限开始日期" />
           </div>
-        </FilterBar>
+          <div className="loan-modal-date-slot loan-modal-date-slot-end">
+            <DatePickerField label="结束日期" value={endDate} onChange={setEndDate} placeholder="不限结束日期" />
+          </div>
+          <Field
+            label="关键词"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder="搜索平台、关联账单或备注"
+          />
+        </div>
 
         <div className="loan-summary-bar">
           <span className="subtle-text">共 {filteredRepayments.length} 笔还款</span>
@@ -460,10 +447,7 @@ export function LoanRepaymentsSection({
               setPendingDeleteId(null);
               showToast('还款记录已删除。');
             })
-            .catch((error) => {
-              console.error('删除还款记录失败:', error);
-              showToast('删除还款记录失败，请重试。', 'error');
-            })
+            .catch(() => undefined)
             .finally(() => {
               setSaving(false);
             });

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal } from '../ui';
+import { Btn, DeleteModal, Field, Modal } from '../ui';
 import { formatLoanAmount } from '../../services/loan';
 import type { LoanBill, LoanPlatform, LoanPlatformDraft, LoanRepayment } from '../../types/loan';
 
@@ -155,6 +155,7 @@ export function LoanPlatformsSection({
     >
       <div className="page-stack">
         <div className="callout callout-info">
+          平台已固定为当前登录用户所有，不再支持手动填写用户 ID。
           若平台仍被账单或还款记录引用，将不能直接删除。
         </div>
 
@@ -216,16 +217,16 @@ export function LoanPlatformsSection({
                       </div>
                     </div>
                     <div className="fitness-row-actions">
-                      <IconBtn
+                      <Btn
                         tone="secondary"
-                        icon={<EditIcon />}
-                        title="编辑"
                         onClick={() => {
                           setEditingPlatform(platform);
                           setEditingForm(buildFormState(platform));
                         }}
-                      />
-                      <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeletePlatform(platform)} />
+                      >
+                        编辑
+                      </Btn>
+                      <Btn tone="danger" onClick={() => setPendingDeletePlatform(platform)}>删除</Btn>
                     </div>
                   </div>
                   <div className="loan-summary-card-metrics">
@@ -328,10 +329,7 @@ export function LoanPlatformsSection({
               setPendingDeletePlatform(null);
               showToast('贷款平台已删除。');
             })
-            .catch((error) => {
-              console.error('删除贷款平台失败:', error);
-              showToast('删除贷款平台失败，请重试。', 'error');
-            })
+            .catch(() => undefined)
             .finally(() => {
               setSaving(false);
             });

@@ -132,7 +132,7 @@ export function ForexCapitalSection({
       key: 'amount',
       title: '金额',
       render: (_value: unknown, row: ForexCapitalFlow) => (
-        <strong style={{ color: row.flowType === 'deposit' ? 'var(--color-success)' : 'var(--color-warning)' }}>
+        <strong style={{ color: row.flowType === 'deposit' ? 'var(--color-success)' : 'var(--color-danger)' }}>
           {`${row.flowType === 'deposit' ? '+' : '-'}${formatForexMoney(row.amount)}`}
         </strong>
       ),
@@ -140,7 +140,26 @@ export function ForexCapitalSection({
     {
       key: 'remark',
       title: '备注',
-      render: (_value: unknown, row: ForexCapitalFlow) => row.remark || '-',
+      width: 160,
+      render: (_value: unknown, row: ForexCapitalFlow) => {
+        if (!row.remark) return '-';
+        return (
+          <span
+            title={row.remark}
+            style={{
+              display: 'inline-block',
+              maxWidth: 140,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              verticalAlign: 'middle',
+              cursor: 'default',
+            }}
+          >
+            {row.remark}
+          </span>
+        );
+      },
     },
     {
       key: 'actions',
