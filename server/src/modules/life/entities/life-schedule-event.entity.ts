@@ -90,7 +90,7 @@ export class LifeScheduleEventEntity extends UserScopedEntity {
   @Column({ type: 'varchar', length: 36, nullable: true })
   source_id!: string | null;
 
-  /** 排序权重 */
-  @Column({ type: 'int', default: 0 })
+  /** 排序权重（毫秒时间戳，需使用 BIGINT） */
+  @Column({ type: 'bigint', default: 0 })
   sort_order!: number;
 }
