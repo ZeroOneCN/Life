@@ -261,6 +261,12 @@ export default function MainLayout() {
     setActiveMenuKey(getActiveMenuKey(location.pathname));
     setUserMenuOpen(false);
     setMobileMenuOpen(false);
+
+    // 路由切换时立即滚动到顶部（绕过 CSS smooth 平滑动画）
+    const html = document.documentElement;
+    html.style.scrollBehavior = 'auto';
+    window.scrollTo(0, 0);
+    html.style.scrollBehavior = '';
   }, [location.pathname]);
 
   useEffect(() => {
