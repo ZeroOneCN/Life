@@ -1771,6 +1771,47 @@ export async function buildForexImportTemplateWorkbookCompatible() {
   });
 }
 
+/** 导出交易记录为 Excel，用作其他软件分析研究。按时间正序（旧→新）输出，包含全部字段。 */
+export async function exportForexTradesWorkbook(records: ForexTradeRecord[]) {
+  const XLSX = await import('xlsx');
+  const sorted = [...records].sort((left, right) => {
+    const leftMoment = isValidTradeDate(left.tradeDate)
+      ? dayjs(`${left.tradeDate}T${normalizeForexTimeInput(left.openTime, DEFAULT_START_TIME)}`)
+      : dayjs('2000-01-01');
+    const rightMoment = isValidTradeDate(right.tradeDate)
+      ? dayjs(`${right.tradeDate}T${normalizeForexTimeInput(right.openTime, DEFAULT_START_TIME)}`)
+      : dayjs('2000-01-01');
+    return leftMoment.valueOf() - rightMoment.valueOf();
+  });
+
+  const rows = sorted.map((record, index) => ({
+    序号: index + 1,
+    日期: record.tradeDate,
+    交易品种: record.instrument,
+    订单类型: record.orderType === 'buy' ? 'buy' : 'sell',
+    开仓价格: record.openPrice,
+    手数: record.lotSize,
+    手续费: record.commission,
+    平仓价格: record.closePrice,
+    盈亏金额: record.pnl,
+    隔夜费: record.overnightFee,
+    开仓时间: record.openTime,
+    平仓时间: record.closeTime,
+    持仓时间: record.holdTime,
+    净盈亏: roundMoney(record.pnl + record.commission + record.overnightFee),
+    备注: record.remark,
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'forex_trades');
+  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
+  return new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+}
+
 export function downloadBlob(blob: Blob, fileName: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

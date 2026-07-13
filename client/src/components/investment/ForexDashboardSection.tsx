@@ -96,12 +96,12 @@ function ChartCard({
 
 /** 构建 X 轴刻度间隔：保证首/尾/倒数第二个显示，其余按密度等间隔显示。返回 true=跳过，false=显示 */
 function buildTickInterval(total: number) {
-  return (index: number) => {
+  return ((index: number) => {
     if (total <= 8) return false;
     if (index === 0 || index === total - 1 || index === total - 2) return false;
     const step = Math.ceil(total / 8);
     return index % step !== 0;
-  };
+  }) as never;
 }
 
 /** 净值曲线图表：0 基线对称布局，红绿渐变，含交叉线 tooltip */

@@ -15,6 +15,7 @@ import {
   createForexTrade,
   deleteForexTrade,
   downloadBlob,
+  exportForexTradesWorkbook,
   filterForexTrades,
   formatForexAmount,
   formatForexMoney,
@@ -171,6 +172,7 @@ export function ForexTradesSection({
   const [page, setPage] = useState(1);
   const [importResult, setImportResult] = useState<ForexImportResult | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const filteredTrades = useMemo(
@@ -370,6 +372,25 @@ export function ForexTradesSection({
     showToast('模板已下载。');
   };
 
+  const handleExportTrades = async () => {
+    if (filteredTrades.length === 0) {
+      showToast('当前筛选结果为空，无可导出数据。', 'error');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const blob = await exportForexTradesWorkbook(filteredTrades);
+      const dateStamp = dayjs().format('YYYYMMDD-HHmm');
+      downloadBlob(blob, `forex-trades-${dateStamp}.xlsx`);
+      showToast(`已导出 ${filteredTrades.length} 条交易记录。`);
+    } catch (_error) {
+      showToast('导出失败，请稍后重试。', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <SectionCard
       title="交易记录"
@@ -387,6 +408,9 @@ export function ForexTradesSection({
             {isImporting ? '导入中...' : '导入 Excel / CSV'}
           </Btn>
           <Btn tone="secondary" onClick={handleDownloadTemplate}>下载模板</Btn>
+          <Btn tone="secondary" onClick={handleExportTrades} disabled={isExporting || filteredTrades.length === 0}>
+            {isExporting ? '导出中...' : '导出 Excel'}
+          </Btn>
         </div>
       )}
     >
