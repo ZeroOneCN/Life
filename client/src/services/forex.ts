@@ -1771,7 +1771,7 @@ export async function buildForexImportTemplateWorkbookCompatible() {
   });
 }
 
-/** 导出交易记录为 Excel，用作其他软件分析研究。按时间正序（旧→新）输出，包含全部字段。 */
+/** 导出交易记录为 Excel，格式与导入模板一致，便于在其他软件中分析或二次导入。按时间正序（旧→新）输出。 */
 export async function exportForexTradesWorkbook(records: ForexTradeRecord[]) {
   const XLSX = await import('xlsx');
   const sorted = [...records].sort((left, right) => {
@@ -1784,11 +1784,11 @@ export async function exportForexTradesWorkbook(records: ForexTradeRecord[]) {
     return leftMoment.valueOf() - rightMoment.valueOf();
   });
 
-  const rows = sorted.map((record, index) => ({
-    序号: index + 1,
-    日期: record.tradeDate,
+  const rows = sorted.map((record) => ({
+    ID: record.id,
+    日期时间: record.tradeDate,
     交易品种: record.instrument,
-    订单类型: record.orderType === 'buy' ? 'buy' : 'sell',
+    订单类型: record.orderType,
     开仓价格: record.openPrice,
     手数: record.lotSize,
     手续费: record.commission,
@@ -1798,13 +1798,12 @@ export async function exportForexTradesWorkbook(records: ForexTradeRecord[]) {
     开仓时间: record.openTime,
     平仓时间: record.closeTime,
     持仓时间: record.holdTime,
-    净盈亏: roundMoney(record.pnl + record.commission + record.overnightFee),
     备注: record.remark,
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(rows);
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'forex_trades');
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'forex_template');
   const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
 
   return new Blob([buffer], {
