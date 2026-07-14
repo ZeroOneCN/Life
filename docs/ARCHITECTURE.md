@@ -132,7 +132,7 @@ graph TD
 | 健康中心 | 步数、健身、体检、用药 | health_* 表 |
 | 财务中心 | 购物、旅行、贷款、订阅、房租、报告、汇率 | finance_* 表 |
 | 生活中心 | 物品、号卡、待办 | life_* 表 |
-| 投资中心 | 外汇（加密/港股/美股占位） | investment_* 表 |
+| 投资中心 | 外汇、加密、港股、美股 | investment_* 表 |
 | 通知中心 | 渠道、场景、模板、日志 | notification_* 表 |
 | 系统模块 | 认证、仪表盘、智能助理、健康检查 | system_* 表 |
 | Telegram 模块 | Bot、绑定、快速录入 | telegram_* 表 |
@@ -1144,7 +1144,7 @@ await repo.save(record);
 | | `life_card_bill_import_batch` | 账单导入批次 |
 | | `life_card_setting` | 号卡设置 |
 
-#### 4.3.5 投资中心（4 张表）
+#### 4.3.5 投资中心
 
 | 子模块 | 表名 | 说明 |
 |--------|------|------|
@@ -1152,6 +1152,7 @@ await repo.save(record);
 | | `investment_forex_capital_flow` | 资金流水 |
 | | `investment_forex_import_batch` | 导入批次 |
 | | `investment_forex_setting` | 外汇设置 |
+| 加密 / 港股 / 美股 | 前端 localStorage | 交易平台、交易记录、统计看板（前端版本，后端待开发） |
 
 #### 4.3.6 通知中心（5 张表）
 

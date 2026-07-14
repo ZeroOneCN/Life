@@ -1,5 +1,5 @@
-import { InvestmentTradePage } from '../../components/investment/InvestmentTradePage';
+import { StockTradePage } from '../../components/investment/StockTradePage';
 
 export default function CryptoPage() {
-  return <InvestmentTradePage market="crypto" />;
+  return <StockTradePage market="crypto" />;
 }

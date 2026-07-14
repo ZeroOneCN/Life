@@ -153,18 +153,11 @@ export const INVESTMENT_MARKET_CONFIG: Record<InvestmentMarket, InvestmentMarket
     priceDecimals: 4,
     quantityDecimals: 6,
     feeRate: 0.001,
-    upColor: '#ea2261',
-    downColor: '#16a34a',
+    upColor: '#16a34a',
+    downColor: '#ea2261',
     accent: '#f59e0b',
     accentSoft: 'rgba(245, 158, 11, 0.14)',
-    defaultSymbols: [
-      { symbol: 'BTC', name: 'Bitcoin', mockPrice: 67423.18 },
-      { symbol: 'ETH', name: 'Ethereum', mockPrice: 3482.55 },
-      { symbol: 'SOL', name: 'Solana', mockPrice: 168.42 },
-      { symbol: 'BNB', name: 'BNB', mockPrice: 612.04 },
-      { symbol: 'DOGE', name: 'Dogecoin', mockPrice: 0.1582 },
-      { symbol: 'XRP', name: 'XRP', mockPrice: 0.5234 },
-    ],
+    defaultSymbols: [],
   },
   'us-stock': {
     id: 'us-stock',
@@ -180,15 +173,7 @@ export const INVESTMENT_MARKET_CONFIG: Record<InvestmentMarket, InvestmentMarket
     downColor: '#ea2261',
     accent: '#533afd',
     accentSoft: 'rgba(83, 58, 253, 0.14)',
-    defaultSymbols: [
-      { symbol: 'AAPL', name: 'Apple', mockPrice: 224.18 },
-      { symbol: 'MSFT', name: 'Microsoft', mockPrice: 432.62 },
-      { symbol: 'NVDA', name: 'NVIDIA', mockPrice: 138.45 },
-      { symbol: 'GOOGL', name: 'Alphabet', mockPrice: 178.32 },
-      { symbol: 'AMZN', name: 'Amazon', mockPrice: 198.84 },
-      { symbol: 'META', name: 'Meta', mockPrice: 568.21 },
-      { symbol: 'TSLA', name: 'Tesla', mockPrice: 248.62 },
-    ],
+    defaultSymbols: [],
   },
   'hk-stock': {
     id: 'hk-stock',
@@ -204,14 +189,7 @@ export const INVESTMENT_MARKET_CONFIG: Record<InvestmentMarket, InvestmentMarket
     downColor: '#16a34a',
     accent: '#dc2626',
     accentSoft: 'rgba(220, 38, 38, 0.14)',
-    defaultSymbols: [
-      { symbol: '0700.HK', name: '腾讯控股', mockPrice: 412.60 },
-      { symbol: '9988.HK', name: '阿里巴巴', mockPrice: 88.45 },
-      { symbol: '3690.HK', name: '美团', mockPrice: 142.80 },
-      { symbol: '1810.HK', name: '小米集团', mockPrice: 48.62 },
-      { symbol: '9618.HK', name: '京东集团', mockPrice: 132.40 },
-      { symbol: '0941.HK', name: '中国移动', mockPrice: 78.20 },
-    ],
+    defaultSymbols: [],
   },
 };
 
@@ -233,3 +211,140 @@ export function getPnlBucket(pnl: number): string {
 export const PNL_BUCKETS_ORDER: string[] = [
   '<= -1000', '-1000 ~ -100', '-100 ~ 0', '0 ~ 100', '100 ~ 1000', '>= 1000',
 ];
+
+// ============================================
+// 股票市场专用类型 (港股/美股)
+// ============================================
+
+export type StockTradeStatus = 'open' | 'closed';
+
+export type StockBrokerType = 'futubull' | 'tiger' | 'snowball' | 'ib' | 'other';
+
+export const STOCK_BROKER_LABELS: Record<StockBrokerType, string> = {
+  futubull: '富途牛牛',
+  tiger: '老虎证券',
+  snowball: '雪盈证券',
+  ib: '盈透证券',
+  other: '其他',
+};
+
+export interface StockPlatform {
+  id: string;
+  name: string;
+  brokerType: StockBrokerType;
+  accountId: string;
+  remark: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockPlatformDraft {
+  name: string;
+  brokerType: StockBrokerType;
+  accountId?: string;
+  remark?: string;
+}
+
+export interface StockTrade {
+  id: string;
+  market: 'hk-stock' | 'us-stock';
+  platformId: string;
+  platformName: string;
+  symbol: string;
+  name: string;
+  side: 'buy' | 'sell';
+  quantity: number;
+  price: number;
+  fee: number;
+  tradeDate: string;
+  tradeTime: string;
+  status: StockTradeStatus;
+  closePrice?: number;
+  closeDate?: string;
+  closeTime?: string;
+  closeFee?: number;
+  realizedPnl?: number;
+  currentPrice?: number;
+  tags: string[];
+  remark: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockTradeDraft {
+  market: 'hk-stock' | 'us-stock';
+  platformId: string;
+  symbol: string;
+  name: string;
+  side: 'buy' | 'sell';
+  quantity: number;
+  price: number;
+  fee?: number;
+  tradeDate: string;
+  tradeTime: string;
+  status?: StockTradeStatus;
+  closePrice?: number;
+  closeDate?: string;
+  closeTime?: string;
+  closeFee?: number;
+  realizedPnl?: number;
+  currentPrice?: number;
+  tags?: string[];
+  remark?: string;
+}
+
+export interface StockPosition {
+  symbol: string;
+  name: string;
+  side: 'buy' | 'sell';
+  quantity: number;
+  avgCost: number;
+  totalCost: number;
+  currentPrice: number;
+  marketValue: number;
+  unrealizedPnl: number;
+  unrealizedPnlPercent: number;
+  openedAt: string;
+  tradeIds: string[];
+}
+
+export interface StockPlatformPnl {
+  platformId: string;
+  platformName: string;
+  pnl: number;
+  trades: number;
+  fees: number;
+}
+
+export interface StockSymbolPnl {
+  symbol: string;
+  name: string;
+  pnl: number;
+  trades: number;
+  fees: number;
+}
+
+export interface StockMonthPnl {
+  month: string;
+  pnl: number;
+  trades: number;
+  fees: number;
+}
+
+export interface StockDashboardSummary {
+  totalTrades: number;
+  openPositionsCount: number;
+  closedTradesCount: number;
+  realizedPnl: number;
+  unrealizedPnl: number;
+  totalFees: number;
+  winRate: number;
+  profitFactor: number;
+  bestTradePnl: number;
+  worstTradePnl: number;
+  averageHoldDays: number;
+  platformPnl: StockPlatformPnl[];
+  symbolPnl: StockSymbolPnl[];
+  monthlyPnl: StockMonthPnl[];
+  positions: StockPosition[];
+}

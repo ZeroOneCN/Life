@@ -1,5 +1,5 @@
-import { InvestmentTradePage } from '../../components/investment/InvestmentTradePage';
+import { StockTradePage } from '../../components/investment/StockTradePage';
 
 export default function HKStockPage() {
-  return <InvestmentTradePage market="hk-stock" />;
+  return <StockTradePage market="hk-stock" />;
 }

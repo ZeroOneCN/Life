@@ -1,5 +1,5 @@
-import { InvestmentTradePage } from '../../components/investment/InvestmentTradePage';
+import { StockTradePage } from '../../components/investment/StockTradePage';
 
 export default function USStockPage() {
-  return <InvestmentTradePage market="us-stock" />;
+  return <StockTradePage market="us-stock" />;
 }
