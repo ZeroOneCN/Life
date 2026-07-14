@@ -3028,6 +3028,19 @@ textarea {
   white-space: nowrap;
 }
 
+/* 睡眠记录表格：分页模式，不使用内部滚动 */
+.sleep-records-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
+}
+
+.sleep-records-table-wrap .data-table th,
+.sleep-records-table-wrap .data-table td {
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
 .table-actions {
   display: flex;
   align-items: center;

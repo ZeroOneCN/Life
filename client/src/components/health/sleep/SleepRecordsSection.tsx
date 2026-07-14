@@ -59,7 +59,7 @@ export function SleepRecordsSection({
         <EmptyState title="暂无睡眠记录" description="录入第一条睡眠记录吧。" />
       ) : (
         <>
-          <div className="vital-records-table-wrap">
+          <div className="sleep-records-table-wrap">
             <table className="data-table">
               <thead>
                 <tr>

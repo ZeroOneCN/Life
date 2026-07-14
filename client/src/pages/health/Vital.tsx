@@ -61,7 +61,7 @@ export default function VitalPage() {
   const [sleepRecordsTotal, setSleepRecordsTotal] = useState(0);
   const [sleepRecordsLoading, setSleepRecordsLoading] = useState(false);
   const [sleepPage, setSleepPage] = useState(1);
-  const sleepPageSize = 20;
+  const sleepPageSize = 10;
 
   // ===== 通用弹窗状态 =====
   const [deleteOpen, setDeleteOpen] = useState(false);
