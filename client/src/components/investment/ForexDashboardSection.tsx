@@ -104,17 +104,15 @@ function buildTickInterval(total: number) {
   }) as never;
 }
 
-/** 净值曲线图表：0 基线对称布局，红绿渐变，含交叉线 tooltip */
+/** 收益曲线图表：0 基线对称布局，分段着色（0以上绿色，0以下红色），自定义 tooltip */
 function EquityCurveChart({ data }: { data: ForexEquityPoint[] }) {
-  const lastEquity = data.length > 0 ? data[data.length - 1].equity : 0;
-  const color = lastEquity >= 0 ? CHART_PNL.up : CHART_PNL.down;
-  const gradId = lastEquity >= 0 ? 'forexEquityGradUp' : 'forexEquityGradDown';
-
-  /** 计算对称 Y 轴域，使 0 居中 */
   const maxAbs = data.length > 0
     ? Math.max(...data.map((d) => Math.abs(d.equity)), 1)
     : 1;
   const yDomain: [number, number] = [-maxAbs, maxAbs];
+
+  const positiveData = data.map((d) => ({ ...d, equity: Math.max(0, d.equity) }));
+  const negativeData = data.map((d) => ({ ...d, equity: Math.min(0, d.equity) }));
 
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -151,23 +149,42 @@ function EquityCurveChart({ data }: { data: ForexEquityPoint[] }) {
         />
         <ReferenceLine y={0} stroke="var(--color-hairline-strong)" strokeWidth={1.5} />
         <Tooltip
-          contentStyle={tooltipStyle}
-          formatter={((value: number, _name: string, entry: { payload?: ForexEquityPoint }) => {
+          contentStyle={{
+            ...tooltipStyle,
+            padding: '12px 16px',
+            whiteSpace: 'pre-wrap',
+          }}
+          formatter={((_value: number, _name: string, entry: { payload?: ForexEquityPoint }) => {
             const p = entry?.payload;
-            const lines = [`累计收益: ${value >= 0 ? '+' : ''}$${Number(value ?? 0).toFixed(2)}`];
-            if (p) {
-              lines.push(`当日盈亏: ${p.dailyPnl >= 0 ? '+' : ''}$${p.dailyPnl.toFixed(2)}`);
-            }
-            return [lines.join('  |  '), ''];
+            if (!p) return ['', ''];
+            const equityColor = p.equity >= 0 ? CHART_PNL.up : CHART_PNL.down;
+            const dailyColor = p.dailyPnl >= 0 ? CHART_PNL.up : CHART_PNL.down;
+            const html = `累计收益: <span style="color:${equityColor};font-weight:600">${p.equity >= 0 ? '+' : ''}$${p.equity.toFixed(2)}</span>
+当日盈亏: <span style="color:${dailyColor};font-weight:600">${p.dailyPnl >= 0 ? '+' : ''}$${p.dailyPnl.toFixed(2)}</span>`;
+            return [html, ''];
           }) as never}
           labelFormatter={((label: unknown) => `日期 ${String(label ?? '')}`) as never}
         />
         <Area
+          data={positiveData}
           type="monotone"
           dataKey="equity"
-          stroke={color}
+          stroke={CHART_PNL.up}
           strokeWidth={2.5}
-          fill={`url(#${gradId})`}
+          fill="url(#forexEquityGradUp)"
+          baseValue={0}
+          dot={false}
+          isAnimationActive
+          animationDuration={800}
+          animationEasing="ease-in-out"
+        />
+        <Area
+          data={negativeData}
+          type="monotone"
+          dataKey="equity"
+          stroke={CHART_PNL.down}
+          strokeWidth={2.5}
+          fill="url(#forexEquityGradDown)"
           baseValue={0}
           dot={false}
           isAnimationActive
