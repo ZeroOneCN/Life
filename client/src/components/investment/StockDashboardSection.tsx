@@ -82,7 +82,7 @@ export function StockDashboardSection({ summary, market }: StockDashboardSection
 
   const platformColumns = [
     { key: 'platformName', title: '平台', render: (_: unknown, row: { platformName: string }) => row.platformName },
-    { key: 'tradeCount', title: '交易数', render: (_: unknown, row: { tradeCount: number }) => row.tradeCount },
+    { key: 'trades', title: '交易数', render: (_: unknown, row: { trades: number }) => row.trades },
     { key: 'fees', title: '手续费', render: (_: unknown, row: { fees: number }) => formatMoney(row.fees, config.currencySymbol) },
     { key: 'pnl', title: '盈亏', render: (_: unknown, row: { pnl: number }) => (
       <strong style={{ color: row.pnl >= 0 ? config.upColor : config.downColor }}>
@@ -98,7 +98,7 @@ export function StockDashboardSection({ summary, market }: StockDashboardSection
         <span style={{ color: 'var(--color-ink-mute)', fontSize: 'var(--fs-caption)' }}>{row.name}</span>
       </div>
     )},
-    { key: 'tradeCount', title: '交易数', render: (_: unknown, row: { tradeCount: number }) => row.tradeCount },
+    { key: 'trades', title: '交易数', render: (_: unknown, row: { trades: number }) => row.trades },
     { key: 'fees', title: '手续费', render: (_: unknown, row: { fees: number }) => formatMoney(row.fees, config.currencySymbol) },
     { key: 'pnl', title: '盈亏', render: (_: unknown, row: { pnl: number }) => (
       <strong style={{ color: row.pnl >= 0 ? config.upColor : config.downColor }}>
@@ -109,7 +109,7 @@ export function StockDashboardSection({ summary, market }: StockDashboardSection
 
   const monthColumns = [
     { key: 'month', title: '月份', render: (_: unknown, row: { month: string }) => row.month },
-    { key: 'tradeCount', title: '交易数', render: (_: unknown, row: { tradeCount: number }) => row.tradeCount },
+    { key: 'trades', title: '交易数', render: (_: unknown, row: { trades: number }) => row.trades },
     { key: 'fees', title: '手续费', render: (_: unknown, row: { fees: number }) => formatMoney(row.fees, config.currencySymbol) },
     { key: 'pnl', title: '盈亏', render: (_: unknown, row: { pnl: number }) => (
       <strong style={{ color: row.pnl >= 0 ? config.upColor : config.downColor }}>
@@ -191,7 +191,7 @@ export function StockDashboardSection({ summary, market }: StockDashboardSection
 
       {summary.positions.length > 0 && (
         <SectionCard title="持仓明细">
-          <DataTable columns={positionColumns} data={summary.positions} rowKey="key" />
+          <DataTable columns={positionColumns} data={summary.positions} rowKey="symbol" />
         </SectionCard>
       )}
 

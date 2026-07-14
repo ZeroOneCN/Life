@@ -9,7 +9,6 @@ import {
   type StockTrade,
   type StockTradeDraft,
   genInvestmentId,
-  STOCK_BROKER_LABELS,
 } from '../types/investment';
 
 export type StockMarketType = 'hk-stock' | 'us-stock' | 'crypto';
@@ -286,12 +285,9 @@ export function importTrades(
     if (platformName) {
       const matched = platforms.find((p) => p.name.includes(platformName) || platformName.includes(p.name));
       if (!matched) {
-        const brokerType = (Object.keys(STOCK_BROKER_LABELS) as Array<keyof typeof STOCK_BROKER_LABELS>).find(
-          (k) => STOCK_BROKER_LABELS[k].includes(platformName),
-        ) || 'other';
         const newPlatform = createPlatform(market, {
           name: platformName,
-          brokerType,
+          brokerType: platformName,
           remark: '自动导入创建',
         });
         platformId = newPlatform.id;
@@ -543,12 +539,9 @@ export async function importStockTrades(
     if (platformName) {
       const matched = platforms.find((p) => p.name.includes(platformName) || platformName.includes(p.name));
       if (!matched) {
-        const brokerType = (Object.keys(STOCK_BROKER_LABELS) as Array<keyof typeof STOCK_BROKER_LABELS>).find(
-          (k) => STOCK_BROKER_LABELS[k].includes(platformName),
-        ) || 'other';
         const newPlatform = createPlatform(market, {
           name: platformName,
-          brokerType,
+          brokerType: platformName,
           remark: '自动导入创建',
         });
         platformId = newPlatform.id;
@@ -558,7 +551,17 @@ export async function importStockTrades(
     } else if (platforms.length > 0) {
       platformId = platforms[0].id;
     } else {
-      invalidCount += 1;
+      result.push({
+        status: 'error',
+        symbol: symbol || 'N/A',
+        name: name || symbol || 'N/A',
+        side,
+        quantity: Number.isFinite(quantity) ? quantity : 0,
+        price: Number.isFinite(price) ? price : 0,
+        fee: Number.isFinite(fee) ? fee : 0,
+        tradeDate: tradeDate || 'N/A',
+        tradeTime,
+      });
       return;
     }
 
@@ -580,7 +583,7 @@ export async function importStockTrades(
       fee: Number.isFinite(fee) ? fee : 0,
       tradeDate,
       tradeTime,
-      ...(isClosed && Number.isFinite(closePrice) && closePrice > 0
+      ...(isClosed && closePrice !== undefined && Number.isFinite(closePrice) && closePrice > 0
         ? {
             closePrice,
             closeDate: closeDate || tradeDate,

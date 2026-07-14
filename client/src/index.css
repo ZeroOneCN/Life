@@ -14040,8 +14040,22 @@ select:focus-visible {
 .invest-trade-form {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-  align-items: end;
+  gap: 20px 12px;
+  align-items: start;
+}
+
+.invest-trade-form .invest-form-field-full {
+  grid-column: 1 / -1;
+}
+
+.invest-trade-form .field {
+  gap: 8px;
+}
+
+.invest-trade-form .field-label {
+  font-size: var(--fs-label);
+  color: var(--color-ink-secondary);
+  font-weight: 500;
 }
 
 .invest-trade-form-modal {
@@ -16211,7 +16225,21 @@ select:focus-visible {
 .invest-trade-form {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  gap: 20px 16px;
+}
+
+.invest-trade-form .invest-form-field-full {
+  grid-column: 1 / -1;
+}
+
+.invest-trade-form .field {
+  gap: 8px;
+}
+
+.invest-trade-form .field-label {
+  font-size: var(--fs-label);
+  color: var(--color-ink-secondary);
+  font-weight: 500;
 }
 
 .invest-trade-form .field-group {

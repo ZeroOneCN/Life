@@ -9,7 +9,6 @@ import {
   Field,
   IconBtn,
   Modal,
-  SelectField,
   Tag,
   TextArea,
   useToastState,
@@ -17,7 +16,6 @@ import {
 import {
   type StockPlatform,
   type StockPlatformDraft,
-  STOCK_BROKER_LABELS,
 } from '../../types/investment';
 
 interface StockPlatformsSectionProps {
@@ -35,14 +33,14 @@ export function StockPlatformsSection({ platforms, onAdd, onUpdate, onDelete }: 
 
   const [addForm, setAddForm] = useState({
     name: '',
-    brokerType: 'other' as keyof typeof STOCK_BROKER_LABELS,
+    brokerType: '',
     accountId: '',
     remark: '',
   });
 
   const [editForm, setEditForm] = useState({
     name: '',
-    brokerType: 'other' as keyof typeof STOCK_BROKER_LABELS,
+    brokerType: '',
     accountId: '',
     remark: '',
   });
@@ -59,7 +57,7 @@ export function StockPlatformsSection({ platforms, onAdd, onUpdate, onDelete }: 
       remark: addForm.remark.trim(),
     });
     showToast('平台已添加');
-    setAddForm({ name: '', brokerType: 'other', accountId: '', remark: '' });
+    setAddForm({ name: '', brokerType: '', accountId: '', remark: '' });
     setShowAddModal(false);
   };
 
@@ -93,7 +91,7 @@ export function StockPlatformsSection({ platforms, onAdd, onUpdate, onDelete }: 
       render: (_: unknown, row: StockPlatform) => (
         <div>
           <strong>{row.name}</strong>
-          <Tag tone="blue" size="sm">{STOCK_BROKER_LABELS[row.brokerType]}</Tag>
+          <Tag tone="blue" size="sm">{row.brokerType || '-'}</Tag>
         </div>
       ),
     },
@@ -170,15 +168,12 @@ export function StockPlatformsSection({ platforms, onAdd, onUpdate, onDelete }: 
           onChange={(e) => setAddForm((prev) => ({ ...prev, name: e.target.value }))}
           placeholder="例如：富途牛牛主账户"
         />
-        <SelectField
+        <Field
           label="券商类型"
           value={addForm.brokerType}
-          onChange={(e) => setAddForm((prev) => ({ ...prev, brokerType: e.target.value as keyof typeof STOCK_BROKER_LABELS }))}
-        >
-          {Object.entries(STOCK_BROKER_LABELS).map(([key, label]) => (
-            <option key={key} value={key}>{label}</option>
-          ))}
-        </SelectField>
+          onChange={(e) => setAddForm((prev) => ({ ...prev, brokerType: e.target.value }))}
+          placeholder="例如：富途牛牛、老虎证券、币安等"
+        />
         <Field
           label="账户标识"
           value={addForm.accountId}
@@ -210,15 +205,12 @@ export function StockPlatformsSection({ platforms, onAdd, onUpdate, onDelete }: 
           value={editForm.name}
           onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
         />
-        <SelectField
+        <Field
           label="券商类型"
           value={editForm.brokerType}
-          onChange={(e) => setEditForm((prev) => ({ ...prev, brokerType: e.target.value as keyof typeof STOCK_BROKER_LABELS }))}
-        >
-          {Object.entries(STOCK_BROKER_LABELS).map(([key, label]) => (
-            <option key={key} value={key}>{label}</option>
-          ))}
-        </SelectField>
+          onChange={(e) => setEditForm((prev) => ({ ...prev, brokerType: e.target.value }))}
+          placeholder="例如：富途牛牛、老虎证券、币安等"
+        />
         <Field
           label="账户标识"
           value={editForm.accountId}

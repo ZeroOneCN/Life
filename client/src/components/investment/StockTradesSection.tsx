@@ -12,7 +12,6 @@ import {
   IconBtn,
   Modal,
   Pagination,
-  PillTabs,
   SelectField,
   Tag,
   TextArea,
@@ -26,8 +25,6 @@ import {
   INVESTMENT_MARKET_CONFIG,
 } from '../../types/investment';
 import { type StockMarketType } from '../../services/stockStorage';
-
-type StockTradeTab = 'list' | 'add';
 
 interface StockTradesSectionProps {
   trades: StockTrade[];
@@ -46,7 +43,7 @@ export function StockTradesSection({ trades, platforms, market, onAdd, onUpdate,
   const { showToast } = useToastState();
   const config = INVESTMENT_MARKET_CONFIG[market];
 
-  const [tab, setTab] = useState<StockTradeTab>('list');
+  const [showAddModal, setShowAddModal] = useState(false);
   const [editingTrade, setEditingTrade] = useState<StockTrade | null>(null);
   const [closingTrade, setClosingTrade] = useState<StockTrade | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -189,7 +186,7 @@ export function StockTradesSection({ trades, platforms, market, onAdd, onUpdate,
       tags: '',
       remark: '',
     });
-    setTab('list');
+    setShowAddModal(false);
   };
 
   const handleEditSubmit = () => {
@@ -405,186 +402,183 @@ export function StockTradesSection({ trades, platforms, market, onAdd, onUpdate,
         title="交易记录"
         description={`共 ${trades.length} 笔交易`}
         action={
-          <Btn tone="primary" onClick={() => setTab('add')}>添加交易</Btn>
+          <Btn tone="primary" onClick={() => setShowAddModal(true)}>添加交易</Btn>
         }
-      >
-        <PillTabs
-          options={[
-            { value: 'list', label: '交易列表' },
-            { value: 'add', label: '新增交易' },
-          ]}
-          value={tab}
-          onChange={(value) => setTab(value as StockTradeTab)}
-        />
+      />
+
+      <SectionCard title="交易列表">
+        <div className="invest-filter-grid">
+          <Field
+            label="关键词"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            placeholder="搜索标的、平台、备注"
+          />
+          <SelectField
+            label="平台"
+            value={platformFilter}
+            onChange={(e) => setPlatformFilter(e.target.value)}
+          >
+            <option value="">全部平台</option>
+            {platforms.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="状态"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="">全部状态</option>
+            <option value="open">持仓中</option>
+            <option value="closed">已平仓</option>
+          </SelectField>
+        </div>
+
+        {pageRecords.length === 0 ? (
+          <EmptyState
+            title="暂无交易记录"
+            description="点击上方「添加交易」按钮添加第一笔交易"
+            icon="📊"
+          />
+        ) : (
+          <>
+            <DataTable columns={columns} data={pageRecords} rowKey="id" />
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          </>
+        )}
       </SectionCard>
 
-      {tab === 'list' && (
-        <SectionCard title="交易列表">
-          <div className="invest-filter-grid">
-            <Field
-              label="关键词"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="搜索标的、平台、备注"
-            />
-            <SelectField
-              label="平台"
-              value={platformFilter}
-              onChange={(e) => setPlatformFilter(e.target.value)}
-            >
-              <option value="">全部平台</option>
-              {platforms.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </SelectField>
-            <SelectField
-              label="状态"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="">全部状态</option>
-              <option value="open">持仓中</option>
-              <option value="closed">已平仓</option>
-            </SelectField>
-          </div>
+      <Modal
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="新增交易"
+        width={900}
+        footer={
+          <>
+            <Btn tone="secondary" onClick={() => setShowAddModal(false)}>取消</Btn>
+            <Btn tone="primary" onClick={handleAddSubmit}>保存交易</Btn>
+          </>
+        }
+      >
+        <div className="invest-trade-form">
+          <SelectField
+            label="交易平台 *"
+            value={addForm.platformId}
+            onChange={(e) => setAddForm((prev) => ({ ...prev, platformId: e.target.value }))}
+          >
+            <option value="">请选择平台</option>
+            {platforms.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </SelectField>
+          <Field
+            label="标的代码 *"
+            value={addForm.symbol}
+            onChange={(e) => setAddForm((prev) => ({ ...prev, symbol: e.target.value }))}
+            placeholder="例如：AAPL 或 0700.HK"
+          />
+          <Field
+            label="标的名称"
+            value={addForm.name}
+            onChange={(e) => setAddForm((prev) => ({ ...prev, name: e.target.value }))}
+            placeholder="留空使用代码作为名称"
+          />
+          <SelectField
+            label="方向 *"
+            value={addForm.side}
+            onChange={(e) => setAddForm((prev) => ({ ...prev, side: e.target.value as 'buy' | 'sell' }))}
+          >
+            <option value="buy">买入</option>
+            <option value="sell">卖出</option>
+          </SelectField>
+          <Field
+            label={`数量 (${config.quantityUnit}) *`}
+            value={addForm.quantity}
+            onChange={(e) => setAddForm((prev) => ({ ...prev, quantity: e.target.value }))}
+            placeholder="100"
+          />
+          <Field
+            label="成交价 *"
+            value={addForm.price}
+            onChange={(e) => setAddForm((prev) => ({ ...prev, price: e.target.value }))}
+            placeholder="0.00"
+          />
+          <Field
+            label="手续费"
+            value={addForm.fee}
+            onChange={(e) => setAddForm((prev) => ({ ...prev, fee: e.target.value }))}
+            placeholder="0.00"
+          />
+          <DatePickerField
+            label="交易日期 *"
+            value={addForm.tradeDate}
+            onChange={(value) => setAddForm((prev) => ({ ...prev, tradeDate: value }))}
+          />
+          <Field
+            label="交易时间 *"
+            value={addForm.tradeTime}
+            onChange={(e) => setAddForm((prev) => ({ ...prev, tradeTime: e.target.value }))}
+            placeholder="HH:mm:ss"
+          />
+          <SelectField
+            label="状态"
+            value={addForm.status}
+            onChange={(e) => setAddForm((prev) => ({ ...prev, status: e.target.value as 'open' | 'closed' }))}
+          >
+            <option value="open">持仓中</option>
+            <option value="closed">已平仓</option>
+          </SelectField>
 
-          {pageRecords.length === 0 ? (
-            <EmptyState
-              title="暂无交易记录"
-              description="点击上方「新增交易」按钮添加第一笔交易"
-              icon="📊"
-            />
-          ) : (
+          {addForm.status === 'closed' && (
             <>
-              <DataTable columns={columns} data={pageRecords} rowKey="id" />
-              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+              <Field
+                label="平仓价 *"
+                value={addForm.closePrice}
+                onChange={(e) => setAddForm((prev) => ({ ...prev, closePrice: e.target.value }))}
+              />
+              <DatePickerField
+                label="平仓日期"
+                value={addForm.closeDate}
+                onChange={(value) => setAddForm((prev) => ({ ...prev, closeDate: value }))}
+              />
+              <Field
+                label="平仓时间"
+                value={addForm.closeTime}
+                onChange={(e) => setAddForm((prev) => ({ ...prev, closeTime: e.target.value }))}
+              />
+              <Field
+                label="平仓手续费"
+                value={addForm.closeFee}
+                onChange={(e) => setAddForm((prev) => ({ ...prev, closeFee: e.target.value }))}
+              />
             </>
           )}
-        </SectionCard>
-      )}
 
-      {tab === 'add' && (
-        <SectionCard title="新增交易">
-          <form onSubmit={(e) => { e.preventDefault(); handleAddSubmit(); }}>
-            <SelectField
-              label="交易平台 *"
-              value={addForm.platformId}
-              onChange={(e) => setAddForm((prev) => ({ ...prev, platformId: e.target.value }))}
-            >
-              <option value="">请选择平台</option>
-              {platforms.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </SelectField>
-            <Field
-              label="标的代码 *"
-              value={addForm.symbol}
-              onChange={(e) => setAddForm((prev) => ({ ...prev, symbol: e.target.value }))}
-              placeholder="例如：AAPL 或 0700.HK"
-            />
-            <Field
-              label="标的名称"
-              value={addForm.name}
-              onChange={(e) => setAddForm((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="留空使用代码作为名称"
-            />
-            <SelectField
-              label="方向 *"
-              value={addForm.side}
-              onChange={(e) => setAddForm((prev) => ({ ...prev, side: e.target.value as 'buy' | 'sell' }))}
-            >
-              <option value="buy">买入</option>
-              <option value="sell">卖出</option>
-            </SelectField>
-            <Field
-              label={`数量 (${config.quantityUnit}) *`}
-              value={addForm.quantity}
-              onChange={(e) => setAddForm((prev) => ({ ...prev, quantity: e.target.value }))}
-              placeholder="100"
-            />
-            <Field
-              label="成交价 *"
-              value={addForm.price}
-              onChange={(e) => setAddForm((prev) => ({ ...prev, price: e.target.value }))}
-              placeholder="0.00"
-            />
-            <Field
-              label="手续费"
-              value={addForm.fee}
-              onChange={(e) => setAddForm((prev) => ({ ...prev, fee: e.target.value }))}
-              placeholder="0.00"
-            />
-            <DatePickerField
-              label="交易日期 *"
-              value={addForm.tradeDate}
-              onChange={(value) => setAddForm((prev) => ({ ...prev, tradeDate: value }))}
-            />
-            <Field
-              label="交易时间 *"
-              value={addForm.tradeTime}
-              onChange={(e) => setAddForm((prev) => ({ ...prev, tradeTime: e.target.value }))}
-              placeholder="HH:mm:ss"
-            />
-            <SelectField
-              label="状态"
-              value={addForm.status}
-              onChange={(e) => setAddForm((prev) => ({ ...prev, status: e.target.value as 'open' | 'closed' }))}
-            >
-              <option value="open">持仓中</option>
-              <option value="closed">已平仓</option>
-            </SelectField>
-
-            {addForm.status === 'closed' && (
-              <>
-                <Field
-                  label="平仓价 *"
-                  value={addForm.closePrice}
-                  onChange={(e) => setAddForm((prev) => ({ ...prev, closePrice: e.target.value }))}
-                />
-                <DatePickerField
-                  label="平仓日期"
-                  value={addForm.closeDate}
-                  onChange={(value) => setAddForm((prev) => ({ ...prev, closeDate: value }))}
-                />
-                <Field
-                  label="平仓时间"
-                  value={addForm.closeTime}
-                  onChange={(e) => setAddForm((prev) => ({ ...prev, closeTime: e.target.value }))}
-                />
-                <Field
-                  label="平仓手续费"
-                  value={addForm.closeFee}
-                  onChange={(e) => setAddForm((prev) => ({ ...prev, closeFee: e.target.value }))}
-                />
-              </>
-            )}
-
+          <div className="invest-form-field-full">
             <Field
               label="标签"
               value={addForm.tags}
               onChange={(e) => setAddForm((prev) => ({ ...prev, tags: e.target.value }))}
               placeholder="用逗号分隔"
             />
+          </div>
+          <div className="invest-form-field-full">
             <TextArea
               label="备注"
               value={addForm.remark}
               onChange={(e) => setAddForm((prev) => ({ ...prev, remark: e.target.value }))}
               rows={2}
             />
-
-            <div className="invest-form-actions">
-              <Btn tone="secondary" type="button" onClick={() => setTab('list')}>取消</Btn>
-              <Btn tone="primary" type="submit">保存交易</Btn>
-            </div>
-          </form>
-        </SectionCard>
-      )}
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         open={!!editingTrade}
         onClose={() => setEditingTrade(null)}
         title="编辑交易"
-        width={800}
+        width={900}
         footer={
           <>
             <Btn tone="secondary" onClick={() => setEditingTrade(null)}>取消</Btn>
@@ -679,17 +673,21 @@ export function StockTradesSection({ trades, platforms, market, onAdd, onUpdate,
             </>
           )}
 
-          <Field
-            label="标签"
-            value={editForm.tags}
-            onChange={(e) => setEditForm((prev) => ({ ...prev, tags: e.target.value }))}
-          />
-          <TextArea
-            label="备注"
-            value={editForm.remark}
-            onChange={(e) => setEditForm((prev) => ({ ...prev, remark: e.target.value }))}
-            rows={3}
-          />
+          <div className="invest-form-field-full">
+            <Field
+              label="标签"
+              value={editForm.tags}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, tags: e.target.value }))}
+            />
+          </div>
+          <div className="invest-form-field-full">
+            <TextArea
+              label="备注"
+              value={editForm.remark}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, remark: e.target.value }))}
+              rows={3}
+            />
+          </div>
         </div>
       </Modal>
 

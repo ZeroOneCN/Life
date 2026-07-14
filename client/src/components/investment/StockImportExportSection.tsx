@@ -47,7 +47,7 @@ export function StockImportExportSection({ market, onImport }: StockImportExport
           fee: t.fee || 0,
           tradeDate: t.tradeDate,
           tradeTime: t.tradeTime || '00:00:00',
-          status: t.status === 'closed' ? 'closed' : 'open',
+          status: t.closePrice !== undefined ? 'closed' : 'open',
           closePrice: t.closePrice,
           closeDate: t.closeDate,
           closeTime: t.closeTime,

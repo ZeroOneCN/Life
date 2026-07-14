@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { EmptyState, PageHeader } from '../components/page';
-import { FilterTag, PageLoading, SearchInput, Skeleton, Tag, Toast, useToastState } from '../components/ui';
+import { Skeleton, Tag } from '../components/ui';
 import { buildApiErrorMessage, apiGet } from '../lib/api';
 import type {
   DashboardAgendaItem,
@@ -60,9 +60,7 @@ interface RawDashboardSummaryResponse {
 }
 
 function formatMoney(value: number) { return `¥${value.toFixed(2)}`; }
-function formatUsd(value: number) { return `$${value.toFixed(2)}`; }
 function formatSignedMoney(value: number) { return `${value >= 0 ? '+' : '−'}¥${Math.abs(value).toFixed(2)}`; }
-function formatSignedUsd(value: number) { return `${value >= 0 ? '+' : '−'}$${Math.abs(value).toFixed(2)}`; }
 function formatPercent(value: number) { return `${(value * 100).toFixed(1)}%`; }
 
 const IconSteps = () => (
@@ -132,21 +130,11 @@ const SEVERITY_DOT_CLASS: Record<string, string> = {
 export default function Dashboard() {
   const [summary, setSummary] = useState<DashboardPageSummary | null>(null);
   const [netPnlRaw, setNetPnlRaw] = useState<number>(0);
-  const [hasInvestmentData, setHasInvestmentData] = useState<boolean>(false);
-  const [hasFinanceAlerts, setHasFinanceAlerts] = useState<boolean>(false);
-  const [hasLifeAlerts, setHasLifeAlerts] = useState<boolean>(false);
   const [loadingError, setLoadingError] = useState<string>('');
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const { toast, showToast } = useToastState();
-  const hasLoadedRef = useRef(false);
-  const [timelineSearch, setTimelineSearch] = useState('');
-  const [timelineFilter, setTimelineFilter] = useState<'all' | 'notif' | 'agenda'>('all');
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const isFirstLoad = !hasLoadedRef.current;
-      if (!isFirstLoad) setIsRefreshing(true);
       try {
         const raw = await apiGet<RawDashboardSummaryResponse>('/dashboard/summary');
         if (cancelled) return;
@@ -156,9 +144,6 @@ export default function Dashboard() {
         });
 
         setNetPnlRaw(raw.investment.stats.netPnl);
-        setHasInvestmentData(raw.investment.stats.netCapital !== 0 || raw.investment.stats.activeTradeCount > 0);
-        setHasFinanceAlerts(raw.finance.stats.totalUnpaidLoanAmount > 0 || raw.finance.stats.overdueLoanCount > 0);
-        setHasLifeAlerts(raw.life.stats.pendingTodoCount > 0 || raw.life.stats.dueTodayTodoCount > 0);
         setSummary({
           overviewCards: raw.overviewCards.map((item) => ({ id: item.key, label: item.label, value: String(item.value), helper: '' })),
           agenda: raw.agenda,
@@ -181,9 +166,9 @@ export default function Dashboard() {
             { label: '低余额号卡', value: `${raw.life.stats.lowBalanceCardCount}张`, helper: '' },
           ], 'line'),
           investment: buildModule('投资中心', [
-            { label: '净收益', value: formatSignedUsd(raw.investment.stats.netPnl), helper: '' },
+            { label: '净收益', value: formatSignedMoney(raw.investment.stats.netPnl), helper: '' },
             { label: '胜率', value: formatPercent(raw.investment.stats.winRate), helper: '' },
-            { label: '净资金', value: formatUsd(raw.investment.stats.netCapital), helper: '' },
+            { label: '净资金', value: formatMoney(raw.investment.stats.netCapital), helper: '' },
             { label: '活跃交易', value: `${raw.investment.stats.activeTradeCount}笔`, helper: '' },
           ], 'line'),
           notifications: {
@@ -209,19 +194,10 @@ export default function Dashboard() {
           })),
           connectedModuleCount: Number(raw.overviewCards.find((item) => item.key === 'modules')?.value ?? 0),
         });
-        hasLoadedRef.current = true;
         setLoadingError('');
       } catch (error) {
         if (cancelled) return;
-        const message = buildApiErrorMessage(error, '首页数据加载失败');
-        if (hasLoadedRef.current) {
-          /* 后续刷新失败：保留旧数据，仅 Toast 提示 */
-          showToast(message, 'error');
-        } else {
-          setLoadingError(message);
-        }
-      } finally {
-        if (!cancelled) setIsRefreshing(false);
+        setLoadingError(buildApiErrorMessage(error, '首页数据加载失败'));
       }
     };
     void load();
@@ -236,8 +212,8 @@ export default function Dashboard() {
 
   const timelineItems = useMemo(() => {
     if (!summary) return [];
-    const items: Array<{ time: string; module: string; moduleClass: string; title: string; sortKey: number; type: 'notif' | 'agenda' }> = [];
-    summary.notifications.recentLogs.forEach((log) => {
+    const items: Array<{ time: string; module: string; moduleClass: string; title: string; sortKey: number }> = [];
+    summary.notifications.recentLogs.slice(0, 6).forEach((log) => {
       const d = new Date(log.createdAt);
       const year = d.getFullYear();
       const month = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -245,32 +221,17 @@ export default function Dashboard() {
       const hour = d.getHours().toString().padStart(2, '0');
       const minute = d.getMinutes().toString().padStart(2, '0');
       const second = d.getSeconds().toString().padStart(2, '0');
-      items.push({ time: `${year}-${month}-${day} ${hour}:${minute}:${second}`, module: '通知', moduleClass: 'is-notif', title: log.title, sortKey: d.getTime(), type: 'notif' });
+      items.push({ time: `${year}-${month}-${day} ${hour}:${minute}:${second}`, module: '通知', moduleClass: 'is-notif', title: log.title, sortKey: d.getTime() });
     });
-    summary.agenda.forEach((item) => {
+    summary.agenda.slice(0, 4).forEach((item) => {
       const sortKey = item.targetDate ? new Date(item.targetDate).getTime() : 0;
       const raw = item.targetDate ? item.targetDate.replace('T', ' ').slice(0, 19) : '-';
       /* 日期只有 YYYY-MM-DD 时补全为 00:00:00 */
       const time = raw !== '-' && raw.length <= 10 ? `${raw} 00:00:00` : raw;
-      items.push({ time, module: item.module, moduleClass: 'is-agenda', title: item.title, sortKey, type: 'agenda' });
+      items.push({ time, module: item.module, moduleClass: 'is-agenda', title: item.title, sortKey });
     });
     return items.sort((a, b) => b.sortKey - a.sortKey);
   }, [summary]);
-
-  /* 搜索 + 类型筛选后的动态列表 */
-  const filteredTimelineItems = useMemo(() => {
-    const keyword = timelineSearch.trim().toLowerCase();
-    return timelineItems
-      .filter((item) => timelineFilter === 'all' || item.type === timelineFilter)
-      .filter((item) => !keyword || item.title.toLowerCase().includes(keyword) || item.module.toLowerCase().includes(keyword))
-      .slice(0, 20);
-  }, [timelineItems, timelineSearch, timelineFilter]);
-
-  const timelineCounts = useMemo(() => {
-    const notifCount = timelineItems.filter((i) => i.type === 'notif').length;
-    const agendaCount = timelineItems.filter((i) => i.type === 'agenda').length;
-    return { all: timelineItems.length, notif: notifCount, agenda: agendaCount };
-  }, [timelineItems]);
 
   /* 从最近日志中判断各渠道是否有最近活动（非配置状态） */
   const channelActivity = useMemo(() => {
@@ -287,13 +248,9 @@ export default function Dashboard() {
     return (
       <div className="page-stack dashboard-page">
         <PageHeader title="LifeOS 控制台" subtitle={loadingError || '正在加载数据...'} />
-        {loadingError ? (
-          <div className="section-card dash-skeleton-pad">
-            <EmptyState icon="⚠️" title="加载失败" description={loadingError} />
-          </div>
-        ) : (
-          <PageLoading tip="正在加载仪表盘数据..." />
-        )}
+        <div className="section-card dash-skeleton-pad">
+          <Skeleton lines={4} />
+        </div>
       </div>
     );
   }
@@ -305,14 +262,7 @@ export default function Dashboard() {
   const isPnlPositive = netPnlRaw >= 0;
 
   return (
-    <div className={`page-stack dashboard-page${isRefreshing ? ' is-refreshing' : ''}`}>
-      {isRefreshing && (
-        <div className="dash-refresh-indicator" aria-live="polite">
-          <span className="dash-refresh-spinner" />
-          <span>同步中…</span>
-        </div>
-      )}
-      <Toast toast={toast} />
+    <div className="page-stack dashboard-page">
       <PageHeader
         title="LifeOS 控制台"
         subtitle="一目了然，快速行动"
@@ -352,7 +302,7 @@ export default function Dashboard() {
         ) : null}
 
         {/* ====== 1. 健康中心（大模块，可点击跳转）====== */}
-        <Link to="/health/fitness" className="dash-masonry-item dash-card dash-card-link">
+        <Link to="/health/step" className="dash-masonry-item dash-card dash-card-link">
           <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-health"><IconHeart /></div>
             <div className="dash-card-title-area">
@@ -368,14 +318,8 @@ export default function Dashboard() {
                 {h[0]?.value?.toLocaleString() || '0'}
               </div>
               <div className="dash-step-meta">
-                {stepsNum > 0 ? (
-                  <>
-                    <span className="dash-step-meta-label">今日已录入</span>
-                    <span className="dash-step-meta-value">{stepsNum.toLocaleString()} 步</span>
-                  </>
-                ) : (
-                  <span className="dash-step-hint">点击录入今日步数 →</span>
-                )}
+                <span className="dash-step-meta-label">今日已录入</span>
+                <span className="dash-step-meta-value">{stepsNum.toLocaleString()} 步</span>
               </div>
             </div>
             <div className="dash-mini-grid">
@@ -400,7 +344,7 @@ export default function Dashboard() {
           </div>
           <div className="dash-card-bd">
             <div className="dash-quick-grid">
-              <Link to="/health/fitness" className="dash-quick-btn">
+              <Link to="/health/step?stepTab=entry" className="dash-quick-btn">
                 <div className="qa-icon dash-bg-step"><IconSteps /></div>
                 <span className="qa-text">录入步数</span>
               </Link>
@@ -421,7 +365,7 @@ export default function Dashboard() {
         </div>
 
         {/* ====== 3. 投资中心（可点击跳转）====== */}
-        <Link to="/investment/forex?forexTab=dashboard" className="dash-masonry-item dash-card dash-card-link">
+        <Link to="/investment/forex?forexTab=trades" className="dash-masonry-item dash-card dash-card-link">
           <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-invest"><IconTrend /></div>
             <div className="dash-card-title-area">
@@ -445,16 +389,14 @@ export default function Dashboard() {
             ))}
             <div className="dash-trend-cta">
               <span className={`dash-trend-cta-pill ${isPnlPositive ? 'is-positive' : 'is-negative'}`}>
-                {hasInvestmentData
-                  ? `${isPnlPositive ? '盈利中' : '亏损中'} · 查看详情 →`
-                  : '暂无交易记录 · 点击开始 →'}
+                {isPnlPositive ? '盈利中' : '亏损中'} · 查看详情 →
               </span>
             </div>
           </div>
         </Link>
 
         {/* ====== 4. 财务中心（可点击跳转）====== */}
-        <Link to="/finance/bill-mgmt" className="dash-masonry-item dash-card dash-card-link">
+        <Link to="/finance/loan" className="dash-masonry-item dash-card dash-card-link">
           <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-finance"><IconWallet /></div>
             <div className="dash-card-title-area">
@@ -471,9 +413,7 @@ export default function Dashboard() {
               </div>
             ))}
             <div className="dash-trend-cta">
-              <span className={`dash-trend-cta-pill ${hasFinanceAlerts ? 'is-negative' : 'is-primary'}`}>
-                {hasFinanceAlerts ? '管理财务 →' : '暂无待处理账单 →'}
-              </span>
+              <span className="dash-trend-cta-pill is-negative">管理财务 →</span>
             </div>
           </div>
         </Link>
@@ -529,14 +469,12 @@ export default function Dashboard() {
               </div>
             ))}
             <div className="dash-trend-cta">
-              <span className="dash-trend-cta-pill is-primary">
-                {hasLifeAlerts ? '管理生活 →' : '今日无待办 →'}
-              </span>
+              <span className="dash-trend-cta-pill is-primary">管理生活 →</span>
             </div>
           </div>
         </Link>
 
-        {/* ====== 6. 最近动态（表格 + 搜索筛选）====== */}
+        {/* ====== 6. 最近动态（表格）====== */}
         <div className="dash-masonry-item dash-card">
           <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-notif"><IconBell /></div>
@@ -548,36 +486,18 @@ export default function Dashboard() {
           <div className="dash-card-bd">
             {timelineItems.length > 0 ? (
               <>
-                <div className="dash-timeline-controls">
-                  <SearchInput
-                    value={timelineSearch}
-                    onChange={setTimelineSearch}
-                    placeholder="搜索动态..."
-                  />
-                  <div className="dash-timeline-filters">
-                    <FilterTag label="全部" active={timelineFilter === 'all'} onClick={() => setTimelineFilter('all')} count={timelineCounts.all} />
-                    <FilterTag label="通知" active={timelineFilter === 'notif'} onClick={() => setTimelineFilter('notif')} count={timelineCounts.notif} />
-                    <FilterTag label="待办" active={timelineFilter === 'agenda'} onClick={() => setTimelineFilter('agenda')} count={timelineCounts.agenda} />
-                  </div>
+                <div className="dash-timeline-grid dash-timeline-header">
+                  <span>日期时间</span>
+                  <span>类型</span>
+                  <span>具体内容</span>
                 </div>
-                {filteredTimelineItems.length > 0 ? (
-                  <>
-                    <div className="dash-timeline-grid dash-timeline-header">
-                      <span>日期时间</span>
-                      <span>类型</span>
-                      <span>具体内容</span>
-                    </div>
-                    {filteredTimelineItems.map((item, i) => (
-                      <div key={i} className="dash-timeline-grid dash-timeline-row">
-                        <span className="dash-timeline-cell-time">{item.time}</span>
-                        <span className={`dash-timeline-cell-module ${item.moduleClass}`}>{item.module}</span>
-                        <span className="dash-timeline-cell-title" title={item.title}>{item.title}</span>
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <EmptyState title="未找到匹配的动态" description="尝试调整搜索关键词或筛选条件" />
-                )}
+                {timelineItems.map((item, i) => (
+                  <div key={i} className="dash-timeline-grid dash-timeline-row">
+                    <span className="dash-timeline-cell-time">{item.time}</span>
+                    <span className={`dash-timeline-cell-module ${item.moduleClass}`}>{item.module}</span>
+                    <span className="dash-timeline-cell-title">{item.title}</span>
+                  </div>
+                ))}
               </>
             ) : (
               <EmptyState title="暂无动态" description="当有新活动时会在这里显示" />
@@ -595,41 +515,30 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="dash-card-bd">
-            {summary.notifications.enabledChannels === 0 ? (
-              <EmptyState
-                icon={<IconBell />}
-                title="尚未启用通知渠道"
-                description="前往通知中心配置，及时接收提醒"
-                action={<Link to="/settings/notifications" className="dash-link-primary">前往配置 →</Link>}
-              />
-            ) : (
-              <>
-                <div className="dash-notif-stats">
-                  <div className="dash-notif-stat">
-                    <div className="dash-notif-stat-value is-primary">{summary.notifications.enabledChannels}</div>
-                    <div className="dash-notif-stat-label">已启用渠道</div>
-                  </div>
-                  <div className="dash-notif-stat">
-                    <div className="dash-notif-stat-value">{summary.notifications.logCount}</div>
-                    <div className="dash-notif-stat-label">最近日志数</div>
-                  </div>
-                </div>
-                <div className="dash-notif-channel-list">
-                  <div className="dash-notif-channel-row">
-                    <span className="dash-notif-channel-row-label">邮件通道</span>
-                    <Tag tone={channelActivity.email ? 'green' : 'default'}>{channelActivity.email ? '有日志' : '静默'}</Tag>
-                  </div>
-                  <div className="dash-notif-channel-row">
-                    <span className="dash-notif-channel-row-label">企业微信</span>
-                    <Tag tone={channelActivity.wechatWork ? 'green' : 'default'}>{channelActivity.wechatWork ? '有日志' : '静默'}</Tag>
-                  </div>
-                  <div className="dash-notif-channel-row">
-                    <span className="dash-notif-channel-row-label">Webhook</span>
-                    <Tag tone={channelActivity.webhook ? 'green' : 'default'}>{channelActivity.webhook ? '有日志' : '静默'}</Tag>
-                  </div>
-                </div>
-              </>
-            )}
+            <div className="dash-notif-stats">
+              <div className="dash-notif-stat">
+                <div className="dash-notif-stat-value is-primary">{summary.notifications.enabledChannels}</div>
+                <div className="dash-notif-stat-label">已启用渠道</div>
+              </div>
+              <div className="dash-notif-stat">
+                <div className="dash-notif-stat-value">{summary.notifications.logCount}</div>
+                <div className="dash-notif-stat-label">最近日志数</div>
+              </div>
+            </div>
+            <div className="dash-notif-channel-list">
+              <div className="dash-notif-channel-row">
+                <span className="dash-notif-channel-row-label">邮件通道</span>
+                <Tag tone={channelActivity.email ? 'green' : 'default'}>{channelActivity.email ? '有日志' : '静默'}</Tag>
+              </div>
+              <div className="dash-notif-channel-row">
+                <span className="dash-notif-channel-row-label">企业微信</span>
+                <Tag tone={channelActivity.wechatWork ? 'green' : 'default'}>{channelActivity.wechatWork ? '有日志' : '静默'}</Tag>
+              </div>
+              <div className="dash-notif-channel-row">
+                <span className="dash-notif-channel-row-label">Webhook</span>
+                <Tag tone={channelActivity.webhook ? 'green' : 'default'}>{channelActivity.webhook ? '有日志' : '静默'}</Tag>
+              </div>
+            </div>
           </div>
         </div>
 

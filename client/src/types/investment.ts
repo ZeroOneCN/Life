@@ -218,20 +218,10 @@ export const PNL_BUCKETS_ORDER: string[] = [
 
 export type StockTradeStatus = 'open' | 'closed';
 
-export type StockBrokerType = 'futubull' | 'tiger' | 'snowball' | 'ib' | 'other';
-
-export const STOCK_BROKER_LABELS: Record<StockBrokerType, string> = {
-  futubull: '富途牛牛',
-  tiger: '老虎证券',
-  snowball: '雪盈证券',
-  ib: '盈透证券',
-  other: '其他',
-};
-
 export interface StockPlatform {
   id: string;
   name: string;
-  brokerType: StockBrokerType;
+  brokerType: string;
   accountId: string;
   remark: string;
   createdAt: string;
@@ -240,14 +230,14 @@ export interface StockPlatform {
 
 export interface StockPlatformDraft {
   name: string;
-  brokerType: StockBrokerType;
+  brokerType: string;
   accountId?: string;
   remark?: string;
 }
 
 export interface StockTrade {
   id: string;
-  market: 'hk-stock' | 'us-stock';
+  market: 'hk-stock' | 'us-stock' | 'crypto';
   platformId: string;
   platformName: string;
   symbol: string;
@@ -272,7 +262,7 @@ export interface StockTrade {
 }
 
 export interface StockTradeDraft {
-  market: 'hk-stock' | 'us-stock';
+  market: 'hk-stock' | 'us-stock' | 'crypto';
   platformId: string;
   symbol: string;
   name: string;
