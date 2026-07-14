@@ -53,13 +53,13 @@ export function SleepRecordsSection({
       title="睡眠记录"
       description={`共 ${total} 条记录`}
     >
-      {loading ? (
+      {loading && records.length === 0 ? (
         <div className="skeleton-block" />
       ) : records.length === 0 ? (
         <EmptyState title="暂无睡眠记录" description="录入第一条睡眠记录吧。" />
       ) : (
         <>
-          <div className="sleep-records-table-wrap">
+          <div className="sleep-records-table-wrap" style={{ position: 'relative' }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -126,6 +126,21 @@ export function SleepRecordsSection({
                 ))}
               </tbody>
             </table>
+            {loading && (
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'rgba(255,255,255,0.6)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                borderRadius: 8,
+              }}>
+                <span className="spinner" />
+                <span className="muted">加载中...</span>
+              </div>
+            )}
           </div>
           {totalPages > 1 && (
             <div className="pagination">
@@ -133,7 +148,7 @@ export function SleepRecordsSection({
                 type="button"
                 className="btn btn-ghost"
                 onClick={() => onPageChange(page - 1)}
-                disabled={page <= 1}
+                disabled={page <= 1 || loading}
               >
                 上一页
               </button>
@@ -144,7 +159,7 @@ export function SleepRecordsSection({
                 type="button"
                 className="btn btn-ghost"
                 onClick={() => onPageChange(page + 1)}
-                disabled={page >= totalPages}
+                disabled={page >= totalPages || loading}
               >
                 下一页
               </button>
