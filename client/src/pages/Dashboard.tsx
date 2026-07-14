@@ -61,6 +61,8 @@ interface RawDashboardSummaryResponse {
 
 function formatMoney(value: number) { return `¥${value.toFixed(2)}`; }
 function formatSignedMoney(value: number) { return `${value >= 0 ? '+' : '−'}¥${Math.abs(value).toFixed(2)}`; }
+function formatUsd(value: number) { return `$${value.toFixed(2)}`; }
+function formatSignedUsd(value: number) { return `${value >= 0 ? '+' : '−'}$${Math.abs(value).toFixed(2)}`; }
 function formatPercent(value: number) { return `${(value * 100).toFixed(1)}%`; }
 
 const IconSteps = () => (
@@ -166,9 +168,9 @@ export default function Dashboard() {
             { label: '低余额号卡', value: `${raw.life.stats.lowBalanceCardCount}张`, helper: '' },
           ], 'line'),
           investment: buildModule('投资中心', [
-            { label: '净收益', value: formatSignedMoney(raw.investment.stats.netPnl), helper: '' },
+            { label: '净收益', value: formatSignedUsd(raw.investment.stats.netPnl), helper: '' },
             { label: '胜率', value: formatPercent(raw.investment.stats.winRate), helper: '' },
-            { label: '净资金', value: formatMoney(raw.investment.stats.netCapital), helper: '' },
+            { label: '净资金', value: formatUsd(raw.investment.stats.netCapital), helper: '' },
             { label: '活跃交易', value: `${raw.investment.stats.activeTradeCount}笔`, helper: '' },
           ], 'line'),
           notifications: {
