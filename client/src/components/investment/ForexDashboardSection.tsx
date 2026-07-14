@@ -152,6 +152,15 @@ function EquityCurveChart({ data }: { data: ForexEquityPoint[] }) {
     : 1;
   const yDomain: [number, number] = [-maxAbs, maxAbs];
 
+  /** 生成对称 Y 轴刻度，确保包含 0 */
+  const yTicks = useMemo(() => {
+    const steps = 2;
+    return Array.from({ length: steps * 2 + 1 }, (_, i) => {
+      const v = (i - steps) * (maxAbs / steps);
+      return Number(v.toFixed(2));
+    });
+  }, [maxAbs]);
+
   return (
     <ResponsiveContainer width="100%" height={300}>
       <AreaChart data={data} margin={{ top: 12, right: 20, bottom: 4, left: 4 }}>
@@ -180,6 +189,7 @@ function EquityCurveChart({ data }: { data: ForexEquityPoint[] }) {
         />
         <YAxis
           domain={yDomain}
+          ticks={yTicks}
           tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }}
           tickFormatter={(value: number) => {
             const v = Number(value ?? 0);
