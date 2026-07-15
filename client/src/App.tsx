@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { GuestRoute, ProtectedRoute } from './components/ProtectedRoute';
@@ -7,6 +7,8 @@ import { routes } from './config/navigation';
 import MainLayout from './layout/MainLayout';
 import LoginPage from './pages/auth/Login';
 import { useAuthBootstrap } from './services/auth';
+
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 export default function App() {
   useAuthBootstrap();
@@ -31,6 +33,14 @@ export default function App() {
               )}
             />
           ))}
+          <Route
+            path="*"
+            element={(
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <NotFound />
+              </Suspense>
+            )}
+          />
         </Route>
       </Route>
     </Routes>
