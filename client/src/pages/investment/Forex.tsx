@@ -4,12 +4,12 @@ import { ForexCalculatorSection } from '../../components/investment/ForexCalcula
 import { ForexCapitalSection } from '../../components/investment/ForexCapitalSection';
 import { ForexDashboardSection } from '../../components/investment/ForexDashboardSection';
 import { ForexTradesSection } from '../../components/investment/ForexTradesSection';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { PageHeader, SectionCard } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { forexApi } from '../../services/forexApi';
-import { buildForexDashboardSummary, formatForexAmount, formatForexMoney, formatForexPercent, normalizeForexDashboardRange } from '../../services/forex';
+import { buildForexDashboardSummary, normalizeForexDashboardRange } from '../../services/forex';
 import type {
   ForexCapitalFlow,
   ForexDashboardSummary,
@@ -245,15 +245,6 @@ export default function ForexPage() {
       <PageHeader
         title="外汇市场"
         subtitle={loading ? '正在加载交易数据...' : '统计、交易、计算器和出入金都直接以数据库与接口响应为准。'}
-      />
-
-      <StatGrid
-        items={[
-          { label: '净收益', value: formatForexAmount(frontendSummary.realizedNetPnl), accent: frontendSummary.realizedNetPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)', helper: `总交易 ${frontendSummary.tradeCount} 笔 · 做多 ${frontendSummary.longCount} / 做空 ${frontendSummary.shortCount}` },
-          { label: '胜率', value: formatForexPercent(frontendSummary.winRate), helper: `盈亏比 ${frontendSummary.profitLossRatio.toFixed(2)}` },
-          { label: '总手数', value: `${frontendSummary.longCount + frontendSummary.shortCount}`, helper: `多 ${frontendSummary.longCount} / 空 ${frontendSummary.shortCount}` },
-          { label: 'ROI', value: formatForexPercent(frontendSummary.roi), accent: frontendSummary.roi >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
-        ]}
       />
 
       <SectionCard
