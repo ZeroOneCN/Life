@@ -244,7 +244,7 @@ export default function ForexPage() {
     <div className="page-stack">
       <PageHeader
         title="外汇市场"
-        subtitle={loading ? '正在加载交易数据...' : '统计、交易、计算器和出入金都直接以数据库与接口响应为准。'}
+        subtitle={loading ? '正在加载交易数据...' : '交易与资金'}
       />
 
       <SectionCard

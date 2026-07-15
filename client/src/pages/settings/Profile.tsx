@@ -165,7 +165,7 @@ export default function ProfileSettingsPage() {
     <div className="page-stack">
       <PageHeader
         title="个人中心"
-        subtitle="这里维护当前登录用户的资料、时区和账户安全设置。保存成功后，顶部用户区会立即同步。"
+        subtitle="账户与偏好设置"
         actions={<Tag tone="blue">认证会话已接入</Tag>}
       />
 

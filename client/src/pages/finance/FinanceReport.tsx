@@ -164,7 +164,7 @@ export default function FinanceReportPage() {
     <div className="page-stack">
       <PageHeader
         title="财务月报 / 年报"
-        subtitle="跨购物、旅行、贷款、订阅、房租 5 个模块自动汇总，并整合投资净收益与净资产追踪。"
+        subtitle="财务分析报告"
         actions={(
           <>
             <Tag tone="blue">月度自动推送</Tag>

@@ -285,7 +285,7 @@ export default function BudgetPage({ embedded = false }: { embedded?: boolean })
       ) : (
         <PageHeader
           title="预算管理"
-          subtitle="设置分类预算，追踪执行进度，控制支出"
+          subtitle="预算管理"
           actions={
             <>
               <Btn tone="secondary" onClick={handleTriggerAlerts}>检查预警</Btn>

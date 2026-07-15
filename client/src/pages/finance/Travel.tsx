@@ -307,7 +307,7 @@ export default function TravelPage() {
     <div className="page-stack">
       <PageHeader
         title="旅行游玩"
-        subtitle={loading ? '正在加载旅行数据...' : '记录出行行程、消费明细和行程规划。'}
+        subtitle={loading ? '正在加载旅行数据...' : '旅行支出'}
       />
 
       <SectionCard

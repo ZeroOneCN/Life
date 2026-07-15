@@ -195,7 +195,7 @@ export default forwardRef<{ openImportModal: () => void }, { hideHeader?: boolea
       {!hideHeader && (
         <PageHeader
           title="网上购物"
-          subtitle={loading ? '正在加载购物数据...' : '记录消费明细、管理账本分类和支出分析。'}
+          subtitle={loading ? '正在加载购物数据...' : '购物消费'}
           actions={(
             <div className="inline-row">
               <Btn tone="secondary" onClick={() => setImportOpen(true)}>导入 Excel</Btn>

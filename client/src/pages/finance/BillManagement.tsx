@@ -21,7 +21,7 @@ export default function BillManagementPage() {
     <div className="page-stack finance-merged-page">
       <PageHeader
         title="账单管理"
-        subtitle="贷款、订阅、房租等周期性账单统一管理"
+        subtitle="周期性账单"
         actions={(
           <div className="merged-page-tabs">
             <PillTabs

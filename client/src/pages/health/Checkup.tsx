@@ -128,7 +128,7 @@ export default function CheckupPage() {
     <div className="page-stack">
       <PageHeader
         title="体检用药"
-        subtitle="体检指标记录与日常用药管理"
+        subtitle="体检与用药"
         actions={(
           <div className="merged-page-tabs">
             <PillTabs

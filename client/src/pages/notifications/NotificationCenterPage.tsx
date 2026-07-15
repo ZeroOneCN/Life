@@ -134,7 +134,7 @@ export default function NotificationCenterPage() {
     <div className="page-stack">
       <PageHeader
         title="通知中心"
-        subtitle="统一配置通知渠道、业务场景、HTML 模板和发送日志。所有业务提醒都从这里出发，不再经过浏览器本地业务存储。"
+        subtitle="通知配置管理"
         actions={<Tag tone="blue">{loading ? '同步中' : '后端已接入'}</Tag>}
       />
 

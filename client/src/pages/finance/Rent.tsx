@@ -235,7 +235,7 @@ export default function RentPage() {
     <div className="page-stack">
       <PageHeader
         title="房租水电"
-        subtitle={loading ? '正在加载住房记录...' : '管理租房合同、租金缴纳和到期提醒。'}
+        subtitle={loading ? '正在加载住房记录...' : '租房管理'}
       />
 
       <StatGrid

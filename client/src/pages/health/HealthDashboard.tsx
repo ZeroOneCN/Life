@@ -98,7 +98,7 @@ export default function HealthDashboardPage() {
     <div className="page-stack">
       <PageHeader
         title="健康概览"
-        subtitle="实时健康数据概览与周期报告"
+        subtitle="健康数据概览"
         actions={
           <div className="merged-page-tabs">
             <PillTabs

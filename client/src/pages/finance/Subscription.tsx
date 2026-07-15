@@ -219,7 +219,7 @@ export default function SubscriptionPage() {
     <div className="page-stack">
       <PageHeader
         title="服务订阅中心"
-        subtitle={loading ? '正在加载订阅数据...' : '管理各类订阅服务、续费提醒和支出统计。'}
+        subtitle={loading ? '正在加载订阅数据...' : '订阅服务管理'}
         actions={<Tag tone="blue">{loading ? '同步中' : '后端已接入'}</Tag>}
       />
 

@@ -168,7 +168,7 @@ export default function FitnessPage() {
     <div className="page-stack">
       <PageHeader
         title="运动健身"
-        subtitle="步数记录与健身减脂管理"
+        subtitle="运动与减脂"
         actions={(
           <div className="fitness-page-actions">
             <div className="merged-page-tabs">

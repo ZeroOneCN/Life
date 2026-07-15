@@ -385,7 +385,7 @@ export default function VitalPage() {
     <div className="page-stack">
       <PageHeader
         title="健康记录"
-        subtitle="记录日常体征与睡眠情况，追踪健康趋势"
+        subtitle="体征与睡眠"
         actions={(
           <div className="merged-page-tabs">
             <PillTabs

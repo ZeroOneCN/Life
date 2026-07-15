@@ -267,7 +267,7 @@ export default function Dashboard() {
     <div className="page-stack dashboard-page">
       <PageHeader
         title="LifeOS 控制台"
-        subtitle="一目了然，快速行动"
+        subtitle="全局概览"
         actions={(
           <div className="dashboard-header-tags">
             <Tag tone={hasAgenda ? 'orange' : 'green'}>{hasAgenda ? `${summary.agenda.length} 项待处理` : '全部正常'}</Tag>
