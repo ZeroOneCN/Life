@@ -603,6 +603,23 @@ export function ForexDashboardSection({
       if (d.netPnl >= 0) { curWinStreak++; curLossStreak = 0; maxWinStreak = Math.max(maxWinStreak, curWinStreak); }
       else { curLossStreak++; curWinStreak = 0; maxLossStreak = Math.max(maxLossStreak, curLossStreak); }
     }
+    // 最佳单笔 / 最差单笔（含手续费和隔夜费）
+    const scopedTrades = trades.filter((t) => {
+      if (startDate && t.tradeDate < startDate) return false;
+      if (endDate && t.tradeDate > endDate) return false;
+      return true;
+    });
+    let bestTrade: ForexTradeRecord | null = null;
+    let worstTrade: ForexTradeRecord | null = null;
+    for (const t of scopedTrades) {
+      const netPnl = t.pnl + t.commission + t.overnightFee;
+      if (!bestTrade || netPnl > (bestTrade.pnl + bestTrade.commission + bestTrade.overnightFee)) {
+        bestTrade = t;
+      }
+      if (!worstTrade || netPnl < (worstTrade.pnl + worstTrade.commission + worstTrade.overnightFee)) {
+        worstTrade = t;
+      }
+    }
     return {
       avgDaily: totalPnl / days.length,
       bestDay,
@@ -610,8 +627,10 @@ export function ForexDashboardSection({
       winRate: ((winDays / days.length) * 100).toFixed(1),
       maxWinStreak,
       maxLossStreak,
+      bestTrade,
+      worstTrade,
     };
-  }, [trend]);
+  }, [endDate, startDate, trades, trend]);
 
   return (
     <SectionCard
@@ -764,6 +783,30 @@ export function ForexDashboardSection({
                       <span className="pnl-stat-sub">{pnlStats.worstDay.date.slice(5)}</span>
                     </div>
                     <div className="pnl-stat-divider" />
+                    {pnlStats.bestTrade && (
+                      <>
+                        <div className="pnl-stat-item">
+                          <span className="pnl-stat-label">最佳单笔</span>
+                          <strong className="pnl-stat-value pnl-stat-profit">
+                            +{formatForexMoney(pnlStats.bestTrade.pnl + pnlStats.bestTrade.commission + pnlStats.bestTrade.overnightFee)}
+                          </strong>
+                          <span className="pnl-stat-sub">{pnlStats.bestTrade.tradeDate.slice(5)}</span>
+                        </div>
+                        <div className="pnl-stat-divider" />
+                      </>
+                    )}
+                    {pnlStats.worstTrade && (
+                      <>
+                        <div className="pnl-stat-item">
+                          <span className="pnl-stat-label">最差单笔</span>
+                          <strong className="pnl-stat-value pnl-stat-loss">
+                            {formatForexMoney(pnlStats.worstTrade.pnl + pnlStats.worstTrade.commission + pnlStats.worstTrade.overnightFee)}
+                          </strong>
+                          <span className="pnl-stat-sub">{pnlStats.worstTrade.tradeDate.slice(5)}</span>
+                        </div>
+                        <div className="pnl-stat-divider" />
+                      </>
+                    )}
                     <div className="pnl-stat-item">
                       <span className="pnl-stat-label">日均盈亏</span>
                       <strong className={`pnl-stat-value ${pnlStats.avgDaily >= 0 ? 'pnl-stat-profit' : 'pnl-stat-loss'}`}>
