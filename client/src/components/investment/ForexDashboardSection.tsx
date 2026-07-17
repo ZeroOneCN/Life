@@ -649,8 +649,8 @@ export function ForexDashboardSection({
             { label: '胜率', value: formatForexPercent(summary.winRate), helper: `盈亏比 ${summary.profitLossRatio.toFixed(2)}` },
             { label: '手续费', value: formatForexMoney(summary.totalCommission), accent: 'var(--color-danger)', helper: `${summary.tradeCount} 笔交易累计` },
             { label: '净入金', value: formatForexMoney(summary.netCapital), helper: `入金 ${formatForexMoney(summary.totalDeposit)} / 出金 ${formatForexMoney(summary.totalWithdrawal)}` },
-            { label: '账户净值', value: formatForexMoney(summary.equity), helper: `净入金 + 净收益` },
-            { label: 'ROI', value: formatForexPercent(summary.roi), helper: `XAU ${summary.xauCount} / XAG ${summary.xagCount}` },
+            { label: '账户净值', value: formatForexMoney(summary.equity), helper: `全部净入金 + 全部净收益` },
+            { label: 'ROI', value: formatForexPercent(summary.roi), helper: `区间净收益 / 全部入金` },
           ]}
         />
 
