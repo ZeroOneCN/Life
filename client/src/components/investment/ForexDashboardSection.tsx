@@ -316,7 +316,7 @@ interface PnlDayData {
   tradeCount: number;
 }
 
-/** 盈亏日历组件：按月展示每日盈亏热力图，支持年/月切换，格子内直显收益 */
+/** 盈亏日历组件：按月展示每日盈亏热力图，支持年/月下拉切换，格子内直显收益 */
 function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCount: number }[] }) {
   const [viewMonth, setViewMonth] = useState(() => dayjs());
 
@@ -375,11 +375,16 @@ function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCo
     return { totalPnl, winDays, lossDays, tradeDays };
   }, [calendarDays]);
 
-  /** 年份快速切换列表：当前年 ±2 */
+  /** 年份下拉选项：当前年 ±5 */
   const yearOptions = useMemo(() => {
     const y = viewMonth.year();
-    return Array.from({ length: 5 }, (_, i) => y - 2 + i);
+    return Array.from({ length: 11 }, (_, i) => y - 5 + i);
   }, [viewMonth]);
+
+  /** 月份下拉选项：1-12 */
+  const monthOptions = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => i + 1);
+  }, []);
 
   const weekHeaders = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -390,74 +395,54 @@ function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCo
 
   return (
     <div className="pnl-calendar-wrapper">
-      {/* 导航栏：年份选择 + 月份翻页 + 摘要 */}
+      {/* 导航栏：年份下拉 + 月份下拉 + 摘要 */}
       <div className="pnl-calendar-head">
         <div className="pnl-calendar-nav">
-          {/* 年份快捷切换 */}
-          <div className="pnl-year-picker">
-            <button
-              type="button"
-              className={`pnl-year-button ${viewMonth.year() === yearOptions[0] ? 'is-active' : ''}`}
-              onClick={() => setViewMonth((m) => m.year(yearOptions[0]))}
-            >
-              {yearOptions[0]}
-            </button>
-            <button
-              type="button"
-              className={`pnl-year-button ${viewMonth.year() === yearOptions[1] ? 'is-active' : ''}`}
-              onClick={() => setViewMonth((m) => m.year(yearOptions[1]))}
-            >
-              {yearOptions[1]}
-            </button>
-            <button
-              type="button"
-              className={`pnl-year-button ${viewMonth.year() === yearOptions[2] ? 'is-active' : ''}`}
-              onClick={() => setViewMonth((m) => m.year(yearOptions[2]))}
-            >
-              {yearOptions[2]}
-            </button>
-            <button
-              type="button"
-              className={`pnl-year-button ${viewMonth.year() === yearOptions[3] ? 'is-active' : ''}`}
-              onClick={() => setViewMonth((m) => m.year(yearOptions[3]))}
-            >
-              {yearOptions[3]}
-            </button>
-            <button
-              type="button"
-              className={`pnl-year-button ${viewMonth.year() === yearOptions[4] ? 'is-active' : ''}`}
-              onClick={() => setViewMonth((m) => m.year(yearOptions[4]))}
-            >
-              {yearOptions[4]}
-            </button>
-          </div>
-
-          {/* 月份翻页 */}
-          <div className="pnl-month-nav">
-            <button
-              type="button"
-              className="pnl-nav-btn"
-              onClick={() => setViewMonth((m) => m.subtract(1, 'month'))}
-            >
-              &lsaquo;
-            </button>
-            <strong className="pnl-calendar-title">{viewMonth.format('M 月')}</strong>
-            <button
-              type="button"
-              className="pnl-nav-btn"
-              onClick={() => setViewMonth((m) => m.add(1, 'month'))}
-            >
-              &rsaquo;
-            </button>
-          </div>
+          <select
+            className="pnl-year-select"
+            value={viewMonth.year()}
+            onChange={(event) => setViewMonth((m) => m.year(Number(event.target.value)))}
+          >
+            {yearOptions.map((y) => (
+              <option key={y} value={y}>{y} 年</option>
+            ))}
+          </select>
+          <select
+            className="pnl-month-select"
+            value={viewMonth.month() + 1}
+            onChange={(event) => setViewMonth((m) => m.month(Number(event.target.value) - 1))}
+          >
+            {monthOptions.map((m) => (
+              <option key={m} value={m}>{m} 月</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="pnl-nav-btn"
+            onClick={() => setViewMonth((m) => m.subtract(1, 'month'))}
+            title="上个月"
+          >
+            &lsaquo;
+          </button>
+          <button
+            type="button"
+            className="pnl-nav-btn"
+            onClick={() => setViewMonth((m) => m.add(1, 'month'))}
+            title="下个月"
+          >
+            &rsaquo;
+          </button>
         </div>
 
-        {/* 当月摘要（紧凑单行） */}
+        {/* 当月摘要 */}
         <div className="pnl-calendar-summary">
-          <span>月盈亏 <em>{formatForexAmount(monthStats.totalPnl)}</em></span>
-          <span>{monthStats.tradeDays}交易日</span>
-          <span style={{ color: 'var(--color-success)' }}>{monthStats.winDays}盈</span>
-          <span style={{ color: 'var(--color-danger)' }}>{monthStats.lossDays}亏</span>
+          <span>月盈亏 <em className={monthStats.totalPnl >= 0 ? 'pnl-text-profit' : 'pnl-text-loss'}>{formatForexAmount(monthStats.totalPnl)}</em></span>
+          <span className="pnl-summary-sep">·</span>
+          <span>{monthStats.tradeDays} 交易日</span>
+          <span className="pnl-summary-sep">·</span>
+          <span style={{ color: 'var(--color-success)' }}>{monthStats.winDays} 盈</span>
+          <span className="pnl-summary-sep">·</span>
+          <span style={{ color: 'var(--color-danger)' }}>{monthStats.lossDays} 亏</span>
         </div>
       </div>
 
@@ -494,7 +479,7 @@ function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCo
         })}
       </div>
 
-      {/* 图例：简化为涨/跌/无 */}
+      {/* 图例 */}
       <div className="pnl-calendar-legend">
         <span className="pnl-legend-label">跌</span>
         <div className="pnl-legend-bar">
@@ -815,7 +800,7 @@ export function ForexDashboardSection({
                     </div>
                     <div className="pnl-stat-divider" />
                     <div className="pnl-stat-item">
-                      <span className="pnl-stat-label">胜率</span>
+                      <span className="pnl-stat-label">日胜率</span>
                       <strong className="pnl-stat-value" style={{ color: Number(pnlStats.winRate) >= 50 ? 'var(--color-success)' : 'var(--color-danger)' }}>
                         {pnlStats.winRate}%
                       </strong>

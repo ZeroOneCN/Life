@@ -162,6 +162,9 @@ export function ForexTradesSection({
   showToast,
 }: ForexTradesSectionProps) {
   const [form, setForm] = useState<TradeFormState>(() => createDefaultFormState());
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [continuousMode, setContinuousMode] = useState(false);
+  const [savedCount, setSavedCount] = useState(0);
   const [editingRecord, setEditingRecord] = useState<ForexTradeRecord | null>(null);
   const [editingForm, setEditingForm] = useState<TradeFormState>(() => createDefaultFormState());
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -302,7 +305,7 @@ export function ForexTradesSection({
     },
   ], []);
 
-  const handleCreate = () => {
+  const handleCreate = (continuous?: boolean) => {
     const draft = parseDraft(form);
 
     if (!draft) {
@@ -311,9 +314,23 @@ export function ForexTradesSection({
     }
 
     onChangeTrades((current) => createForexTrade(current, draft));
-    setForm(createDefaultFormState());
+    setSavedCount((n) => n + 1);
     setImportResult(null);
-    showToast('交易记录已保存。');
+
+    if (continuous || continuousMode) {
+      // 连续输入模式：保留日期和品种，清空价格相关字段
+      setForm({
+        ...createDefaultFormState(),
+        tradeDate: form.tradeDate,
+        instrument: form.instrument,
+        orderType: form.orderType,
+      });
+      showToast(`交易记录已保存（第 ${savedCount + 1} 条），可继续输入。`);
+    } else {
+      setForm(createDefaultFormState());
+      setIsCreateModalOpen(false);
+      showToast('交易记录已保存。');
+    }
   };
 
   const handleUpdate = () => {
@@ -397,6 +414,9 @@ export function ForexTradesSection({
       description="所有交易按日期降序排列（最新在前），每页显示 10 条。导入后记录会与已有数据合并排序。"
       action={(
         <div className="forex-action-row">
+          <Btn tone="primary" onClick={() => { setIsCreateModalOpen(true); setSavedCount(0); setContinuousMode(false); }}>
+            新增交易记录
+          </Btn>
           <input
             ref={fileInputRef}
             type="file"
@@ -404,7 +424,7 @@ export function ForexTradesSection({
             className="visually-hidden"
             onChange={handleImportSelect}
           />
-          <Btn tone="primary" onClick={() => fileInputRef.current?.click()} disabled={isImporting}>
+          <Btn tone="secondary" onClick={() => fileInputRef.current?.click()} disabled={isImporting}>
             {isImporting ? '导入中...' : '导入 Excel / CSV'}
           </Btn>
           <Btn tone="secondary" onClick={handleDownloadTemplate}>下载模板</Btn>
@@ -415,92 +435,6 @@ export function ForexTradesSection({
       )}
     >
       <div className="page-stack">
-        <form className="forex-compact-grid" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
-          <DatePickerField
-            label="日期时间"
-            value={form.tradeDate}
-            onChange={(value) => setForm((current) => hydrateDerivedFields({ ...current, tradeDate: value }))}
-            placeholder="选择日期"
-          />
-          <SelectField
-            label="交易品种"
-            value={form.instrument}
-            onChange={(event) => setForm((current) => hydrateDerivedFields({ ...current, instrument: event.target.value as ForexInstrument }))}
-          >
-            {FOREX_INSTRUMENT_OPTIONS.map((instrument) => (
-              <option key={instrument} value={instrument}>{getForexInstrumentLabel(instrument)}</option>
-            ))}
-          </SelectField>
-          <SelectField
-            label="订单类型"
-            value={form.orderType}
-            onChange={(event) => setForm((current) => hydrateDerivedFields({ ...current, orderType: event.target.value as ForexOrderType }))}
-          >
-            {FOREX_ORDER_TYPE_OPTIONS.map((orderType) => (
-              <option key={orderType} value={orderType}>{getForexOrderTypeLabel(orderType)}</option>
-            ))}
-          </SelectField>
-          <Field
-            label="开仓价格"
-            value={form.openPrice}
-            onChange={(event) => setForm((current) => hydrateDerivedFields({ ...current, openPrice: event.target.value }))}
-            placeholder="2340.50"
-          />
-          <Field
-            label="手数"
-            value={form.lotSize}
-            onChange={(event) => setForm((current) => hydrateDerivedFields({ ...current, lotSize: event.target.value }))}
-            placeholder="0.01"
-          />
-          <Field
-            label="手续费"
-            value={form.commission}
-            readOnly
-          />
-          <Field
-            label="平仓价格"
-            value={form.closePrice}
-            onChange={(event) => setForm((current) => hydrateDerivedFields({ ...current, closePrice: event.target.value }))}
-            placeholder="2346.20"
-          />
-          <Field
-            label="盈亏金额"
-            value={form.pnl}
-            readOnly
-          />
-          <Field
-            label="隔夜费"
-            value={form.overnightFee}
-            onChange={(event) => setForm((current) => ({ ...current, overnightFee: event.target.value }))}
-            placeholder="-1.20"
-          />
-          <Field
-            label="开仓时间"
-            value={form.openTime}
-            onChange={(event) => setForm((current) => ({ ...current, openTime: event.target.value }))}
-            onBlur={(event) => setForm((current) => hydrateDerivedFields({ ...current, openTime: event.target.value }))}
-            placeholder="09:35"
-          />
-          <Field
-            label="平仓时间"
-            value={form.closeTime}
-            onChange={(event) => setForm((current) => ({ ...current, closeTime: event.target.value }))}
-            onBlur={(event) => setForm((current) => hydrateDerivedFields({ ...current, closeTime: event.target.value }))}
-            placeholder="11:10"
-          />
-          <Field label="持仓时间" value={form.holdTime} readOnly />
-          <Field
-            label="备注"
-            value={form.remark}
-            onChange={(event) => setForm((current) => ({ ...current, remark: event.target.value }))}
-            placeholder="例如：欧盘突破单"
-          />
-          <div className="forex-submit-cell">
-            <Btn tone="primary" type="submit">保存交易记录</Btn>
-          </div>
-        </form>
-
-
         {importResult ? (
           <div className="forex-import-result">
             <strong>{`最近一次导入：总行数 ${importResult.totalRows}，成功 ${importResult.importedCount}，重复 ${importResult.duplicateCount}，无效 ${importResult.invalidCount}`}</strong>
@@ -556,6 +490,103 @@ export function ForexTradesSection({
         ) : (
           <EmptyState title="暂无交易记录" description="先录入一笔贵金属交易，或者放宽筛选条件后再查看。" />
         )}
+
+        <Modal
+          open={isCreateModalOpen}
+          onClose={() => { setIsCreateModalOpen(false); setForm(createDefaultFormState()); setSavedCount(0); }}
+          title={savedCount > 0 ? `新增交易记录（已保存 ${savedCount} 条）` : '新增交易记录'}
+          width={980}
+          footer={(
+            <>
+              <Btn tone="secondary" onClick={() => { setIsCreateModalOpen(false); setForm(createDefaultFormState()); setSavedCount(0); }}>关闭</Btn>
+              <Btn tone="secondary" onClick={() => { setContinuousMode(true); handleCreate(true); }}>保存并继续</Btn>
+              <Btn tone="primary" onClick={() => { setContinuousMode(false); handleCreate(false); }}>保存</Btn>
+            </>
+          )}
+        >
+          <form className="forex-modal-grid" onSubmit={(event) => { event.preventDefault(); handleCreate(continuousMode); }}>
+            <DatePickerField
+              label="日期时间"
+              value={form.tradeDate}
+              onChange={(value) => setForm((current) => hydrateDerivedFields({ ...current, tradeDate: value }))}
+              placeholder="选择日期"
+            />
+            <SelectField
+              label="交易品种"
+              value={form.instrument}
+              onChange={(event) => setForm((current) => hydrateDerivedFields({ ...current, instrument: event.target.value as ForexInstrument }))}
+            >
+              {FOREX_INSTRUMENT_OPTIONS.map((instrument) => (
+                <option key={instrument} value={instrument}>{getForexInstrumentLabel(instrument)}</option>
+              ))}
+            </SelectField>
+            <SelectField
+              label="订单类型"
+              value={form.orderType}
+              onChange={(event) => setForm((current) => hydrateDerivedFields({ ...current, orderType: event.target.value as ForexOrderType }))}
+            >
+              {FOREX_ORDER_TYPE_OPTIONS.map((orderType) => (
+                <option key={orderType} value={orderType}>{getForexOrderTypeLabel(orderType)}</option>
+              ))}
+            </SelectField>
+            <Field
+              label="开仓价格"
+              value={form.openPrice}
+              onChange={(event) => setForm((current) => hydrateDerivedFields({ ...current, openPrice: event.target.value }))}
+              placeholder="2340.50"
+            />
+            <Field
+              label="手数"
+              value={form.lotSize}
+              onChange={(event) => setForm((current) => hydrateDerivedFields({ ...current, lotSize: event.target.value }))}
+              placeholder="0.01"
+            />
+            <Field
+              label="手续费"
+              value={form.commission}
+              readOnly
+            />
+            <Field
+              label="平仓价格"
+              value={form.closePrice}
+              onChange={(event) => setForm((current) => hydrateDerivedFields({ ...current, closePrice: event.target.value }))}
+              placeholder="2346.20"
+            />
+            <Field
+              label="盈亏金额"
+              value={form.pnl}
+              readOnly
+            />
+            <Field
+              label="隔夜费"
+              value={form.overnightFee}
+              onChange={(event) => setForm((current) => ({ ...current, overnightFee: event.target.value }))}
+              placeholder="-1.20"
+            />
+            <Field
+              label="开仓时间"
+              value={form.openTime}
+              onChange={(event) => setForm((current) => ({ ...current, openTime: event.target.value }))}
+              onBlur={(event) => setForm((current) => hydrateDerivedFields({ ...current, openTime: event.target.value }))}
+              placeholder="09:35"
+            />
+            <Field
+              label="平仓时间"
+              value={form.closeTime}
+              onChange={(event) => setForm((current) => ({ ...current, closeTime: event.target.value }))}
+              onBlur={(event) => setForm((current) => hydrateDerivedFields({ ...current, closeTime: event.target.value }))}
+              placeholder="11:10"
+            />
+            <Field label="持仓时间" value={form.holdTime} readOnly />
+            <TextArea
+              label="备注"
+              value={form.remark}
+              onChange={(event) => setForm((current) => ({ ...current, remark: event.target.value }))}
+              rows={3}
+              placeholder="例如：欧盘突破单"
+            />
+          </form>
+        </Modal>
 
         <Modal
           open={Boolean(editingRecord)}

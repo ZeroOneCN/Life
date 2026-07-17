@@ -7940,6 +7940,8 @@ img {
 /* ===== 盈亏日历 PnL Calendar（紧凑版）===== */
 .pnl-calendar-wrapper {
   padding: 4px 0;
+  container-type: inline-size;
+  container-name: pnl-calendar;
 }
 
 .pnl-calendar-head {
@@ -7953,35 +7955,35 @@ img {
 
 .pnl-calendar-nav {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
-/* 年份选择器 */
-.pnl-year-picker {
-  display: flex;
-  gap: 2px;
-}
-.pnl-year-button {
-  padding: 2px 10px;
+/* 年份选择器 - 下拉菜单 */
+.pnl-year-select,
+.pnl-month-select {
+  padding: 3px 8px;
   border: 1px solid var(--color-hairline);
   border-radius: 6px;
   background: var(--color-surface);
-  color: var(--color-ink-muted);
+  color: var(--color-ink);
   font-size: var(--fs-label);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.1s ease;
   line-height: 1.5;
+  appearance: auto;
 }
-.pnl-year-button:hover {
+.pnl-year-select:hover,
+.pnl-month-select:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
-.pnl-year-button.is-active {
-  background: var(--color-primary);
-  color: #fff;
+.pnl-year-select:focus,
+.pnl-month-select:focus {
   border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 59, 130, 246), 0.2);
 }
 
 /* 月份翻页 */
@@ -8020,7 +8022,7 @@ img {
 
 .pnl-calendar-summary {
   display: flex;
-  gap: 14px;
+  gap: 4px;
   font-size: var(--fs-caption);
   color: var(--color-ink-muted);
   align-items: center;
@@ -8028,9 +8030,12 @@ img {
 .pnl-calendar-summary em {
   font-style: normal;
   font-weight: 700;
-  color: var(--color-ink);
   font-family: var(--font-mono);
   font-size: var(--fs-label);
+}
+.pnl-summary-sep {
+  color: var(--color-hairline);
+  margin: 0 2px;
 }
 
 /* 日历网格 - 填满父容器 */
@@ -8093,9 +8098,9 @@ img {
   box-shadow: none;
 }
 
-/* 日期数字 */
+/* 日期数字 - 使用 clamp 响应式缩放 */
 .pnl-cell-date {
-  font-size: var(--fs-heading);
+  font-size: clamp(0.55rem, 1.4cqw, 0.85rem);
   font-weight: 700;
   line-height: 1.1;
   color: inherit;
@@ -8111,9 +8116,9 @@ img {
   margin-top: 1px;
 }
 
-/* 日收益文字 */
+/* 日收益文字 - 使用 clamp 响应式缩放 */
 .pnl-cell-pnl {
-  font-size: var(--fs-title);
+  font-size: clamp(0.5rem, 1.3cqw, 0.75rem);
   font-weight: 700;
   font-family: var(--font-mono);
   line-height: 1.1;
@@ -8123,9 +8128,9 @@ img {
   max-width: 100%;
 }
 
-/* 交易笔数 */
+/* 交易笔数 - 使用 clamp 响应式缩放 */
 .pnl-cell-count {
-  font-size: var(--fs-tag);
+  font-size: clamp(0.45rem, 1.1cqw, 0.65rem);
   font-weight: 400;
   line-height: 1.1;
   opacity: 0.7;
@@ -12259,25 +12264,16 @@ select:focus-visible {
   }
   .pnl-calendar-nav {
     width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
+    justify-content: flex-start;
   }
-  .pnl-year-picker {
-    order: -1;
-    width: 100%;
-    justify-content: center;
-  }
-  .pnl-year-button {
-    padding: 1px 5px;
+  .pnl-year-select,
+  .pnl-month-select {
     font-size: var(--fs-tag);
-  }
-  .pnl-month-nav {
-    display: none;
+    padding: 2px 6px;
   }
   .pnl-calendar-summary {
     font-size: var(--fs-tag);
-    gap: 6px;
+    gap: 2px;
     width: 100%;
     justify-content: center;
   }
@@ -12287,9 +12283,6 @@ select:focus-visible {
   }
   .pnl-cell {
     border-radius: 4px;
-  }
-  .pnl-cell-date {
-    font-size: var(--fs-body);
   }
   .pnl-cell-header {
     height: 18px;
