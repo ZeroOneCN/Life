@@ -573,14 +573,12 @@ export function ForexDashboardSection({
     // 最佳单日盈利 / 最差单日亏损
     let bestDay = days[0], worstDay = days[0];
     let totalPnl = 0;
-    let winDays = 0;
     for (const d of days) {
       totalPnl += d.netPnl;
       if (d.netPnl > bestDay.netPnl) bestDay = d;
       if (d.netPnl < worstDay.netPnl) worstDay = d;
-      if (d.netPnl >= 0) winDays++;
     }
-    // 连续盈/亏最长 streak
+    // 连续盈/亏最长 streak（按交易日）
     let maxWinStreak = 0, maxLossStreak = 0;
     let curWinStreak = 0, curLossStreak = 0;
     for (const d of trend) {
@@ -588,7 +586,7 @@ export function ForexDashboardSection({
       if (d.netPnl >= 0) { curWinStreak++; curLossStreak = 0; maxWinStreak = Math.max(maxWinStreak, curWinStreak); }
       else { curLossStreak++; curWinStreak = 0; maxLossStreak = Math.max(maxLossStreak, curLossStreak); }
     }
-    // 最佳单笔 / 最差单笔（含手续费和隔夜费）
+    // 最佳单笔 / 最差单笔（含手续费和隔夜费）+ 逐笔胜率
     const scopedTrades = trades.filter((t) => {
       if (startDate && t.tradeDate < startDate) return false;
       if (endDate && t.tradeDate > endDate) return false;
@@ -596,6 +594,7 @@ export function ForexDashboardSection({
     });
     let bestTrade: ForexTradeRecord | null = null;
     let worstTrade: ForexTradeRecord | null = null;
+    let tradeWinCount = 0;
     for (const t of scopedTrades) {
       const netPnl = t.pnl + t.commission + t.overnightFee;
       if (!bestTrade || netPnl > (bestTrade.pnl + bestTrade.commission + bestTrade.overnightFee)) {
@@ -604,12 +603,16 @@ export function ForexDashboardSection({
       if (!worstTrade || netPnl < (worstTrade.pnl + worstTrade.commission + worstTrade.overnightFee)) {
         worstTrade = t;
       }
+      if (t.pnl > 0) tradeWinCount++;
     }
+    const tradeWinRate = scopedTrades.length > 0
+      ? ((tradeWinCount / scopedTrades.length) * 100).toFixed(1)
+      : '0.0';
     return {
       avgDaily: totalPnl / days.length,
       bestDay,
       worstDay,
-      winRate: ((winDays / days.length) * 100).toFixed(1),
+      winRate: tradeWinRate,
       maxWinStreak,
       maxLossStreak,
       bestTrade,
@@ -800,7 +803,7 @@ export function ForexDashboardSection({
                     </div>
                     <div className="pnl-stat-divider" />
                     <div className="pnl-stat-item">
-                      <span className="pnl-stat-label">日胜率</span>
+                      <span className="pnl-stat-label">胜率</span>
                       <strong className="pnl-stat-value" style={{ color: Number(pnlStats.winRate) >= 50 ? 'var(--color-success)' : 'var(--color-danger)' }}>
                         {pnlStats.winRate}%
                       </strong>
