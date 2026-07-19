@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DeleteModal, Field, Modal } from '../ui';
+import { Btn, DeleteModal, Field, IconBtn, Modal } from '../ui';
+import { DeleteIcon, EditIcon } from '../ui';
 import { formatLoanAmount } from '../../services/loan';
 import type { LoanBill, LoanPlatform, LoanPlatformDraft, LoanRepayment } from '../../types/loan';
 
@@ -209,33 +210,48 @@ export function LoanPlatformsSection({
               return (
                 <article key={platform.id} className="loan-platform-card">
                   <div className="loan-platform-card-head">
-                    <div>
+                    <div className="loan-platform-card-info">
                       <strong>{platform.name}</strong>
-                      <div className="loan-summary-card-meta">
-                        <span>账单日 {platform.billingDay} 日</span>
-                        <span>还款日 {platform.repaymentDay} 日</span>
+                      <div className="loan-platform-card-dates">
+                        <span>账{platform.billingDay}</span>
+                        <span>还{platform.repaymentDay}</span>
                       </div>
                     </div>
-                    <div className="fitness-row-actions">
-                      <Btn
+                    <div className="loan-platform-card-actions">
+                      <IconBtn
+                        icon={<EditIcon />}
+                        title="编辑"
                         tone="secondary"
                         onClick={() => {
                           setEditingPlatform(platform);
                           setEditingForm(buildFormState(platform));
                         }}
-                      >
-                        编辑
-                      </Btn>
-                      <Btn tone="danger" onClick={() => setPendingDeletePlatform(platform)}>删除</Btn>
+                      />
+                      <IconBtn
+                        icon={<DeleteIcon />}
+                        title="删除"
+                        tone="danger"
+                        onClick={() => setPendingDeletePlatform(platform)}
+                      />
                     </div>
                   </div>
-                  <div className="loan-summary-card-metrics">
-                    <span>额度 {formatLoanAmount(platform.creditLimit)}</span>
-                    <span>账单 {linkedBills.length} 笔</span>
-                  </div>
-                  <div className="loan-summary-card-metrics">
-                    <span>还款 {linkedRepayments.length} 笔</span>
-                    <span>累计账单 {formatLoanAmount(totalExposure)}</span>
+                  <div className="loan-platform-card-body">
+                    <div className="loan-platform-card-stat">
+                      <span className="loan-platform-card-stat-label">额度</span>
+                      <span className="loan-platform-card-stat-value">{formatLoanAmount(platform.creditLimit)}</span>
+                    </div>
+                    <div className="loan-platform-card-stat">
+                      <span className="loan-platform-card-stat-label">账单</span>
+                      <span className="loan-platform-card-stat-value">{linkedBills.length}</span>
+                    </div>
+                    <div className="loan-platform-card-stat">
+                      <span className="loan-platform-card-stat-label">还款</span>
+                      <span className="loan-platform-card-stat-value">{linkedRepayments.length}</span>
+                    </div>
+                    <div className="loan-platform-card-stat">
+                      <span className="loan-platform-card-stat-label">累计</span>
+                      <span className="loan-platform-card-stat-value">{formatLoanAmount(totalExposure)}</span>
+                    </div>
                   </div>
                 </article>
               );

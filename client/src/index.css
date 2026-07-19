@@ -6414,6 +6414,58 @@ img {
   gap: 12px;
 }
 
+.loan-platform-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.loan-platform-card-dates {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-ink-tertiary);
+}
+
+.loan-platform-card-dates span {
+  padding: 2px 6px;
+  background: var(--color-surface-muted);
+  border-radius: 4px;
+}
+
+.loan-platform-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.loan-platform-card-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.loan-platform-card-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.loan-platform-card-stat-label {
+  font-size: 11px;
+  color: var(--color-ink-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.loan-platform-card-stat-value {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--color-ink-primary);
+}
+
 .loan-platform-card strong,
 .loan-summary-card strong,
 .loan-platform-spotlight strong {
