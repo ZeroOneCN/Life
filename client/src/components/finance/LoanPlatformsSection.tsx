@@ -211,10 +211,10 @@ export function LoanPlatformsSection({
                 <article key={platform.id} className="loan-platform-card">
                   <div className="loan-platform-card-head">
                     <div className="loan-platform-card-info">
-                      <strong>{platform.name}</strong>
+                      <strong className="loan-platform-card-name">{platform.name}</strong>
                       <div className="loan-platform-card-dates">
-                        <span>账{platform.billingDay}</span>
-                        <span>还{platform.repaymentDay}</span>
+                        <span>账单日 {platform.billingDay} 日</span>
+                        <span>还款日 {platform.repaymentDay} 日</span>
                       </div>
                     </div>
                     <div className="loan-platform-card-actions">
