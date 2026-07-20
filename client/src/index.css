@@ -7871,25 +7871,10 @@ img {
   gap: 8px;
 }
 
-.forex-calculator-group-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.forex-calculator-group-title {
-  font-size: var(--fs-title);
-  font-weight: 700;
-  color: var(--color-primary);
-  padding: 8px 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .forex-group-title-icon {
   color: var(--color-warning);
   font-size: 1.3em;
+  margin-right: 6px;
 }
 
 .forex-result-card.forex-group-highlight {
@@ -8014,6 +7999,37 @@ img {
 
 .forex-summary-item-danger .forex-summary-value {
   color: var(--color-danger);
+}
+
+.forex-calculator-dual-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.forex-group-card {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--color-hairline);
+}
+
+.forex-group-card:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.forex-group-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.forex-group-card-title {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--color-ink);
 }
 
 .forex-group-metric-danger .forex-group-metric-value {

@@ -100,8 +100,8 @@ function SummaryBlock({
   return (
     <article className="forex-result-card forex-summary-highlight">
       <div className="forex-result-card-head">
-        <strong>账户概览</strong>
-      </div>
+            <strong>仓位计算</strong>
+          </div>
       <div className="forex-summary-grid">
         <div className="forex-summary-item">
           <span className="forex-summary-label">总合约价值</span>
@@ -163,53 +163,51 @@ function GroupSummaryBlock({
   if (!hasMergedGroups(result)) return null;
 
   return (
-    <div className="forex-calculator-group-section">
-      <div className="forex-calculator-group-title">
+    <article className="forex-result-card forex-group-highlight">
+      <div className="forex-result-card-head">
         <span className="forex-group-title-icon">&#9733;</span>
-        多仓位均价计算
+        <strong>多仓位均价计算</strong>
       </div>
-      <div className="forex-calculator-result-grid">
-        {result.groups.map((group) => {
-          const sameGroupPositions = result.positions.filter(
-            (p) => p.instrument === group.instrument && p.orderType === group.orderType,
-          );
-          if (sameGroupPositions.length <= 1) return null;
+      {result.groups.map((group) => {
+        const sameGroupPositions = result.positions.filter(
+          (p) => p.instrument === group.instrument && p.orderType === group.orderType,
+        );
+        if (sameGroupPositions.length <= 1) return null;
 
-          return (
-            <article className="forex-result-card forex-group-highlight" key={`${group.instrument}_${group.orderType}`}>
-              <div className="forex-result-card-head">
-                <strong>合并仓位</strong>
-                <Tag tone={group.orderType === 'buy' ? 'green' : 'red'}>
-                  {`${getForexInstrumentLabel(group.instrument)} · ${getForexOrderTypeLabel(group.orderType)}`}
-                </Tag>
+        return (
+          <div key={`${group.instrument}_${group.orderType}`} className="forex-group-card">
+            <div className="forex-group-card-header">
+              <span className="forex-group-card-title">合并仓位</span>
+              <Tag tone={group.orderType === 'buy' ? 'green' : 'red'}>
+                {`${getForexInstrumentLabel(group.instrument)} · ${getForexOrderTypeLabel(group.orderType)}`}
+              </Tag>
+            </div>
+            <div className="forex-group-price-row">
+              <div className="forex-group-price-label">加权均价</div>
+              <div className="forex-group-price-value">{formatForexMoney(group.weightedOpenPrice)}</div>
+            </div>
+            <div className="forex-group-metrics-grid">
+              <div className="forex-group-metric">
+                <span className="forex-group-metric-label">总手数</span>
+                <span className="forex-group-metric-value">{group.totalLotSize.toFixed(2)}</span>
               </div>
-              <div className="forex-group-price-row">
-                <div className="forex-group-price-label">加权均价</div>
-                <div className="forex-group-price-value">{formatForexMoney(group.weightedOpenPrice)}</div>
+              <div className="forex-group-metric">
+                <span className="forex-group-metric-label">合约价值</span>
+                <span className="forex-group-metric-value">{formatForexMoney(group.contractValue)}</span>
               </div>
-              <div className="forex-group-metrics-grid">
-                <div className="forex-group-metric">
-                  <span className="forex-group-metric-label">总手数</span>
-                  <span className="forex-group-metric-value">{group.totalLotSize.toFixed(2)}</span>
-                </div>
-                <div className="forex-group-metric">
-                  <span className="forex-group-metric-label">合约价值</span>
-                  <span className="forex-group-metric-value">{formatForexMoney(group.contractValue)}</span>
-                </div>
-                <div className="forex-group-metric">
-                  <span className="forex-group-metric-label">保证金</span>
-                  <span className="forex-group-metric-value">{formatForexMoney(group.totalMargin)}</span>
-                </div>
-                <div className="forex-group-metric forex-group-metric-danger">
-                  <span className="forex-group-metric-label">统一爆仓价</span>
-                  <span className="forex-group-metric-value">{formatForexMoney(group.forcedLiquidationPrice)}</span>
-                </div>
+              <div className="forex-group-metric">
+                <span className="forex-group-metric-label">保证金</span>
+                <span className="forex-group-metric-value">{formatForexMoney(group.totalMargin)}</span>
               </div>
-            </article>
-          );
-        })}
-      </div>
-    </div>
+              <div className="forex-group-metric forex-group-metric-danger">
+                <span className="forex-group-metric-label">统一爆仓价</span>
+                <span className="forex-group-metric-value">{formatForexMoney(group.forcedLiquidationPrice)}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </article>
   );
 }
 
@@ -405,8 +403,10 @@ export function ForexCalculatorSection({
 
         {result.positions.length ? (
           <>
-            <SummaryBlock result={result} />
-            <GroupSummaryBlock result={result} />
+            <div className="forex-calculator-dual-grid">
+              <SummaryBlock result={result} />
+              <GroupSummaryBlock result={result} />
+            </div>
             <div className="forex-calculator-result-grid">
               {result.positions.map((position, index) => {
                 const liqLoss = -Math.abs(position.orderType === 'buy'
@@ -422,19 +422,33 @@ export function ForexCalculatorSection({
                       {`${getForexInstrumentLabel(position.instrument)} · ${getForexOrderTypeLabel(position.orderType)}`}
                     </Tag>
                   </div>
-                  <div className="forex-result-card-metrics">
-                    <span>{`合约价值 ${formatForexMoney(position.contractValue)}`}</span>
-                    <span>{`保证金 ${formatForexMoney(position.margin)}`}</span>
-                    <span>{`点值 ${formatForexMoney(position.pointValue)}`}</span>
-                    <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}>
-                      {`爆仓价 ${formatForexMoney(position.forcedLiquidationPrice)}`}
-                    </span>
-                    <span style={{ color: 'var(--color-danger)' }}>
-                      {`爆仓亏损 ${formatForexAmount(liqLoss)}`}
-                    </span>
-                    <span style={{ color: (position.pnl ?? 0) >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
-                      {position.pnl === null ? '未提供平仓价' : `平仓盈亏 ${formatForexAmount(position.pnl)}`}
-                    </span>
+                  <div className="forex-group-metrics-grid">
+                    <div className="forex-group-metric">
+                      <span className="forex-group-metric-label">合约价值</span>
+                      <span className="forex-group-metric-value">{formatForexMoney(position.contractValue)}</span>
+                    </div>
+                    <div className="forex-group-metric">
+                      <span className="forex-group-metric-label">保证金</span>
+                      <span className="forex-group-metric-value">{formatForexMoney(position.margin)}</span>
+                    </div>
+                    <div className="forex-group-metric">
+                      <span className="forex-group-metric-label">点值</span>
+                      <span className="forex-group-metric-value">{formatForexMoney(position.pointValue)}</span>
+                    </div>
+                    <div className="forex-group-metric forex-group-metric-danger">
+                      <span className="forex-group-metric-label">爆仓价</span>
+                      <span className="forex-group-metric-value">{formatForexMoney(position.forcedLiquidationPrice)}</span>
+                    </div>
+                    <div className="forex-group-metric forex-group-metric-danger">
+                      <span className="forex-group-metric-label">爆仓亏损</span>
+                      <span className="forex-group-metric-value">{formatForexAmount(liqLoss)}</span>
+                    </div>
+                    <div className="forex-group-metric">
+                      <span className="forex-group-metric-label">平仓盈亏</span>
+                      <span className="forex-group-metric-value" style={{ color: (position.pnl ?? 0) >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                        {position.pnl === null ? '-' : formatForexAmount(position.pnl)}
+                      </span>
+                    </div>
                   </div>
                 </article>
                 );
