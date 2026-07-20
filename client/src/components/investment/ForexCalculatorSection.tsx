@@ -326,7 +326,7 @@ export function ForexCalculatorSection({
           />
         </div>
 
-        <div className="forex-position-list">
+        <div className="forex-position-grid-container">
           {positions.map((position, index) => (
             <article className="forex-position-row" key={position.id}>
               <div className="forex-position-row-head">
@@ -395,7 +395,7 @@ export function ForexCalculatorSection({
                   onChange={(event) => setPositions((current) => current.map((item) => (
                     item.id === position.id ? { ...item, closePrice: event.target.value } : item
                   )))}
-                  placeholder="可留空只算保证金"
+                  placeholder="可留空"
                 />
               </div>
             </article>

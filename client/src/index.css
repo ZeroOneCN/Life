@@ -7746,14 +7746,18 @@ img {
 
 .forex-position-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.forex-position-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 16px;
 }
 
-.forex-position-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.forex-position-row {
+  padding: 16px;
 }
 
 .forex-chart-header span,
