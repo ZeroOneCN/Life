@@ -7729,6 +7729,33 @@ img {
   font-size: var(--fs-body);
 }
 
+.forex-position-row-head {
+  margin-bottom: 16px;
+}
+
+.forex-position-row-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.forex-position-row-title strong {
+  font-size: var(--fs-subtitle);
+  font-weight: 600;
+}
+
+.forex-position-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.forex-position-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .forex-chart-header span,
 .forex-instrument-summary-card span,
 .forex-result-card-metrics span,

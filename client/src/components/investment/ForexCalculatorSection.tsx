@@ -328,9 +328,14 @@ export function ForexCalculatorSection({
 
         <div className="forex-position-list">
           {positions.map((position, index) => (
-            <div className="forex-position-row" key={position.id}>
+            <article className="forex-position-row" key={position.id}>
               <div className="forex-position-row-head">
-                <strong>{`仓位 ${index + 1}`}</strong>
+                <div className="forex-position-row-title">
+                  <strong>{`仓位 ${index + 1}`}</strong>
+                  <Tag tone={position.orderType === 'buy' ? 'green' : 'red'}>
+                    {`${getForexInstrumentLabel(position.instrument)} · ${getForexOrderTypeLabel(position.orderType)}`}
+                  </Tag>
+                </div>
                 <Btn
                   tone="danger"
                   disabled={positions.length === 1}
@@ -393,7 +398,7 @@ export function ForexCalculatorSection({
                   placeholder="可留空只算保证金"
                 />
               </div>
-            </div>
+            </article>
           ))}
 
           <div className="forex-action-row">
