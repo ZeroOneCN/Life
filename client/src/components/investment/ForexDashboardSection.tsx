@@ -450,24 +450,21 @@ function PnlCalendar({
 
         {/* 当月摘要 */}
         <div className="pnl-calendar-summary">
-          <span>月盈亏 <em className={monthStats.totalPnl >= 0 ? 'pnl-text-profit' : 'pnl-text-loss'}>{formatForexAmount(monthStats.totalPnl)}</em></span>
-          <span className="pnl-summary-sep">·</span>
-          <span>{monthStats.tradeDays} 交易日</span>
-          <span className="pnl-summary-sep">·</span>
-          <span style={{ color: 'var(--color-success)' }}>{monthStats.winDays} 盈</span>
-          <span className="pnl-summary-sep">·</span>
-          <span style={{ color: 'var(--color-danger)' }}>{monthStats.lossDays} 亏</span>
-          {monthStats.monthDeposit > 0 && (
-            <>
-              <span className="pnl-summary-sep">·</span>
-              <span>
-                月收益率
-                <em className={monthStats.totalPnl >= 0 ? 'pnl-text-profit' : 'pnl-text-loss'}>
-                  {formatForexPercent(monthStats.totalPnl / monthStats.monthDeposit)}
-                </em>
-              </span>
-            </>
-          )}
+          <div className="pnl-summary-row">
+            <span>月盈亏 <em className={monthStats.totalPnl >= 0 ? 'pnl-text-profit' : 'pnl-text-loss'}>{formatForexAmount(monthStats.totalPnl)}</em></span>
+            <span className="pnl-summary-sep">·</span>
+            <span>{monthStats.tradeDays} 交易日</span>
+            <span className="pnl-summary-sep">·</span>
+            <span style={{ color: 'var(--color-success)' }}>{monthStats.winDays} 盈</span>
+            <span className="pnl-summary-sep">·</span>
+            <span style={{ color: 'var(--color-danger)' }}>{monthStats.lossDays} 亏</span>
+          </div>
+          <div className="pnl-summary-row">
+            <span>月收益率</span>
+            <em className={monthStats.totalPnl >= 0 ? 'pnl-text-profit' : 'pnl-text-loss'}>
+              {monthStats.monthDeposit > 0 ? formatForexPercent(monthStats.totalPnl / monthStats.monthDeposit) : '-'}
+            </em>
+          </div>
         </div>
       </div>
 

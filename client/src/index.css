@@ -8174,16 +8174,22 @@ img {
 
 .pnl-calendar-summary {
   display: flex;
-  gap: 4px;
+  flex-direction: column;
+  gap: 6px;
   font-size: var(--fs-caption);
   color: var(--color-ink-muted);
-  align-items: center;
 }
 .pnl-calendar-summary em {
   font-style: normal;
   font-weight: 700;
   font-family: var(--font-mono);
   font-size: var(--fs-label);
+}
+.pnl-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 .pnl-summary-sep {
   color: var(--color-hairline);
@@ -12425,9 +12431,13 @@ select:focus-visible {
   }
   .pnl-calendar-summary {
     font-size: var(--fs-tag);
-    gap: 2px;
+    gap: 4px;
     width: 100%;
+    align-items: center;
+  }
+  .pnl-summary-row {
     justify-content: center;
+    width: 100%;
   }
   .pnl-calendar-grid {
     width: 100%;
