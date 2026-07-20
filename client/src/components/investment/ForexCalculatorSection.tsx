@@ -132,7 +132,10 @@ function GroupSummaryBlock({
 
   return (
     <div className="forex-calculator-group-section">
-      <div className="forex-calculator-group-title">多仓位均价</div>
+      <div className="forex-calculator-group-title">
+        <span className="forex-group-title-icon">&#9733;</span>
+        多仓位均价计算
+      </div>
       <div className="forex-calculator-result-grid">
         {result.groups.map((group) => {
           const sameGroupPositions = result.positions.filter(
@@ -141,16 +144,19 @@ function GroupSummaryBlock({
           if (sameGroupPositions.length <= 1) return null;
 
           return (
-            <article className="forex-result-card" key={`${group.instrument}_${group.orderType}`}>
+            <article className="forex-result-card forex-group-highlight" key={`${group.instrument}_${group.orderType}`}>
               <div className="forex-result-card-head">
                 <strong>合并仓位</strong>
                 <Tag tone={group.orderType === 'buy' ? 'green' : 'red'}>
                   {`${getForexInstrumentLabel(group.instrument)} · ${getForexOrderTypeLabel(group.orderType)}`}
                 </Tag>
               </div>
+              <div className="forex-group-price-row">
+                <div className="forex-group-price-label">加权均价</div>
+                <div className="forex-group-price-value">{formatForexMoney(group.weightedOpenPrice)}</div>
+              </div>
               <div className="forex-result-card-metrics">
                 <span>{`总手数 ${group.totalLotSize.toFixed(2)}`}</span>
-                <span>{`加权均价 ${formatForexMoney(group.weightedOpenPrice)}`}</span>
                 <span>{`合约价值 ${formatForexMoney(group.contractValue)}`}</span>
                 <span>{`保证金 ${formatForexMoney(group.totalMargin)}`}</span>
                 <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}>
