@@ -95,20 +95,52 @@ function SummaryBlock({
 }: {
   result: ForexCalculationResult;
 }) {
+  const s = result.accountSummary;
+
   return (
-    <StatGrid
-      items={[
-        { label: '总合约价值', value: formatForexMoney(result.accountSummary.totalContractValue) },
-        { label: '总占用保证金', value: formatForexMoney(result.accountSummary.totalMargin) },
-        { label: '总浮动盈亏', value: formatForexAmount(result.accountSummary.totalPnl), accent: result.accountSummary.totalPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
-        { label: '平仓后净值', value: formatForexMoney(result.accountSummary.equityIfClosed) },
-        { label: '保证金占用', value: formatForexPercent(result.accountSummary.marginUsageRatio) },
-        { label: '可用保证金', value: formatForexMoney(result.accountSummary.remainingAvailableMargin), accent: result.accountSummary.remainingAvailableMargin >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
-        { label: '爆仓亏损', value: formatForexAmount(-Math.abs(result.accountSummary.accountLiquidationLoss)), accent: 'var(--color-danger)' },
-        { label: '爆仓时净值', value: formatForexMoney(result.accountSummary.accountLiquidationEquity), accent: 'var(--color-danger)' },
-      ]}
-      className="forex-calculator-stat-grid"
-    />
+    <article className="forex-result-card forex-summary-highlight">
+      <div className="forex-result-card-head">
+        <strong>账户概览</strong>
+      </div>
+      <div className="forex-summary-grid">
+        <div className="forex-summary-item">
+          <span className="forex-summary-label">总合约价值</span>
+          <span className="forex-summary-value">{formatForexMoney(s.totalContractValue)}</span>
+        </div>
+        <div className="forex-summary-item">
+          <span className="forex-summary-label">总占用保证金</span>
+          <span className="forex-summary-value">{formatForexMoney(s.totalMargin)}</span>
+        </div>
+        <div className="forex-summary-item forex-summary-item-accent">
+          <span className="forex-summary-label">总浮动盈亏</span>
+          <span className="forex-summary-value" style={{ color: s.totalPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+            {formatForexAmount(s.totalPnl)}
+          </span>
+        </div>
+        <div className="forex-summary-item">
+          <span className="forex-summary-label">平仓后净值</span>
+          <span className="forex-summary-value">{formatForexMoney(s.equityIfClosed)}</span>
+        </div>
+        <div className="forex-summary-item">
+          <span className="forex-summary-label">保证金占用</span>
+          <span className="forex-summary-value">{formatForexPercent(s.marginUsageRatio)}</span>
+        </div>
+        <div className="forex-summary-item">
+          <span className="forex-summary-label">可用保证金</span>
+          <span className="forex-summary-value" style={{ color: s.remainingAvailableMargin >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+            {formatForexMoney(s.remainingAvailableMargin)}
+          </span>
+        </div>
+        <div className="forex-summary-item forex-summary-item-danger">
+          <span className="forex-summary-label">爆仓亏损</span>
+          <span className="forex-summary-value">{formatForexAmount(-Math.abs(s.accountLiquidationLoss))}</span>
+        </div>
+        <div className="forex-summary-item forex-summary-item-danger">
+          <span className="forex-summary-label">爆仓时净值</span>
+          <span className="forex-summary-value">{formatForexMoney(s.accountLiquidationEquity)}</span>
+        </div>
+      </div>
+    </article>
   );
 }
 
