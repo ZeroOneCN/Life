@@ -155,13 +155,23 @@ function GroupSummaryBlock({
                 <div className="forex-group-price-label">加权均价</div>
                 <div className="forex-group-price-value">{formatForexMoney(group.weightedOpenPrice)}</div>
               </div>
-              <div className="forex-result-card-metrics">
-                <span>{`总手数 ${group.totalLotSize.toFixed(2)}`}</span>
-                <span>{`合约价值 ${formatForexMoney(group.contractValue)}`}</span>
-                <span>{`保证金 ${formatForexMoney(group.totalMargin)}`}</span>
-                <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}>
-                  {`统一爆仓价 ${formatForexMoney(group.forcedLiquidationPrice)}`}
-                </span>
+              <div className="forex-group-metrics-grid">
+                <div className="forex-group-metric">
+                  <span className="forex-group-metric-label">总手数</span>
+                  <span className="forex-group-metric-value">{group.totalLotSize.toFixed(2)}</span>
+                </div>
+                <div className="forex-group-metric">
+                  <span className="forex-group-metric-label">合约价值</span>
+                  <span className="forex-group-metric-value">{formatForexMoney(group.contractValue)}</span>
+                </div>
+                <div className="forex-group-metric">
+                  <span className="forex-group-metric-label">保证金</span>
+                  <span className="forex-group-metric-value">{formatForexMoney(group.totalMargin)}</span>
+                </div>
+                <div className="forex-group-metric forex-group-metric-danger">
+                  <span className="forex-group-metric-label">统一爆仓价</span>
+                  <span className="forex-group-metric-value">{formatForexMoney(group.forcedLiquidationPrice)}</span>
+                </div>
               </div>
             </article>
           );
