@@ -80,8 +80,19 @@ export interface ForexCalculationPositionResult {
   forcedLiquidationPrice: number;
 }
 
+export interface ForexCalculationGroupResult {
+  instrument: ForexInstrument;
+  orderType: ForexOrderType;
+  totalLotSize: number;
+  weightedOpenPrice: number;
+  forcedLiquidationPrice: number;
+  totalMargin: number;
+  contractValue: number;
+}
+
 export interface ForexCalculationResult {
   positions: ForexCalculationPositionResult[];
+  groups: ForexCalculationGroupResult[];
   accountSummary: {
     balance: number;
     leverage: number;

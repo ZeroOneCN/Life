@@ -112,6 +112,59 @@ function SummaryBlock({
   );
 }
 
+/** 判断是否存在多仓位合并（同一品种同方向多个仓位） */
+function hasMergedGroups(result: ForexCalculationResult): boolean {
+  return result.groups.some((group) => {
+    const sameGroupPositions = result.positions.filter(
+      (p) => p.instrument === group.instrument && p.orderType === group.orderType,
+    );
+    return sameGroupPositions.length > 1;
+  });
+}
+
+/** 多仓位分组均价卡片 */
+function GroupSummaryBlock({
+  result,
+}: {
+  result: ForexCalculationResult;
+}) {
+  if (!hasMergedGroups(result)) return null;
+
+  return (
+    <div className="forex-calculator-group-section">
+      <div className="forex-calculator-group-title">多仓位均价</div>
+      <div className="forex-calculator-result-grid">
+        {result.groups.map((group) => {
+          const sameGroupPositions = result.positions.filter(
+            (p) => p.instrument === group.instrument && p.orderType === group.orderType,
+          );
+          if (sameGroupPositions.length <= 1) return null;
+
+          return (
+            <article className="forex-result-card" key={`${group.instrument}_${group.orderType}`}>
+              <div className="forex-result-card-head">
+                <strong>合并仓位</strong>
+                <Tag tone={group.orderType === 'buy' ? 'green' : 'red'}>
+                  {`${getForexInstrumentLabel(group.instrument)} · ${getForexOrderTypeLabel(group.orderType)}`}
+                </Tag>
+              </div>
+              <div className="forex-result-card-metrics">
+                <span>{`总手数 ${group.totalLotSize.toFixed(2)}`}</span>
+                <span>{`加权均价 ${formatForexMoney(group.weightedOpenPrice)}`}</span>
+                <span>{`合约价值 ${formatForexMoney(group.contractValue)}`}</span>
+                <span>{`保证金 ${formatForexMoney(group.totalMargin)}`}</span>
+                <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}>
+                  {`统一爆仓价 ${formatForexMoney(group.forcedLiquidationPrice)}`}
+                </span>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function ForexCalculatorSection({
   leverage,
   forcedLiquidationRatio,
@@ -305,6 +358,7 @@ export function ForexCalculatorSection({
         {result.positions.length ? (
           <>
             <SummaryBlock result={result} />
+            <GroupSummaryBlock result={result} />
             <div className="forex-calculator-result-grid">
               {result.positions.map((position, index) => {
                 const liqLoss = -Math.abs(position.orderType === 'buy'

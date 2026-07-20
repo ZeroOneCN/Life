@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 
 import { CHART_CATEGORY_8, CHART_PNL, FOREX_INSTRUMENT } from '../lib/chartPalette';
 import type {
+  ForexCalculationGroupResult,
   ForexCalculationResult,
   ForexCalculatorPositionDraft,
   ForexCapitalFlow,
@@ -1099,8 +1100,23 @@ export function computeForexMultiPosition(
     };
   });
 
+  /* 构建分组均价结果 */
+  const groups: ForexCalculationGroupResult[] = [];
+  groupMap.forEach((group, key) => {
+    groups.push({
+      instrument: group.instrument,
+      orderType: group.orderType,
+      totalLotSize: roundMoney(group.totalLotSize),
+      weightedOpenPrice: roundMoney(group.weightedOpenPrice),
+      forcedLiquidationPrice: groupLiquidationPriceMap.get(key) ?? 0,
+      totalMargin: roundMoney((group.weightedOpenPrice * group.totalLotSize * FOREX_CONTRACT_UNITS[group.instrument]) / leverage),
+      contractValue: roundMoney(group.weightedOpenPrice * group.totalLotSize * FOREX_CONTRACT_UNITS[group.instrument]),
+    });
+  });
+
   return {
     positions: results,
+    groups,
     accountSummary: {
       balance,
       leverage,
