@@ -317,7 +317,13 @@ interface PnlDayData {
 }
 
 /** 盈亏日历组件：按月展示每日盈亏热力图，支持年/月下拉切换，格子内直显收益 */
-function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCount: number }[] }) {
+function PnlCalendar({
+  trend,
+  capitalFlows,
+}: {
+  trend: { date: string; netPnl: number; tradeCount: number }[];
+  capitalFlows: ForexCapitalFlow[];
+}) {
   const [viewMonth, setViewMonth] = useState(() => dayjs());
 
   /** 将 trend 数据按日期建立 Map */
@@ -372,8 +378,16 @@ function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCo
         else lossDays++;
       }
     });
-    return { totalPnl, winDays, lossDays, tradeDays };
-  }, [calendarDays]);
+
+    const monthStart = viewMonth.startOf('month').format('YYYY-MM-DD');
+    const monthEnd = viewMonth.endOf('month').format('YYYY-MM-DD');
+    const monthDeposit = capitalFlows
+      .filter((flow) => flow.flowType === 'deposit')
+      .filter((flow) => flow.flowDate >= monthStart && flow.flowDate <= monthEnd)
+      .reduce((sum, flow) => sum + flow.amount, 0);
+
+    return { totalPnl, winDays, lossDays, tradeDays, monthDeposit };
+  }, [calendarDays, capitalFlows, viewMonth]);
 
   /** 年份下拉选项：当前年 ±5 */
   const yearOptions = useMemo(() => {
@@ -443,6 +457,17 @@ function PnlCalendar({ trend }: { trend: { date: string; netPnl: number; tradeCo
           <span style={{ color: 'var(--color-success)' }}>{monthStats.winDays} 盈</span>
           <span className="pnl-summary-sep">·</span>
           <span style={{ color: 'var(--color-danger)' }}>{monthStats.lossDays} 亏</span>
+          {monthStats.monthDeposit > 0 && (
+            <>
+              <span className="pnl-summary-sep">·</span>
+              <span>
+                月收益率
+                <em className={monthStats.totalPnl >= 0 ? 'pnl-text-profit' : 'pnl-text-loss'}>
+                  {formatForexPercent(monthStats.totalPnl / monthStats.monthDeposit)}
+                </em>
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -840,7 +865,7 @@ export function ForexDashboardSection({
               <span>按月查看每日盈亏热力图，颜色越深金额越大。</span>
             </div>
             {isDataReady && hasTrendData ? (
-              <PnlCalendar trend={trend} />
+              <PnlCalendar trend={trend} capitalFlows={capitalFlows} />
             ) : (
               <EmptyState title="暂无日历数据" description="录入交易记录后显示每日盈亏分布。" />
             )}
