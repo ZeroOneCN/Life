@@ -78,14 +78,12 @@ function toDraftPositions(positions: PositionFormState[]): ForexCalculatorPositi
       id: position.id,
       instrument: position.instrument,
       orderType: position.orderType,
-      openPrice: Number(position.openPrice),
-      lotSize: Number(position.lotSize),
+      openPrice: Number(position.openPrice) || 0,
+      lotSize: Number(position.lotSize) || 0,
       closePrice: position.closePrice ? Number(position.closePrice) : null,
     }))
     .filter((position) => (
-      Number.isFinite(position.openPrice)
-      && position.openPrice > 0
-      && Number.isFinite(position.lotSize)
+      Number.isFinite(position.lotSize)
       && position.lotSize > 0
     ));
 }
