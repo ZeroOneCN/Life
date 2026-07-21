@@ -1035,10 +1035,8 @@ export function computeForexMultiPosition(
     const key = `${item.instrument}_${item.orderType}`;
     const existing = groupMap.get(key);
     if (existing) {
-      const newTotalLot = existing.totalLotSize + item.lotSize;
-      const newWeightedPrice = (existing.weightedOpenPrice * existing.totalLotSize + item.openPrice * item.lotSize) / newTotalLot;
-      existing.totalLotSize = newTotalLot;
-      existing.weightedOpenPrice = newWeightedPrice;
+      existing.totalLotSize = existing.totalLotSize + item.lotSize;
+      existing.totalContractUnits = existing.totalContractUnits + item.lotSize * FOREX_CONTRACT_UNITS[item.instrument];
     } else {
       groupMap.set(key, {
         instrument: item.instrument,
@@ -1047,6 +1045,15 @@ export function computeForexMultiPosition(
         weightedOpenPrice: item.openPrice,
         totalContractUnits: item.lotSize * FOREX_CONTRACT_UNITS[item.instrument],
       });
+    }
+  });
+
+  groupMap.forEach((group) => {
+    if (group.totalLotSize > 0) {
+      const priceSum = baseResults
+        .filter((item) => item.instrument === group.instrument && item.orderType === group.orderType)
+        .reduce((sum, item) => sum + item.openPrice * item.lotSize, 0);
+      group.weightedOpenPrice = priceSum / group.totalLotSize;
     }
   });
 
