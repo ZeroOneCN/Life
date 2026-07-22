@@ -31,6 +31,7 @@ interface ForexTradesSectionProps {
   trades: ForexTradeRecord[];
   onChangeTrades: (updater: (records: ForexTradeRecord[]) => ForexTradeRecord[]) => void;
   onImportApplied?: (records: ForexTradeRecord[]) => void;
+  onReload?: () => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
@@ -159,6 +160,7 @@ export function ForexTradesSection({
   trades,
   onChangeTrades,
   onImportApplied,
+  onReload,
   showToast,
 }: ForexTradesSectionProps) {
   const [form, setForm] = useState<TradeFormState>(() => createDefaultFormState());
@@ -361,6 +363,10 @@ export function ForexTradesSection({
     setIsImporting(true);
 
     try {
+      if (onReload) {
+        await onReload();
+      }
+
       const result = await importForexWorkbookCompatible(file, { trades });
       setImportResult(result);
 

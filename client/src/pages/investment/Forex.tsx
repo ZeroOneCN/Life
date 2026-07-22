@@ -291,6 +291,7 @@ export default function ForexPage() {
             void handleTradesChange(updater);
           }}
           onImportApplied={handleImportApplied}
+          onReload={reload}
           showToast={showToast}
         />
       ) : null}
