@@ -1390,7 +1390,15 @@ function buildImportedTrade(
   const closePrice = toNumber(readAliasValue(row, ['平仓价格', '平仓价', 'closePrice', '价位']), 0);
   const openTime = normalizeForexTimeInput(String(readAliasValue(row, ['开仓时间', 'openTime', '时间']) ?? ''), DEFAULT_START_TIME);
   const closeTime = normalizeForexTimeInput(String(readAliasValue(row, ['平仓时间', 'closeTime', '时间']) ?? ''), DEFAULT_END_TIME);
-  const positionId = normalizeTrimmedValue(readAliasValue(row, ['持仓', 'positionId', 'position_id', 'orderId', 'order_id', 'ticket']));
+  let positionId = normalizeTrimmedValue(readAliasValue(row, ['持仓', 'positionId', 'position_id', 'orderId', 'order_id', 'ticket']));
+  // Fallback: extract from remark if format is "ID:xxxxxx" (GoldBill export convention)
+  if (!positionId) {
+    const remark = normalizeTrimmedValue(readAliasValue(row, ['备注', 'remark']));
+    const match = remark.match(/ID:(\d+)/);
+    if (match) {
+      positionId = match[1];
+    }
+  }
 
   if (!tradeDate || openPrice <= 0 || closePrice <= 0 || lotSize <= 0) {
     return {
@@ -1657,9 +1665,19 @@ function buildImportedTradeCompatible(
     String(getForexImportCell(row, ['平仓时间', 'closeTime', 'close_time', '时间']) ?? ''),
     '',
   );
-  const positionId = normalizeTrimmedValue(
+  let positionId = normalizeTrimmedValue(
     getForexImportCell(row, ['持仓', 'positionId', 'position_id', 'orderId', 'order_id', 'ticket']),
   );
+  // Fallback: extract from remark if format is "ID:xxxxxx" (GoldBill export convention)
+  if (!positionId) {
+    const remark = normalizeTrimmedValue(
+      getForexImportCell(row, ['备注', 'remark', 'note', 'notes']),
+    );
+    const match = remark.match(/ID:(\d+)/);
+    if (match) {
+      positionId = match[1];
+    }
+  }
 
   if (!tradeDate) {
     return {
