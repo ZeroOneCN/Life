@@ -73,7 +73,7 @@ export default function ForexPage() {
   const mounted = useRef(true);
 
   const reload = useCallback(async () => {
-    if (reloading.current) return;
+    if (reloading.current) return [];
     reloading.current = true;
     try {
       const [nextTrades, nextCapitalFlows, nextSummary, nextSettings] = await Promise.all([
@@ -83,7 +83,7 @@ export default function ForexPage() {
         forexApi.getSettings(),
       ]);
 
-      if (!mounted.current) return;
+      if (!mounted.current) return nextTrades.items;
       setTrades(nextTrades.items);
       setCapitalFlows(nextCapitalFlows.items);
       setSummary(nextSummary);
@@ -91,6 +91,7 @@ export default function ForexPage() {
         ...EMPTY_SETTINGS,
         ...nextSettings,
       });
+      return nextTrades.items;
     } finally {
       reloading.current = false;
     }

@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import type { WorkSheet } from 'xlsx';
 
 import { CHART_CATEGORY_8, CHART_PNL, FOREX_INSTRUMENT } from '../lib/chartPalette';
 import type {
@@ -1381,14 +1382,14 @@ function buildImportedTrade(
   row: Record<string, unknown>,
   rowNumber: number,
 ): { record: ForexTradeRecord | null; invalid: ForexImportInvalidRow | null } {
-  const tradeDate = normalizeTrimmedValue(readAliasValue(row, ['日期时间', '交易日期', 'tradeDate', 'date', '日期']));
+  const tradeDate = normalizeTrimmedValue(readAliasValue(row, ['日期时间', '交易日期', 'tradeDate', 'date', '日期', '时间']));
   const instrument = ensureInstrument(readAliasValue(row, ['交易品种', '品种', 'instrument']));
-  const orderType = ensureOrderType(readAliasValue(row, ['订单类型', '方向', 'orderType', 'type']));
-  const openPrice = toNumber(readAliasValue(row, ['开仓价格', '开仓价', 'openPrice']), 0);
-  const lotSize = toNumber(readAliasValue(row, ['手数', 'lotSize']), 0);
-  const closePrice = toNumber(readAliasValue(row, ['平仓价格', '平仓价', 'closePrice']), 0);
-  const openTime = normalizeForexTimeInput(String(readAliasValue(row, ['开仓时间', 'openTime']) ?? ''), DEFAULT_START_TIME);
-  const closeTime = normalizeForexTimeInput(String(readAliasValue(row, ['平仓时间', 'closeTime']) ?? ''), DEFAULT_END_TIME);
+  const orderType = ensureOrderType(readAliasValue(row, ['订单类型', '方向', 'orderType', 'type', '类型']));
+  const openPrice = toNumber(readAliasValue(row, ['开仓价格', '开仓价', 'openPrice', '价位']), 0);
+  const lotSize = toNumber(readAliasValue(row, ['手数', 'lotSize', '交易量']), 0);
+  const closePrice = toNumber(readAliasValue(row, ['平仓价格', '平仓价', 'closePrice', '价位']), 0);
+  const openTime = normalizeForexTimeInput(String(readAliasValue(row, ['开仓时间', 'openTime', '时间']) ?? ''), DEFAULT_START_TIME);
+  const closeTime = normalizeForexTimeInput(String(readAliasValue(row, ['平仓时间', 'closeTime', '时间']) ?? ''), DEFAULT_END_TIME);
   const positionId = normalizeTrimmedValue(readAliasValue(row, ['持仓', 'positionId', 'position_id', 'orderId', 'order_id', 'ticket']));
 
   if (!tradeDate || openPrice <= 0 || closePrice <= 0 || lotSize <= 0) {
@@ -1408,10 +1409,10 @@ function buildImportedTrade(
       commission: toNumber(readAliasValue(row, ['手续费', 'commission']), calculateForexCommission(lotSize)),
       closePrice,
       pnl: toNumber(
-        readAliasValue(row, ['盈亏金额', '盈亏', 'pnl']),
+        readAliasValue(row, ['盈亏金额', '盈亏', 'pnl', '盈利']),
         calculateForexTradePnl(instrument, orderType, openPrice, closePrice, lotSize),
       ),
-      overnightFee: toNumber(readAliasValue(row, ['隔夜费', 'overnightFee', 'overnight_fee']), 0),
+      overnightFee: toNumber(readAliasValue(row, ['隔夜费', 'overnightFee', 'overnight_fee', '库存费', 'swap']), 0),
       openTime,
       closeTime,
       holdTime: normalizeTrimmedValue(readAliasValue(row, ['持仓时间', '持仓时长', 'holdTime']), calculateForexHoldTime(openTime, closeTime)),
@@ -1420,6 +1421,65 @@ function buildImportedTrade(
     }),
     invalid: null,
   };
+}
+
+async function parseForexImportSheet(worksheet: unknown): Promise<Record<string, unknown>[]> {
+  const XLSX = await import('xlsx');
+  const ws = worksheet as WorkSheet;
+  // Read raw rows first to detect header
+  const rawRows: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+  // Try to detect header row: look for row containing 时间/交易品种/持仓
+  let headerIndex = -1;
+  for (let i = 0; i < Math.min(30, rawRows.length); i++) {
+    const row = rawRows[i];
+    if (!Array.isArray(row)) continue;
+    const cells = row.map((c) => String(c ?? '').trim());
+    const hasTime = cells.some((c) => c === '时间' || c === '日期时间' || c === 'tradeDate' || c === 'date');
+    const hasInstrument = cells.some((c) => c === '交易品种' || c === '品种' || c === 'instrument');
+    const hasPosition = cells.some((c) => c === '持仓' || c === 'positionId' || c === 'ticket');
+    if (hasTime && (hasInstrument || hasPosition)) {
+      headerIndex = i;
+      break;
+    }
+  }
+
+  if (headerIndex === -1) {
+    // Fallback to default parsing (first row as header)
+    return XLSX.utils.sheet_to_json(ws, { defval: '' });
+  }
+
+  // Use detected header row and parse data from next row
+  const headers = rawRows[headerIndex].map((h) => String(h ?? ''));
+
+  // Handle duplicate headers for Bybit raw report:
+  // "时间" appears twice (open time, close time), "价位" appears twice (open price, close price)
+  const seen = new Set<string>();
+  const renamedHeaders = headers.map((h) => {
+    if (seen.has(h)) {
+      if (h === '时间') return '平仓时间';
+      if (h === '价位') return '平仓价格';
+      return h;
+    }
+    seen.add(h);
+    if (h === '时间') return '日期时间';
+    if (h === '价位') return '开仓价格';
+    return h;
+  });
+
+  const dataRows: Record<string, unknown>[] = [];
+  for (let i = headerIndex + 1; i < rawRows.length; i++) {
+    const row = rawRows[i];
+    if (!Array.isArray(row)) continue;
+    const obj: Record<string, unknown> = {};
+    renamedHeaders.forEach((h, idx) => {
+      if (h) {
+        obj[h] = row[idx] ?? '';
+      }
+    });
+    dataRows.push(obj);
+  }
+  return dataRows;
 }
 
 export async function importForexWorkbook(
@@ -1445,7 +1505,7 @@ export async function importForexWorkbook(
     };
   }
 
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: '' });
+  const rows = await parseForexImportSheet(worksheet);
   const invalidRows: ForexImportInvalidRow[] = [];
   const draftRecords: ForexTradeRecord[] = [];
 
@@ -1569,32 +1629,32 @@ function buildImportedTradeCompatible(
   rowNumber: number,
 ): { record: ForexTradeRecord | null; invalid: ForexImportInvalidRow | null } {
   const tradeDate = normalizeTrimmedValue(
-    getForexImportCell(row, ['日期时间', '交易日期', '日期', 'tradeDate', 'trade_date', 'date', 'datetime']),
+    getForexImportCell(row, ['日期时间', '交易日期', '日期', 'tradeDate', 'trade_date', 'date', 'datetime', '时间']),
   );
   const instrument = parseForexImportInstrument(
     getForexImportCell(row, ['交易品种', '品种', 'instrument', 'symbol']),
   );
   const orderType = parseForexImportOrderType(
-    getForexImportCell(row, ['订单类型', '方向', 'orderType', 'order_type', 'type', 'side']),
+    getForexImportCell(row, ['订单类型', '方向', 'orderType', 'order_type', 'type', 'side', '类型']),
   );
   const openPrice = toNumber(
-    getForexImportCell(row, ['开仓价格', '开仓价', 'openPrice', 'open_price', 'entryPrice']),
+    getForexImportCell(row, ['开仓价格', '开仓价', 'openPrice', 'open_price', 'entryPrice', '价位']),
     0,
   );
   const lotSize = toNumber(
-    getForexImportCell(row, ['手数', 'lotSize', 'lot_size', 'lots', 'lot', 'volume']),
+    getForexImportCell(row, ['手数', 'lotSize', 'lot_size', 'lots', 'lot', 'volume', '交易量']),
     0,
   );
   const closePrice = toNumber(
-    getForexImportCell(row, ['平仓价格', '平仓价', 'closePrice', 'close_price', 'exitPrice']),
+    getForexImportCell(row, ['平仓价格', '平仓价', 'closePrice', 'close_price', 'exitPrice', '价位']),
     0,
   );
   const openTime = normalizeForexTimeWithSeconds(
-    String(getForexImportCell(row, ['开仓时间', 'openTime', 'open_time']) ?? ''),
+    String(getForexImportCell(row, ['开仓时间', 'openTime', 'open_time', '时间']) ?? ''),
     '',
   );
   const closeTime = normalizeForexTimeWithSeconds(
-    String(getForexImportCell(row, ['平仓时间', 'closeTime', 'close_time']) ?? ''),
+    String(getForexImportCell(row, ['平仓时间', 'closeTime', 'close_time', '时间']) ?? ''),
     '',
   );
   const positionId = normalizeTrimmedValue(
@@ -1637,16 +1697,16 @@ function buildImportedTradeCompatible(
       openPrice,
       lotSize,
       commission: toNumber(
-        getForexImportCell(row, ['手续费', 'commission']),
+        getForexImportCell(row, ['手续费', 'commission', '手续费']),
         calculateForexCommission(lotSize),
       ),
       closePrice,
       pnl: toNumber(
-        getForexImportCell(row, ['盈亏金额', '盈亏', 'pnl', 'profitLoss', 'profit_loss']),
+        getForexImportCell(row, ['盈亏金额', '盈亏', 'pnl', 'profitLoss', 'profit_loss', '盈利']),
         calculateForexTradePnl(instrument, orderType, openPrice, closePrice, lotSize),
       ),
       overnightFee: toNumber(
-        getForexImportCell(row, ['隔夜费', 'overnightFee', 'overnight_fee', 'swap', 'rollover']),
+        getForexImportCell(row, ['隔夜费', 'overnightFee', 'overnight_fee', 'swap', 'rollover', '库存费']),
         0,
       ),
       openTime,
@@ -1687,7 +1747,7 @@ export async function importForexWorkbookCompatible(
     };
   }
 
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: '' });
+  const rows = await parseForexImportSheet(worksheet);
   const invalidRows: ForexImportInvalidRow[] = [];
   const draftRecords: ForexTradeRecord[] = [];
 
