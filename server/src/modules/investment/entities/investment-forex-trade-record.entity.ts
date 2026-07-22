@@ -7,6 +7,9 @@ export class InvestmentForexTradeRecordEntity extends UserScopedEntity {
   @Column({ type: 'int', default: 0 })
   sort_order!: number;
 
+  @Column({ type: 'varchar', length: 64, default: '' })
+  position_id!: string;
+
   @Column({ type: 'date' })
   trade_date!: string;
 

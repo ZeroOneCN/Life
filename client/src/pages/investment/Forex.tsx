@@ -170,7 +170,7 @@ export default function ForexPage() {
 
       const batchSize = 10;
 
-      const executeBatch = async <T>(items: T[], fn: (item: T) => Promise<void>) => {
+      const executeBatch = async <T,>(items: T[], fn: (item: T) => Promise<unknown>) => {
         for (let i = 0; i < items.length; i += batchSize) {
           const batch = items.slice(i, i + batchSize);
           await Promise.all(batch.map(fn));
@@ -179,6 +179,7 @@ export default function ForexPage() {
 
       await executeBatch(created, (item) => forexApi.createTrade({
         tradeDate: item.tradeDate,
+        positionId: item.positionId,
         instrument: item.instrument,
         orderType: item.orderType,
         openPrice: item.openPrice,
@@ -195,6 +196,7 @@ export default function ForexPage() {
 
       await executeBatch(updated, (item) => forexApi.updateTrade(item.id, {
         tradeDate: item.tradeDate,
+        positionId: item.positionId,
         instrument: item.instrument,
         orderType: item.orderType,
         openPrice: item.openPrice,

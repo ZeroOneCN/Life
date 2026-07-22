@@ -34,6 +34,7 @@ const tradeSchemaBase = z.object({
   closeTime: z.string().trim().min(1),
   holdTime: z.string().optional().default(''),
   remark: z.string().optional().default(''),
+  positionId: z.string().optional().default(''),
 });
 
 type TradeInput = z.infer<typeof tradeSchemaBase> & {
@@ -91,6 +92,7 @@ const importTradeSchema = z.object({
   closeTime: z.string().optional(),
   holdTime: z.string().optional(),
   remark: z.string().optional(),
+  positionId: z.string().optional(),
 });
 
 const importSchema = z.object({
@@ -175,6 +177,7 @@ function calculateHoldTime(openTime: string, closeTime: string) {
 function mapTrade(entity: InvestmentForexTradeRecordEntity) {
   return {
     id: entity.id,
+    positionId: entity.position_id ?? '',
     tradeDate: dayjs(entity.trade_date).format('YYYY-MM-DD'),
     instrument: entity.instrument,
     orderType: entity.order_type,
@@ -293,6 +296,7 @@ export function createForexRouter() {
     const item = await repository.save(repository.create({
       user_id: userId,
       trade_date: normalizeDate(payload.tradeDate),
+      position_id: payload.positionId ?? '',
       instrument: payload.instrument,
       order_type: payload.orderType,
       open_price: payload.openPrice,
@@ -342,6 +346,7 @@ export function createForexRouter() {
     const item = await repository.save({
       ...current,
       trade_date: payload.tradeDate ? normalizeDate(payload.tradeDate) : current.trade_date,
+      position_id: payload.positionId ?? current.position_id,
       instrument: nextInstrument,
       order_type: nextOrderType,
       open_price: nextOpenPrice,
@@ -768,6 +773,7 @@ export function createForexRouter() {
       Number(item.close_price).toFixed(2),
       item.open_time,
       item.close_time,
+      item.position_id ?? '',
     ].join('|')));
 
     let importedCount = 0;
@@ -784,6 +790,7 @@ export function createForexRouter() {
       const lotSize = Number(row.lotSize);
       const openTime = normalizeTime(row.openTime, '');
       const closeTime = normalizeTime(row.closeTime, '');
+      const positionId = String(row.positionId ?? '').trim();
 
       if (!instrument || !orderType || !tradeDate || !openTime || !closeTime || !Number.isFinite(openPrice) || !Number.isFinite(closePrice) || !Number.isFinite(lotSize) || openPrice <= 0 || closePrice <= 0 || lotSize <= 0) {
         invalidCount += 1;
@@ -799,6 +806,7 @@ export function createForexRouter() {
         closePrice.toFixed(2),
         openTime,
         closeTime,
+        positionId,
       ].join('|');
 
       if (seen.has(key)) {
@@ -812,6 +820,7 @@ export function createForexRouter() {
         user_id: userId,
         sort_order: toSave.length,
         trade_date: tradeDate,
+        position_id: positionId,
         instrument,
         order_type: orderType,
         open_price: openPrice,
@@ -856,7 +865,7 @@ export function createForexRouter() {
   router.get('/actions/download-template', asyncHandler(async (_request: AuthenticatedRequest, response) => {
     response.json(successResponse({
       fileName: 'forex-import-template.json',
-      headers: ['tradeDate', 'instrument', 'orderType', 'openPrice', 'lotSize', 'commission', 'closePrice', 'pnl', 'overnightFee', 'openTime', 'closeTime', 'holdTime', 'remark'],
+      headers: ['tradeDate', 'instrument', 'orderType', 'openPrice', 'lotSize', 'commission', 'closePrice', 'pnl', 'overnightFee', 'openTime', 'closeTime', 'holdTime', 'remark', 'positionId'],
       formulas: {
         G: '=-F2/0.01*0.06',
         I: '=IF(OR(B2="XAUUSD",B2="XAGUSD"),IF(D2="buy",(H2-E2)*IF(B2="XAUUSD",100,5000)*F2,(E2-H2)*IF(B2="XAUUSD",100,5000)*F2),"")',
@@ -876,6 +885,7 @@ export function createForexRouter() {
         closeTime: '11:10',
         holdTime: '1时35分',
         remark: '示例数据',
+        positionId: 'order-001',
       },
     }));
   }));

@@ -8,6 +8,7 @@ export type ForexCapitalFlowType = 'deposit' | 'withdrawal';
 
 export interface ForexTradeRecord {
   id: string;
+  positionId: string;
   tradeDate: string;
   instrument: ForexInstrument;
   orderType: ForexOrderType;
@@ -39,6 +40,7 @@ export interface ForexTradeDraft {
   closeTime: string;
   holdTime?: string;
   remark?: string;
+  positionId?: string;
 }
 
 export interface ForexCapitalFlow {

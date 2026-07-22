@@ -326,6 +326,7 @@ function normalizeForexTrade(record: Partial<ForexTradeRecord>, index = 0): Fore
 
   return {
     id: record.id ?? buildId(),
+    positionId: normalizeTrimmedValue(record.positionId),
     tradeDate,
     instrument,
     orderType,
@@ -1279,6 +1280,7 @@ function buildTradeDedupKey(record: ForexTradeRecord) {
     record.closePrice.toFixed(2),
     record.openTime,
     record.closeTime,
+    record.positionId ?? '',
   ].join('|');
 }
 
@@ -1387,6 +1389,7 @@ function buildImportedTrade(
   const closePrice = toNumber(readAliasValue(row, ['平仓价格', '平仓价', 'closePrice']), 0);
   const openTime = normalizeForexTimeInput(String(readAliasValue(row, ['开仓时间', 'openTime']) ?? ''), DEFAULT_START_TIME);
   const closeTime = normalizeForexTimeInput(String(readAliasValue(row, ['平仓时间', 'closeTime']) ?? ''), DEFAULT_END_TIME);
+  const positionId = normalizeTrimmedValue(readAliasValue(row, ['持仓', 'positionId', 'position_id', 'orderId', 'order_id', 'ticket']));
 
   if (!tradeDate || openPrice <= 0 || closePrice <= 0 || lotSize <= 0) {
     return {
@@ -1413,6 +1416,7 @@ function buildImportedTrade(
       closeTime,
       holdTime: normalizeTrimmedValue(readAliasValue(row, ['持仓时间', '持仓时长', 'holdTime']), calculateForexHoldTime(openTime, closeTime)),
       remark: normalizeTrimmedValue(readAliasValue(row, ['备注', 'remark'])),
+      positionId,
     }),
     invalid: null,
   };
@@ -1487,6 +1491,7 @@ export async function buildForexImportTemplateWorkbook() {
   const rows = [
     {
       ID: '示例-1',
+      仓位ID: 'order-001',
       日期时间: dayjs().format(DATE_FORMAT),
       交易品种: 'XAUUSD',
       订单类型: 'buy',
@@ -1592,6 +1597,9 @@ function buildImportedTradeCompatible(
     String(getForexImportCell(row, ['平仓时间', 'closeTime', 'close_time']) ?? ''),
     '',
   );
+  const positionId = normalizeTrimmedValue(
+    getForexImportCell(row, ['持仓', 'positionId', 'position_id', 'orderId', 'order_id', 'ticket']),
+  );
 
   if (!tradeDate) {
     return {
@@ -1650,6 +1658,7 @@ function buildImportedTradeCompatible(
       remark: normalizeTrimmedValue(
         getForexImportCell(row, ['备注', 'remark', 'note', 'notes']),
       ),
+      positionId,
     }),
     invalid: null,
   };
@@ -1768,6 +1777,7 @@ export async function buildForexImportTemplateWorkbookCompatible() {
   const rows = [
     {
       ID: '示例-1',
+      仓位ID: 'order-001',
       日期时间: dayjs().format('YYYY-MM-DD'),
       交易品种: 'XAUUSD',
       订单类型: 'buy',
@@ -1809,6 +1819,7 @@ export async function exportForexTradesWorkbook(records: ForexTradeRecord[]) {
 
   const rows = sorted.map((record) => ({
     ID: record.id,
+    仓位ID: record.positionId || '',
     日期时间: record.tradeDate,
     交易品种: record.instrument,
     订单类型: record.orderType,
