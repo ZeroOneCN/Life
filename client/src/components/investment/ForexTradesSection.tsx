@@ -378,7 +378,7 @@ export function ForexTradesSection({
 
       showToast(
         `导入完成：成功 ${result.importedCount}，重复 ${result.duplicateCount}，无效 ${result.invalidCount}。`,
-        result.invalidCount > 0 ? 'error' : 'success',
+        result.importedCount === 0 ? 'error' : 'success',
       );
     } catch (_error) {
       showToast('导入失败，请检查文件格式。', 'error');
