@@ -168,39 +168,49 @@ export default function ForexPage() {
       const deletedIds = findDeletedIds(previous, next);
       const updated = next.filter((item) => previous.some((record) => record.id === item.id && JSON.stringify(record) !== JSON.stringify(item)));
 
-      await Promise.all([
-        ...created.map((item) => forexApi.createTrade({
-          tradeDate: item.tradeDate,
-          instrument: item.instrument,
-          orderType: item.orderType,
-          openPrice: item.openPrice,
-          lotSize: item.lotSize,
-          commission: item.commission,
-          closePrice: item.closePrice,
-          pnl: item.pnl,
-          overnightFee: item.overnightFee,
-          openTime: item.openTime,
-          closeTime: item.closeTime,
-          holdTime: item.holdTime,
-          remark: item.remark,
-        })),
-        ...updated.map((item) => forexApi.updateTrade(item.id, {
-          tradeDate: item.tradeDate,
-          instrument: item.instrument,
-          orderType: item.orderType,
-          openPrice: item.openPrice,
-          lotSize: item.lotSize,
-          commission: item.commission,
-          closePrice: item.closePrice,
-          pnl: item.pnl,
-          overnightFee: item.overnightFee,
-          openTime: item.openTime,
-          closeTime: item.closeTime,
-          holdTime: item.holdTime,
-          remark: item.remark,
-        })),
-        ...deletedIds.map((id) => forexApi.deleteTrade(id)),
-      ]);
+      const batchSize = 10;
+
+      const executeBatch = async <T>(items: T[], fn: (item: T) => Promise<void>) => {
+        for (let i = 0; i < items.length; i += batchSize) {
+          const batch = items.slice(i, i + batchSize);
+          await Promise.all(batch.map(fn));
+        }
+      };
+
+      await executeBatch(created, (item) => forexApi.createTrade({
+        tradeDate: item.tradeDate,
+        instrument: item.instrument,
+        orderType: item.orderType,
+        openPrice: item.openPrice,
+        lotSize: item.lotSize,
+        commission: item.commission,
+        closePrice: item.closePrice,
+        pnl: item.pnl,
+        overnightFee: item.overnightFee,
+        openTime: item.openTime,
+        closeTime: item.closeTime,
+        holdTime: item.holdTime,
+        remark: item.remark,
+      }));
+
+      await executeBatch(updated, (item) => forexApi.updateTrade(item.id, {
+        tradeDate: item.tradeDate,
+        instrument: item.instrument,
+        orderType: item.orderType,
+        openPrice: item.openPrice,
+        lotSize: item.lotSize,
+        commission: item.commission,
+        closePrice: item.closePrice,
+        pnl: item.pnl,
+        overnightFee: item.overnightFee,
+        openTime: item.openTime,
+        closeTime: item.closeTime,
+        holdTime: item.holdTime,
+        remark: item.remark,
+      }));
+
+      await executeBatch(deletedIds, (id) => forexApi.deleteTrade(id));
+
       await reload();
     } catch (error) {
       showToast(buildApiErrorMessage(error, '交易记录保存失败。'), 'error');
