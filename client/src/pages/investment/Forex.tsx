@@ -290,9 +290,7 @@ export default function ForexPage() {
       {tab === 'trades' ? (
         <ForexTradesSection
           trades={trades}
-          onChangeTrades={(updater) => {
-            void handleTradesChange(updater);
-          }}
+          onChangeTrades={(updater) => handleTradesChange(updater)}
           onImportApplied={handleImportApplied}
           onReload={reload}
           showToast={showToast}

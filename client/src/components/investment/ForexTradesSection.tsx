@@ -29,7 +29,7 @@ import type { ForexImportResult, ForexInstrument, ForexOrderType, ForexTradeDraf
 
 interface ForexTradesSectionProps {
   trades: ForexTradeRecord[];
-  onChangeTrades: (updater: (records: ForexTradeRecord[]) => ForexTradeRecord[]) => void;
+  onChangeTrades: (updater: (records: ForexTradeRecord[]) => ForexTradeRecord[]) => Promise<void> | void;
   onImportApplied?: (records: ForexTradeRecord[]) => void;
   onReload?: () => Promise<ForexTradeRecord[]>;
   showToast: (message: string, type?: 'success' | 'error') => void;
@@ -372,7 +372,7 @@ export function ForexTradesSection({
       setImportResult(result);
 
       if (result.importedCount > 0) {
-        onChangeTrades(() => result.nextTrades);
+        await onChangeTrades(() => result.nextTrades);
         onImportApplied?.(result.nextTrades);
       }
 
