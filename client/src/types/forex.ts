@@ -49,6 +49,8 @@ export interface ForexCapitalFlow {
   flowType: ForexCapitalFlowType;
   amount: number;
   remark: string;
+  /** 是否为体验金（体验金入金不计入净值，体验金出金视为真实出金） */
+  isBonus: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -58,6 +60,7 @@ export interface ForexCapitalFlowDraft {
   flowType: ForexCapitalFlowType;
   amount: number;
   remark?: string;
+  isBonus?: boolean;
 }
 
 export interface ForexCalculatorPositionDraft {

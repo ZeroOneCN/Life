@@ -15,4 +15,8 @@ export class InvestmentForexCapitalFlowEntity extends UserScopedEntity {
 
   @Column({ type: 'text' })
   remark!: string;
+
+  /** 是否为体验金（体验金入金不计入净值，体验金出金视为真实出金） */
+  @Column({ type: 'boolean', default: false })
+  is_bonus!: boolean;
 }

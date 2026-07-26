@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard, StatGrid } from '../page';
-import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
+import { Btn, Checkbox, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
 import {
   FOREX_CAPITAL_PAGE_SIZE,
   FOREX_CAPITAL_TYPE_OPTIONS,
@@ -27,6 +27,7 @@ interface CapitalFormState {
   flowType: ForexCapitalFlowType;
   amount: string;
   remark: string;
+  isBonus: boolean;
 }
 
 function createDefaultFormState(): CapitalFormState {
@@ -35,6 +36,7 @@ function createDefaultFormState(): CapitalFormState {
     flowType: 'deposit',
     amount: '',
     remark: '',
+    isBonus: false,
   };
 }
 
@@ -44,6 +46,7 @@ function buildFormState(record: ForexCapitalFlow): CapitalFormState {
     flowType: record.flowType,
     amount: String(record.amount),
     remark: record.remark,
+    isBonus: Boolean(record.isBonus),
   };
 }
 
@@ -59,6 +62,7 @@ function parseDraft(form: CapitalFormState): ForexCapitalFlowDraft | null {
     flowType: form.flowType,
     amount,
     remark: form.remark.trim(),
+    isBonus: form.isBonus,
   };
 }
 
@@ -102,8 +106,12 @@ export function ForexCapitalSection({
   }, [page, totalPages]);
 
   const summary = useMemo(() => {
+    // 体验金入金不计入累计入金与净入金；体验金出金视为真实出金
     const totalDeposit = filteredFlows
-      .filter((record) => record.flowType === 'deposit')
+      .filter((record) => record.flowType === 'deposit' && !record.isBonus)
+      .reduce((sum, record) => sum + record.amount, 0);
+    const totalBonusDeposit = filteredFlows
+      .filter((record) => record.flowType === 'deposit' && record.isBonus)
       .reduce((sum, record) => sum + record.amount, 0);
     const totalWithdrawal = filteredFlows
       .filter((record) => record.flowType === 'withdrawal')
@@ -112,6 +120,7 @@ export function ForexCapitalSection({
     return {
       count: filteredFlows.length,
       totalDeposit,
+      totalBonusDeposit,
       totalWithdrawal,
       netCapital: totalDeposit - totalWithdrawal,
     };
@@ -123,9 +132,12 @@ export function ForexCapitalSection({
       key: 'flowType',
       title: '类型',
       render: (_value: unknown, row: ForexCapitalFlow) => (
-        <Tag tone={row.flowType === 'deposit' ? 'green' : 'red'}>
-          {getForexCapitalTypeLabel(row.flowType)}
-        </Tag>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <Tag tone={row.flowType === 'deposit' ? 'green' : 'red'}>
+            {getForexCapitalTypeLabel(row.flowType)}
+          </Tag>
+          {row.isBonus && <Tag tone="blue">体验金</Tag>}
+        </div>
       ),
     },
     {
@@ -246,6 +258,15 @@ export function ForexCapitalSection({
             onChange={(event) => setForm((current) => ({ ...current, remark: event.target.value }))}
             placeholder="例如：初始入金"
           />
+          <div className="forex-capital-bonus-cell">
+            <Checkbox
+              checked={form.isBonus}
+              onChange={(checked) => setForm((current) => ({ ...current, isBonus: checked }))}
+            >
+              体验金
+            </Checkbox>
+            <span className="forex-capital-bonus-hint">勾选后该笔入金不计入净值（出金仍视为真实金钱）</span>
+          </div>
           <div className="forex-submit-cell">
             <Btn tone="primary" type="submit">保存出入金记录</Btn>
           </div>
@@ -255,6 +276,7 @@ export function ForexCapitalSection({
           items={[
             { label: '记录数', value: `${summary.count} 条` },
             { label: '累计入金', value: formatForexMoney(summary.totalDeposit), accent: 'var(--color-success)' },
+            { label: '体验金入金', value: formatForexMoney(summary.totalBonusDeposit), accent: '#3b82f6' },
             { label: '累计出金', value: formatForexMoney(summary.totalWithdrawal), accent: 'var(--color-danger)' },
             { label: '净入金', value: formatForexMoney(summary.netCapital), accent: summary.netCapital >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
           ]}
@@ -336,6 +358,15 @@ export function ForexCapitalSection({
               rows={4}
               placeholder="记录这笔出入金的上下文"
             />
+            <div className="forex-capital-bonus-cell">
+              <Checkbox
+                checked={editingForm.isBonus}
+                onChange={(checked) => setEditingForm((current) => ({ ...current, isBonus: checked }))}
+              >
+                体验金
+              </Checkbox>
+              <span className="forex-capital-bonus-hint">勾选后该笔入金不计入净值（出金仍视为真实金钱）</span>
+            </div>
           </div>
         </Modal>
 

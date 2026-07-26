@@ -55,6 +55,7 @@ const capitalFlowSchema = z.object({
   flowType: z.enum(['deposit', 'withdrawal']),
   amount: z.number().min(0).max(1e10),
   remark: z.string().optional().default(''),
+  isBonus: z.boolean().optional().default(false),
 });
 
 const settingsSchema = z.object({
@@ -203,6 +204,7 @@ function mapCapitalFlow(entity: InvestmentForexCapitalFlowEntity) {
     flowType: entity.flow_type,
     amount: Number(entity.amount),
     remark: entity.remark,
+    isBonus: Boolean(entity.is_bonus),
     createdAt: entity.created_at.toISOString(),
     updatedAt: entity.updated_at.toISOString(),
   };
@@ -239,7 +241,8 @@ function buildSummary(
   const totalCommission = scopedTrades.reduce((sum, item) => sum + Number(item.commission), 0);
   const totalOvernightFee = scopedTrades.reduce((sum, item) => sum + Number(item.overnight_fee), 0);
   const realizedNetPnl = grossPnl + totalCommission + totalOvernightFee;
-  const deposits = scopedFlows.filter((item) => item.flow_type === 'deposit').reduce((sum, item) => sum + Number(item.amount), 0);
+  // 体验金入金不计入净值；体验金出金视为真实金钱（出金后体验金失效）
+  const deposits = scopedFlows.filter((item) => item.flow_type === 'deposit' && !item.is_bonus).reduce((sum, item) => sum + Number(item.amount), 0);
   const withdrawals = scopedFlows.filter((item) => item.flow_type === 'withdrawal').reduce((sum, item) => sum + Number(item.amount), 0);
   const netCapital = deposits - withdrawals;
 
@@ -247,7 +250,7 @@ function buildSummary(
   const allCommission = trades.reduce((sum, item) => sum + Number(item.commission), 0);
   const allOvernightFee = trades.reduce((sum, item) => sum + Number(item.overnight_fee), 0);
   const allRealizedNetPnl = allGrossPnl + allCommission + allOvernightFee;
-  const allDeposits = capitalFlows.filter((item) => item.flow_type === 'deposit').reduce((sum, item) => sum + Number(item.amount), 0);
+  const allDeposits = capitalFlows.filter((item) => item.flow_type === 'deposit' && !item.is_bonus).reduce((sum, item) => sum + Number(item.amount), 0);
   const allWithdrawals = capitalFlows.filter((item) => item.flow_type === 'withdrawal').reduce((sum, item) => sum + Number(item.amount), 0);
   const allNetCapital = allDeposits - allWithdrawals;
   const equity = allNetCapital + allRealizedNetPnl;
@@ -410,6 +413,7 @@ export function createForexRouter() {
       flow_type: payload.flowType,
       amount: payload.amount,
       remark: payload.remark,
+      is_bonus: payload.isBonus,
     }));
 
     response.json(successResponse(mapCapitalFlow(item), 'create_forex_capital_flow_success'));
@@ -434,6 +438,7 @@ export function createForexRouter() {
       flow_type: payload.flowType ?? current.flow_type,
       amount: payload.amount ?? current.amount,
       remark: payload.remark ?? current.remark,
+      is_bonus: payload.isBonus ?? current.is_bonus,
     });
 
     response.json(successResponse(mapCapitalFlow(item), 'update_forex_capital_flow_success'));

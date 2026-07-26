@@ -101,7 +101,8 @@ function buildForexSummary(trades: InvestmentForexTradeRecordEntity[], capitalFl
   const totalCommission = validTrades.reduce((sum, item) => sum + Number(item.commission), 0);
   const totalOvernightFee = validTrades.reduce((sum, item) => sum + Number(item.overnight_fee || 0), 0);
   const realizedNetPnl = grossPnl + totalCommission + totalOvernightFee;
-  const deposits = capitalFlows.filter((item) => item.flow_type === 'deposit').reduce((sum, item) => sum + Number(item.amount), 0);
+  // 体验金入金不计入净值；体验金出金视为真实金钱（出金后体验金失效）
+  const deposits = capitalFlows.filter((item) => item.flow_type === 'deposit' && !item.is_bonus).reduce((sum, item) => sum + Number(item.amount), 0);
   const withdrawals = capitalFlows.filter((item) => item.flow_type === 'withdrawal').reduce((sum, item) => sum + Number(item.amount), 0);
   const winners = validTrades.filter((item) => Number(item.pnl) > 0).length;
 
