@@ -33,7 +33,7 @@ export const FOREX_TRADE_PAGE_SIZE = 10;
 export const FOREX_CAPITAL_PAGE_SIZE = 10;
 export const FOREX_INSTRUMENT_OPTIONS: ForexInstrument[] = ['XAUUSD', 'XAGUSD'];
 export const FOREX_ORDER_TYPE_OPTIONS: ForexOrderType[] = ['buy', 'sell'];
-export const FOREX_CAPITAL_TYPE_OPTIONS: ForexCapitalFlowType[] = ['deposit', 'withdrawal', 'bonus_expired'];
+export const FOREX_CAPITAL_TYPE_OPTIONS: ForexCapitalFlowType[] = ['deposit', 'withdrawal', 'bonus_expired', 'bonus_loss'];
 export const FOREX_CONTRACT_UNITS: Record<ForexInstrument, number> = {
   XAUUSD: 100,
   XAGUSD: 5000,
@@ -197,7 +197,8 @@ export function getForexOrderTypeLabel(orderType: ForexOrderType) {
 export function getForexCapitalTypeLabel(flowType: ForexCapitalFlowType) {
   if (flowType === 'deposit') return '入金';
   if (flowType === 'withdrawal') return '出金';
-  return '体验金失效';
+  if (flowType === 'bonus_expired') return '体验金失效';
+  return '体验金亏损';
 }
 
 export function formatForexAmount(value: number) {
@@ -236,6 +237,7 @@ function ensureCapitalType(value: unknown): ForexCapitalFlowType {
   const raw = String(value ?? '').toLowerCase();
   if (raw === 'withdrawal') return 'withdrawal';
   if (raw === 'bonus_expired') return 'bonus_expired';
+  if (raw === 'bonus_loss') return 'bonus_loss';
   return 'deposit';
 }
 
@@ -377,7 +379,6 @@ function normalizeSettings(settings: Partial<ForexPageState['settings']> | undef
     forcedLiquidationRatio: Math.min(1, Math.max(0.1, Number(toNumber(settings?.forcedLiquidationRatio, 0.5).toFixed(2)))),
     dashboardStartDate: startDate,
     dashboardEndDate: endDate,
-    bonusBalance: Math.max(0, toNumber(settings?.bonusBalance, 0)),
   };
 }
 
@@ -637,7 +638,6 @@ export function buildForexDashboardSummary(
   capitalFlows: ForexCapitalFlow[],
   startDate?: string,
   endDate?: string,
-  bonusBalance = 0,
 ): ForexDashboardSummary {
   const scopedTrades = filterTradesByDateRange(trades, startDate, endDate);
   const scopedCapital = filterCapitalByDateRange(capitalFlows, startDate, endDate);
@@ -666,6 +666,17 @@ export function buildForexDashboardSummary(
     .reduce((sum, flow) => sum + flow.amount, 0));
   const allTotalWithdrawal = roundMoney(capitalFlows.filter((flow) => flow.flowType === 'withdrawal').reduce((sum, flow) => sum + flow.amount, 0));
   const allNetCapital = roundMoney(allTotalDeposit - allTotalWithdrawal);
+  // 剩余体验金 = 体验金入金 - 体验金失效 - 体验金亏损（MT5 信用）
+  const allBonusDeposit = roundMoney(capitalFlows
+    .filter((flow) => flow.flowType === 'deposit' && flow.isBonus)
+    .reduce((sum, flow) => sum + flow.amount, 0));
+  const allBonusExpired = roundMoney(capitalFlows
+    .filter((flow) => flow.flowType === 'bonus_expired')
+    .reduce((sum, flow) => sum + flow.amount, 0));
+  const allBonusLoss = roundMoney(capitalFlows
+    .filter((flow) => flow.flowType === 'bonus_loss')
+    .reduce((sum, flow) => sum + flow.amount, 0));
+  const bonusBalance = Math.max(0, allBonusDeposit - allBonusExpired - allBonusLoss);
   // 净值 = 真实净入金 + 净盈亏 + 剩余体验金（MT5 净值 = 结余 + 信用）
   const equity = roundMoney(allNetCapital + allRealizedNetPnl + bonusBalance);
 
@@ -866,10 +877,9 @@ export function buildForexInsights(
   capitalFlows: ForexCapitalFlow[],
   startDate?: string,
   endDate?: string,
-  bonusBalance = 0,
 ): ForexInsight[] {
   const scopedTrades = filterTradesByDateRange(trades, startDate, endDate);
-  const summary = buildForexDashboardSummary(trades, capitalFlows, startDate, endDate, bonusBalance);
+  const summary = buildForexDashboardSummary(trades, capitalFlows, startDate, endDate);
   const insights: ForexInsight[] = [];
 
   if (!scopedTrades.length) {

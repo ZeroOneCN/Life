@@ -52,7 +52,7 @@ const tradeSchema = tradeSchemaBase.transform((data): TradeInput => ({
 
 const capitalFlowSchema = z.object({
   flowDate: z.string().min(1),
-  flowType: z.enum(['deposit', 'withdrawal', 'bonus_expired']),
+  flowType: z.enum(['deposit', 'withdrawal', 'bonus_expired', 'bonus_loss']),
   amount: z.number().min(0).max(1e10),
   remark: z.string().optional().default(''),
   isBonus: z.boolean().optional().default(false),
@@ -233,7 +233,6 @@ function buildSummary(
   capitalFlows: InvestmentForexCapitalFlowEntity[],
   startDate?: string,
   endDate?: string,
-  bonusBalance = 0,
 ) {
   const scopedTrades = filterByRange(trades, startDate, endDate);
   const scopedFlows = filterByRange(capitalFlows, startDate, endDate);
@@ -259,6 +258,17 @@ function buildSummary(
     .reduce((sum, item) => sum + Number(item.amount), 0);
   const allWithdrawals = capitalFlows.filter((item) => item.flow_type === 'withdrawal').reduce((sum, item) => sum + Number(item.amount), 0);
   const allNetCapital = allDeposits - allWithdrawals;
+  // 剩余体验金 = 体验金入金 - 体验金失效 - 体验金亏损（MT5 信用）
+  const allBonusDeposit = capitalFlows
+    .filter((item) => item.flow_type === 'deposit' && item.is_bonus)
+    .reduce((sum, item) => sum + Number(item.amount), 0);
+  const allBonusExpired = capitalFlows
+    .filter((item) => item.flow_type === 'bonus_expired')
+    .reduce((sum, item) => sum + Number(item.amount), 0);
+  const allBonusLoss = capitalFlows
+    .filter((item) => item.flow_type === 'bonus_loss')
+    .reduce((sum, item) => sum + Number(item.amount), 0);
+  const bonusBalance = Math.max(0, allBonusDeposit - allBonusExpired - allBonusLoss);
   // 净值 = 真实净入金 + 净盈亏 + 剩余体验金（MT5 净值 = 结余 + 信用）
   const equity = allNetCapital + allRealizedNetPnl + bonusBalance;
 
@@ -485,7 +495,6 @@ export function createForexRouter() {
       capitalFlows,
       settings.dashboard_start_date ?? undefined,
       settings.dashboard_end_date ?? undefined,
-      Number(settings.bonus_balance ?? 0),
     )));
   }));
 
@@ -548,18 +557,11 @@ export function createForexRouter() {
 
   router.get('/insights', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
-    const settings = await settingService.getOrCreate(userId, {
-      leverage: 100,
-      forced_liquidation_ratio: 0.5,
-      dashboard_start_date: null,
-      dashboard_end_date: null,
-      bonus_balance: 0,
-    });
     const [trades, capitalFlows] = await Promise.all([
       appDataSource.getRepository(InvestmentForexTradeRecordEntity).find({ where: { user_id: userId } }),
       appDataSource.getRepository(InvestmentForexCapitalFlowEntity).find({ where: { user_id: userId } }),
     ]);
-    const summary = buildSummary(trades, capitalFlows, undefined, undefined, Number(settings.bonus_balance ?? 0));
+    const summary = buildSummary(trades, capitalFlows);
     const insights = [];
 
     if (!trades.length) {

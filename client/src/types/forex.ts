@@ -8,9 +8,10 @@ export type ForexOrderType = 'buy' | 'sell';
  * 出入金流水类型
  * - deposit: 入金（含真实入金与体验金入金，体验金入金通过 isBonus=true 标记）
  * - withdrawal: 出金（视为真实金钱转出）
- * - bonus_expired: 体验金失效（仅记录，不计入任何资金流）
+ * - bonus_expired: 体验金失效（体验金额度转为真实余额，计入入金）
+ * - bonus_loss: 体验金亏损（仅扣减剩余体验金，不计入任何资金流）
  */
-export type ForexCapitalFlowType = 'deposit' | 'withdrawal' | 'bonus_expired';
+export type ForexCapitalFlowType = 'deposit' | 'withdrawal' | 'bonus_expired' | 'bonus_loss';
 
 export interface ForexTradeRecord {
   id: string;
@@ -200,6 +201,5 @@ export interface ForexPageState {
     forcedLiquidationRatio: number;
     dashboardStartDate: string;
     dashboardEndDate: string;
-    bonusBalance: number;
   };
 }

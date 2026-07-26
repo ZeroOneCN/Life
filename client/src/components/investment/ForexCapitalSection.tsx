@@ -19,8 +19,6 @@ import type { ForexCapitalFlow, ForexCapitalFlowDraft, ForexCapitalFlowType } fr
 interface ForexCapitalSectionProps {
   capitalFlows: ForexCapitalFlow[];
   onChangeCapitalFlows: (updater: (records: ForexCapitalFlow[]) => ForexCapitalFlow[]) => void;
-  bonusBalance: number;
-  onChangeBonusBalance: (value: number) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
@@ -78,14 +76,13 @@ function shouldShowBonusCheckbox(flowType: ForexCapitalFlowType) {
 function getFlowTypeTone(flowType: ForexCapitalFlowType): 'green' | 'red' | 'orange' {
   if (flowType === 'deposit') return 'green';
   if (flowType === 'withdrawal') return 'red';
+  if (flowType === 'bonus_loss') return 'red';
   return 'orange';
 }
 
 export function ForexCapitalSection({
   capitalFlows,
   onChangeCapitalFlows,
-  bonusBalance,
-  onChangeBonusBalance,
   showToast,
 }: ForexCapitalSectionProps) {
   const [form, setForm] = useState<CapitalFormState>(() => createDefaultFormState());
@@ -125,6 +122,7 @@ export function ForexCapitalSection({
   const summary = useMemo(() => {
     // 体验金入金不计入累计入金与净入金
     // 体验金失效（bonus_expired）在 MT5 中转为真实余额，计入净入金
+    // 体验金亏损（bonus_loss）仅扣减剩余体验金，不计入净入金
     const totalDeposit = filteredFlows
       .filter((record) => record.flowType === 'deposit' && !record.isBonus)
       .reduce((sum, record) => sum + record.amount, 0);
@@ -137,6 +135,10 @@ export function ForexCapitalSection({
     const totalBonusExpired = filteredFlows
       .filter((record) => record.flowType === 'bonus_expired')
       .reduce((sum, record) => sum + record.amount, 0);
+    const totalBonusLoss = filteredFlows
+      .filter((record) => record.flowType === 'bonus_loss')
+      .reduce((sum, record) => sum + record.amount, 0);
+    const remainingBonus = Math.max(0, totalBonusDeposit - totalBonusExpired - totalBonusLoss);
 
     return {
       count: filteredFlows.length,
@@ -144,6 +146,8 @@ export function ForexCapitalSection({
       totalBonusDeposit,
       totalWithdrawal,
       totalBonusExpired,
+      totalBonusLoss,
+      remainingBonus,
       // 净入金 = 真实入金 + 体验金失效 - 出金（与净值计算逻辑一致）
       netCapital: totalDeposit + totalBonusExpired - totalWithdrawal,
     };
@@ -315,30 +319,12 @@ export function ForexCapitalSection({
             { label: '体验金入金', value: formatForexMoney(summary.totalBonusDeposit), accent: '#3b82f6' },
             { label: '累计出金', value: formatForexMoney(summary.totalWithdrawal), accent: 'var(--color-danger)' },
             { label: '体验金失效', value: formatForexMoney(summary.totalBonusExpired), accent: '#f59e0b' },
+            { label: '体验金亏损', value: formatForexMoney(summary.totalBonusLoss), accent: '#ef4444' },
+            { label: '剩余体验金', value: formatForexMoney(summary.remainingBonus), accent: '#8b5cf6' },
             { label: '净入金', value: formatForexMoney(summary.netCapital), accent: summary.netCapital >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
           ]}
           className="forex-capital-stat-grid"
         />
-
-        <div className="forex-capital-bonus-section">
-          <div className="forex-capital-bonus-info">
-            <strong>剩余体验金（信用）</strong>
-            <span style={{ color: 'var(--color-ink-subtle)', fontSize: 'var(--fs-label)' }}>
-              手动填写 MT5 中的信用余额，净值会自动加上这部分
-            </span>
-          </div>
-          <div className="forex-capital-bonus-input">
-            <Field
-              label="体验金余额"
-              value={String(bonusBalance)}
-              onChange={(event) => {
-                const value = Number(event.target.value);
-                onChangeBonusBalance(Number.isFinite(value) && value >= 0 ? value : 0);
-              }}
-              placeholder="0.00"
-            />
-          </div>
-        </div>
 
         <div className="forex-filter-grid">
           <Field

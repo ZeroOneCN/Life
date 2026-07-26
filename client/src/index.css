@@ -7661,29 +7661,7 @@ img {
 }
 
 .forex-capital-stat-grid {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-}
-
-.forex-capital-bonus-section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 20px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-hairline);
-  border-radius: 12px;
-}
-
-.forex-capital-bonus-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.forex-capital-bonus-input {
-  width: 180px;
-  flex-shrink: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .forex-modal-grid-capital .forex-capital-modal-bonus {
