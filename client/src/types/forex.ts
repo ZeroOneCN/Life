@@ -4,7 +4,13 @@ export type ForexInstrument = 'XAUUSD' | 'XAGUSD';
 
 export type ForexOrderType = 'buy' | 'sell';
 
-export type ForexCapitalFlowType = 'deposit' | 'withdrawal';
+/**
+ * 出入金流水类型
+ * - deposit: 入金（含真实入金与体验金入金，体验金入金通过 isBonus=true 标记）
+ * - withdrawal: 出金（视为真实金钱转出）
+ * - bonus_expired: 体验金失效（仅记录，不计入任何资金流）
+ */
+export type ForexCapitalFlowType = 'deposit' | 'withdrawal' | 'bonus_expired';
 
 export interface ForexTradeRecord {
   id: string;

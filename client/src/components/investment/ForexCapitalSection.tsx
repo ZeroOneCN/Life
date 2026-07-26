@@ -62,8 +62,21 @@ function parseDraft(form: CapitalFormState): ForexCapitalFlowDraft | null {
     flowType: form.flowType,
     amount,
     remark: form.remark.trim(),
-    isBonus: form.isBonus,
+    // bonus_expired 类型本身就是体验金相关，无需 isBonus 标记
+    isBonus: form.flowType === 'deposit' ? form.isBonus : false,
   };
+}
+
+/** 判断当前类型是否需要显示体验金复选框（仅入金类型需要） */
+function shouldShowBonusCheckbox(flowType: ForexCapitalFlowType) {
+  return flowType === 'deposit';
+}
+
+/** 获取流水类型的标签色调 */
+function getFlowTypeTone(flowType: ForexCapitalFlowType): 'green' | 'red' | 'orange' {
+  if (flowType === 'deposit') return 'green';
+  if (flowType === 'withdrawal') return 'red';
+  return 'orange';
 }
 
 export function ForexCapitalSection({
@@ -106,7 +119,8 @@ export function ForexCapitalSection({
   }, [page, totalPages]);
 
   const summary = useMemo(() => {
-    // 体验金入金不计入累计入金与净入金；体验金出金视为真实出金
+    // 体验金入金不计入累计入金与净入金
+    // bonus_expired 类型不计入任何资金流，仅作记录
     const totalDeposit = filteredFlows
       .filter((record) => record.flowType === 'deposit' && !record.isBonus)
       .reduce((sum, record) => sum + record.amount, 0);
@@ -116,12 +130,16 @@ export function ForexCapitalSection({
     const totalWithdrawal = filteredFlows
       .filter((record) => record.flowType === 'withdrawal')
       .reduce((sum, record) => sum + record.amount, 0);
+    const totalBonusExpired = filteredFlows
+      .filter((record) => record.flowType === 'bonus_expired')
+      .reduce((sum, record) => sum + record.amount, 0);
 
     return {
       count: filteredFlows.length,
       totalDeposit,
       totalBonusDeposit,
       totalWithdrawal,
+      totalBonusExpired,
       netCapital: totalDeposit - totalWithdrawal,
     };
   }, [filteredFlows]);
@@ -133,21 +151,28 @@ export function ForexCapitalSection({
       title: '类型',
       render: (_value: unknown, row: ForexCapitalFlow) => (
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <Tag tone={row.flowType === 'deposit' ? 'green' : 'red'}>
+          <Tag tone={getFlowTypeTone(row.flowType)}>
             {getForexCapitalTypeLabel(row.flowType)}
           </Tag>
-          {row.isBonus && <Tag tone="blue">体验金</Tag>}
+          {row.flowType === 'deposit' && row.isBonus && <Tag tone="blue">体验金</Tag>}
         </div>
       ),
     },
     {
       key: 'amount',
       title: '金额',
-      render: (_value: unknown, row: ForexCapitalFlow) => (
-        <strong style={{ color: row.flowType === 'deposit' ? 'var(--color-success)' : 'var(--color-danger)' }}>
-          {`${row.flowType === 'deposit' ? '+' : '-'}${formatForexMoney(row.amount)}`}
-        </strong>
-      ),
+      render: (_value: unknown, row: ForexCapitalFlow) => {
+        // bonus_expired 仅记录，金额用中性灰色显示，无 +/- 前缀
+        if (row.flowType === 'bonus_expired') {
+          return <strong style={{ color: 'var(--color-ink-subtle)' }}>{formatForexMoney(row.amount)}</strong>;
+        }
+        const isDeposit = row.flowType === 'deposit';
+        return (
+          <strong style={{ color: isDeposit ? 'var(--color-success)' : 'var(--color-danger)' }}>
+            {`${isDeposit ? '+' : '-'}${formatForexMoney(row.amount)}`}
+          </strong>
+        );
+      },
     },
     {
       key: 'remark',
@@ -227,52 +252,53 @@ export function ForexCapitalSection({
   return (
     <SectionCard
       title="出入金"
-      description="入金和出金会和看板中的净入金、净值和 ROI 联动，不需要再额外维护一套账户统计。"
+      description="入金和出金会和看板中的净入金、净值和 ROI 联动；体验金入金不计入净值，体验金失效仅作记录。"
     >
       <div className="page-stack">
-        <form className="forex-capital-form-row" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
-          <DatePickerField
-            label="日期"
-            value={form.flowDate}
-            onChange={(value) => setForm((current) => ({ ...current, flowDate: value }))}
-            placeholder="选择日期"
-          />
-          <SelectField
-            label="类型"
-            value={form.flowType}
-            onChange={(event) => setForm((current) => ({ ...current, flowType: event.target.value as ForexCapitalFlowType }))}
-          >
-            {FOREX_CAPITAL_TYPE_OPTIONS.map((flowType) => (
-              <option key={flowType} value={flowType}>{getForexCapitalTypeLabel(flowType)}</option>
-            ))}
-          </SelectField>
-          <Field
-            label="金额"
-            value={form.amount}
-            onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))}
-            placeholder="5000"
-          />
-          <Field
-            label="备注"
-            value={form.remark}
-            onChange={(event) => setForm((current) => ({ ...current, remark: event.target.value }))}
-            placeholder="例如：初始入金"
-          />
-          <div className="forex-capital-bonus-cell">
-            <Checkbox
-              checked={form.isBonus}
-              onChange={(checked) => setForm((current) => ({ ...current, isBonus: checked }))}
+        <form className="forex-capital-form" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
+          <div className="forex-capital-form-grid">
+            <DatePickerField
+              label="日期"
+              value={form.flowDate}
+              onChange={(value) => setForm((current) => ({ ...current, flowDate: value }))}
+              placeholder="选择日期"
+            />
+            <SelectField
+              label="类型"
+              value={form.flowType}
+              onChange={(event) => setForm((current) => ({
+                ...current,
+                flowType: event.target.value as ForexCapitalFlowType,
+                // 切换类型时重置体验金标记（仅入金保留）
+                isBonus: event.target.value === 'deposit' ? current.isBonus : false,
+              }))}
             >
-              体验金
-            </Checkbox>
-            <span
-              className="forex-capital-bonus-help"
-              title="体验金入金不计入净值；体验金出金视为真实金钱（出金后体验金即失效）"
-            >
-              ?
-            </span>
+              {FOREX_CAPITAL_TYPE_OPTIONS.map((flowType) => (
+                <option key={flowType} value={flowType}>{getForexCapitalTypeLabel(flowType)}</option>
+              ))}
+            </SelectField>
+            <Field
+              label="金额"
+              value={form.amount}
+              onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))}
+              placeholder="5000"
+            />
+            <Field
+              label="备注"
+              value={form.remark}
+              onChange={(event) => setForm((current) => ({ ...current, remark: event.target.value }))}
+              placeholder="例如：初始入金"
+            />
           </div>
-          <div className="forex-submit-cell">
+          <div className="forex-capital-form-actions">
+            {shouldShowBonusCheckbox(form.flowType) ? (
+              <Checkbox
+                checked={form.isBonus}
+                onChange={(checked) => setForm((current) => ({ ...current, isBonus: checked }))}
+              >
+                体验金
+              </Checkbox>
+            ) : null}
             <Btn tone="primary" type="submit">保存出入金记录</Btn>
           </div>
         </form>
@@ -283,9 +309,10 @@ export function ForexCapitalSection({
             { label: '累计入金', value: formatForexMoney(summary.totalDeposit), accent: 'var(--color-success)' },
             { label: '体验金入金', value: formatForexMoney(summary.totalBonusDeposit), accent: '#3b82f6' },
             { label: '累计出金', value: formatForexMoney(summary.totalWithdrawal), accent: 'var(--color-danger)' },
+            { label: '体验金失效', value: formatForexMoney(summary.totalBonusExpired), accent: '#f59e0b' },
             { label: '净入金', value: formatForexMoney(summary.netCapital), accent: summary.netCapital >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
           ]}
-          className="forex-mini-stat-grid"
+          className="forex-capital-stat-grid"
         />
 
         <div className="forex-filter-grid">
@@ -345,7 +372,11 @@ export function ForexCapitalSection({
             <SelectField
               label="类型"
               value={editingForm.flowType}
-              onChange={(event) => setEditingForm((current) => ({ ...current, flowType: event.target.value as ForexCapitalFlowType }))}
+              onChange={(event) => setEditingForm((current) => ({
+                ...current,
+                flowType: event.target.value as ForexCapitalFlowType,
+                isBonus: event.target.value === 'deposit' ? current.isBonus : false,
+              }))}
             >
               {FOREX_CAPITAL_TYPE_OPTIONS.map((flowType) => (
                 <option key={flowType} value={flowType}>{getForexCapitalTypeLabel(flowType)}</option>
@@ -363,20 +394,16 @@ export function ForexCapitalSection({
               rows={4}
               placeholder="记录这笔出入金的上下文"
             />
-            <div className="forex-capital-bonus-cell">
-              <Checkbox
-                checked={editingForm.isBonus}
-                onChange={(checked) => setEditingForm((current) => ({ ...current, isBonus: checked }))}
-              >
-                体验金
-              </Checkbox>
-              <span
-                className="forex-capital-bonus-help"
-                title="体验金入金不计入净值；体验金出金视为真实金钱（出金后体验金即失效）"
-              >
-                ?
-              </span>
-            </div>
+            {shouldShowBonusCheckbox(editingForm.flowType) ? (
+              <div className="forex-capital-modal-bonus">
+                <Checkbox
+                  checked={editingForm.isBonus}
+                  onChange={(checked) => setEditingForm((current) => ({ ...current, isBonus: checked }))}
+                >
+                  体验金
+                </Checkbox>
+              </div>
+            ) : null}
           </div>
         </Modal>
 

@@ -33,7 +33,7 @@ export const FOREX_TRADE_PAGE_SIZE = 10;
 export const FOREX_CAPITAL_PAGE_SIZE = 10;
 export const FOREX_INSTRUMENT_OPTIONS: ForexInstrument[] = ['XAUUSD', 'XAGUSD'];
 export const FOREX_ORDER_TYPE_OPTIONS: ForexOrderType[] = ['buy', 'sell'];
-export const FOREX_CAPITAL_TYPE_OPTIONS: ForexCapitalFlowType[] = ['deposit', 'withdrawal'];
+export const FOREX_CAPITAL_TYPE_OPTIONS: ForexCapitalFlowType[] = ['deposit', 'withdrawal', 'bonus_expired'];
 export const FOREX_CONTRACT_UNITS: Record<ForexInstrument, number> = {
   XAUUSD: 100,
   XAGUSD: 5000,
@@ -195,7 +195,9 @@ export function getForexOrderTypeLabel(orderType: ForexOrderType) {
 }
 
 export function getForexCapitalTypeLabel(flowType: ForexCapitalFlowType) {
-  return flowType === 'deposit' ? '入金' : '出金';
+  if (flowType === 'deposit') return '入金';
+  if (flowType === 'withdrawal') return '出金';
+  return '体验金失效';
 }
 
 export function formatForexAmount(value: number) {
@@ -231,7 +233,10 @@ function ensureOrderType(value: unknown): ForexOrderType {
 }
 
 function ensureCapitalType(value: unknown): ForexCapitalFlowType {
-  return String(value ?? '').toLowerCase() === 'withdrawal' ? 'withdrawal' : 'deposit';
+  const raw = String(value ?? '').toLowerCase();
+  if (raw === 'withdrawal') return 'withdrawal';
+  if (raw === 'bonus_expired') return 'bonus_expired';
+  return 'deposit';
 }
 
 export function calculateForexCommission(lotSize: number) {

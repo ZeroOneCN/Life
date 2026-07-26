@@ -7605,7 +7605,7 @@ img {
 
 .forex-filter-grid,
 .forex-compact-grid,
-.forex-capital-form-row,
+.forex-capital-form-grid,
 .forex-modal-grid,
 .forex-calculator-shared-grid,
 .forex-position-grid,
@@ -7636,41 +7636,39 @@ img {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
-.forex-capital-form-row {
-  grid-template-columns: 180px 160px 160px minmax(0, 1fr) 110px 180px;
+.forex-capital-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-hairline);
+  border-radius: 12px;
 }
 
-.forex-capital-bonus-cell {
+.forex-capital-form-grid {
+  grid-template-columns: 180px 160px 160px minmax(0, 1fr);
+  align-items: end;
+}
+
+.forex-capital-form-actions {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
-  min-width: 0;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.forex-capital-bonus-help {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--color-surface-3);
-  color: var(--color-ink-subtle);
-  font-size: 11px;
-  font-weight: 600;
-  cursor: help;
-  user-select: none;
-  transition: background 0.15s ease, color 0.15s ease;
+.forex-capital-stat-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
-.forex-capital-bonus-help:hover {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.forex-modal-grid-capital .forex-capital-bonus-cell {
+.forex-modal-grid-capital .forex-capital-modal-bonus {
   grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .forex-calculator-shared-grid {
@@ -8648,7 +8646,7 @@ img {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .forex-capital-form-row {
+  .forex-capital-form-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -11004,7 +11002,7 @@ img {
   .rent-channel-form-grid-modal,
   .forex-filter-grid,
   .forex-compact-grid,
-  .forex-capital-form-row,
+  .forex-capital-form-grid,
   .forex-modal-grid,
   .forex-calculator-shared-grid,
   .forex-position-grid,
@@ -11013,6 +11011,7 @@ img {
   .forex-calculator-result-grid,
   .forex-instrument-summary,
   .forex-mini-stat-grid,
+  .forex-capital-stat-grid,
   .medication-entry-grid,
   .medication-purchase-grid,
   .medication-filter-grid,
@@ -13182,8 +13181,11 @@ select:focus-visible {
   .forex-compact-grid {
     grid-template-columns: 1fr !important;
   }
-  .forex-capital-form-row {
+  .forex-capital-form-grid {
     grid-template-columns: 1fr !important;
+  }
+  .forex-capital-stat-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
   }
   .forex-modal-grid {
     grid-template-columns: 1fr !important;

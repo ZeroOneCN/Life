@@ -52,7 +52,7 @@ const tradeSchema = tradeSchemaBase.transform((data): TradeInput => ({
 
 const capitalFlowSchema = z.object({
   flowDate: z.string().min(1),
-  flowType: z.enum(['deposit', 'withdrawal']),
+  flowType: z.enum(['deposit', 'withdrawal', 'bonus_expired']),
   amount: z.number().min(0).max(1e10),
   remark: z.string().optional().default(''),
   isBonus: z.boolean().optional().default(false),
