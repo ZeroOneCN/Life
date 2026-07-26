@@ -647,7 +647,10 @@ export function buildForexDashboardSummary(
   const totalCommission = roundMoney(scopedTrades.reduce((sum, trade) => sum + trade.commission, 0));
   const totalOvernightFee = roundMoney(scopedTrades.reduce((sum, trade) => sum + trade.overnightFee, 0));
   const realizedNetPnl = roundMoney(grossPnl + totalCommission + totalOvernightFee);
-  const totalDeposit = roundMoney(scopedCapital.filter((flow) => flow.flowType === 'deposit' && !flow.isBonus).reduce((sum, flow) => sum + flow.amount, 0));
+  // 体验金入金不计入净值；体验金失效（bonus_expired）在 MT5 中转为真实余额，计入入金
+  const totalDeposit = roundMoney(scopedCapital
+    .filter((flow) => (flow.flowType === 'deposit' && !flow.isBonus) || flow.flowType === 'bonus_expired')
+    .reduce((sum, flow) => sum + flow.amount, 0));
   const totalWithdrawal = roundMoney(scopedCapital.filter((flow) => flow.flowType === 'withdrawal').reduce((sum, flow) => sum + flow.amount, 0));
   const netCapital = roundMoney(totalDeposit - totalWithdrawal);
 
@@ -655,8 +658,10 @@ export function buildForexDashboardSummary(
   const allCommission = roundMoney(trades.reduce((sum, trade) => sum + trade.commission, 0));
   const allOvernightFee = roundMoney(trades.reduce((sum, trade) => sum + trade.overnightFee, 0));
   const allRealizedNetPnl = roundMoney(allGrossPnl + allCommission + allOvernightFee);
-  // 体验金入金不计入净值；体验金出金视为真实金钱（出金后体验金失效）
-  const allTotalDeposit = roundMoney(capitalFlows.filter((flow) => flow.flowType === 'deposit' && !flow.isBonus).reduce((sum, flow) => sum + flow.amount, 0));
+  // 体验金入金不计入净值；体验金失效（bonus_expired）在 MT5 中转为真实余额，计入入金
+  const allTotalDeposit = roundMoney(capitalFlows
+    .filter((flow) => (flow.flowType === 'deposit' && !flow.isBonus) || flow.flowType === 'bonus_expired')
+    .reduce((sum, flow) => sum + flow.amount, 0));
   const allTotalWithdrawal = roundMoney(capitalFlows.filter((flow) => flow.flowType === 'withdrawal').reduce((sum, flow) => sum + flow.amount, 0));
   const allNetCapital = roundMoney(allTotalDeposit - allTotalWithdrawal);
   const equity = roundMoney(allNetCapital + allRealizedNetPnl);

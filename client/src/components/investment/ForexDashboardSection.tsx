@@ -381,8 +381,9 @@ function PnlCalendar({
 
     const monthStart = viewMonth.startOf('month').format('YYYY-MM-DD');
     const monthEnd = viewMonth.endOf('month').format('YYYY-MM-DD');
+    // 体验金入金不计入；体验金失效（bonus_expired）在 MT5 中转为真实余额，计入入金
     const monthDeposit = capitalFlows
-      .filter((flow) => flow.flowType === 'deposit')
+      .filter((flow) => (flow.flowType === 'deposit' && !flow.isBonus) || flow.flowType === 'bonus_expired')
       .filter((flow) => flow.flowDate >= monthStart && flow.flowDate <= monthEnd)
       .reduce((sum, flow) => sum + flow.amount, 0);
 

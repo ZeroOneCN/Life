@@ -241,8 +241,10 @@ function buildSummary(
   const totalCommission = scopedTrades.reduce((sum, item) => sum + Number(item.commission), 0);
   const totalOvernightFee = scopedTrades.reduce((sum, item) => sum + Number(item.overnight_fee), 0);
   const realizedNetPnl = grossPnl + totalCommission + totalOvernightFee;
-  // 体验金入金不计入净值；体验金出金视为真实金钱（出金后体验金失效）
-  const deposits = scopedFlows.filter((item) => item.flow_type === 'deposit' && !item.is_bonus).reduce((sum, item) => sum + Number(item.amount), 0);
+  // 体验金入金不计入净值；体验金失效（bonus_expired）在 MT5 中转为真实余额，计入入金
+  const deposits = scopedFlows
+    .filter((item) => (item.flow_type === 'deposit' && !item.is_bonus) || item.flow_type === 'bonus_expired')
+    .reduce((sum, item) => sum + Number(item.amount), 0);
   const withdrawals = scopedFlows.filter((item) => item.flow_type === 'withdrawal').reduce((sum, item) => sum + Number(item.amount), 0);
   const netCapital = deposits - withdrawals;
 
@@ -250,7 +252,9 @@ function buildSummary(
   const allCommission = trades.reduce((sum, item) => sum + Number(item.commission), 0);
   const allOvernightFee = trades.reduce((sum, item) => sum + Number(item.overnight_fee), 0);
   const allRealizedNetPnl = allGrossPnl + allCommission + allOvernightFee;
-  const allDeposits = capitalFlows.filter((item) => item.flow_type === 'deposit' && !item.is_bonus).reduce((sum, item) => sum + Number(item.amount), 0);
+  const allDeposits = capitalFlows
+    .filter((item) => (item.flow_type === 'deposit' && !item.is_bonus) || item.flow_type === 'bonus_expired')
+    .reduce((sum, item) => sum + Number(item.amount), 0);
   const allWithdrawals = capitalFlows.filter((item) => item.flow_type === 'withdrawal').reduce((sum, item) => sum + Number(item.amount), 0);
   const allNetCapital = allDeposits - allWithdrawals;
   const equity = allNetCapital + allRealizedNetPnl;

@@ -11,6 +11,7 @@ server/dist/
 client/dist/
 build/
 scripts/
+docs/
 
 # Environment files
 .env

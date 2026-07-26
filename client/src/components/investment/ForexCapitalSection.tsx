@@ -120,7 +120,7 @@ export function ForexCapitalSection({
 
   const summary = useMemo(() => {
     // 体验金入金不计入累计入金与净入金
-    // bonus_expired 类型不计入任何资金流，仅作记录
+    // 体验金失效（bonus_expired）在 MT5 中转为真实余额，计入净入金
     const totalDeposit = filteredFlows
       .filter((record) => record.flowType === 'deposit' && !record.isBonus)
       .reduce((sum, record) => sum + record.amount, 0);
@@ -140,7 +140,8 @@ export function ForexCapitalSection({
       totalBonusDeposit,
       totalWithdrawal,
       totalBonusExpired,
-      netCapital: totalDeposit - totalWithdrawal,
+      // 净入金 = 真实入金 + 体验金失效 - 出金（与净值计算逻辑一致）
+      netCapital: totalDeposit + totalBonusExpired - totalWithdrawal,
     };
   }, [filteredFlows]);
 
