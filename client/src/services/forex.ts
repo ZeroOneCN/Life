@@ -377,6 +377,7 @@ function normalizeSettings(settings: Partial<ForexPageState['settings']> | undef
     forcedLiquidationRatio: Math.min(1, Math.max(0.1, Number(toNumber(settings?.forcedLiquidationRatio, 0.5).toFixed(2)))),
     dashboardStartDate: startDate,
     dashboardEndDate: endDate,
+    bonusBalance: Math.max(0, toNumber(settings?.bonusBalance, 0)),
   };
 }
 
@@ -636,6 +637,7 @@ export function buildForexDashboardSummary(
   capitalFlows: ForexCapitalFlow[],
   startDate?: string,
   endDate?: string,
+  bonusBalance = 0,
 ): ForexDashboardSummary {
   const scopedTrades = filterTradesByDateRange(trades, startDate, endDate);
   const scopedCapital = filterCapitalByDateRange(capitalFlows, startDate, endDate);
@@ -664,7 +666,8 @@ export function buildForexDashboardSummary(
     .reduce((sum, flow) => sum + flow.amount, 0));
   const allTotalWithdrawal = roundMoney(capitalFlows.filter((flow) => flow.flowType === 'withdrawal').reduce((sum, flow) => sum + flow.amount, 0));
   const allNetCapital = roundMoney(allTotalDeposit - allTotalWithdrawal);
-  const equity = roundMoney(allNetCapital + allRealizedNetPnl);
+  // 净值 = 真实净入金 + 净盈亏 + 剩余体验金（MT5 净值 = 结余 + 信用）
+  const equity = roundMoney(allNetCapital + allRealizedNetPnl + bonusBalance);
 
   return {
     tradeCount: scopedTrades.length,
@@ -863,9 +866,10 @@ export function buildForexInsights(
   capitalFlows: ForexCapitalFlow[],
   startDate?: string,
   endDate?: string,
+  bonusBalance = 0,
 ): ForexInsight[] {
   const scopedTrades = filterTradesByDateRange(trades, startDate, endDate);
-  const summary = buildForexDashboardSummary(trades, capitalFlows, startDate, endDate);
+  const summary = buildForexDashboardSummary(trades, capitalFlows, startDate, endDate, bonusBalance);
   const insights: ForexInsight[] = [];
 
   if (!scopedTrades.length) {

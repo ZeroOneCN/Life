@@ -200,5 +200,6 @@ export interface ForexPageState {
     forcedLiquidationRatio: number;
     dashboardStartDate: string;
     dashboardEndDate: string;
+    bonusBalance: number;
   };
 }

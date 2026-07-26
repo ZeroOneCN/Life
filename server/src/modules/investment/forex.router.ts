@@ -63,6 +63,7 @@ const settingsSchema = z.object({
   forcedLiquidationRatio: z.number().min(0.1).max(1).optional(),
   dashboardStartDate: z.string().optional(),
   dashboardEndDate: z.string().optional(),
+  bonusBalance: z.number().min(0).max(1e10).optional(),
 });
 
 const calculatorSchema = z.object({
@@ -232,6 +233,7 @@ function buildSummary(
   capitalFlows: InvestmentForexCapitalFlowEntity[],
   startDate?: string,
   endDate?: string,
+  bonusBalance = 0,
 ) {
   const scopedTrades = filterByRange(trades, startDate, endDate);
   const scopedFlows = filterByRange(capitalFlows, startDate, endDate);
@@ -257,7 +259,8 @@ function buildSummary(
     .reduce((sum, item) => sum + Number(item.amount), 0);
   const allWithdrawals = capitalFlows.filter((item) => item.flow_type === 'withdrawal').reduce((sum, item) => sum + Number(item.amount), 0);
   const allNetCapital = allDeposits - allWithdrawals;
-  const equity = allNetCapital + allRealizedNetPnl;
+  // 净值 = 真实净入金 + 净盈亏 + 剩余体验金（MT5 净值 = 结余 + 信用）
+  const equity = allNetCapital + allRealizedNetPnl + bonusBalance;
 
   return {
     tradeCount: scopedTrades.length,
@@ -482,6 +485,7 @@ export function createForexRouter() {
       capitalFlows,
       settings.dashboard_start_date ?? undefined,
       settings.dashboard_end_date ?? undefined,
+      Number(settings.bonus_balance ?? 0),
     )));
   }));
 
@@ -544,11 +548,18 @@ export function createForexRouter() {
 
   router.get('/insights', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
+    const settings = await settingService.getOrCreate(userId, {
+      leverage: 100,
+      forced_liquidation_ratio: 0.5,
+      dashboard_start_date: null,
+      dashboard_end_date: null,
+      bonus_balance: 0,
+    });
     const [trades, capitalFlows] = await Promise.all([
       appDataSource.getRepository(InvestmentForexTradeRecordEntity).find({ where: { user_id: userId } }),
       appDataSource.getRepository(InvestmentForexCapitalFlowEntity).find({ where: { user_id: userId } }),
     ]);
-    const summary = buildSummary(trades, capitalFlows);
+    const summary = buildSummary(trades, capitalFlows, undefined, undefined, Number(settings.bonus_balance ?? 0));
     const insights = [];
 
     if (!trades.length) {
@@ -609,6 +620,7 @@ export function createForexRouter() {
       forced_liquidation_ratio: 0.5,
       dashboard_start_date: null,
       dashboard_end_date: null,
+      bonus_balance: 0,
     });
 
     response.json(successResponse({
@@ -616,6 +628,7 @@ export function createForexRouter() {
       forcedLiquidationRatio: Number(settings.forced_liquidation_ratio),
       dashboardStartDate: settings.dashboard_start_date ? dayjs(settings.dashboard_start_date).format('YYYY-MM-DD') : '',
       dashboardEndDate: settings.dashboard_end_date ? dayjs(settings.dashboard_end_date).format('YYYY-MM-DD') : '',
+      bonusBalance: Number(settings.bonus_balance ?? 0),
     }));
   }));
 
@@ -627,11 +640,13 @@ export function createForexRouter() {
       forced_liquidation_ratio: payload.forcedLiquidationRatio,
       dashboard_start_date: payload.dashboardStartDate ? normalizeDate(payload.dashboardStartDate) : undefined,
       dashboard_end_date: payload.dashboardEndDate ? normalizeDate(payload.dashboardEndDate) : undefined,
+      bonus_balance: payload.bonusBalance,
     }, {
       leverage: 100,
       forced_liquidation_ratio: 0.5,
       dashboard_start_date: null,
       dashboard_end_date: null,
+      bonus_balance: 0,
     });
 
     response.json(successResponse({
@@ -639,6 +654,7 @@ export function createForexRouter() {
       forcedLiquidationRatio: Number(settings.forced_liquidation_ratio),
       dashboardStartDate: settings.dashboard_start_date ? dayjs(settings.dashboard_start_date).format('YYYY-MM-DD') : '',
       dashboardEndDate: settings.dashboard_end_date ? dayjs(settings.dashboard_end_date).format('YYYY-MM-DD') : '',
+      bonusBalance: Number(settings.bonus_balance ?? 0),
     }, 'update_forex_settings_success'));
   }));
 

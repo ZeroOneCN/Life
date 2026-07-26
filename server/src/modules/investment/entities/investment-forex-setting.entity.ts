@@ -15,4 +15,7 @@ export class InvestmentForexSettingEntity extends UserSettingEntity {
 
   @Column({ type: 'date', nullable: true })
   dashboard_end_date!: string | null;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  bonus_balance!: number;
 }

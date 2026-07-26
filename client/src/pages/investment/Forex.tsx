@@ -49,6 +49,7 @@ const EMPTY_SETTINGS: ForexPageState['settings'] = {
   forcedLiquidationRatio: 0.5,
   dashboardStartDate: '',
   dashboardEndDate: '',
+  bonusBalance: 0,
 };
 
 function findCreated<T extends { id: string }>(previous: T[], next: T[]) {
@@ -141,8 +142,8 @@ export default function ForexPage() {
   );
 
   const frontendSummary = useMemo(
-    () => buildForexDashboardSummary(trades, capitalFlows, effectiveDashboardRange.startDate, effectiveDashboardRange.endDate),
-    [capitalFlows, effectiveDashboardRange.endDate, effectiveDashboardRange.startDate, trades],
+    () => buildForexDashboardSummary(trades, capitalFlows, effectiveDashboardRange.startDate, effectiveDashboardRange.endDate, settings.bonusBalance),
+    [capitalFlows, effectiveDashboardRange.endDate, effectiveDashboardRange.startDate, settings.bonusBalance, trades],
   );
 
   useEffect(() => {
@@ -320,6 +321,10 @@ export default function ForexPage() {
           capitalFlows={capitalFlows}
           onChangeCapitalFlows={(updater) => {
             void handleCapitalFlowsChange(updater);
+          }}
+          bonusBalance={settings.bonusBalance}
+          onChangeBonusBalance={(value) => {
+            void updateSettings({ bonusBalance: value });
           }}
           showToast={showToast}
         />

@@ -19,6 +19,8 @@ import type { ForexCapitalFlow, ForexCapitalFlowDraft, ForexCapitalFlowType } fr
 interface ForexCapitalSectionProps {
   capitalFlows: ForexCapitalFlow[];
   onChangeCapitalFlows: (updater: (records: ForexCapitalFlow[]) => ForexCapitalFlow[]) => void;
+  bonusBalance: number;
+  onChangeBonusBalance: (value: number) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
@@ -82,6 +84,8 @@ function getFlowTypeTone(flowType: ForexCapitalFlowType): 'green' | 'red' | 'ora
 export function ForexCapitalSection({
   capitalFlows,
   onChangeCapitalFlows,
+  bonusBalance,
+  onChangeBonusBalance,
   showToast,
 }: ForexCapitalSectionProps) {
   const [form, setForm] = useState<CapitalFormState>(() => createDefaultFormState());
@@ -315,6 +319,26 @@ export function ForexCapitalSection({
           ]}
           className="forex-capital-stat-grid"
         />
+
+        <div className="forex-capital-bonus-section">
+          <div className="forex-capital-bonus-info">
+            <strong>剩余体验金（信用）</strong>
+            <span style={{ color: 'var(--color-ink-subtle)', fontSize: 'var(--fs-label)' }}>
+              手动填写 MT5 中的信用余额，净值会自动加上这部分
+            </span>
+          </div>
+          <div className="forex-capital-bonus-input">
+            <Field
+              label="体验金余额"
+              value={String(bonusBalance)}
+              onChange={(event) => {
+                const value = Number(event.target.value);
+                onChangeBonusBalance(Number.isFinite(value) && value >= 0 ? value : 0);
+              }}
+              placeholder="0.00"
+            />
+          </div>
+        </div>
 
         <div className="forex-filter-grid">
           <Field
