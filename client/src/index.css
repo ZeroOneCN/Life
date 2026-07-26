@@ -7637,28 +7637,40 @@ img {
 }
 
 .forex-capital-form-row {
-  grid-template-columns: 180px 160px 160px minmax(0, 1fr) 140px 180px;
+  grid-template-columns: 180px 160px 160px minmax(0, 1fr) 110px 180px;
 }
 
 .forex-capital-bonus-cell {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
 }
 
-.forex-capital-bonus-hint {
-  font-size: var(--fs-meta);
+.forex-capital-bonus-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-surface-3);
   color: var(--color-ink-subtle);
-  line-height: 1.4;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: help;
+  user-select: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.forex-capital-bonus-help:hover {
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .forex-modal-grid-capital .forex-capital-bonus-cell {
   grid-column: 1 / -1;
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
 }
 
 .forex-calculator-shared-grid {

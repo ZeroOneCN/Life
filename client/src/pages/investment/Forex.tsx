@@ -237,12 +237,14 @@ export default function ForexPage() {
           flowType: item.flowType,
           amount: item.amount,
           remark: item.remark,
+          isBonus: item.isBonus,
         })),
         ...updated.map((item) => forexApi.updateCapitalFlow(item.id, {
           flowDate: item.flowDate,
           flowType: item.flowType,
           amount: item.amount,
           remark: item.remark,
+          isBonus: item.isBonus,
         })),
         ...deletedIds.map((id) => forexApi.deleteCapitalFlow(id)),
       ]);

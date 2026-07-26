@@ -265,7 +265,12 @@ export function ForexCapitalSection({
             >
               体验金
             </Checkbox>
-            <span className="forex-capital-bonus-hint">勾选后该笔入金不计入净值（出金仍视为真实金钱）</span>
+            <span
+              className="forex-capital-bonus-help"
+              title="体验金入金不计入净值；体验金出金视为真实金钱（出金后体验金即失效）"
+            >
+              ?
+            </span>
           </div>
           <div className="forex-submit-cell">
             <Btn tone="primary" type="submit">保存出入金记录</Btn>
@@ -365,7 +370,12 @@ export function ForexCapitalSection({
               >
                 体验金
               </Checkbox>
-              <span className="forex-capital-bonus-hint">勾选后该笔入金不计入净值（出金仍视为真实金钱）</span>
+              <span
+                className="forex-capital-bonus-help"
+                title="体验金入金不计入净值；体验金出金视为真实金钱（出金后体验金即失效）"
+              >
+                ?
+              </span>
             </div>
           </div>
         </Modal>
