@@ -9,6 +9,8 @@ import {
   FOREX_CAPITAL_TYPE_OPTIONS,
   createForexCapitalFlow,
   deleteForexCapitalFlow,
+  downloadBlob,
+  exportForexCapitalFlowsWorkbook,
   filterForexCapitalFlows,
   formatForexMoney,
   getForexCapitalTypeLabel,
@@ -93,6 +95,7 @@ export function ForexCapitalSection({
   const [flowDateFilter, setFlowDateFilter] = useState('');
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
+  const [isExporting, setIsExporting] = useState(false);
 
   const filteredFlows = useMemo(
     () => filterForexCapitalFlows(capitalFlows, {
@@ -258,6 +261,25 @@ export function ForexCapitalSection({
     showToast('出入金记录已更新。');
   };
 
+  const handleExport = async () => {
+    if (filteredFlows.length === 0) {
+      showToast('当前筛选结果为空，无可导出数据。', 'error');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const blob = await exportForexCapitalFlowsWorkbook(filteredFlows);
+      const dateStamp = dayjs().format('YYYYMMDD-HHmm');
+      downloadBlob(blob, `forex-capital-${dateStamp}.xlsx`);
+      showToast(`已导出 ${filteredFlows.length} 条出入金记录。`);
+    } catch (_error) {
+      showToast('导出失败，请稍后重试。', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <SectionCard
       title="出入金"
@@ -350,6 +372,12 @@ export function ForexCapitalSection({
             placeholder="选择日期"
             clearable
           />
+        </div>
+
+        <div className="forex-capital-export-bar">
+          <Btn tone="secondary" onClick={handleExport} disabled={isExporting || filteredFlows.length === 0}>
+            {isExporting ? '导出中...' : '导出 Excel'}
+          </Btn>
         </div>
 
         {pageRecords.length ? (

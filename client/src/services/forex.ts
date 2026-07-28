@@ -2052,6 +2052,33 @@ export async function exportForexTradesWorkbook(records: ForexTradeRecord[]) {
   });
 }
 
+export async function exportForexCapitalFlowsWorkbook(records: ForexCapitalFlow[]) {
+  const XLSX = await import('xlsx');
+  const sorted = [...records].sort((left, right) => {
+    const leftMoment = isValidTradeDate(left.flowDate) ? dayjs(left.flowDate) : dayjs('2000-01-01');
+    const rightMoment = isValidTradeDate(right.flowDate) ? dayjs(right.flowDate) : dayjs('2000-01-01');
+    return leftMoment.valueOf() - rightMoment.valueOf();
+  });
+
+  const rows = sorted.map((record) => ({
+    ID: record.id,
+    日期: record.flowDate,
+    类型: getForexCapitalTypeLabel(record.flowType),
+    金额: record.amount,
+    体验金: record.isBonus ? '是' : '否',
+    备注: record.remark,
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'capital_flows');
+  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
+  return new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+}
+
 export function downloadBlob(blob: Blob, fileName: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

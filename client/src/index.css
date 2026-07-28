@@ -7664,6 +7664,12 @@ img {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.forex-capital-export-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .forex-modal-grid-capital .forex-capital-modal-bonus {
   grid-column: 1 / -1;
   display: flex;
