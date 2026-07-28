@@ -142,11 +142,8 @@ function EquityTooltip({
   );
 }
 
-/** 收益曲线图表：0 基线对称布局，stroke 按 Y 坐标分段着色（0以上绿色，0以下红色） */
+/** 收益曲线图表：0 基线对称布局，stroke / fill 均在 0 基线处分段着色（0 以上绿色，0 以下红色） */
 function EquityCurveChart({ data }: { data: ForexEquityPoint[] }) {
-  const lastEquity = data.length > 0 ? data[data.length - 1].equity : 0;
-  const fillGradId = lastEquity >= 0 ? 'forexEquityGradUp' : 'forexEquityGradDown';
-
   const maxAbs = data.length > 0
     ? Math.max(...data.map((d) => Math.abs(d.equity)), 1)
     : 1;
@@ -161,21 +158,30 @@ function EquityCurveChart({ data }: { data: ForexEquityPoint[] }) {
     });
   }, [maxAbs]);
 
+  /** Chart 总高度 300，margin top 12，bottom 4；0 基线在绘图区正中 */
+  const CHART_HEIGHT = 300;
+  const MARGIN_TOP = 12;
+  const MARGIN_BOTTOM = 4;
+  const zeroPx = MARGIN_TOP + (CHART_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM) / 2;
+  const zeroPct = `${(zeroPx / CHART_HEIGHT * 100).toFixed(2)}%`;
+
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <AreaChart data={data} margin={{ top: 12, right: 20, bottom: 4, left: 4 }}>
+    <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+      <AreaChart data={data} margin={{ top: MARGIN_TOP, right: 20, bottom: MARGIN_BOTTOM, left: 4 }}>
         <defs>
-          <linearGradient id="forexEquityGradUp" x1="0" y1="0" x2="0" y2="1">
+          {/* stroke：0 以上绿色，0 以下红色 */}
+          <linearGradient id="splitStroke" x1="0" y1="0" x2="0" y2={CHART_HEIGHT} gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor={CHART_PNL.up} />
+            <stop offset={zeroPct} stopColor={CHART_PNL.up} />
+            <stop offset={zeroPct} stopColor={CHART_PNL.down} />
+            <stop offset="100%" stopColor={CHART_PNL.down} />
+          </linearGradient>
+          {/* fill：0 以上绿色（35% 透明），0 以下红色（35% 透明） */}
+          <linearGradient id="splitFill" x1="0" y1="0" x2="0" y2={CHART_HEIGHT} gradientUnits="userSpaceOnUse">
             <stop offset="0%" stopColor={CHART_PNL.up} stopOpacity={0.35} />
-            <stop offset="100%" stopColor={CHART_PNL.up} stopOpacity={0} />
-          </linearGradient>
-          <linearGradient id="forexEquityGradDown" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={CHART_PNL.down} stopOpacity={0.35} />
-            <stop offset="100%" stopColor={CHART_PNL.down} stopOpacity={0} />
-          </linearGradient>
-          <linearGradient id="splitStroke" x1="0" y1="0" x2="0" y2="300" gradientUnits="userSpaceOnUse">
-            <stop offset="51.33%" stopColor={CHART_PNL.up} />
-            <stop offset="51.33%" stopColor={CHART_PNL.down} />
+            <stop offset={zeroPct} stopColor={CHART_PNL.up} stopOpacity={0.35} />
+            <stop offset={zeroPct} stopColor={CHART_PNL.down} stopOpacity={0.35} />
+            <stop offset="100%" stopColor={CHART_PNL.down} stopOpacity={0.35} />
           </linearGradient>
         </defs>
         <XAxis
@@ -206,7 +212,7 @@ function EquityCurveChart({ data }: { data: ForexEquityPoint[] }) {
           dataKey="equity"
           stroke="url(#splitStroke)"
           strokeWidth={2.5}
-          fill={`url(#${fillGradId})`}
+          fill="url(#splitFill)"
           baseValue={0}
           dot={false}
           isAnimationActive
