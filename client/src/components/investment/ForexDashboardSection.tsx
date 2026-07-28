@@ -47,7 +47,11 @@ function loadAiCache(): AICache | null {
     if (!raw) return null;
     const data = JSON.parse(raw) as AICache;
     if (data.timestamp && Date.now() - data.timestamp > 86400000) {
-      localStorage.removeItem(AI_STORAGE_KEY);
+      try {
+        localStorage.removeItem(AI_STORAGE_KEY);
+      } catch {
+        // 静默失败
+      }
       return null;
     }
     return data;
@@ -142,7 +146,7 @@ function EquityTooltip({
   );
 }
 
-/** 收益曲线图表：0 基线对称布局，stroke / fill 均在 0 基线处分段着色（0 以上绿色，0 以下红色） */
+/** 收益曲线图表：0 基线对称布局，使用两个 Area 叠加实现正区域绿色、负区域红色 */
 function EquityCurveChart({ data }: { data: ForexEquityPoint[] }) {
   const maxAbs = data.length > 0
     ? Math.max(...data.map((d) => Math.abs(d.equity)), 1)
@@ -158,29 +162,27 @@ function EquityCurveChart({ data }: { data: ForexEquityPoint[] }) {
     });
   }, [maxAbs]);
 
-  /** Chart 总高度 300，margin top 12，bottom 4；0 基线在绘图区正中 */
-  const CHART_HEIGHT = 300;
-  const MARGIN_TOP = 12;
-  const MARGIN_BOTTOM = 4;
-  const zeroPx = MARGIN_TOP + (CHART_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM) / 2;
-  const zeroPct = `${(zeroPx / CHART_HEIGHT * 100).toFixed(2)}%`;
+  /** 分离数据为正负两组：正区域（绿色）和负区域（红色） */
+  const chartData = useMemo(() => {
+    return data.map((d) => ({
+      date: d.date,
+      equity: d.equity,
+      dailyPnl: d.dailyPnl,
+      positiveEquity: d.equity > 0 ? d.equity : 0,
+      negativeEquity: d.equity < 0 ? d.equity : 0,
+    }));
+  }, [data]);
 
   return (
-    <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-      <AreaChart data={data} margin={{ top: MARGIN_TOP, right: 20, bottom: MARGIN_BOTTOM, left: 4 }}>
+    <ResponsiveContainer width="100%" height={300}>
+      <AreaChart data={chartData} margin={{ top: 12, right: 20, bottom: 4, left: 4 }}>
         <defs>
-          {/* stroke：0 以上绿色，0 以下红色 */}
-          <linearGradient id="splitStroke" x1="0" y1="0" x2="0" y2={CHART_HEIGHT} gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor={CHART_PNL.up} />
-            <stop offset={zeroPct} stopColor={CHART_PNL.up} />
-            <stop offset={zeroPct} stopColor={CHART_PNL.down} />
-            <stop offset="100%" stopColor={CHART_PNL.down} />
-          </linearGradient>
-          {/* fill：0 以上绿色（35% 透明），0 以下红色（35% 透明） */}
-          <linearGradient id="splitFill" x1="0" y1="0" x2="0" y2={CHART_HEIGHT} gradientUnits="userSpaceOnUse">
+          <linearGradient id="forexEquityGradUp" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={CHART_PNL.up} stopOpacity={0.35} />
-            <stop offset={zeroPct} stopColor={CHART_PNL.up} stopOpacity={0.35} />
-            <stop offset={zeroPct} stopColor={CHART_PNL.down} stopOpacity={0.35} />
+            <stop offset="100%" stopColor={CHART_PNL.up} stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="forexEquityGradDown" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={CHART_PNL.down} stopOpacity={0} />
             <stop offset="100%" stopColor={CHART_PNL.down} stopOpacity={0.35} />
           </linearGradient>
         </defs>
@@ -207,12 +209,26 @@ function EquityCurveChart({ data }: { data: ForexEquityPoint[] }) {
         />
         <ReferenceLine y={0} stroke="var(--color-hairline-strong)" strokeWidth={1.5} />
         <Tooltip content={<EquityTooltip />} />
+        {/* 正区域：0 以上绿色 */}
         <Area
           type="monotone"
-          dataKey="equity"
-          stroke="url(#splitStroke)"
+          dataKey="positiveEquity"
+          stroke={CHART_PNL.up}
           strokeWidth={2.5}
-          fill="url(#splitFill)"
+          fill="url(#forexEquityGradUp)"
+          baseValue={0}
+          dot={false}
+          isAnimationActive
+          animationDuration={800}
+          animationEasing="ease-in-out"
+        />
+        {/* 负区域：0 以下红色 */}
+        <Area
+          type="monotone"
+          dataKey="negativeEquity"
+          stroke={CHART_PNL.down}
+          strokeWidth={2.5}
+          fill="url(#forexEquityGradDown)"
           baseValue={0}
           dot={false}
           isAnimationActive
@@ -571,12 +587,16 @@ export function ForexDashboardSection({
         { start_date: aiStartDate, end_date: aiEndDate },
       );
       setAiResult(result);
-      localStorage.setItem(AI_STORAGE_KEY, JSON.stringify({
-        startDate: aiStartDate,
-        endDate: aiEndDate,
-        result,
-        timestamp: Date.now(),
-      }));
+      try {
+        localStorage.setItem(AI_STORAGE_KEY, JSON.stringify({
+          startDate: aiStartDate,
+          endDate: aiEndDate,
+          result,
+          timestamp: Date.now(),
+        }));
+      } catch {
+        // localStorage 不可访问时静默失败
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '网络请求失败';
       setAiError(msg);

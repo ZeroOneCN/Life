@@ -61,8 +61,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const theme = isDark ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.style.colorScheme = theme;
-    window.localStorage.setItem(THEME_KEY, theme);
-    window.localStorage.setItem(THEME_MODE_KEY, mode);
+    try {
+      window.localStorage.setItem(THEME_KEY, theme);
+      window.localStorage.setItem(THEME_MODE_KEY, mode);
+    } catch {
+      // localStorage 不可访问时静默失败
+    }
   }, [isDark, mode]);
 
   useEffect(() => {

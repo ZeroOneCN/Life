@@ -48,12 +48,16 @@ function persistSession(session: AuthSession | null) {
     return;
   }
 
-  if (!session) {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
-    return;
-  }
+  try {
+    if (!session) {
+      window.localStorage.removeItem(AUTH_STORAGE_KEY);
+      return;
+    }
 
-  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+    window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+  } catch {
+    // localStorage 不可访问时静默失败
+  }
 }
 
 function setAuthState(nextState: AuthState) {
