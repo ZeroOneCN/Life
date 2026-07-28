@@ -1784,42 +1784,88 @@ export async function parseForexWorkbookForBatchImport(
 
   const normalizedRows: Array<Record<string, unknown>> = [];
   for (const rawRow of rows) {
-    const row = { ...rawRow };
-    const normalizedDate = await normalizeImportDateCellAsync(
-      readAliasValue(row, ['日期时间', '交易日期', '日期', 'tradeDate', 'trade_date', 'date', 'datetime']),
+    const row = rawRow;
+
+    // 使用已有的 getForexImportCell 映射逻辑，将中文列头转为后端期望的英文字段名
+    const tradeDate = normalizeTrimmedValue(
+      getForexImportCell(row, ['日期时间', '交易日期', '日期', 'tradeDate', 'trade_date', 'date', 'datetime', '时间']),
     );
-    const normalizedOpenTime = normalizeImportTimeCell(
-      readAliasValue(row, ['开仓时间', 'openTime', 'open_time']),
+    const instrument = parseForexImportInstrument(
+      getForexImportCell(row, ['交易品种', '品种', 'instrument', 'symbol']),
+    );
+    const orderType = parseForexImportOrderType(
+      getForexImportCell(row, ['订单类型', '方向', 'orderType', 'order_type', 'type', 'side', '类型']),
+    );
+    const openPrice = toNumber(
+      getForexImportCell(row, ['开仓价格', '开仓价', 'openPrice', 'open_price', 'entryPrice', '价位']),
+      0,
+    );
+    const lotSize = toNumber(
+      getForexImportCell(row, ['手数', 'lotSize', 'lot_size', 'lots', 'lot', 'volume', '交易量']),
+      0,
+    );
+    const closePrice = toNumber(
+      getForexImportCell(row, ['平仓价格', '平仓价', 'closePrice', 'close_price', 'exitPrice', '价位']),
+      0,
+    );
+    const commission = toNumber(
+      getForexImportCell(row, ['手续费', 'commission']),
+      0,
+    );
+    const pnl = toNumber(
+      getForexImportCell(row, ['盈亏金额', '盈亏', 'pnl', 'profitLoss', 'profit_loss', '盈利']),
+      0,
+    );
+    const overnightFee = toNumber(
+      getForexImportCell(row, ['隔夜费', 'overnightFee', 'overnight_fee', 'swap', 'rollover', '库存费']),
+      0,
+    );
+    const openTime = normalizeForexTimeWithSeconds(
+      String(getForexImportCell(row, ['开仓时间', 'openTime', 'open_time', '时间']) ?? ''),
       '',
     );
-    const normalizedCloseTime = normalizeImportTimeCell(
-      readAliasValue(row, ['平仓时间', 'closeTime', 'close_time']),
+    const closeTime = normalizeForexTimeWithSeconds(
+      String(getForexImportCell(row, ['平仓时间', 'closeTime', 'close_time', '时间']) ?? ''),
       '',
     );
-
-    if (normalizedDate) {
-      row.日期时间 = normalizedDate;
-      row.交易日期 = normalizedDate;
-      row.日期 = normalizedDate;
-      row.tradeDate = normalizedDate;
-      row.trade_date = normalizedDate;
-      row.date = normalizedDate;
-      row.datetime = normalizedDate;
+    const holdTime = normalizeTrimmedValue(
+      getForexImportCell(row, ['持仓时间', '持仓时长', 'holdTime', 'hold_time']),
+    );
+    const remark = normalizeTrimmedValue(
+      getForexImportCell(row, ['备注', 'remark', 'note', 'notes']),
+    );
+    let positionId = normalizeTrimmedValue(
+      getForexImportCell(row, ['持仓', 'positionId', 'position_id', 'orderId', 'order_id', 'ticket']),
+    );
+    // Fallback: extract from remark if format is "ID:xxxxxx"
+    if (!positionId) {
+      const match = remark.match(/ID:(\d+)/);
+      if (match) {
+        positionId = match[1];
+      }
     }
 
-    if (normalizedOpenTime) {
-      row.开仓时间 = normalizedOpenTime;
-      row.openTime = normalizedOpenTime;
-      row.open_time = normalizedOpenTime;
+    // 跳过无效行（缺少必填字段）
+    if (!tradeDate || openPrice <= 0 || closePrice <= 0 || lotSize <= 0) {
+      continue;
     }
 
-    if (normalizedCloseTime) {
-      row.平仓时间 = normalizedCloseTime;
-      row.closeTime = normalizedCloseTime;
-      row.close_time = normalizedCloseTime;
-    }
-
-    normalizedRows.push(row);
+    normalizedRows.push({
+      tradeDate,
+      instrument,
+      orderType,
+      openPrice,
+      lotSize,
+      commission,
+      closePrice,
+      pnl,
+      overnightFee,
+      openTime,
+      closeTime,
+      holdTime,
+      remark,
+      positionId,
+    });
   }
 
   return { fileName: file.name, rows: normalizedRows };
