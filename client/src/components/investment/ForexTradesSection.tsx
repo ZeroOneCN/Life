@@ -21,10 +21,11 @@ import {
   formatForexMoney,
   getForexInstrumentLabel,
   getForexOrderTypeLabel,
-  importForexWorkbookCompatible,
+  parseForexWorkbookForBatchImport,
   normalizeForexTimeInput,
   updateForexTrade,
 } from '../../services/forex';
+import { forexApi } from '../../services/forexApi';
 import type { ForexImportResult, ForexInstrument, ForexOrderType, ForexTradeDraft, ForexTradeRecord } from '../../types/forex';
 
 interface ForexTradesSectionProps {
@@ -363,22 +364,29 @@ export function ForexTradesSection({
     setIsImporting(true);
 
     try {
-      let latestTrades = trades;
+      const { fileName, rows } = await parseForexWorkbookForBatchImport(file);
+      const result = await forexApi.importRows(fileName, rows);
+
+      const importResult: ForexImportResult = {
+        totalRows: result.total_rows,
+        importedCount: result.imported_count,
+        duplicateCount: result.duplicate_count,
+        invalidCount: result.invalid_count,
+        importedRecords: [],
+        invalidRows: [],
+        nextTrades: trades,
+      };
+      setImportResult(importResult);
+
       if (onReload) {
-        latestTrades = await onReload();
+        await onReload();
       }
 
-      const result = await importForexWorkbookCompatible(file, { trades: latestTrades });
-      setImportResult(result);
-
-      if (result.importedCount > 0) {
-        await onChangeTrades(() => result.nextTrades);
-        onImportApplied?.(result.nextTrades);
-      }
+      onImportApplied?.(trades);
 
       showToast(
-        `导入完成：成功 ${result.importedCount}，重复 ${result.duplicateCount}，无效 ${result.invalidCount}。`,
-        result.importedCount === 0 ? 'error' : 'success',
+        `导入完成：成功 ${result.imported_count}，重复 ${result.duplicate_count}，无效 ${result.invalid_count}。`,
+        result.imported_count === 0 ? 'error' : 'success',
       );
     } catch (_error) {
       showToast('导入失败，请检查文件格式。', 'error');

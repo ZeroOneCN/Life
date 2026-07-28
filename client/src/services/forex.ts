@@ -1768,6 +1768,63 @@ function buildImportedTradeCompatible(
   };
 }
 
+export async function parseForexWorkbookForBatchImport(
+  file: File,
+): Promise<{ fileName: string; rows: Array<Record<string, unknown>> }> {
+  const XLSX = await import('xlsx');
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: 'array' });
+  const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+  if (!worksheet) {
+    return { fileName: file.name, rows: [] };
+  }
+
+  const rows = await parseForexImportSheet(worksheet);
+
+  const normalizedRows: Array<Record<string, unknown>> = [];
+  for (const rawRow of rows) {
+    const row = { ...rawRow };
+    const normalizedDate = await normalizeImportDateCellAsync(
+      readAliasValue(row, ['日期时间', '交易日期', '日期', 'tradeDate', 'trade_date', 'date', 'datetime']),
+    );
+    const normalizedOpenTime = normalizeImportTimeCell(
+      readAliasValue(row, ['开仓时间', 'openTime', 'open_time']),
+      '',
+    );
+    const normalizedCloseTime = normalizeImportTimeCell(
+      readAliasValue(row, ['平仓时间', 'closeTime', 'close_time']),
+      '',
+    );
+
+    if (normalizedDate) {
+      row.日期时间 = normalizedDate;
+      row.交易日期 = normalizedDate;
+      row.日期 = normalizedDate;
+      row.tradeDate = normalizedDate;
+      row.trade_date = normalizedDate;
+      row.date = normalizedDate;
+      row.datetime = normalizedDate;
+    }
+
+    if (normalizedOpenTime) {
+      row.开仓时间 = normalizedOpenTime;
+      row.openTime = normalizedOpenTime;
+      row.open_time = normalizedOpenTime;
+    }
+
+    if (normalizedCloseTime) {
+      row.平仓时间 = normalizedCloseTime;
+      row.closeTime = normalizedCloseTime;
+      row.close_time = normalizedCloseTime;
+    }
+
+    normalizedRows.push(row);
+  }
+
+  return { fileName: file.name, rows: normalizedRows };
+}
+
 export async function importForexWorkbookCompatible(
   file: File,
   options: {

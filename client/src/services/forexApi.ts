@@ -88,7 +88,12 @@ export const forexApi = {
   },
 
   importRows(fileName: string, rows: Array<Record<string, unknown>>) {
-    return apiPost<ForexImportResult, { fileName: string; rows: Array<Record<string, unknown>> }>('/investment/forex/actions/import', {
+    return apiPost<{
+      total_rows: number;
+      imported_count: number;
+      duplicate_count: number;
+      invalid_count: number;
+    }, { fileName: string; rows: Array<Record<string, unknown>> }>('/investment/forex/actions/import', {
       fileName,
       rows,
     });
