@@ -7881,7 +7881,16 @@ img {
 .forex-import-result {
   padding: 14px 16px;
   display: grid;
+  gap: 10px;
+}
+
+.forex-import-result-row {
+  display: grid;
   gap: 6px;
+}
+
+.forex-import-result-row.forex-import-result-capital strong {
+  color: #3b82f6;
 }
 
 .forex-import-result strong {

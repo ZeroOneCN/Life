@@ -177,6 +177,13 @@ export function ForexTradesSection({
   const [tradeDateFilter, setTradeDateFilter] = useState('');
   const [page, setPage] = useState(1);
   const [importResult, setImportResult] = useState<ForexImportResult | null>(null);
+  /** 出入金导入结果，用于在 forex-import-result 卡片中同步显示 */
+  const [capitalImportResult, setCapitalImportResult] = useState<{
+    totalRows: number;
+    importedCount: number;
+    duplicateCount: number;
+    invalidCount: number;
+  } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -387,6 +394,18 @@ export function ForexTradesSection({
       };
       setImportResult(importResult);
 
+      // 保存出入金导入结果，用于在卡片中同步显示
+      if (capitalRows.length > 0) {
+        setCapitalImportResult({
+          totalRows: capitalResult.total_rows,
+          importedCount: capitalResult.imported_count,
+          duplicateCount: capitalResult.duplicate_count,
+          invalidCount: capitalResult.invalid_count,
+        });
+      } else {
+        setCapitalImportResult(null);
+      }
+
       if (onReload) {
         await onReload();
       }
@@ -466,12 +485,24 @@ export function ForexTradesSection({
       <div className="page-stack">
         {importResult ? (
           <div className="forex-import-result">
-            <strong>{`最近一次导入：总行数 ${importResult.totalRows}，成功 ${importResult.importedCount}，重复 ${importResult.duplicateCount}，无效 ${importResult.invalidCount}`}</strong>
-            {importResult.invalidRows.length ? (
-              <span>{`示例错误：第 ${importResult.invalidRows[0].rowNumber} 行，${importResult.invalidRows[0].reason}`}</span>
-            ) : (
-              <span>当前文件没有解析错误。</span>
-            )}
+            <div className="forex-import-result-row">
+              <strong>{`交易记录：总行数 ${importResult.totalRows}，成功 ${importResult.importedCount}，重复 ${importResult.duplicateCount}，无效 ${importResult.invalidCount}`}</strong>
+              {importResult.invalidRows.length ? (
+                <span>{`示例错误：第 ${importResult.invalidRows[0].rowNumber} 行，${importResult.invalidRows[0].reason}`}</span>
+              ) : (
+                <span>当前文件没有解析错误。</span>
+              )}
+            </div>
+            {capitalImportResult ? (
+              <div className="forex-import-result-row forex-import-result-capital">
+                <strong>{`出入金：总行数 ${capitalImportResult.totalRows}，成功 ${capitalImportResult.importedCount}，重复 ${capitalImportResult.duplicateCount}，无效 ${capitalImportResult.invalidCount}`}</strong>
+                {capitalImportResult.invalidCount > 0 ? (
+                  <span>{`有 ${capitalImportResult.invalidCount} 条无效记录（缺少必填字段或金额为0）`}</span>
+                ) : (
+                  <span>当前文件没有解析错误。</span>
+                )}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
