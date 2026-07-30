@@ -99,6 +99,19 @@ export const forexApi = {
     });
   },
 
+  /** 批量导入出入金记录 */
+  importCapitalRows(fileName: string, rows: Array<Record<string, unknown>>) {
+    return apiPost<{
+      total_rows: number;
+      imported_count: number;
+      duplicate_count: number;
+      invalid_count: number;
+    }, { fileName: string; rows: Array<Record<string, unknown>> }>('/investment/forex/capital-flows/actions/import', {
+      fileName,
+      rows,
+    });
+  },
+
   downloadTemplate() {
     return apiGet<{ fileName: string; headers: string[]; exampleRows: Array<Record<string, unknown>> }>('/investment/forex/actions/download-template');
   },

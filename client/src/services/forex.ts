@@ -1768,107 +1768,176 @@ function buildImportedTradeCompatible(
   };
 }
 
-export async function parseForexWorkbookForBatchImport(
-  file: File,
-): Promise<{ fileName: string; rows: Array<Record<string, unknown>> }> {
-  const XLSX = await import('xlsx');
-  const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: 'array' });
-  const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+/** 将出入金中文类型映射为后端枚举 */
+function parseCapitalFlowType(raw: string): 'deposit' | 'withdrawal' | 'bonus_expired' | 'bonus_loss' | null {
+  const t = raw.trim();
+  if (t === '入金') return 'deposit';
+  if (t === '出金') return 'withdrawal';
+  if (t === '体验金失效') return 'bonus_expired';
+  if (t === '体验金亏损') return 'bonus_loss';
+  return null;
+}
 
-  if (!worksheet) {
-    return { fileName: file.name, rows: [] };
-  }
-
-  const rows = await parseForexImportSheet(worksheet);
-
-  const normalizedRows: Array<Record<string, unknown>> = [];
+/** 解析出入金 Sheet，返回后端期望的英文字段格式 */
+function parseCapitalSheetRows(
+  rows: Record<string, unknown>[],
+): Array<Record<string, unknown>> {
+  const result: Array<Record<string, unknown>> = [];
   for (const rawRow of rows) {
-    const row = rawRow;
-
-    // 使用已有的 getForexImportCell 映射逻辑，将中文列头转为后端期望的英文字段名
-    const tradeDate = normalizeTrimmedValue(
-      getForexImportCell(row, ['日期时间', '交易日期', '日期', 'tradeDate', 'trade_date', 'date', 'datetime', '时间']),
+    const flowDate = normalizeTrimmedValue(
+      getForexImportCell(rawRow, ['日期', '日期时间', 'flowDate', 'flow_date', 'date']),
     );
-    const instrument = parseForexImportInstrument(
-      getForexImportCell(row, ['交易品种', '品种', 'instrument', 'symbol']),
+    const typeRaw = normalizeTrimmedValue(
+      getForexImportCell(rawRow, ['类型', 'flowType', 'flow_type', 'type']),
     );
-    const orderType = parseForexImportOrderType(
-      getForexImportCell(row, ['订单类型', '方向', 'orderType', 'order_type', 'type', 'side', '类型']),
-    );
-    const openPrice = toNumber(
-      getForexImportCell(row, ['开仓价格', '开仓价', 'openPrice', 'open_price', 'entryPrice', '价位']),
+    const amount = toNumber(
+      getForexImportCell(rawRow, ['金额', 'amount']),
       0,
-    );
-    const lotSize = toNumber(
-      getForexImportCell(row, ['手数', 'lotSize', 'lot_size', 'lots', 'lot', 'volume', '交易量']),
-      0,
-    );
-    const closePrice = toNumber(
-      getForexImportCell(row, ['平仓价格', '平仓价', 'closePrice', 'close_price', 'exitPrice', '价位']),
-      0,
-    );
-    const commission = toNumber(
-      getForexImportCell(row, ['手续费', 'commission']),
-      0,
-    );
-    const pnl = toNumber(
-      getForexImportCell(row, ['盈亏金额', '盈亏', 'pnl', 'profitLoss', 'profit_loss', '盈利']),
-      0,
-    );
-    const overnightFee = toNumber(
-      getForexImportCell(row, ['隔夜费', 'overnightFee', 'overnight_fee', 'swap', 'rollover', '库存费']),
-      0,
-    );
-    const openTime = normalizeForexTimeWithSeconds(
-      String(getForexImportCell(row, ['开仓时间', 'openTime', 'open_time', '时间']) ?? ''),
-      '',
-    );
-    const closeTime = normalizeForexTimeWithSeconds(
-      String(getForexImportCell(row, ['平仓时间', 'closeTime', 'close_time', '时间']) ?? ''),
-      '',
-    );
-    const holdTime = normalizeTrimmedValue(
-      getForexImportCell(row, ['持仓时间', '持仓时长', 'holdTime', 'hold_time']),
     );
     const remark = normalizeTrimmedValue(
-      getForexImportCell(row, ['备注', 'remark', 'note', 'notes']),
+      getForexImportCell(rawRow, ['备注', 'remark', 'note']),
     );
-    let positionId = normalizeTrimmedValue(
-      getForexImportCell(row, ['持仓', 'positionId', 'position_id', 'orderId', 'order_id', 'ticket']),
-    );
-    // Fallback: extract from remark if format is "ID:xxxxxx"
-    if (!positionId) {
-      const match = remark.match(/ID:(\d+)/);
-      if (match) {
-        positionId = match[1];
-      }
-    }
 
-    // 跳过无效行（缺少必填字段）
-    if (!tradeDate || openPrice <= 0 || closePrice <= 0 || lotSize <= 0) {
+    const flowType = parseCapitalFlowType(typeRaw);
+    if (!flowDate || !flowType || amount <= 0) {
       continue;
     }
 
-    normalizedRows.push({
-      tradeDate,
-      instrument,
-      orderType,
-      openPrice,
-      lotSize,
-      commission,
-      closePrice,
-      pnl,
-      overnightFee,
-      openTime,
-      closeTime,
-      holdTime,
+    // 体验金入金：备注以 "bns" 开头标识为体验金
+    const isBonus = flowType === 'deposit' && remark.toLowerCase().startsWith('bns');
+
+    result.push({
+      flowDate,
+      flowType,
+      amount,
       remark,
-      positionId,
+      isBonus,
     });
   }
+  return result;
+}
 
-  return { fileName: file.name, rows: normalizedRows };
+export interface ForexBatchImportData {
+  fileName: string;
+  tradeRows: Array<Record<string, unknown>>;
+  capitalRows: Array<Record<string, unknown>>;
+}
+
+export async function parseForexWorkbookForBatchImport(
+  file: File,
+): Promise<ForexBatchImportData> {
+  const XLSX = await import('xlsx');
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: 'array' });
+
+  const tradeRows: Array<Record<string, unknown>> = [];
+  const capitalRows: Array<Record<string, unknown>> = [];
+
+  // 遍历所有 Sheet，根据内容自动识别交易记录和出入金
+  for (const sheetName of workbook.SheetNames) {
+    const worksheet = workbook.Sheets[sheetName];
+    if (!worksheet) continue;
+
+    const rows = await parseForexImportSheet(worksheet);
+    if (rows.length === 0) continue;
+
+    // 检测 Sheet 类型：出入金 Sheet 包含 "类型" 列且值为 入金/出金/体验金失效/体验金亏损
+    const firstRow = rows[0];
+    const typeValue = normalizeTrimmedValue(
+      getForexImportCell(firstRow, ['类型', 'flowType', 'flow_type', 'type']),
+    );
+    const isCapitalSheet = parseCapitalFlowType(typeValue) !== null;
+
+    if (isCapitalSheet) {
+      capitalRows.push(...parseCapitalSheetRows(rows));
+      continue;
+    }
+
+    // 否则按交易记录 Sheet 处理
+    for (const rawRow of rows) {
+      const row = rawRow;
+
+      const tradeDate = normalizeTrimmedValue(
+        getForexImportCell(row, ['日期时间', '交易日期', '日期', 'tradeDate', 'trade_date', 'date', 'datetime', '时间']),
+      );
+      const instrument = parseForexImportInstrument(
+        getForexImportCell(row, ['交易品种', '品种', 'instrument', 'symbol']),
+      );
+      const orderType = parseForexImportOrderType(
+        getForexImportCell(row, ['订单类型', '方向', 'orderType', 'order_type', 'type', 'side', '类型']),
+      );
+      const openPrice = toNumber(
+        getForexImportCell(row, ['开仓价格', '开仓价', 'openPrice', 'open_price', 'entryPrice', '价位']),
+        0,
+      );
+      const lotSize = toNumber(
+        getForexImportCell(row, ['手数', 'lotSize', 'lot_size', 'lots', 'lot', 'volume', '交易量']),
+        0,
+      );
+      const closePrice = toNumber(
+        getForexImportCell(row, ['平仓价格', '平仓价', 'closePrice', 'close_price', 'exitPrice', '价位']),
+        0,
+      );
+      const commission = toNumber(
+        getForexImportCell(row, ['手续费', 'commission']),
+        0,
+      );
+      const pnl = toNumber(
+        getForexImportCell(row, ['盈亏金额', '盈亏', 'pnl', 'profitLoss', 'profit_loss', '盈利']),
+        0,
+      );
+      const overnightFee = toNumber(
+        getForexImportCell(row, ['隔夜费', 'overnightFee', 'overnight_fee', 'swap', 'rollover', '库存费']),
+        0,
+      );
+      const openTime = normalizeForexTimeWithSeconds(
+        String(getForexImportCell(row, ['开仓时间', 'openTime', 'open_time', '时间']) ?? ''),
+        '',
+      );
+      const closeTime = normalizeForexTimeWithSeconds(
+        String(getForexImportCell(row, ['平仓时间', 'closeTime', 'close_time', '时间']) ?? ''),
+        '',
+      );
+      const holdTime = normalizeTrimmedValue(
+        getForexImportCell(row, ['持仓时间', '持仓时长', 'holdTime', 'hold_time']),
+      );
+      const remark = normalizeTrimmedValue(
+        getForexImportCell(row, ['备注', 'remark', 'note', 'notes']),
+      );
+      let positionId = normalizeTrimmedValue(
+        getForexImportCell(row, ['持仓', 'positionId', 'position_id', 'orderId', 'order_id', 'ticket']),
+      );
+      if (!positionId) {
+        const match = remark.match(/ID:(\d+)/);
+        if (match) {
+          positionId = match[1];
+        }
+      }
+
+      if (!tradeDate || openPrice <= 0 || closePrice <= 0 || lotSize <= 0) {
+        continue;
+      }
+
+      tradeRows.push({
+        tradeDate,
+        instrument,
+        orderType,
+        openPrice,
+        lotSize,
+        commission,
+        closePrice,
+        pnl,
+        overnightFee,
+        openTime,
+        closeTime,
+        holdTime,
+        remark,
+        positionId,
+      });
+    }
+  }
+
+  return { fileName: file.name, tradeRows, capitalRows };
 }
 
 export async function importForexWorkbookCompatible(

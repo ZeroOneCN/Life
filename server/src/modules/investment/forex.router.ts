@@ -889,6 +889,76 @@ export function createForexRouter() {
     }, 'import_forex_trades_success'));
   }));
 
+  /** 批量导入出入金记录 */
+  router.post('/capital-flows/actions/import', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const capitalImportSchema = z.object({
+      fileName: z.string().trim().optional().default('forex-capital-import'),
+      rows: z.array(z.object({
+        flowDate: z.string().min(1),
+        flowType: z.enum(['deposit', 'withdrawal', 'bonus_expired', 'bonus_loss']),
+        amount: z.union([z.number(), z.string()]),
+        remark: z.string().optional().default(''),
+        isBonus: z.boolean().optional().default(false),
+      })).default([]),
+    });
+    const payload = validateBody(capitalImportSchema, request.body);
+    const rows = payload.rows ?? [];
+    const repository = appDataSource.getRepository(InvestmentForexCapitalFlowEntity);
+
+    // 查询现有记录用于去重（日期 + 类型 + 金额 + 备注）
+    const existing = await repository.find({ where: { user_id: userId } });
+    const seen = new Set(existing.map((item) => [
+      item.flow_date,
+      item.flow_type,
+      Number(item.amount).toFixed(2),
+      item.remark ?? '',
+    ].join('|')));
+
+    let importedCount = 0;
+    let duplicateCount = 0;
+    let invalidCount = 0;
+    const toSave: InvestmentForexCapitalFlowEntity[] = [];
+
+    rows.forEach((row) => {
+      const flowDate = normalizeDate(row.flowDate);
+      const amount = Number(row.amount);
+
+      if (!flowDate || !Number.isFinite(amount) || amount <= 0) {
+        invalidCount += 1;
+        return;
+      }
+
+      const key = [flowDate, row.flowType, amount.toFixed(2), row.remark ?? ''].join('|');
+      if (seen.has(key)) {
+        duplicateCount += 1;
+        return;
+      }
+
+      seen.add(key);
+      importedCount += 1;
+      toSave.push(repository.create({
+        user_id: userId,
+        flow_date: flowDate,
+        flow_type: row.flowType,
+        amount,
+        remark: row.remark ?? '',
+        is_bonus: row.isBonus ?? false,
+      }));
+    });
+
+    if (toSave.length) {
+      await repository.save(toSave);
+    }
+
+    response.json(successResponse({
+      total_rows: rows.length,
+      imported_count: importedCount,
+      duplicate_count: duplicateCount,
+      invalid_count: invalidCount,
+    }, 'import_forex_capital_flows_success'));
+  }));
+
   router.get('/actions/download-template', asyncHandler(async (_request: AuthenticatedRequest, response) => {
     response.json(successResponse({
       fileName: 'forex-import-template.json',

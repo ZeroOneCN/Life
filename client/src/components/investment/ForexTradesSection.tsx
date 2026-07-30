@@ -364,14 +364,23 @@ export function ForexTradesSection({
     setIsImporting(true);
 
     try {
-      const { fileName, rows } = await parseForexWorkbookForBatchImport(file);
-      const result = await forexApi.importRows(fileName, rows);
+      const { fileName, tradeRows, capitalRows } = await parseForexWorkbookForBatchImport(file);
+
+      // 同时发起交易记录和出入金的批量导入请求
+      const [tradeResult, capitalResult] = await Promise.all([
+        tradeRows.length > 0
+          ? forexApi.importRows(fileName, tradeRows)
+          : Promise.resolve({ total_rows: 0, imported_count: 0, duplicate_count: 0, invalid_count: 0 }),
+        capitalRows.length > 0
+          ? forexApi.importCapitalRows(fileName, capitalRows)
+          : Promise.resolve({ total_rows: 0, imported_count: 0, duplicate_count: 0, invalid_count: 0 }),
+      ]);
 
       const importResult: ForexImportResult = {
-        totalRows: result.total_rows,
-        importedCount: result.imported_count,
-        duplicateCount: result.duplicate_count,
-        invalidCount: result.invalid_count,
+        totalRows: tradeResult.total_rows,
+        importedCount: tradeResult.imported_count,
+        duplicateCount: tradeResult.duplicate_count,
+        invalidCount: tradeResult.invalid_count,
         importedRecords: [],
         invalidRows: [],
         nextTrades: trades,
@@ -384,9 +393,14 @@ export function ForexTradesSection({
 
       onImportApplied?.(trades);
 
+      // 合并展示交易记录和出入金的导入结果
+      const tradeMsg = `交易：成功 ${tradeResult.imported_count}，重复 ${tradeResult.duplicate_count}，无效 ${tradeResult.invalid_count}`;
+      const capitalMsg = capitalRows.length > 0
+        ? ` | 出入金：成功 ${capitalResult.imported_count}，重复 ${capitalResult.duplicate_count}，无效 ${capitalResult.invalid_count}`
+        : '';
       showToast(
-        `导入完成：成功 ${result.imported_count}，重复 ${result.duplicate_count}，无效 ${result.invalid_count}。`,
-        result.imported_count === 0 ? 'error' : 'success',
+        `${tradeMsg}${capitalMsg}`,
+        tradeResult.imported_count === 0 && capitalResult.imported_count === 0 ? 'error' : 'success',
       );
     } catch (_error) {
       showToast('导入失败，请检查文件格式。', 'error');
