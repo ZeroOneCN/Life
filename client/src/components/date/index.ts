@@ -1,1 +1,1 @@
-export { DatePickerField, DateTimePickerField, MonthPickerField } from './DateFields';
+export { DatePickerField, DateTimePickerField, MonthPickerField, DateRangePicker } from './DateFields';

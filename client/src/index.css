@@ -7639,15 +7639,15 @@ img {
 .forex-capital-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px;
+  gap: 12px;
+  padding: 16px;
   background: var(--color-surface-1);
   border: 1px solid var(--color-hairline);
   border-radius: 12px;
 }
 
 .forex-capital-form-grid {
-  grid-template-columns: 180px 160px 160px minmax(0, 1fr);
+  grid-template-columns: 160px 140px 140px minmax(0, 1fr);
   align-items: end;
 }
 
@@ -7655,19 +7655,19 @@ img {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: flex-end;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .forex-capital-stat-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
-.forex-capital-export-bar {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+@media (max-width: 900px) {
+  .forex-capital-stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .forex-modal-grid-capital .forex-capital-modal-bonus {
@@ -7675,6 +7675,13 @@ img {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.forex-filter-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(220px, 1fr) 140px minmax(160px, 1fr);
+  align-items: end;
 }
 
 .forex-calculator-shared-grid {

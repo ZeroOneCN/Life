@@ -589,6 +589,8 @@ export function filterForexCapitalFlows(
   filters: {
     flowType?: string;
     flowDate?: string;
+    startDate?: string;
+    endDate?: string;
     keyword?: string;
   },
 ) {
@@ -596,7 +598,23 @@ export function filterForexCapitalFlows(
 
   return records
     .filter((record) => (!filters.flowType || record.flowType === filters.flowType))
-    .filter((record) => (!filters.flowDate || record.flowDate === filters.flowDate))
+    .filter((record) => {
+      // 精确日期筛选（单日）
+      if (filters.flowDate) {
+        return record.flowDate === filters.flowDate;
+      }
+      // 日期范围筛选
+      if (filters.startDate && filters.endDate) {
+        return record.flowDate >= filters.startDate && record.flowDate <= filters.endDate;
+      }
+      if (filters.startDate) {
+        return record.flowDate >= filters.startDate;
+      }
+      if (filters.endDate) {
+        return record.flowDate <= filters.endDate;
+      }
+      return true;
+    })
     .filter((record) => {
       if (!keyword) {
         return true;

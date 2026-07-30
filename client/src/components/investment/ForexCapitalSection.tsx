@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
-import { DatePickerField } from '../date';
+import { DatePickerField, DateRangePicker } from '../date';
 import { EmptyState, SectionCard, StatGrid } from '../page';
 import { Btn, Checkbox, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
 import {
@@ -9,8 +9,6 @@ import {
   FOREX_CAPITAL_TYPE_OPTIONS,
   createForexCapitalFlow,
   deleteForexCapitalFlow,
-  downloadBlob,
-  exportForexCapitalFlowsWorkbook,
   filterForexCapitalFlows,
   formatForexMoney,
   getForexCapitalTypeLabel,
@@ -64,7 +62,6 @@ function parseDraft(form: CapitalFormState): ForexCapitalFlowDraft | null {
     flowType: form.flowType,
     amount,
     remark: form.remark.trim(),
-    // bonus_expired 类型本身就是体验金相关，无需 isBonus 标记
     isBonus: form.flowType === 'deposit' ? form.isBonus : false,
   };
 }
@@ -92,23 +89,24 @@ export function ForexCapitalSection({
   const [editingForm, setEditingForm] = useState<CapitalFormState>(() => createDefaultFormState());
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [flowTypeFilter, setFlowTypeFilter] = useState('');
-  const [flowDateFilter, setFlowDateFilter] = useState('');
+  const [startDateFilter, setStartDateFilter] = useState('');
+  const [endDateFilter, setEndDateFilter] = useState('');
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
-  const [isExporting, setIsExporting] = useState(false);
 
   const filteredFlows = useMemo(
     () => filterForexCapitalFlows(capitalFlows, {
       flowType: flowTypeFilter,
-      flowDate: flowDateFilter,
+      startDate: startDateFilter,
+      endDate: endDateFilter,
       keyword,
     }),
-    [capitalFlows, flowDateFilter, flowTypeFilter, keyword],
+    [capitalFlows, startDateFilter, endDateFilter, flowTypeFilter, keyword],
   );
 
   useEffect(() => {
     setPage(1);
-  }, [flowDateFilter, flowTypeFilter, keyword]);
+  }, [startDateFilter, endDateFilter, flowTypeFilter, keyword]);
 
   const totalPages = Math.max(1, Math.ceil(filteredFlows.length / FOREX_CAPITAL_PAGE_SIZE));
   const pageRecords = useMemo(() => {
@@ -123,9 +121,6 @@ export function ForexCapitalSection({
   }, [page, totalPages]);
 
   const summary = useMemo(() => {
-    // 体验金入金不计入累计入金与净入金
-    // 体验金失效（bonus_expired）在 MT5 中转为真实余额，计入净入金
-    // 体验金亏损（bonus_loss）仅扣减剩余体验金，不计入净入金
     const totalDeposit = filteredFlows
       .filter((record) => record.flowType === 'deposit' && !record.isBonus)
       .reduce((sum, record) => sum + record.amount, 0);
@@ -151,7 +146,6 @@ export function ForexCapitalSection({
       totalBonusExpired,
       totalBonusLoss,
       remainingBonus,
-      // 净入金 = 真实入金 + 体验金失效 - 出金（与净值计算逻辑一致）
       netCapital: totalDeposit + totalBonusExpired - totalWithdrawal,
     };
   }, [filteredFlows]);
@@ -174,7 +168,6 @@ export function ForexCapitalSection({
       key: 'amount',
       title: '金额',
       render: (_value: unknown, row: ForexCapitalFlow) => {
-        // bonus_expired 仅记录，金额用中性灰色显示，无 +/- 前缀
         if (row.flowType === 'bonus_expired') {
           return <strong style={{ color: 'var(--color-ink-subtle)' }}>{formatForexMoney(row.amount)}</strong>;
         }
@@ -261,31 +254,13 @@ export function ForexCapitalSection({
     showToast('出入金记录已更新。');
   };
 
-  const handleExport = async () => {
-    if (filteredFlows.length === 0) {
-      showToast('当前筛选结果为空，无可导出数据。', 'error');
-      return;
-    }
-
-    setIsExporting(true);
-    try {
-      const blob = await exportForexCapitalFlowsWorkbook(filteredFlows);
-      const dateStamp = dayjs().format('YYYYMMDD-HHmm');
-      downloadBlob(blob, `forex-capital-${dateStamp}.xlsx`);
-      showToast(`已导出 ${filteredFlows.length} 条出入金记录。`);
-    } catch (_error) {
-      showToast('导出失败，请稍后重试。', 'error');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   return (
     <SectionCard
       title="出入金"
-      description="入金和出金会和看板中的净入金、净值和 ROI 联动；体验金入金不计入净值，体验金失效仅作记录。"
+      description="管理账户资本流，支持日期范围筛选与统计。"
     >
       <div className="page-stack">
+        {/* 表单区 */}
         <form className="forex-capital-form" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
           <div className="forex-capital-form-grid">
             <DatePickerField
@@ -300,7 +275,6 @@ export function ForexCapitalSection({
               onChange={(event) => setForm((current) => ({
                 ...current,
                 flowType: event.target.value as ForexCapitalFlowType,
-                // 切换类型时重置体验金标记（仅入金保留）
                 isBonus: event.target.value === 'deposit' ? current.isBonus : false,
               }))}
             >
@@ -330,33 +304,36 @@ export function ForexCapitalSection({
                 体验金
               </Checkbox>
             ) : null}
-            <Btn tone="primary" type="submit">保存出入金记录</Btn>
+            <Btn tone="primary" type="submit">保存</Btn>
           </div>
         </form>
 
+        {/* 统计卡片 - 精简为6个核心指标 */}
         <StatGrid
           items={[
             { label: '记录数', value: `${summary.count} 条` },
             { label: '累计入金', value: formatForexMoney(summary.totalDeposit), accent: 'var(--color-success)' },
-            { label: '体验金入金', value: formatForexMoney(summary.totalBonusDeposit), accent: '#3b82f6' },
             { label: '累计出金', value: formatForexMoney(summary.totalWithdrawal), accent: 'var(--color-danger)' },
-            { label: '体验金失效', value: formatForexMoney(summary.totalBonusExpired), accent: '#f59e0b' },
-            { label: '体验金亏损', value: formatForexMoney(summary.totalBonusLoss), accent: '#ef4444' },
-            { label: '剩余体验金', value: formatForexMoney(summary.remainingBonus), accent: '#8b5cf6' },
             { label: '净入金', value: formatForexMoney(summary.netCapital), accent: summary.netCapital >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
+            { label: '体验金入金', value: formatForexMoney(summary.totalBonusDeposit), accent: '#3b82f6' },
+            { label: '剩余体验金', value: formatForexMoney(summary.remainingBonus), accent: '#8b5cf6' },
           ]}
           className="forex-capital-stat-grid"
         />
 
+        {/* 筛选区 - 日期范围 + 类型 + 关键词 */}
         <div className="forex-filter-grid">
-          <Field
-            label="关键词"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="搜索备注"
+          <DateRangePicker
+            startDate={startDateFilter}
+            endDate={endDateFilter}
+            onChange={(start, end) => {
+              setStartDateFilter(start);
+              setEndDateFilter(end);
+            }}
+            placeholder="日期范围"
           />
           <SelectField
-            label="类型筛选"
+            label="类型"
             value={flowTypeFilter}
             onChange={(event) => setFlowTypeFilter(event.target.value)}
           >
@@ -365,30 +342,25 @@ export function ForexCapitalSection({
               <option key={flowType} value={flowType}>{getForexCapitalTypeLabel(flowType)}</option>
             ))}
           </SelectField>
-          <DatePickerField
-            label="按日期筛选"
-            value={flowDateFilter}
-            onChange={setFlowDateFilter}
-            placeholder="选择日期"
-            clearable
+          <Field
+            label="关键词"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder="搜索备注"
           />
         </div>
 
-        <div className="forex-capital-export-bar">
-          <Btn tone="secondary" onClick={handleExport} disabled={isExporting || filteredFlows.length === 0}>
-            {isExporting ? '导出中...' : '导出 Excel'}
-          </Btn>
-        </div>
-
+        {/* 数据表格 */}
         {pageRecords.length ? (
           <>
             <DataTable columns={columns} data={pageRecords} rowKey="id" className="forex-capital-table" />
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         ) : (
-          <EmptyState title="暂无出入金记录" description="先保存一条入金或出金记录，这里会开始形成账户资本流。" />
+          <EmptyState title="暂无出入金记录" description="保存一条入金或出金记录，这里会开始形成账户资本流。" />
         )}
 
+        {/* 编辑弹窗 */}
         <Modal
           open={Boolean(editingRecord)}
           onClose={() => setEditingRecord(null)}
@@ -446,6 +418,7 @@ export function ForexCapitalSection({
           </div>
         </Modal>
 
+        {/* 删除确认 */}
         <DeleteModal
           open={Boolean(pendingDeleteId)}
           onClose={() => setPendingDeleteId(null)}
