@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import { env } from '../../config/env';
 import { appDataSource } from '../../db/data-source';
 import { SystemUserAccountEntity } from '../system/entities/system-user-account.entity';
-import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { ensureNotificationScenesForUser, sendNotificationSceneLogs } from '../../shared/domain/notification';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { FinanceBillReminderSettingEntity } from './entities/finance-bill-reminder-setting.entity';
 import { getUpcomingBills, type BillType, type UnifiedBill } from './bill-aggregator.service';
@@ -135,6 +135,11 @@ async function runRemindersForUser(userId: string, today: string) {
     title = `账单提醒：${bills.length} 笔账单将在 ${settings.lead_days} 天内到期`;
     message = buildUpcomingMessage(upcomingBills, totalAmount);
   }
+
+  // 确保 scene 记录存在（用户可能从未访问过通知中心，scene 尚未 seed）。
+  // 此处不强制启用，避免覆盖用户在通知中心主动禁用的配置。
+  // scene 的启用由 PUT /api/finance/bill/setting 接口在 reminder_enabled=true 时联动开启。
+  await ensureNotificationScenesForUser(userId, ['finance.bill.upcoming', 'finance.bill.overdue']);
 
   await sendNotificationSceneLogs({
     userId,

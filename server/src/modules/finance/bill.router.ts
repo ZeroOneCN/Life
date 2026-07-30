@@ -6,6 +6,7 @@ import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
 import { requireAuthUser } from '../../shared/http/request';
 import { successResponse } from '../../shared/http/response';
 import { validateBody } from '../../shared/http/validation';
+import { ensureNotificationScenesForUser } from '../../shared/domain/notification';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { FinanceBillReminderSettingEntity } from './entities/finance-bill-reminder-setting.entity';
 import {
@@ -123,12 +124,24 @@ export function createBillRouter() {
   /**
    * GET /api/finance/bill/setting
    * 获取账单提醒设置。
+   *
+   * 若用户已开启 reminder_enabled，则顺带确保通知中心对应 scene 已启用，
+   * 兼容历史用户在通知中心 scene 默认禁用状态下开启账单提醒的场景。
    */
   router.get(
     '/setting',
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const userId = requireAuthUser(req);
       const setting = await settingService.getOrCreate(userId, DEFAULT_SETTINGS);
+
+      if (setting.reminder_enabled) {
+        await ensureNotificationScenesForUser(
+          userId,
+          ['finance.bill.upcoming', 'finance.bill.overdue'],
+          { enableScenes: true },
+        );
+      }
+
       res.json(successResponse(setting));
     }),
   );
@@ -136,6 +149,10 @@ export function createBillRouter() {
   /**
    * PUT /api/finance/bill/setting
    * 更新账单提醒设置。
+   *
+   * 当 reminder_enabled=true 时，联动启用通知中心的
+   * finance.bill.upcoming 和 finance.bill.overdue 两个 scene，避免用户开启了账单提醒
+   * 但通知中心 scene 仍处于默认禁用状态导致 scheduler 被 skip。
    */
   router.put(
     '/setting',
@@ -143,6 +160,15 @@ export function createBillRouter() {
       const userId = requireAuthUser(req);
       const payload = validateBody(billSettingSchema, req.body);
       const updated = await settingService.update(userId, payload, DEFAULT_SETTINGS);
+
+      if (updated.reminder_enabled) {
+        await ensureNotificationScenesForUser(
+          userId,
+          ['finance.bill.upcoming', 'finance.bill.overdue'],
+          { enableScenes: true },
+        );
+      }
+
       res.json(successResponse(updated));
     }),
   );

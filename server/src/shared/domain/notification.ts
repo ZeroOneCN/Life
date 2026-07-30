@@ -6,6 +6,7 @@ import { NotificationCenterLogEntity } from '../../modules/notifications/entitie
 import { NotificationCenterSceneChannelEntity } from '../../modules/notifications/entities/notification-center-scene-channel.entity';
 import { NotificationCenterSceneEntity } from '../../modules/notifications/entities/notification-center-scene.entity';
 import { NotificationCenterTemplateEntity } from '../../modules/notifications/entities/notification-center-template.entity';
+import { SCENE_SEED } from '../../modules/notifications/scene-seed';
 import {
   sendDingTalkWebhook,
   sendEmail,
@@ -361,4 +362,65 @@ export async function sendNotificationSceneLogs(options: SendNotificationSceneOp
   }));
 
   return logs;
+}
+
+/**
+ * 为用户确保指定通知场景的 scene 记录存在。
+ *
+ * 通知中心的 scene 记录采用懒加载机制：只有用户主动访问 GET /api/notifications/scenes
+ * 接口时才会被 seed 到数据库。这导致 scheduler 在用户从未访问过通知中心时调用
+ * sendNotificationSceneLogs 会因 scene 不存在而静默丢弃通知。
+ *
+ * 本函数供 scheduler / 业务接口在发送通知前调用，按 SCENE_SEED 默认值补齐缺失的 scene，
+ * 避免通知被静默丢弃。
+ *
+ * @param userId   用户 ID
+ * @param sceneIds 需要确保存在的 scene_id 列表。若不传则对 SCENE_SEED 中所有 scene 生效。
+ * @param options  enableScenes=true 时强制启用指定 scene（用于用户主动开启提醒功能的场景，
+ *                 如账单提醒设置中 reminder_enabled=true）。默认 false，仅确保存在不修改 enabled，
+ *                 避免覆盖用户在通知中心主动禁用的配置。
+ * @returns 新创建或被更新的 scene 记录数组（已存在且未变更的不返回）。
+ */
+export async function ensureNotificationScenesForUser(
+  userId: string,
+  sceneIds?: string[],
+  options?: { enableScenes?: boolean },
+): Promise<NotificationCenterSceneEntity[]> {
+  const sceneRepo = appDataSource.getRepository(NotificationCenterSceneEntity);
+  const targetSeeds = sceneIds
+    ? SCENE_SEED.filter((seed) => sceneIds.includes(seed.scene_id))
+    : SCENE_SEED;
+
+  if (targetSeeds.length === 0) {
+    return [];
+  }
+
+  const existing = await sceneRepo.find({ where: { user_id: userId } });
+  const existingMap = new Map(existing.map((scene) => [scene.scene_id, scene]));
+  const toCreate: NotificationCenterSceneEntity[] = [];
+  const toUpdate: NotificationCenterSceneEntity[] = [];
+
+  for (const seed of targetSeeds) {
+    const scene = existingMap.get(seed.scene_id);
+    if (!scene) {
+      // scene 不存在：按 seed 默认值创建，enableScenes=true 时强制启用
+      toCreate.push(sceneRepo.create({
+        user_id: userId,
+        scene_id: seed.scene_id,
+        label: seed.label,
+        enabled: options?.enableScenes ? true : seed.enabled,
+        summary: seed.summary,
+        description: seed.description,
+      }));
+    } else if (options?.enableScenes && !scene.enabled) {
+      // scene 已存在但未启用：仅在用户主动开启提醒功能时强制启用
+      scene.enabled = true;
+      toUpdate.push(scene);
+    }
+  }
+
+  const created = toCreate.length > 0 ? await sceneRepo.save(toCreate) : [];
+  const updated = toUpdate.length > 0 ? await sceneRepo.save(toUpdate) : [];
+
+  return [...created, ...updated];
 }
