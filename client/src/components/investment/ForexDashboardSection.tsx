@@ -703,45 +703,6 @@ export function ForexDashboardSection({
           ]}
         />
 
-        {/* 净值曲线 / 每日盈亏 - 独占整行，双标签切换 */}
-        <ChartCard
-          title={activeChart === 'equity' ? '收益曲线' : '每日盈亏'}
-          description={activeChart === 'equity' ? '累计交易盈亏变化趋势（不含出入金）。' : '按交易日观察净盈亏变化趋势。'}
-        >
-          {isDataReady && hasTrendData ? (
-            <div className="forex-chart-shell">
-              {/* 标签切换器 */}
-              <div className="forex-chart-tabs">
-                <button
-                  type="button"
-                  className={`forex-chart-tab${activeChart === 'equity' ? ' is-active' : ''}`}
-                  onClick={() => setActiveChart('equity')}
-                >
-                  收益曲线
-                </button>
-                <button
-                  type="button"
-                  className={`forex-chart-tab${activeChart === 'pnl' ? ' is-active' : ''}`}
-                  onClick={() => setActiveChart('pnl')}
-                >
-                  每日盈亏
-                </button>
-              </div>
-
-              {activeChart === 'equity' ? (
-                <EquityCurveChart data={equityCurve} />
-              ) : (
-                <DailyPnlChart data={trend} />
-              )}
-            </div>
-          ) : (
-            <EmptyState
-              title={isDataReady ? '暂无盈亏曲线' : '正在加载数据...'}
-              description={isDataReady ? '先录入几笔交易记录，趋势线才会形成。' : '正在从后端获取交易数据，请稍候。'}
-            />
-          )}
-        </ChartCard>
-
         {/* 盈亏分布 + 盈亏日历 并排 */}
         <div className="forex-dashboard-grid">
           {/* 左侧：盈亏分布饼图 */}
@@ -895,6 +856,45 @@ export function ForexDashboardSection({
             )}
           </div>
         </div>
+
+        {/* 收益曲线 / 每日盈亏 - 独占整行，双标签切换 */}
+        <ChartCard
+          title={activeChart === 'equity' ? '收益曲线' : '每日盈亏'}
+          description={activeChart === 'equity' ? '累计交易盈亏变化趋势（不含出入金）。' : '按交易日观察净盈亏变化趋势。'}
+        >
+          {isDataReady && hasTrendData ? (
+            <div className="forex-chart-shell">
+              {/* 标签切换器 */}
+              <div className="forex-chart-tabs">
+                <button
+                  type="button"
+                  className={`forex-chart-tab${activeChart === 'equity' ? ' is-active' : ''}`}
+                  onClick={() => setActiveChart('equity')}
+                >
+                  收益曲线
+                </button>
+                <button
+                  type="button"
+                  className={`forex-chart-tab${activeChart === 'pnl' ? ' is-active' : ''}`}
+                  onClick={() => setActiveChart('pnl')}
+                >
+                  每日盈亏
+                </button>
+              </div>
+
+              {activeChart === 'equity' ? (
+                <EquityCurveChart data={equityCurve} />
+              ) : (
+                <DailyPnlChart data={trend} />
+              )}
+            </div>
+          ) : (
+            <EmptyState
+              title={isDataReady ? '暂无盈亏曲线' : '正在加载数据...'}
+              description={isDataReady ? '先录入几笔交易记录，趋势线才会形成。' : '正在从后端获取交易数据，请稍候。'}
+            />
+          )}
+        </ChartCard>
 
         <ChartCard
           title="品种分析"
