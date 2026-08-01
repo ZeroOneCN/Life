@@ -12,6 +12,7 @@ import { validateBody } from '../../shared/http/validation';
 import { normalizeMonth } from '../../shared/utils/date';
 import { normalizeText } from '../../shared/utils/text';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { convertCurrency } from './exchange-rate.service';
 import { FinanceShoppingRecordEntity } from '../finance/entities/finance-shopping-record.entity';
 import { FinanceTravelExpenseRecordEntity } from '../finance/entities/finance-travel-expense-record.entity';
 import { FinanceLoanRepaymentEntity } from '../finance/entities/finance-loan-repayment.entity';
@@ -80,12 +81,37 @@ interface InvestmentSummary {
   equity: number;
   roi: number;
   breakdown: InvestmentBreakdownItem[];
+  /** 投资账户的展示币种（forex 账户为 USD） */
+  currency: string;
+  /** 将投资金额换算为人民币（reportCurrency）时使用的汇率 */
+  exchangeRate: number;
+  /** 汇率来源：exchangerate-api 实时 或 fallback 降级 */
+  exchangeRateSource: 'exchangerate-api' | 'fallback';
+  /** 汇率获取时间（ISO 字符串） */
+  exchangeRateFetchedAt: string;
+  /** 投资净值换算为人民币后的等值金额 */
+  equityInReportCurrency: number;
+  /** 净收益换算为人民币后的等值金额 */
+  netPnlInReportCurrency: number;
 }
 
 interface NetWorthSummary {
+  /** 投资账户原币种净值（USD） */
   investmentEquity: number;
+  /** 未还贷款（CNY） */
   unpaidLoanTotal: number;
+  /** 净资产：投资净值按汇率换算为人民币后减去未还贷款（CNY） */
   netWorth: number;
+  /** 报告统一币种（人民币 CNY） */
+  reportCurrency: string;
+  /** 投资原币种换算为报告币种使用的汇率 */
+  exchangeRate: number;
+  /** 汇率来源 */
+  exchangeRateSource: 'exchangerate-api' | 'fallback';
+  /** 汇率获取时间（ISO 字符串） */
+  exchangeRateFetchedAt: string;
+  /** 投资净值换算为人民币后的等值金额 */
+  investmentEquityInReportCurrency: number;
 }
 
 interface MonthlyReportSummary {
@@ -432,6 +458,17 @@ export async function buildMonthlyReport(
       }))
       .sort((a, b) => b.netPnl - a.netPnl);
 
+    // --- 汇率转换：投资账户为美元（USD），需要换算为人民币（CNY）以参与净资产计算
+    // 使用 Exchange Rate API 实时汇率（1 小时缓存，未配置 key 时降级为内置汇率）
+    const investmentCurrency = 'USD';
+    const reportCurrency = 'CNY';
+    const exchangeRateResult = await convertCurrency(investmentCurrency, reportCurrency, 1);
+    const usdToCnyRate = exchangeRateResult?.rate ?? 7.18; // 降级为内置汇率
+    const exchangeRateSource = exchangeRateResult?.source ?? 'fallback';
+    const exchangeRateFetchedAt = exchangeRateResult?.fetchedAt ?? new Date().toISOString();
+    const equityInCny = round2(investmentEquity * usdToCnyRate);
+    const netPnlInCny = round2(investmentNetPnl * usdToCnyRate);
+
     const investment: InvestmentSummary = {
       netPnl: round2(investmentNetPnl),
       grossPnl: round2(investmentGrossPnl),
@@ -444,14 +481,25 @@ export async function buildMonthlyReport(
       equity: round2(investmentEquity),
       roi: round2(investmentRoi * 100) / 100,
       breakdown: investmentBreakdown,
+      currency: investmentCurrency,
+      exchangeRate: round2(usdToCnyRate * 10000) / 10000,
+      exchangeRateSource,
+      exchangeRateFetchedAt,
+      equityInReportCurrency: equityInCny,
+      netPnlInReportCurrency: netPnlInCny,
     };
 
-    // --- 净资产计算
+    // --- 净资产计算：将投资净值按汇率换算为人民币后减去未还贷款（CNY）
     const unpaidLoanTotal = unpaidLoanBills.reduce((sum, bill) => sum + toNumber(bill.amount) + toNumber(bill.interest), 0);
     const netWorth: NetWorthSummary = {
       investmentEquity: round2(investmentEquity),
       unpaidLoanTotal: round2(unpaidLoanTotal),
-      netWorth: round2(investmentEquity - unpaidLoanTotal),
+      netWorth: round2(equityInCny - unpaidLoanTotal),
+      reportCurrency,
+      exchangeRate: round2(usdToCnyRate * 10000) / 10000,
+      exchangeRateSource,
+      exchangeRateFetchedAt,
+      investmentEquityInReportCurrency: equityInCny,
     };
 
     const moduleBreakdown: ModuleBreakdown[] = (Object.keys(moduleTotals) as ModuleBreakdown['module'][])
@@ -601,26 +649,30 @@ export function buildMonthlyReportMessage(report: MonthlyReportSummary) {
       lines.push(`${index + 1}. ${item.title} — ¥${item.amount.toLocaleString('zh-CN', { maximumFractionDigits: 2 })} (${item.date})`);
     });
   }
-  // 投资维度：投资账户为美元，统一用 $ 展示
+  // 投资维度：投资账户为美元（USD），展示原值 + 人民币等值
   if (report.investment && report.investment.tradeCount > 0) {
+    const inv = report.investment;
+    const rateText = `汇率 1 ${inv.currency} = ${inv.exchangeRate.toFixed(4)} CNY（${inv.exchangeRateSource === 'exchangerate-api' ? '实时' : '降级'}）`;
     lines.push('');
-    lines.push('📈 投资概览（美元）：');
-    lines.push(`净收益：${report.investment.netPnl >= 0 ? '+' : ''}$${report.investment.netPnl.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}（${report.investment.tradeCount} 笔交易，ROI ${report.investment.roi.toFixed(1)}%）`);
-    lines.push(`账户净值：$${report.investment.equity.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}（净入金 $${report.investment.netCapital.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}）`);
-    if (report.investment.breakdown.length > 0) {
+    lines.push(`📈 投资概览（${inv.currency}，${rateText}）：`);
+    lines.push(`净收益：${inv.netPnl >= 0 ? '+' : ''}$${inv.netPnl.toLocaleString('zh-CN', { maximumFractionDigits: 2 })} ≈ ¥${inv.netPnlInReportCurrency.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}（${inv.tradeCount} 笔交易，ROI ${inv.roi.toFixed(1)}%）`);
+    lines.push(`账户净值：$${inv.equity.toLocaleString('zh-CN', { maximumFractionDigits: 2 })} ≈ ¥${inv.equityInReportCurrency.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}（净入金 $${inv.netCapital.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}）`);
+    if (inv.breakdown.length > 0) {
       lines.push('品种明细：');
-      report.investment.breakdown.forEach((item) => {
+      inv.breakdown.forEach((item) => {
         lines.push(`- ${item.instrument}：${item.netPnl >= 0 ? '+' : ''}$${item.netPnl.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}（${item.tradeCount} 笔）`);
       });
     }
   }
-  // 净资产：投资账户为美元、未还贷款为人民币，跨币种按账面值直接相减，在标题中注明
+  // 净资产：已按汇率将投资净值换算为人民币（CNY）后与未还贷款相减，统一以人民币展示
   if (report.netWorth) {
+    const nw = report.netWorth;
+    const rateText = `汇率 1 USD = ${nw.exchangeRate.toFixed(4)} CNY（${nw.exchangeRateSource === 'exchangerate-api' ? '实时' : '降级'}）`;
     lines.push('');
-    lines.push('💰 净资产（投资$ - 贷款¥，按账面值直接相减）：');
-    lines.push(`投资账户净值：$${report.netWorth.investmentEquity.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`);
-    lines.push(`未还贷款：¥${report.netWorth.unpaidLoanTotal.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`);
-    lines.push(`净资产：$${report.netWorth.netWorth.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`);
+    lines.push(`💰 净资产（统一折算为 ${nw.reportCurrency}，${rateText}）：`);
+    lines.push(`投资账户净值：$${nw.investmentEquity.toLocaleString('zh-CN', { maximumFractionDigits: 2 })} ≈ ¥${nw.investmentEquityInReportCurrency.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`);
+    lines.push(`未还贷款：¥${nw.unpaidLoanTotal.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`);
+    lines.push(`净资产：¥${nw.netWorth.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`);
   }
   return lines.join('\n');
 }

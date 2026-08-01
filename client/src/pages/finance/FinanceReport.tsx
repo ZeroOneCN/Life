@@ -297,17 +297,29 @@ export default function FinanceReportPage() {
       {report?.investment && report.investment.tradeCount > 0 && (
         <SectionCard
           title="投资概览"
-          description={`${formatMonth(report.month)} 投资交易汇总（美元），净收益 = 毛盈亏 + 手续费 + 隔夜费。`}
-          action={<Tag tone={report.investment.netPnl >= 0 ? 'green' : 'red'}>{report.investment.netPnl >= 0 ? '盈利' : '亏损'}</Tag>}
+          description={`${formatMonth(report.month)} 投资交易汇总（${report.investment.currency}），净收益 = 毛盈亏 + 手续费 + 隔夜费。已按汇率折算人民币等值。`}
+          action={(
+            <Tag tone={report.investment.exchangeRateSource === 'exchangerate-api' ? 'blue' : 'default'}>
+              {report.investment.exchangeRateSource === 'exchangerate-api' ? '实时汇率' : '降级汇率'}
+            </Tag>
+          )}
         >
+          <div className="callout callout-info" style={{ marginBottom: 12 }}>
+            汇率 1 {report.investment.currency} = {report.investment.exchangeRate.toFixed(4)} CNY
+            （{report.investment.exchangeRateSource === 'exchangerate-api' ? 'Exchange Rate API 实时' : '内置降级汇率'}）
+          </div>
           <StatGrid
             items={[
               {
                 label: '净收益',
                 value: `${report.investment.netPnl >= 0 ? '+' : ''}${formatUsd(report.investment.netPnl)}`,
-                helper: `ROI ${report.investment.roi.toFixed(1)}%`,
+                helper: `≈ ¥${report.investment.netPnlInReportCurrency.toLocaleString('zh-CN', { maximumFractionDigits: 2 })} · ROI ${report.investment.roi.toFixed(1)}%`,
               },
-              { label: '账户净值', value: formatUsd(report.investment.equity), helper: `净入金 ${formatUsd(report.investment.netCapital)}` },
+              {
+                label: '账户净值',
+                value: formatUsd(report.investment.equity),
+                helper: `≈ ¥${report.investment.equityInReportCurrency.toLocaleString('zh-CN', { maximumFractionDigits: 2 })} · 净入金 ${formatUsd(report.investment.netCapital)}`,
+              },
               { label: '交易笔数', value: `${report.investment.tradeCount}` },
               { label: '手续费', value: formatUsd(report.investment.totalCommission), helper: `隔夜费 ${formatUsd(report.investment.totalOvernightFee)}` },
             ]}
@@ -330,16 +342,29 @@ export default function FinanceReportPage() {
       {report?.netWorth && (
         <SectionCard
           title="净资产追踪"
-          description="净资产 = 投资账户净值（$）- 未还贷款（¥），跨币种按账面值直接相减。"
+          description={`净资产 = 投资账户净值（${report.netWorth.exchangeRate ? 'USD 按汇率折算为 CNY' : ''}）- 未还贷款（CNY），统一以人民币展示。`}
+          action={(
+            <Tag tone={report.netWorth.exchangeRateSource === 'exchangerate-api' ? 'blue' : 'default'}>
+              {report.netWorth.exchangeRateSource === 'exchangerate-api' ? '实时汇率' : '降级汇率'}
+            </Tag>
+          )}
         >
+          <div className="callout callout-info" style={{ marginBottom: 12 }}>
+            汇率 1 USD = {report.netWorth.exchangeRate.toFixed(4)} CNY
+            （{report.netWorth.exchangeRateSource === 'exchangerate-api' ? 'Exchange Rate API 实时' : '内置降级汇率'}）
+          </div>
           <StatGrid
             items={[
               {
-                label: '净资产',
-                value: formatUsd(report.netWorth.netWorth),
+                label: '净资产（CNY）',
+                value: formatCurrency(report.netWorth.netWorth),
                 accent: report.netWorth.netWorth >= 0 ? 'var(--color-success-strong)' : 'var(--color-danger-strong)',
               },
-              { label: '投资账户净值', value: formatUsd(report.netWorth.investmentEquity) },
+              {
+                label: '投资账户净值',
+                value: formatUsd(report.netWorth.investmentEquity),
+                helper: `≈ ¥${report.netWorth.investmentEquityInReportCurrency.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`,
+              },
               { label: '未还贷款', value: formatCurrency(report.netWorth.unpaidLoanTotal) },
             ]}
           />
