@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import { env } from '../../config/env';
 import { appDataSource } from '../../db/data-source';
 import { SystemUserAccountEntity } from '../system/entities/system-user-account.entity';
-import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { ensureNotificationScenesForUser, sendNotificationSceneLogs } from '../../shared/domain/notification';
 import {
   buildMonthlyReport,
   buildMonthlyReportMessage,
@@ -25,6 +25,10 @@ async function pushMonthlyReportForUser(userId: string, month: string) {
   const report = await buildMonthlyReport(userId, month);
   const message = buildMonthlyReportMessage(report);
   const title = `财务月报 · ${describeMonth(month)}`;
+
+  // 确保 scene 记录存在（用户可能从未访问过通知中心，scene 尚未 seed）。
+  // 此处不强制启用，避免覆盖用户在通知中心主动禁用的配置。
+  await ensureNotificationScenesForUser(userId, ['finance.report.monthly']);
 
   // 真正下发到所有已绑定渠道，让用户能在企业微信 / 邮件 / Webhook 收到富文本月报
   return sendNotificationSceneLogs({
@@ -70,15 +74,14 @@ async function runMonthlyReportTick() {
   if (now.date() !== MONTH_DAY_TRIGGER || now.hour() < TRIGGER_HOUR) {
     return;
   }
-  const targetMonth = now.startOf('month').format('YYYY-MM');
-  const markerKey = `${targetMonth}-pushed`;
-  // 防止同一进程内重复推送
+  // 月报在月初推送上个月的总结：targetMonth 应为上个月，而非刚开始的当前月。
+  const targetMonth = now.subtract(1, 'month').format('YYYY-MM');
+  // 防止同一进程内重复推送，幂等 marker 以"上个月份"为 key。
   const flag = (globalThis as Record<string, unknown>)[`${SCHEDULER_KEY}_${targetMonth}`];
   if (flag) {
     return;
   }
   (globalThis as Record<string, unknown>)[`${SCHEDULER_KEY}_${targetMonth}`] = true;
-  void markerKey;
 
   try {
     const accountRepo = appDataSource.getRepository(SystemUserAccountEntity);
@@ -98,7 +101,7 @@ async function runMonthlyReportTick() {
 }
 
 /**
- * 启动月度财务报告推送调度器（每月 1 号 9 点）。
+ * 启动月度财务报告推送调度器（每月 1 号 9 点推送上个月的总结）。
  * 单进程内幂等。
  */
 export function startFinanceMonthlyReportScheduler() {
