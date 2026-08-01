@@ -53,6 +53,15 @@ function formatCurrency(value: number) {
   return `¥${value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
 }
 
+/**
+ * 格式化美元金额。投资账户为美元，统一用 $ 展示。
+ * @param value - 金额数值
+ * @returns 格式化后的美元字符串
+ */
+function formatUsd(value: number) {
+  return `$${value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
+}
+
 function formatPercent(value: number) {
   return `${(value * 100).toFixed(1)}%`;
 }
@@ -288,19 +297,19 @@ export default function FinanceReportPage() {
       {report?.investment && report.investment.tradeCount > 0 && (
         <SectionCard
           title="投资概览"
-          description={`${formatMonth(report.month)} 投资交易汇总，净收益 = 毛盈亏 + 手续费 + 隔夜费。`}
+          description={`${formatMonth(report.month)} 投资交易汇总（美元），净收益 = 毛盈亏 + 手续费 + 隔夜费。`}
           action={<Tag tone={report.investment.netPnl >= 0 ? 'green' : 'red'}>{report.investment.netPnl >= 0 ? '盈利' : '亏损'}</Tag>}
         >
           <StatGrid
             items={[
               {
                 label: '净收益',
-                value: `${report.investment.netPnl >= 0 ? '+' : ''}${formatCurrency(report.investment.netPnl)}`,
+                value: `${report.investment.netPnl >= 0 ? '+' : ''}${formatUsd(report.investment.netPnl)}`,
                 helper: `ROI ${report.investment.roi.toFixed(1)}%`,
               },
-              { label: '账户净值', value: formatCurrency(report.investment.equity), helper: `净入金 ${formatCurrency(report.investment.netCapital)}` },
+              { label: '账户净值', value: formatUsd(report.investment.equity), helper: `净入金 ${formatUsd(report.investment.netCapital)}` },
               { label: '交易笔数', value: `${report.investment.tradeCount}` },
-              { label: '手续费', value: formatCurrency(report.investment.totalCommission), helper: `隔夜费 ${formatCurrency(report.investment.totalOvernightFee)}` },
+              { label: '手续费', value: formatUsd(report.investment.totalCommission), helper: `隔夜费 ${formatUsd(report.investment.totalOvernightFee)}` },
             ]}
           />
           {report.investment.breakdown.length > 0 && (
@@ -309,9 +318,9 @@ export default function FinanceReportPage() {
               rowKey="instrument"
               columns={[
                 { key: 'instrument', title: '品种', render: (_, row) => row.instrument },
-                { key: 'netPnl', title: '净收益', align: 'right' as const, render: (_, row) => `${row.netPnl >= 0 ? '+' : ''}${formatCurrency(row.netPnl)}` },
+                { key: 'netPnl', title: '净收益', align: 'right' as const, render: (_, row) => `${row.netPnl >= 0 ? '+' : ''}${formatUsd(row.netPnl)}` },
                 { key: 'tradeCount', title: '笔数', align: 'right' as const, render: (_, row) => `${row.tradeCount}` },
-                { key: 'commission', title: '手续费', align: 'right' as const, render: (_, row) => formatCurrency(row.commission) },
+                { key: 'commission', title: '手续费', align: 'right' as const, render: (_, row) => formatUsd(row.commission) },
               ]}
             />
           )}
@@ -321,16 +330,16 @@ export default function FinanceReportPage() {
       {report?.netWorth && (
         <SectionCard
           title="净资产追踪"
-          description="净资产 = 投资账户净值 - 未还贷款总额。"
+          description="净资产 = 投资账户净值（$）- 未还贷款（¥），跨币种按账面值直接相减。"
         >
           <StatGrid
             items={[
               {
                 label: '净资产',
-                value: formatCurrency(report.netWorth.netWorth),
+                value: formatUsd(report.netWorth.netWorth),
                 accent: report.netWorth.netWorth >= 0 ? 'var(--color-success-strong)' : 'var(--color-danger-strong)',
               },
-              { label: '投资账户净值', value: formatCurrency(report.netWorth.investmentEquity) },
+              { label: '投资账户净值', value: formatUsd(report.netWorth.investmentEquity) },
               { label: '未还贷款', value: formatCurrency(report.netWorth.unpaidLoanTotal) },
             ]}
           />

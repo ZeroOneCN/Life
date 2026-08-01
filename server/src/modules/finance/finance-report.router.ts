@@ -601,26 +601,26 @@ export function buildMonthlyReportMessage(report: MonthlyReportSummary) {
       lines.push(`${index + 1}. ${item.title} — ¥${item.amount.toLocaleString('zh-CN', { maximumFractionDigits: 2 })} (${item.date})`);
     });
   }
-  // 投资维度
+  // 投资维度：投资账户为美元，统一用 $ 展示
   if (report.investment && report.investment.tradeCount > 0) {
     lines.push('');
-    lines.push('📈 投资概览：');
-    lines.push(`净收益：${report.investment.netPnl >= 0 ? '+' : ''}¥${report.investment.netPnl.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}（${report.investment.tradeCount} 笔交易，ROI ${report.investment.roi.toFixed(1)}%）`);
-    lines.push(`账户净值：¥${report.investment.equity.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}（净入金 ¥${report.investment.netCapital.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}）`);
+    lines.push('📈 投资概览（美元）：');
+    lines.push(`净收益：${report.investment.netPnl >= 0 ? '+' : ''}$${report.investment.netPnl.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}（${report.investment.tradeCount} 笔交易，ROI ${report.investment.roi.toFixed(1)}%）`);
+    lines.push(`账户净值：$${report.investment.equity.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}（净入金 $${report.investment.netCapital.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}）`);
     if (report.investment.breakdown.length > 0) {
       lines.push('品种明细：');
       report.investment.breakdown.forEach((item) => {
-        lines.push(`- ${item.instrument}：${item.netPnl >= 0 ? '+' : ''}¥${item.netPnl.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}（${item.tradeCount} 笔）`);
+        lines.push(`- ${item.instrument}：${item.netPnl >= 0 ? '+' : ''}$${item.netPnl.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}（${item.tradeCount} 笔）`);
       });
     }
   }
-  // 净资产
+  // 净资产：投资账户为美元、未还贷款为人民币，跨币种按账面值直接相减，在标题中注明
   if (report.netWorth) {
     lines.push('');
-    lines.push('💰 净资产：');
-    lines.push(`投资账户净值：¥${report.netWorth.investmentEquity.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`);
+    lines.push('💰 净资产（投资$ - 贷款¥，按账面值直接相减）：');
+    lines.push(`投资账户净值：$${report.netWorth.investmentEquity.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`);
     lines.push(`未还贷款：¥${report.netWorth.unpaidLoanTotal.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`);
-    lines.push(`净资产：¥${report.netWorth.netWorth.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`);
+    lines.push(`净资产：$${report.netWorth.netWorth.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`);
   }
   return lines.join('\n');
 }

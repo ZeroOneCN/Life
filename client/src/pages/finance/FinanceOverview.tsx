@@ -34,6 +34,15 @@ function formatCurrency(value: number) {
 }
 
 /**
+ * 格式化美元金额。投资账户为美元，统一用 $ 展示。
+ * @param value - 金额数值
+ * @returns 格式化后的美元字符串
+ */
+function formatUsd(value: number) {
+  return `$${value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
+}
+
+/**
  * 格式化百分比变化。
  * @param change - 变化值
  * @param percent - 变化百分比
@@ -114,7 +123,7 @@ export default function FinanceOverviewPage() {
                 value: report ? formatChange(report.yearOverYearChange, report.yearOverYearChangePercent) : '—',
                 helper: report ? `去年同月：${formatCurrency(report.lastYearSameMonthExpense)}` : undefined,
               },
-              { label: '投资净收益', value: report ? formatCurrency(report.investment.netPnl) : '—' },
+              { label: '投资净收益', value: report ? formatUsd(report.investment.netPnl) : '—' },
             ]}
           />
 
@@ -155,21 +164,21 @@ export default function FinanceOverviewPage() {
 
           <SectionCard
             title="投资与净资产"
-            description="投资账户收益与净资产快照"
+            description="投资账户为美元，未还贷款为人民币；净资产 = 投资净值（$）- 未还贷款（¥），跨币种按账面值直接相减。"
           >
             {loading ? (
               <div style={{ opacity: 0.6, padding: 24, textAlign: 'center' }}>加载中…</div>
             ) : report ? (
               <StatGrid
                 items={[
-                  { label: '毛收益', value: formatCurrency(report.investment.grossPnl) },
-                  { label: '手续费', value: formatCurrency(report.investment.totalCommission) },
-                  { label: '隔夜费', value: formatCurrency(report.investment.totalOvernightFee) },
+                  { label: '毛收益', value: formatUsd(report.investment.grossPnl) },
+                  { label: '手续费', value: formatUsd(report.investment.totalCommission) },
+                  { label: '隔夜费', value: formatUsd(report.investment.totalOvernightFee) },
                   { label: '交易笔数', value: `${report.investment.tradeCount}` },
-                  { label: '投资净值', value: formatCurrency(report.investment.equity) },
+                  { label: '投资净值', value: formatUsd(report.investment.equity) },
                   { label: '投资回报率', value: `${(report.investment.roi * 100).toFixed(2)}%` },
                   { label: '未还贷款', value: formatCurrency(report.netWorth.unpaidLoanTotal) },
-                  { label: '净资产', value: formatCurrency(report.netWorth.netWorth) },
+                  { label: '净资产', value: formatUsd(report.netWorth.netWorth) },
                 ]}
               />
             ) : null}
