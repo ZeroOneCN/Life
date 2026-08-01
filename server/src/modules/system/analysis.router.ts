@@ -30,7 +30,8 @@ function buildPrompt(stats: {
   start_date: string;
   end_date: string;
 }) {
-  return `你是一个专业的外汇（黄金/白银）交易分析师。请根据以下交易数据，给出多维度分析报告。
+  const instrumentList = stats.by_instrument.map((item) => item.instrument).join('、');
+  return `你是一个专业的外汇交易分析师。请根据以下交易数据，给出多维度分析报告。
 
 ## 交易数据（${stats.start_date} 至 ${stats.end_date}）
 
@@ -60,7 +61,7 @@ ${stats.by_instrument.map((item) => (
 指出胜率、盈亏比、手续费占比、方向偏好等方面存在的风险信号。如有连续亏损或过度交易，请明确指出。
 
 ### 3. 品种对比
-比较黄金(XAUUSD)和白银(XAGUSD)的表现差异，哪个品种更适合当前策略。
+比较各品种（${instrumentList}）的表现差异，哪个品种更适合当前策略。
 
 ### 4. 改进建议
 给出 2-3 条具体可操作的改进建议，聚焦在执行纪律、仓位管理和入场筛选上。
@@ -115,16 +116,17 @@ export function createAnalysisRouter() {
     const negativeSum = Math.abs(losses.reduce((sum, t) => sum + Number(t.pnl), 0));
     const profitLossRatio = negativeSum > 0 ? (positiveSum / wins.length) / (negativeSum / losses.length) : positiveSum > 0 ? Infinity : 0;
 
-    const byInstrument = ['XAUUSD', 'XAGUSD'].map((instrument) => {
-      const items = scopedTrades.filter((t) => t.instrument === instrument);
-      const itemWins = items.filter((t) => Number(t.pnl) > 0);
-      return {
-        instrument,
-        cnt: items.length,
-        total_pnl: Number(items.reduce((sum, t) => sum + Number(t.pnl) + Number(t.commission), 0).toFixed(2)),
-        win_rate: items.length > 0 ? itemWins.length / items.length : 0,
-      };
-    }).filter((item) => item.cnt > 0);
+    const byInstrument = Array.from(new Set(scopedTrades.map((t) => String(t.instrument ?? '').toUpperCase()).filter(Boolean))).sort()
+      .map((instrument) => {
+        const items = scopedTrades.filter((t) => String(t.instrument ?? '').toUpperCase() === instrument);
+        const itemWins = items.filter((t) => Number(t.pnl) > 0);
+        return {
+          instrument,
+          cnt: items.length,
+          total_pnl: Number(items.reduce((sum, t) => sum + Number(t.pnl) + Number(t.commission), 0).toFixed(2)),
+          win_rate: items.length > 0 ? itemWins.length / items.length : 0,
+        };
+      });
 
     const stats = {
       total_trades: scopedTrades.length,

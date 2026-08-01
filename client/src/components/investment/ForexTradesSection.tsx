@@ -5,7 +5,6 @@ import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
 import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
 import {
-  FOREX_INSTRUMENT_OPTIONS,
   FOREX_ORDER_TYPE_OPTIONS,
   FOREX_TRADE_PAGE_SIZE,
   buildForexImportTemplateWorkbookCompatible,
@@ -20,6 +19,7 @@ import {
   formatForexAmount,
   formatForexMoney,
   getForexInstrumentLabel,
+  getForexInstrumentOptions,
   getForexOrderTypeLabel,
   parseForexWorkbookForBatchImport,
   normalizeForexTimeInput,
@@ -187,6 +187,9 @@ export function ForexTradesSection({
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  /** 动态品种选项：从交易记录中提取所有唯一品种，并始终包含默认选项 */
+  const instrumentOptions = useMemo(() => getForexInstrumentOptions(trades), [trades]);
 
   const filteredTrades = useMemo(
     () => filterForexTrades(trades, {
@@ -519,7 +522,7 @@ export function ForexTradesSection({
             onChange={(event) => setInstrumentFilter(event.target.value)}
           >
             <option value="">全部交易品种</option>
-            {FOREX_INSTRUMENT_OPTIONS.map((instrument) => (
+            {instrumentOptions.map((instrument) => (
               <option key={instrument} value={instrument}>{getForexInstrumentLabel(instrument)}</option>
             ))}
           </SelectField>
@@ -548,7 +551,7 @@ export function ForexTradesSection({
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         ) : (
-          <EmptyState title="暂无交易记录" description="先录入一笔贵金属交易，或者放宽筛选条件后再查看。" />
+          <EmptyState title="暂无交易记录" description="先录入一笔交易，或者放宽筛选条件后再查看。" />
         )}
 
         <Modal
@@ -576,7 +579,7 @@ export function ForexTradesSection({
               value={form.instrument}
               onChange={(event) => setForm((current) => hydrateDerivedFields({ ...current, instrument: event.target.value as ForexInstrument }))}
             >
-              {FOREX_INSTRUMENT_OPTIONS.map((instrument) => (
+              {instrumentOptions.map((instrument) => (
                 <option key={instrument} value={instrument}>{getForexInstrumentLabel(instrument)}</option>
               ))}
             </SelectField>
@@ -672,7 +675,7 @@ export function ForexTradesSection({
               value={editingForm.instrument}
               onChange={(event) => setEditingForm((current) => hydrateDerivedFields({ ...current, instrument: event.target.value as ForexInstrument }))}
             >
-              {FOREX_INSTRUMENT_OPTIONS.map((instrument) => (
+              {instrumentOptions.map((instrument) => (
                 <option key={instrument} value={instrument}>{getForexInstrumentLabel(instrument)}</option>
               ))}
             </SelectField>

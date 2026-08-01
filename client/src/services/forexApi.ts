@@ -8,6 +8,7 @@ import type {
   ForexDashboardSummary,
   ForexImportResult,
   ForexInsight,
+  ForexInstrument,
   ForexInstrumentSummary,
   ForexPageState,
   ForexTradeDraft,
@@ -77,7 +78,7 @@ export const forexApi = {
     forcedLiquidationRatio: number;
     positions: Array<{
       id: string;
-      instrument: 'XAUUSD' | 'XAGUSD';
+      instrument: ForexInstrument;
       orderType: 'buy' | 'sell';
       openPrice: number;
       lotSize: number;

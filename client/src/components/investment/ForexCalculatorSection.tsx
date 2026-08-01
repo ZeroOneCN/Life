@@ -3,29 +3,26 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { EmptyState, SectionCard, StatGrid } from '../page';
 import { Btn, Field, SelectField, Tag } from '../ui';
 import {
-  FOREX_INSTRUMENT_OPTIONS,
   FOREX_ORDER_TYPE_OPTIONS,
   computeForexMultiPosition,
   formatForexAmount,
   formatForexMoney,
   formatForexPercent,
   getForexInstrumentLabel,
+  getForexInstrumentLeverage,
+  getForexInstrumentOptions,
   getForexOrderTypeLabel,
 } from '../../services/forex';
-import type { ForexCalculationResult, ForexCalculatorPositionDraft, ForexInstrument, ForexOrderType } from '../../types/forex';
+import type { ForexCalculationResult, ForexCalculatorPositionDraft, ForexInstrument, ForexOrderType, ForexTradeRecord } from '../../types/forex';
 
 const CALCULATOR_STORAGE_KEY = 'forex_calculator_state';
-
-/** 品种对应的推荐杠杆，切换品种时自动匹配 */
-const INSTRUMENT_DEFAULT_LEVERAGE: Record<ForexInstrument, number> = {
-  XAUUSD: 500,
-  XAGUSD: 100,
-};
 
 interface ForexCalculatorSectionProps {
   leverage: number;
   forcedLiquidationRatio: number;
   defaultBalance: number;
+  /** 交易记录数组，用于动态识别品种列表 */
+  trades: ForexTradeRecord[];
   onLeverageChange: (value: number) => void;
   onForcedLiquidationRatioChange: (value: number) => void;
 }
@@ -213,9 +210,13 @@ export function ForexCalculatorSection({
   leverage,
   forcedLiquidationRatio,
   defaultBalance,
+  trades,
   onLeverageChange,
   onForcedLiquidationRatioChange,
 }: ForexCalculatorSectionProps) {
+  /** 动态品种选项：从交易记录中提取所有唯一品种，并始终包含默认选项 */
+  const instrumentOptions = useMemo(() => getForexInstrumentOptions(trades), [trades]);
+
   const initialShared = useMemo(
     () => createSharedState(leverage, forcedLiquidationRatio || 0.5, defaultBalance),
     [defaultBalance, forcedLiquidationRatio, leverage],
@@ -348,7 +349,7 @@ export function ForexCalculatorSection({
                   value={position.instrument}
                   onChange={(event) => {
                     const nextInstrument = event.target.value as ForexInstrument;
-                    const autoLeverage = INSTRUMENT_DEFAULT_LEVERAGE[nextInstrument];
+                    const autoLeverage = getForexInstrumentLeverage(nextInstrument);
                     setPositions((current) => current.map((item) => (
                       item.id === position.id ? { ...item, instrument: nextInstrument } : item
                     )));
@@ -356,7 +357,7 @@ export function ForexCalculatorSection({
                     onLeverageChange(autoLeverage);
                   }}
                 >
-                  {FOREX_INSTRUMENT_OPTIONS.map((instrument) => (
+                  {instrumentOptions.map((instrument) => (
                     <option key={instrument} value={instrument}>{getForexInstrumentLabel(instrument)}</option>
                   ))}
                 </SelectField>

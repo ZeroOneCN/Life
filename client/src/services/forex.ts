@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import type { WorkSheet } from 'xlsx';
 
-import { CHART_CATEGORY_8, CHART_PNL, FOREX_INSTRUMENT } from '../lib/chartPalette';
+import { CHART_CATEGORY_8, CHART_PNL, getForexInstrumentColor } from '../lib/chartPalette';
 import type {
   ForexCalculationGroupResult,
   ForexCalculationResult,
@@ -31,19 +31,112 @@ const DEFAULT_REMARK = '';
 
 export const FOREX_TRADE_PAGE_SIZE = 10;
 export const FOREX_CAPITAL_PAGE_SIZE = 10;
-export const FOREX_INSTRUMENT_OPTIONS: ForexInstrument[] = ['XAUUSD', 'XAGUSD'];
+
+/**
+ * 默认品种列表：当没有交易记录可识别时，下拉框至少给出黄金/白银两个常用选项。
+ * 一旦有交易记录，会与 getForexInstrumentOptions 合并去重。
+ */
+export const FOREX_DEFAULT_INSTRUMENT_OPTIONS: ForexInstrument[] = ['XAUUSD', 'XAGUSD'];
 export const FOREX_ORDER_TYPE_OPTIONS: ForexOrderType[] = ['buy', 'sell'];
 export const FOREX_CAPITAL_TYPE_OPTIONS: ForexCapitalFlowType[] = ['deposit', 'withdrawal', 'bonus_expired', 'bonus_loss'];
-export const FOREX_CONTRACT_UNITS: Record<ForexInstrument, number> = {
+
+/**
+ * 已知品种的合约单位（1 标准手对应的合约规模）。
+ * 未知品种默认按 100 处理（与 XAUUSD 一致），调用方可通过 FOREX_CONTRACT_UNITS 扩展。
+ */
+export const FOREX_CONTRACT_UNITS: Record<string, number> = {
   XAUUSD: 100,
   XAGUSD: 5000,
 };
-export const FOREX_POINT_SIZES: Record<ForexInstrument, number> = {
+
+/** 默认合约单位（未知品种的兜底值，等同于 1 手 = 100 单位标的） */
+export const FOREX_DEFAULT_CONTRACT_UNITS = 100;
+
+/**
+ * 已知品种的点值大小（价格最小变动单位）。
+ * 未知品种默认按 0.01 处理（与 XAUUSD 一致）。
+ */
+export const FOREX_POINT_SIZES: Record<string, number> = {
   XAUUSD: 0.01,
   XAGUSD: 0.001,
 };
-export const FOREX_INSTRUMENT_COLORS: Record<ForexInstrument, string> = FOREX_INSTRUMENT;
+
+/** 默认点值大小（未知品种的兜底值） */
+export const FOREX_DEFAULT_POINT_SIZE = 0.01;
+
+/**
+ * 已知品种的中文标签映射，未知品种直接显示代码本身。
+ */
+export const FOREX_INSTRUMENT_LABELS: Record<string, string> = {
+  XAUUSD: 'XAUUSD 黄金',
+  XAGUSD: 'XAGUSD 白银',
+};
+
+/**
+ * 已知品种的推荐杠杆，未知品种默认 100 倍。
+ */
+export const FOREX_INSTRUMENT_DEFAULT_LEVERAGE: Record<string, number> = {
+  XAUUSD: 500,
+  XAGUSD: 100,
+};
+
+/** 默认杠杆（未知品种的兜底值） */
+export const FOREX_DEFAULT_LEVERAGE = 100;
+
 export const FOREX_PNL_COLORS = [CHART_PNL.up, CHART_CATEGORY_8[0], CHART_CATEGORY_8[3], CHART_PNL.down] as const;
+
+/**
+ * 从交易记录中提取所有唯一品种代码，按字母升序返回。
+ * @param trades - 交易记录数组
+ * @returns 去重并排序后的品种代码数组
+ */
+export function getForexInstrumentOptions(trades: ForexTradeRecord[] = []): ForexInstrument[] {
+  const set = new Set<string>();
+  trades.forEach((trade) => {
+    const code = String(trade.instrument ?? '').trim().toUpperCase();
+    if (code) set.add(code);
+  });
+  /** 始终包含默认选项，方便用户新增第一笔非默认品种的交易 */
+  FOREX_DEFAULT_INSTRUMENT_OPTIONS.forEach((code) => set.add(code));
+  return Array.from(set).sort();
+}
+
+/**
+ * 根据品种代码获取合约单位，未知品种返回默认值。
+ * @param instrument - 品种代码
+ * @returns 合约单位数值
+ */
+export function getForexContractUnits(instrument: ForexInstrument): number {
+  return FOREX_CONTRACT_UNITS[instrument] ?? FOREX_DEFAULT_CONTRACT_UNITS;
+}
+
+/**
+ * 根据品种代码获取点值大小，未知品种返回默认值。
+ * @param instrument - 品种代码
+ * @returns 点值大小数值
+ */
+export function getForexPointSize(instrument: ForexInstrument): number {
+  return FOREX_POINT_SIZES[instrument] ?? FOREX_DEFAULT_POINT_SIZE;
+}
+
+/**
+ * 根据品种代码获取推荐杠杆，未知品种返回默认值。
+ * @param instrument - 品种代码
+ * @returns 推荐杠杆数值
+ */
+export function getForexInstrumentLeverage(instrument: ForexInstrument): number {
+  return FOREX_INSTRUMENT_DEFAULT_LEVERAGE[instrument] ?? FOREX_DEFAULT_LEVERAGE;
+}
+
+/**
+ * 根据品种代码获取颜色，未知品种从通用调色板循环取色。
+ * @param instrument - 品种代码
+ * @param index - 在图表中的索引（用于未知品种循环取色）
+ * @returns 颜色十六进制字符串
+ */
+export function getForexInstrumentColorProxy(instrument: ForexInstrument, index = 0): string {
+  return getForexInstrumentColor(instrument, index);
+}
 
 function buildId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -186,8 +279,14 @@ function sortCapitalFlows(records: ForexCapitalFlow[]) {
   });
 }
 
-export function getForexInstrumentLabel(instrument: ForexInstrument) {
-  return instrument === 'XAUUSD' ? 'XAUUSD 黄金' : 'XAGUSD 白银';
+/**
+ * 根据品种代码获取展示标签。
+ * 已知品种返回 "代码 中文名"，未知品种直接返回代码本身。
+ * @param instrument - 品种代码
+ * @returns 展示标签字符串
+ */
+export function getForexInstrumentLabel(instrument: ForexInstrument): string {
+  return FOREX_INSTRUMENT_LABELS[instrument] ?? instrument;
 }
 
 export function getForexOrderTypeLabel(orderType: ForexOrderType) {
@@ -213,14 +312,28 @@ export function formatForexPercent(value: number) {
   return `${(value * 100).toFixed(1)}%`;
 }
 
+/**
+ * 规范化品种代码：转大写并处理常见别名。
+ * 未知品种保留原值（转大写），不再强制回退到 XAUUSD。
+ * @param value - 原始品种输入
+ * @returns 规范化后的品种代码
+ */
 function ensureInstrument(value: unknown): ForexInstrument {
   const normalized = String(value ?? '').trim().toUpperCase();
 
-  if (normalized === 'XAGUSD' || normalized === 'XAG' || normalized === 'SILVER' || normalized === '白银') {
-    return 'XAGUSD';
+  if (!normalized) {
+    return 'XAUUSD';
   }
 
-  return 'XAUUSD';
+  /** 常见别名映射 */
+  if (normalized === 'XAG' || normalized === 'SILVER' || normalized === '白银') {
+    return 'XAGUSD';
+  }
+  if (normalized === 'XAU' || normalized === 'GOLD' || normalized === '黄金') {
+    return 'XAUUSD';
+  }
+
+  return normalized;
 }
 
 function ensureOrderType(value: unknown): ForexOrderType {
@@ -268,7 +381,7 @@ export function calculateForexTradePnl(
   }
 
   const diff = orderType === 'buy' ? closePrice - openPrice : openPrice - closePrice;
-  return roundMoney(diff * lotSize * FOREX_CONTRACT_UNITS[instrument]);
+  return roundMoney(diff * lotSize * getForexContractUnits(instrument));
 }
 
 function formatHoldTime(seconds: number) {
@@ -308,7 +421,9 @@ function normalizeForexTrade(record: Partial<ForexTradeRecord>, index = 0): Fore
   const tradeDate = normalizeDate(record.tradeDate, dayjs().subtract(index, 'day').format(DATE_FORMAT));
   const instrument = ensureInstrument(record.instrument);
   const orderType = ensureOrderType(record.orderType);
-  const openPrice = roundMoney(toNumber(record.openPrice, instrument === 'XAUUSD' ? 2340 : 29.5));
+  /** 不同品种给出更贴近现实的默认开仓价，便于新增空白行时占位 */
+  const defaultOpenPrice = instrument === 'XAGUSD' ? 29.5 : 2340;
+  const openPrice = roundMoney(toNumber(record.openPrice, defaultOpenPrice));
   const closePrice = roundMoney(toNumber(record.closePrice, openPrice));
   const lotSize = Number(toNumber(record.lotSize, 0.01).toFixed(2));
   const commission = roundMoney(
@@ -698,6 +813,13 @@ export function buildForexDashboardSummary(
   // 净值 = 真实净入金 + 净盈亏 + 剩余体验金（MT5 净值 = 结余 + 信用）
   const equity = roundMoney(allNetCapital + allRealizedNetPnl + bonusBalance);
 
+  /** 动态统计各品种的交易笔数 */
+  const instrumentCounts: Record<string, number> = {};
+  scopedTrades.forEach((trade) => {
+    const code = trade.instrument;
+    instrumentCounts[code] = (instrumentCounts[code] ?? 0) + 1;
+  });
+
   return {
     tradeCount: scopedTrades.length,
     grossPnl,
@@ -708,8 +830,7 @@ export function buildForexDashboardSummary(
     profitLossRatio: negativeGross > 0 ? positiveGross / negativeGross : positiveGross > 0 ? positiveGross : 0,
     longCount: scopedTrades.filter((trade) => trade.orderType === 'buy').length,
     shortCount: scopedTrades.filter((trade) => trade.orderType === 'sell').length,
-    xauCount: scopedTrades.filter((trade) => trade.instrument === 'XAUUSD').length,
-    xagCount: scopedTrades.filter((trade) => trade.instrument === 'XAGUSD').length,
+    instrumentCounts,
     totalDeposit,
     totalWithdrawal,
     netCapital,
@@ -840,7 +961,10 @@ export function buildForexInstrumentSummary(
 ): ForexInstrumentSummary[] {
   const scopedTrades = filterTradesByDateRange(trades, startDate, endDate);
 
-  return FOREX_INSTRUMENT_OPTIONS.map((instrument) => {
+  /** 动态从交易记录中提取所有品种代码，按字母升序排列 */
+  const instruments = Array.from(new Set(scopedTrades.map((trade) => trade.instrument))).sort();
+
+  return instruments.map((instrument) => {
     const records = scopedTrades.filter((trade) => trade.instrument === instrument);
     const winners = records.filter((trade) => trade.pnl > 0).length;
     const grossPnl = roundMoney(records.reduce((sum, trade) => sum + trade.pnl, 0));
@@ -906,7 +1030,7 @@ export function buildForexInsights(
         id: 'empty',
         tone: 'neutral',
         title: '当前区间没有交易样本',
-        description: '先录入几笔 XAUUSD 或 XAGUSD 交易，这里就会开始给出胜率、手续费侵蚀和仓位偏置等规则分析。',
+        description: '先录入几笔交易记录，这里就会开始给出胜率、手续费侵蚀和仓位偏置等规则分析。',
       },
     ];
   }
@@ -949,7 +1073,7 @@ export function buildForexInsights(
       id: 'high-frequency',
       tone: 'warning',
       title: '交易频次偏高',
-      description: '平均每天超过 4 笔，容易把情绪波动放大成执行噪音，尤其在黄金震荡时会显著拉低质量。',
+      description: '平均每天超过 4 笔，容易把情绪波动放大成执行噪音，频繁进出场会显著拉低质量。',
       metric: `${avgTradesPerDay.toFixed(1)} 笔/天`,
     });
   }
@@ -978,17 +1102,26 @@ export function buildForexInsights(
     });
   }
 
-  const dominantInstrumentShare = summary.tradeCount
-    ? Math.max(summary.xauCount, summary.xagCount) / summary.tradeCount
+  /** 动态找出交易笔数最多的品种，用于判断单品种集中度 */
+  const instrumentEntries = Object.entries(summary.instrumentCounts);
+  const dominantInstrumentEntry = instrumentEntries
+    .sort((left, right) => right[1] - left[1])[0];
+  const dominantInstrumentShare = summary.tradeCount && dominantInstrumentEntry
+    ? dominantInstrumentEntry[1] / summary.tradeCount
     : 0;
 
-  if (dominantInstrumentShare >= 0.8) {
-    const instrument = summary.xauCount >= summary.xagCount ? 'XAUUSD' : 'XAGUSD';
+  if (dominantInstrumentShare >= 0.8 && dominantInstrumentEntry) {
+    const [instrument] = dominantInstrumentEntry;
+    const otherInstruments = instrumentEntries
+      .filter(([code]) => code !== instrument)
+      .map(([code]) => code);
     insights.push({
       id: 'instrument-concentration',
       tone: 'neutral',
       title: '单品种集中度较高',
-      description: '当前区间的交易几乎集中在同一个品种上，优点是熟悉节奏，风险是容易忽略另一个品种更干净的结构机会。',
+      description: otherInstruments.length
+        ? `当前区间的交易几乎集中在 ${instrument} 上，优点是熟悉节奏，风险是容易忽略 ${otherInstruments.slice(0, 3).join('、')} 等其他品种更干净的结构机会。`
+        : `当前区间的交易全部集中在 ${instrument} 上，建议适当关注其他品种的机会以分散风险。`,
       metric: `${instrument} ${formatForexPercent(dominantInstrumentShare)}`,
     });
   }
@@ -1035,9 +1168,11 @@ export function computeForexMultiPosition(
   const forcedLiquidationRatio = Math.min(1, Math.max(0.1, options.forcedLiquidationRatio || 0.5));
 
   const baseResults = positions.map((position) => {
-    const contractValue = roundMoney(position.openPrice * position.lotSize * FOREX_CONTRACT_UNITS[position.instrument]);
+    const contractUnits = getForexContractUnits(position.instrument);
+    const pointSize = getForexPointSize(position.instrument);
+    const contractValue = roundMoney(position.openPrice * position.lotSize * contractUnits);
     const margin = roundMoney(contractValue / leverage);
-    const pointValue = roundMoney(position.lotSize * FOREX_CONTRACT_UNITS[position.instrument] * FOREX_POINT_SIZES[position.instrument]);
+    const pointValue = roundMoney(position.lotSize * contractUnits * pointSize);
     const pnl = position.closePrice && position.closePrice > 0
       ? calculateForexTradePnl(position.instrument, position.orderType, position.openPrice, position.closePrice, position.lotSize)
       : null;
@@ -1082,14 +1217,14 @@ export function computeForexMultiPosition(
     const existing = groupMap.get(key);
     if (existing) {
       existing.totalLotSize = existing.totalLotSize + item.lotSize;
-      existing.totalContractUnits = existing.totalContractUnits + item.lotSize * FOREX_CONTRACT_UNITS[item.instrument];
+      existing.totalContractUnits = existing.totalContractUnits + item.lotSize * getForexContractUnits(item.instrument);
     } else {
       groupMap.set(key, {
         instrument: item.instrument,
         orderType: item.orderType,
         totalLotSize: item.lotSize,
         weightedOpenPrice: item.openPrice,
-        totalContractUnits: item.lotSize * FOREX_CONTRACT_UNITS[item.instrument],
+        totalContractUnits: item.lotSize * getForexContractUnits(item.instrument),
       });
     }
   });
@@ -1129,7 +1264,7 @@ export function computeForexMultiPosition(
       return;
     }
 
-    const priceMove = requiredLossFromThisGroup / (group.totalLotSize * FOREX_CONTRACT_UNITS[group.instrument]);
+    const priceMove = requiredLossFromThisGroup / (group.totalLotSize * getForexContractUnits(group.instrument));
 
     let liquidationPrice: number;
     if (group.orderType === 'buy') {
@@ -1156,14 +1291,15 @@ export function computeForexMultiPosition(
   /* 构建分组均价结果 */
   const groups: ForexCalculationGroupResult[] = [];
   groupMap.forEach((group, key) => {
+    const contractUnits = getForexContractUnits(group.instrument);
     groups.push({
       instrument: group.instrument,
       orderType: group.orderType,
       totalLotSize: roundMoney(group.totalLotSize),
       weightedOpenPrice: roundMoney(group.weightedOpenPrice),
       forcedLiquidationPrice: groupLiquidationPriceMap.get(key) ?? 0,
-      totalMargin: roundMoney((group.weightedOpenPrice * group.totalLotSize * FOREX_CONTRACT_UNITS[group.instrument]) / leverage),
-      contractValue: roundMoney(group.weightedOpenPrice * group.totalLotSize * FOREX_CONTRACT_UNITS[group.instrument]),
+      totalMargin: roundMoney((group.weightedOpenPrice * group.totalLotSize * contractUnits) / leverage),
+      contractValue: roundMoney(group.weightedOpenPrice * group.totalLotSize * contractUnits),
     });
   });
 
@@ -1656,14 +1792,26 @@ function getForexImportCell(row: Record<string, unknown>, aliases: string[]) {
   return '';
 }
 
+/**
+ * 解析导入数据中的品种字段：转大写，未知品种保留原值。
+ * @param value - 原始品种输入
+ * @returns 规范化后的品种代码
+ */
 function parseForexImportInstrument(value: unknown): ForexInstrument {
   const normalized = String(value ?? '').trim().toUpperCase();
 
-  if (normalized === 'XAGUSD' || normalized === 'XAG' || normalized === 'SILVER' || normalized === '白银') {
-    return 'XAGUSD';
+  if (!normalized) {
+    return 'XAUUSD';
   }
 
-  return 'XAUUSD';
+  if (normalized === 'XAG' || normalized === 'SILVER' || normalized === '白银') {
+    return 'XAGUSD';
+  }
+  if (normalized === 'XAU' || normalized === 'GOLD' || normalized === '黄金') {
+    return 'XAUUSD';
+  }
+
+  return normalized;
 }
 
 function parseForexImportOrderType(value: unknown): ForexOrderType {

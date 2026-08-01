@@ -1,6 +1,7 @@
 export type ForexTab = 'dashboard' | 'trades' | 'calculator' | 'capital';
 
-export type ForexInstrument = 'XAUUSD' | 'XAGUSD';
+/** 品种类型：不再硬编码，自动从交易记录中识别 */
+export type ForexInstrument = string;
 
 export type ForexOrderType = 'buy' | 'sell';
 
@@ -132,8 +133,8 @@ export interface ForexDashboardSummary {
   profitLossRatio: number;
   longCount: number;
   shortCount: number;
-  xauCount: number;
-  xagCount: number;
+  /** 各品种交易笔数，键为品种代码 */
+  instrumentCounts: Record<string, number>;
   totalDeposit: number;
   totalWithdrawal: number;
   netCapital: number;

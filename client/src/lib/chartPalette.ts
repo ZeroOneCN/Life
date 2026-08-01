@@ -101,11 +101,16 @@ export const RENT_COST = {
   serviceFee: '#27a644',
 } as const;
 
-/** 外汇品种颜色 */
-export const FOREX_INSTRUMENT = {
+/** 外汇品种默认颜色（已知品种优先使用，未知品种从通用调色板取色） */
+export const FOREX_INSTRUMENT_COLORS: Record<string, string> = {
   XAUUSD: '#f59e0b',
   XAGUSD: '#5e6ad2',
-} as const;
+};
+
+/** 根据品种代码获取颜色，未知品种从通用调色板循环取色 */
+export function getForexInstrumentColor(instrument: string, index = 0): string {
+  return FOREX_INSTRUMENT_COLORS[instrument] ?? pickChartColor(index);
+}
 
 /** 通用图表工具：循环取色 */
 export function pickChartColor(index: number, palette: readonly string[] = CHART_CATEGORY_8): string {

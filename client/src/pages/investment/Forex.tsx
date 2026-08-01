@@ -35,8 +35,7 @@ const EMPTY_SUMMARY: ForexDashboardSummary = {
   profitLossRatio: 0,
   longCount: 0,
   shortCount: 0,
-  xauCount: 0,
-  xagCount: 0,
+  instrumentCounts: {},
   totalDeposit: 0,
   totalWithdrawal: 0,
   netCapital: 0,
@@ -304,6 +303,7 @@ export default function ForexPage() {
           leverage={settings.leverage}
           forcedLiquidationRatio={settings.forcedLiquidationRatio}
           defaultBalance={summary.equity > 0 ? summary.equity : summary.netCapital}
+          trades={trades}
           onLeverageChange={(value) => {
             void updateSettings({ leverage: Math.max(1, Math.round(value || settings.leverage)) });
           }}

@@ -20,7 +20,7 @@ import { InvestmentForexTradeRecordEntity } from './entities/investment-forex-tr
 
 const tradeSchemaBase = z.object({
   tradeDate: z.string().min(1),
-  instrument: z.enum(['XAUUSD', 'XAGUSD']),
+  instrument: z.string().trim().min(1).transform((value) => value.toUpperCase()),
   orderType: z.enum(['buy', 'sell']),
   openPrice: z.number().positive().max(100000),
   lotSize: z.number().positive().max(1000),
@@ -72,7 +72,7 @@ const calculatorSchema = z.object({
   forcedLiquidationRatio: z.number().min(0.1).max(1),
   positions: z.array(z.object({
     id: z.string(),
-    instrument: z.enum(['XAUUSD', 'XAGUSD']),
+    instrument: z.string().trim().min(1).transform((value) => value.toUpperCase()),
     orderType: z.enum(['buy', 'sell']),
     openPrice: z.number().positive().max(100000),
     lotSize: z.number().positive().max(1000),
@@ -104,15 +104,43 @@ const importSchema = z.object({
 
 const settingService = new BaseUserSettingService(InvestmentForexSettingEntity);
 
-const CONTRACT_UNITS = {
+/**
+ * 已知品种的合约单位映射表，未知品种默认按 100（与 XAUUSD 一致）。
+ */
+const CONTRACT_UNITS: Record<string, number> = {
   XAUUSD: 100,
   XAGUSD: 5000,
-} as const;
+};
 
-const POINT_SIZES = {
+const DEFAULT_CONTRACT_UNITS = 100;
+
+/**
+ * 已知品种的点值大小映射表，未知品种默认按 0.01（与 XAUUSD 一致）。
+ */
+const POINT_SIZES: Record<string, number> = {
   XAUUSD: 0.01,
   XAGUSD: 0.001,
-} as const;
+};
+
+const DEFAULT_POINT_SIZE = 0.01;
+
+/**
+ * 根据品种代码获取合约单位，未知品种返回默认值。
+ * @param instrument - 品种代码
+ * @returns 合约单位数值
+ */
+function getContractUnits(instrument: string): number {
+  return CONTRACT_UNITS[instrument] ?? DEFAULT_CONTRACT_UNITS;
+}
+
+/**
+ * 根据品种代码获取点值大小，未知品种返回默认值。
+ * @param instrument - 品种代码
+ * @returns 点值大小数值
+ */
+function getPointSize(instrument: string): number {
+  return POINT_SIZES[instrument] ?? DEFAULT_POINT_SIZE;
+}
 
 function normalizeTime(value: unknown, fallback = '09:00') {
   const raw = String(value ?? '').trim();
@@ -139,7 +167,7 @@ function calculateCommission(lotSize: number) {
   return Number((-6 * lotSize).toFixed(2));
 }
 
-function calculatePnl(instrument: 'XAUUSD' | 'XAGUSD', orderType: 'buy' | 'sell', openPrice: number, closePrice: number, lotSize: number) {
+function calculatePnl(instrument: string, orderType: 'buy' | 'sell', openPrice: number, closePrice: number, lotSize: number) {
   if (!Number.isFinite(openPrice) || !Number.isFinite(closePrice) || !Number.isFinite(lotSize)) {
     return 0;
   }
@@ -150,7 +178,7 @@ function calculatePnl(instrument: 'XAUUSD' | 'XAGUSD', orderType: 'buy' | 'sell'
     return 0;
   }
   const diff = orderType === 'buy' ? closePrice - openPrice : openPrice - closePrice;
-  const rawPnl = diff * lotSize * CONTRACT_UNITS[instrument];
+  const rawPnl = diff * lotSize * getContractUnits(instrument);
   if (!Number.isFinite(rawPnl)) {
     return 0;
   }
@@ -272,6 +300,15 @@ function buildSummary(
   // 净值 = 真实净入金 + 净盈亏 + 剩余体验金（MT5 净值 = 结余 + 信用）
   const equity = allNetCapital + allRealizedNetPnl + bonusBalance;
 
+  /** 动态统计各品种的交易笔数 */
+  const instrumentCounts: Record<string, number> = {};
+  scopedTrades.forEach((item) => {
+    const code = String(item.instrument ?? '').toUpperCase();
+    if (code) {
+      instrumentCounts[code] = (instrumentCounts[code] ?? 0) + 1;
+    }
+  });
+
   return {
     tradeCount: scopedTrades.length,
     grossPnl: Number(grossPnl.toFixed(2)),
@@ -282,8 +319,7 @@ function buildSummary(
     profitLossRatio: losers.length ? winners.reduce((sum, item) => sum + Number(item.pnl), 0) / Math.abs(losers.reduce((sum, item) => sum + Number(item.pnl), 0)) : winners.length ? winners.reduce((sum, item) => sum + Number(item.pnl), 0) : 0,
     longCount: scopedTrades.filter((item) => item.order_type === 'buy').length,
     shortCount: scopedTrades.filter((item) => item.order_type === 'sell').length,
-    xauCount: scopedTrades.filter((item) => item.instrument === 'XAUUSD').length,
-    xagCount: scopedTrades.filter((item) => item.instrument === 'XAGUSD').length,
+    instrumentCounts,
     totalDeposit: Number(deposits.toFixed(2)),
     totalWithdrawal: Number(withdrawals.toFixed(2)),
     netCapital: Number(netCapital.toFixed(2)),
@@ -355,7 +391,7 @@ export function createForexRouter() {
       throw new AppError('forex_trade_not_found', 404, 404);
     }
 
-    const nextInstrument: 'XAUUSD' | 'XAGUSD' = payload.instrument ?? (current.instrument as 'XAUUSD' | 'XAGUSD');
+    const nextInstrument: string = payload.instrument ?? current.instrument;
     const nextOrderType: 'buy' | 'sell' = payload.orderType ?? (current.order_type as 'buy' | 'sell');
     const nextOpenPrice = payload.openPrice ?? Number(current.open_price);
     const nextClosePrice = payload.closePrice ?? Number(current.close_price);
@@ -531,8 +567,11 @@ export function createForexRouter() {
     const userId = requireAuthUser(request);
     const repository = appDataSource.getRepository(InvestmentForexTradeRecordEntity);
     const items = await repository.find({ where: { user_id: userId } });
-    const result = (['XAUUSD', 'XAGUSD'] as const).map((instrument) => {
-      const scoped = items.filter((item) => item.instrument === instrument);
+
+    /** 动态从交易记录中提取所有品种代码，按字母升序排列 */
+    const instruments = Array.from(new Set(items.map((item) => String(item.instrument ?? '').toUpperCase()).filter(Boolean))).sort();
+    const result = instruments.map((instrument) => {
+      const scoped = items.filter((item) => String(item.instrument ?? '').toUpperCase() === instrument);
       const winners = scoped.filter((item) => Number(item.pnl) > 0).length;
       const grossPnl = scoped.reduce((sum, item) => sum + Number(item.pnl), 0);
       const totalCommission = scoped.reduce((sum, item) => sum + Number(item.commission), 0);
@@ -665,9 +704,11 @@ export function createForexRouter() {
     const positionsInput = payload.positions ?? [];
 
     const basePositions = positionsInput.map((position) => {
-      const contractValue = Number((position.openPrice * position.lotSize * CONTRACT_UNITS[position.instrument]).toFixed(2));
+      const units = getContractUnits(position.instrument);
+      const pointSize = getPointSize(position.instrument);
+      const contractValue = Number((position.openPrice * position.lotSize * units).toFixed(2));
       const margin = Number((contractValue / payload.leverage).toFixed(2));
-      const pointValue = Number((position.lotSize * CONTRACT_UNITS[position.instrument] * POINT_SIZES[position.instrument]).toFixed(2));
+      const pointValue = Number((position.lotSize * units * pointSize).toFixed(2));
       const pnl = position.closePrice
         ? calculatePnl(position.instrument, position.orderType, position.openPrice, position.closePrice, position.lotSize)
         : null;
@@ -697,7 +738,7 @@ export function createForexRouter() {
 
     /* 按「品种 + 方向」分组计算加权平均开仓价 */
     const groupMap = new Map<string, {
-      instrument: 'XAUUSD' | 'XAGUSD';
+      instrument: string;
       orderType: 'buy' | 'sell';
       totalLotSize: number;
       weightedOpenPrice: number;

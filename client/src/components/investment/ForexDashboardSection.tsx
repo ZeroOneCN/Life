@@ -934,7 +934,7 @@ export function ForexDashboardSection({
               ))}
             </div>
           ) : (
-            <EmptyState title="暂无品种分析" description="先录入 XAUUSD 或 XAGUSD 交易后，这里会形成对比。" />
+            <EmptyState title="暂无品种分析" description="先录入交易记录后，这里会按品种形成对比。" />
           )}
         </ChartCard>
 

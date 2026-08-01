@@ -282,8 +282,13 @@ async function queryInvestment(userId: string, filters: QueryFilters) {
       winRate: inRangeTrades.length ? Number((winners.length / inRangeTrades.length).toFixed(4)) : 0,
       longCount: inRangeTrades.filter((row) => row.order_type === 'buy').length,
       shortCount: inRangeTrades.filter((row) => row.order_type === 'sell').length,
-      xauCount: inRangeTrades.filter((row) => row.instrument === 'XAUUSD').length,
-      xagCount: inRangeTrades.filter((row) => row.instrument === 'XAGUSD').length,
+      instrumentCounts: inRangeTrades.reduce((counts, row) => {
+        const code = String(row.instrument ?? '').toUpperCase();
+        if (code) {
+          counts[code] = (counts[code] ?? 0) + 1;
+        }
+        return counts;
+      }, {} as Record<string, number>),
       grossPnl: Number(grossPnl.toFixed(2)),
       totalCommission: Number(totalCommission.toFixed(2)),
       realizedNetPnl: Number(realizedNetPnl.toFixed(2)),
