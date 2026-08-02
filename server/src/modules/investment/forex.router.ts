@@ -850,7 +850,18 @@ export function createForexRouter() {
     const toSave: InvestmentForexTradeRecordEntity[] = [];
 
     rows.forEach((row) => {
-      const instrument = row.instrument === 'XAGUSD' ? 'XAGUSD' : row.instrument === 'XAUUSD' ? 'XAUUSD' : null;
+      /** 规范化品种代码：转大写并处理常见别名，未知品种保留原值 */
+      const rawInstrument = String(row.instrument ?? '').trim().toUpperCase();
+      let instrument: string | null = null;
+      if (rawInstrument) {
+        if (rawInstrument === 'XAG' || rawInstrument === 'SILVER' || rawInstrument === '白银') {
+          instrument = 'XAGUSD';
+        } else if (rawInstrument === 'XAU' || rawInstrument === 'GOLD' || rawInstrument === '黄金') {
+          instrument = 'XAUUSD';
+        } else {
+          instrument = rawInstrument;
+        }
+      }
       const orderType = row.orderType === 'sell' ? 'sell' : row.orderType === 'buy' ? 'buy' : null;
       const tradeDate = row.tradeDate ? normalizeDate(row.tradeDate) : '';
       const openPrice = Number(row.openPrice);
@@ -947,13 +958,14 @@ export function createForexRouter() {
     const rows = payload.rows ?? [];
     const repository = appDataSource.getRepository(InvestmentForexCapitalFlowEntity);
 
-    // 查询现有记录用于去重（日期 + 类型 + 金额 + 备注）
+    // 查询现有记录用于去重（日期 + 类型 + 金额 + 备注 + 是否体验金）
     const existing = await repository.find({ where: { user_id: userId } });
     const seen = new Set(existing.map((item) => [
       item.flow_date,
       item.flow_type,
       Number(item.amount).toFixed(2),
       item.remark ?? '',
+      item.is_bonus ? '1' : '0',
     ].join('|')));
 
     let importedCount = 0;
@@ -970,7 +982,7 @@ export function createForexRouter() {
         return;
       }
 
-      const key = [flowDate, row.flowType, amount.toFixed(2), row.remark ?? ''].join('|');
+      const key = [flowDate, row.flowType, amount.toFixed(2), row.remark ?? '', row.isBonus ? '1' : '0'].join('|');
       if (seen.has(key)) {
         duplicateCount += 1;
         return;
