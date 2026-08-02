@@ -341,9 +341,12 @@ interface PnlDayData {
 /** 盈亏日历组件：按月展示每日盈亏热力图，支持年/月下拉切换，格子内直显收益 */
 function PnlCalendar({
   trend,
+  trades,
   capitalFlows,
 }: {
   trend: { date: string; netPnl: number; tradeCount: number }[];
+  /** 完整交易记录，用于计算月初权益（不受 dashboard 日期范围限制） */
+  trades: ForexTradeRecord[];
   capitalFlows: ForexCapitalFlow[];
 }) {
   const [viewMonth, setViewMonth] = useState(() => dayjs());
@@ -385,7 +388,7 @@ function PnlCalendar({
     return cells;
   }, [viewMonth, pnlMap]);
 
-  /** 当月统计摘要 */
+  /** 当月统计摘要：月收益率采用"月初权益法" = 当月净盈亏 / 月初权益 */
   const monthStats = useMemo(() => {
     let totalPnl = 0;
     let winDays = 0;
@@ -402,15 +405,36 @@ function PnlCalendar({
     });
 
     const monthStart = viewMonth.startOf('month').format('YYYY-MM-DD');
-    const monthEnd = viewMonth.endOf('month').format('YYYY-MM-DD');
-    // 体验金入金不计入；体验金失效（bonus_expired）在 MT5 中转为真实余额，计入入金
-    const monthDeposit = capitalFlows
-      .filter((flow) => (flow.flowType === 'deposit' && !flow.isBonus) || flow.flowType === 'bonus_expired')
-      .filter((flow) => flow.flowDate >= monthStart && flow.flowDate <= monthEnd)
-      .reduce((sum, flow) => sum + flow.amount, 0);
+    const prevMonthEnd = viewMonth.subtract(1, 'month').endOf('month').format('YYYY-MM-DD');
 
-    return { totalPnl, winDays, lossDays, tradeDays, monthDeposit };
-  }, [calendarDays, capitalFlows, viewMonth]);
+    /* 月初权益 = 截至上月末的累计净入金 + 累计净盈亏 */
+    // 累计净入金：真实入金（排除体验金）+ 体验金失效（转为真实余额）- 出金
+    const cumulativeNetCapital = capitalFlows
+      .filter((flow) => flow.flowDate <= prevMonthEnd)
+      .reduce((sum, flow) => {
+        if ((flow.flowType === 'deposit' && !flow.isBonus) || flow.flowType === 'bonus_expired') {
+          return sum + flow.amount;
+        }
+        if (flow.flowType === 'withdrawal') {
+          return sum - flow.amount;
+        }
+        return sum;
+      }, 0);
+    // 累计净盈亏：截至上月末所有交易的净盈亏之和
+    const cumulativeNetPnl = trades
+      .filter((trade) => trade.tradeDate <= prevMonthEnd)
+      .reduce((sum, trade) => sum + trade.pnl + trade.commission + trade.overnightFee, 0);
+    const beginningEquity = cumulativeNetCapital + cumulativeNetPnl;
+
+    return {
+      totalPnl,
+      winDays,
+      lossDays,
+      tradeDays,
+      beginningEquity,
+      monthRoi: beginningEquity > 0 ? totalPnl / beginningEquity : null,
+    };
+  }, [calendarDays, capitalFlows, trades, viewMonth]);
 
   /** 年份下拉选项：当前年 ±5 */
   const yearOptions = useMemo(() => {
@@ -485,7 +509,7 @@ function PnlCalendar({
           <div className="pnl-summary-row">
             <span>月收益率</span>
             <em className={monthStats.totalPnl >= 0 ? 'pnl-text-profit' : 'pnl-text-loss'}>
-              {monthStats.monthDeposit > 0 ? formatForexPercent(monthStats.totalPnl / monthStats.monthDeposit) : '-'}
+              {monthStats.monthRoi !== null ? formatForexPercent(monthStats.monthRoi) : '-'}
             </em>
           </div>
         </div>
@@ -850,7 +874,7 @@ export function ForexDashboardSection({
               <span>按月查看每日盈亏热力图，颜色越深金额越大。</span>
             </div>
             {isDataReady && hasTrendData ? (
-              <PnlCalendar trend={trend} capitalFlows={capitalFlows} />
+              <PnlCalendar trend={trend} trades={trades} capitalFlows={capitalFlows} />
             ) : (
               <EmptyState title="暂无日历数据" description="录入交易记录后显示每日盈亏分布。" />
             )}
