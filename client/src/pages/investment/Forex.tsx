@@ -291,6 +291,7 @@ export default function ForexPage() {
       {tab === 'trades' ? (
         <ForexTradesSection
           trades={trades}
+          capitalFlows={capitalFlows}
           onChangeTrades={(updater) => handleTradesChange(updater)}
           onImportApplied={handleImportApplied}
           onReload={reload}

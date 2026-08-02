@@ -14,7 +14,7 @@ import {
   createForexTrade,
   deleteForexTrade,
   downloadBlob,
-  exportForexTradesWorkbook,
+  exportForexFullWorkbook,
   filterForexTrades,
   formatForexAmount,
   formatForexMoney,
@@ -26,10 +26,12 @@ import {
   updateForexTrade,
 } from '../../services/forex';
 import { forexApi } from '../../services/forexApi';
-import type { ForexImportResult, ForexInstrument, ForexOrderType, ForexTradeDraft, ForexTradeRecord } from '../../types/forex';
+import type { ForexCapitalFlow, ForexImportResult, ForexInstrument, ForexOrderType, ForexTradeDraft, ForexTradeRecord } from '../../types/forex';
 
 interface ForexTradesSectionProps {
   trades: ForexTradeRecord[];
+  /** 出入金记录数组，用于合并导出到同一 xlsx 文件的第二个 sheet */
+  capitalFlows: ForexCapitalFlow[];
   onChangeTrades: (updater: (records: ForexTradeRecord[]) => ForexTradeRecord[]) => Promise<void> | void;
   onImportApplied?: (records: ForexTradeRecord[]) => void;
   onReload?: () => Promise<ForexTradeRecord[]>;
@@ -159,6 +161,7 @@ function parseDraft(form: TradeFormState): ForexTradeDraft | null {
 
 export function ForexTradesSection({
   trades,
+  capitalFlows,
   onChangeTrades,
   onImportApplied,
   onReload,
@@ -441,17 +444,17 @@ export function ForexTradesSection({
   };
 
   const handleExportTrades = async () => {
-    if (filteredTrades.length === 0) {
+    if (filteredTrades.length === 0 && capitalFlows.length === 0) {
       showToast('当前筛选结果为空，无可导出数据。', 'error');
       return;
     }
 
     setIsExporting(true);
     try {
-      const blob = await exportForexTradesWorkbook(filteredTrades);
+      const blob = await exportForexFullWorkbook(filteredTrades, capitalFlows);
       const dateStamp = dayjs().format('YYYYMMDD-HHmm');
-      downloadBlob(blob, `forex-trades-${dateStamp}.xlsx`);
-      showToast(`已导出 ${filteredTrades.length} 条交易记录。`);
+      downloadBlob(blob, `forex-full-${dateStamp}.xlsx`);
+      showToast(`已导出 ${filteredTrades.length} 条交易记录、${capitalFlows.length} 条出入金记录。`);
     } catch (_error) {
       showToast('导出失败，请稍后重试。', 'error');
     } finally {
@@ -479,7 +482,7 @@ export function ForexTradesSection({
             {isImporting ? '导入中...' : '导入 Excel / CSV'}
           </Btn>
           <Btn tone="secondary" onClick={handleDownloadTemplate}>下载模板</Btn>
-          <Btn tone="secondary" onClick={handleExportTrades} disabled={isExporting || filteredTrades.length === 0}>
+          <Btn tone="secondary" onClick={handleExportTrades} disabled={isExporting || (filteredTrades.length === 0 && capitalFlows.length === 0)}>
             {isExporting ? '导出中...' : '导出 Excel'}
           </Btn>
         </div>

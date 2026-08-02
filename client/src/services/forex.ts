@@ -2314,6 +2314,74 @@ export async function exportForexCapitalFlowsWorkbook(records: ForexCapitalFlow[
   });
 }
 
+/**
+ * 合并导出交易记录和出入金到同一个 xlsx 文件，包含两个 sheet。
+ * - sheet "交易记录"：与导入模板字段一致，按时间正序（旧→新）
+ * - sheet "出入金"：包含日期、类型、金额、体验金标记、备注，按时间正序
+ * @param trades - 交易记录数组
+ * @param capitalFlows - 出入金记录数组
+ * @returns Blob 对象，可直接下载
+ */
+export async function exportForexFullWorkbook(
+  trades: ForexTradeRecord[],
+  capitalFlows: ForexCapitalFlow[],
+) {
+  const XLSX = await import('xlsx');
+  const workbook = XLSX.utils.book_new();
+
+  /* Sheet 1: 交易记录（按时间正序） */
+  const sortedTrades = [...trades].sort((left, right) => {
+    const leftMoment = isValidTradeDate(left.tradeDate)
+      ? dayjs(`${left.tradeDate}T${normalizeForexTimeInput(left.openTime, DEFAULT_START_TIME)}`)
+      : dayjs('2000-01-01');
+    const rightMoment = isValidTradeDate(right.tradeDate)
+      ? dayjs(`${right.tradeDate}T${normalizeForexTimeInput(right.openTime, DEFAULT_START_TIME)}`)
+      : dayjs('2000-01-01');
+    return leftMoment.valueOf() - rightMoment.valueOf();
+  });
+  const tradeRows = sortedTrades.map((record) => ({
+    ID: record.id,
+    仓位ID: record.positionId || '',
+    日期时间: record.tradeDate,
+    交易品种: record.instrument,
+    订单类型: record.orderType,
+    开仓价格: record.openPrice,
+    手数: record.lotSize,
+    手续费: record.commission,
+    平仓价格: record.closePrice,
+    盈亏金额: record.pnl,
+    隔夜费: record.overnightFee,
+    开仓时间: record.openTime,
+    平仓时间: record.closeTime,
+    持仓时间: record.holdTime,
+    备注: record.remark,
+  }));
+  const tradeWorksheet = XLSX.utils.json_to_sheet(tradeRows);
+  XLSX.utils.book_append_sheet(workbook, tradeWorksheet, '交易记录');
+
+  /* Sheet 2: 出入金（按时间正序） */
+  const sortedFlows = [...capitalFlows].sort((left, right) => {
+    const leftMoment = isValidTradeDate(left.flowDate) ? dayjs(left.flowDate) : dayjs('2000-01-01');
+    const rightMoment = isValidTradeDate(right.flowDate) ? dayjs(right.flowDate) : dayjs('2000-01-01');
+    return leftMoment.valueOf() - rightMoment.valueOf();
+  });
+  const flowRows = sortedFlows.map((record) => ({
+    ID: record.id,
+    日期: record.flowDate,
+    类型: getForexCapitalTypeLabel(record.flowType),
+    金额: record.amount,
+    体验金: record.isBonus ? '是' : '否',
+    备注: record.remark,
+  }));
+  const flowWorksheet = XLSX.utils.json_to_sheet(flowRows);
+  XLSX.utils.book_append_sheet(workbook, flowWorksheet, '出入金');
+
+  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  return new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+}
+
 export function downloadBlob(blob: Blob, fileName: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
