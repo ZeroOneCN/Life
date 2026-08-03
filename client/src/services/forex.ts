@@ -1793,25 +1793,36 @@ function getForexImportCell(row: Record<string, unknown>, aliases: string[]) {
 }
 
 /**
- * 解析导入数据中的品种字段：转大写，未知品种保留原值。
+ * 规范化品种代码：去除常见后缀（.m / .s / m / ecn 等），转大写并处理别名。
+ * 与后端 normalizeInstrument 保持一致，确保前后端品种格式统一。
  * @param value - 原始品种输入
- * @returns 规范化后的品种代码
+ * @returns 规范化后的品种代码，空输入返回 XAUUSD（兜底默认值）
  */
 function parseForexImportInstrument(value: unknown): ForexInstrument {
-  const normalized = String(value ?? '').trim().toUpperCase();
-
-  if (!normalized) {
+  const trimmed = String(value ?? '').trim();
+  if (!trimmed) {
     return 'XAUUSD';
   }
 
-  if (normalized === 'XAG' || normalized === 'SILVER' || normalized === '白银') {
+  // 1. 去掉点号及之后的内容（处理 XAUUSD.m, XAUUSD.s 等）
+  const withoutDot = trimmed.split('.')[0];
+
+  // 2. 去掉末尾连续的小写字母后缀（处理 XAUUSDm, EURUSDecn 等）
+  const suffixMatch = withoutDot.match(/^([A-Z]+[A-Z0-9]*)([a-z]+)$/);
+  const withoutSuffix = suffixMatch ? suffixMatch[1] : withoutDot;
+
+  // 3. 转大写
+  const upper = withoutSuffix.toUpperCase();
+
+  // 4. 别名映射
+  if (upper === 'XAG' || upper === 'SILVER' || upper === '白银') {
     return 'XAGUSD';
   }
-  if (normalized === 'XAU' || normalized === 'GOLD' || normalized === '黄金') {
+  if (upper === 'XAU' || upper === 'GOLD' || upper === '黄金') {
     return 'XAUUSD';
   }
 
-  return normalized;
+  return upper;
 }
 
 function parseForexImportOrderType(value: unknown): ForexOrderType {
@@ -1934,13 +1945,13 @@ function buildImportedTradeCompatible(
   };
 }
 
-/** 将出入金中文类型映射为后端枚举 */
+/** 将出入金类型映射为后端枚举，同时支持中文和英文类型值 */
 function parseCapitalFlowType(raw: string): 'deposit' | 'withdrawal' | 'bonus_expired' | 'bonus_loss' | null {
-  const t = raw.trim();
-  if (t === '入金') return 'deposit';
-  if (t === '出金') return 'withdrawal';
-  if (t === '体验金失效') return 'bonus_expired';
-  if (t === '体验金亏损') return 'bonus_loss';
+  const t = raw.trim().toLowerCase();
+  if (t === '入金' || t === 'deposit') return 'deposit';
+  if (t === '出金' || t === 'withdrawal') return 'withdrawal';
+  if (t === '体验金失效' || t === 'bonus_expired') return 'bonus_expired';
+  if (t === '体验金亏损' || t === 'bonus_loss') return 'bonus_loss';
   return null;
 }
 
@@ -2007,12 +2018,17 @@ export async function parseForexWorkbookForBatchImport(
     const rows = await parseForexImportSheet(worksheet);
     if (rows.length === 0) continue;
 
-    // 检测 Sheet 类型：出入金 Sheet 包含 "类型" 列且值为 入金/出金/体验金失效/体验金亏损
+    // 检测 Sheet 类型：
+    // 1. 优先通过 sheet 名称判断（"资金流水"或"出入金"）
+    // 2. 其次通过第一行"类型"列的值判断（支持中文和英文）
+    const normalizedSheetName = sheetName.trim().toLowerCase();
+    const isCapitalSheetByName = normalizedSheetName === '资金流水' || normalizedSheetName === '出入金';
     const firstRow = rows[0];
     const typeValue = normalizeTrimmedValue(
       getForexImportCell(firstRow, ['类型', 'flowType', 'flow_type', 'type']),
     );
-    const isCapitalSheet = parseCapitalFlowType(typeValue) !== null;
+    const isCapitalSheetByContent = parseCapitalFlowType(typeValue) !== null;
+    const isCapitalSheet = isCapitalSheetByName || isCapitalSheetByContent;
 
     if (isCapitalSheet) {
       capitalRows.push(...parseCapitalSheetRows(rows));
