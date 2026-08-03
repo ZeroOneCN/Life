@@ -65,12 +65,10 @@ export const FOREX_POINT_SIZES: Record<string, number> = {
 export const FOREX_DEFAULT_POINT_SIZE = 0.01;
 
 /**
- * 已知品种的中文标签映射，未知品种直接显示代码本身。
+ * 品种展示标签映射。统一只显示品种代码本身（如 XAUUSD），不再附加中文名称。
+ * 保留映射表结构以便未来按需扩展自定义标签。
  */
-export const FOREX_INSTRUMENT_LABELS: Record<string, string> = {
-  XAUUSD: 'XAUUSD 黄金',
-  XAGUSD: 'XAGUSD 白银',
-};
+export const FOREX_INSTRUMENT_LABELS: Record<string, string> = {};
 
 /**
  * 已知品种的推荐杠杆，未知品种默认 100 倍。

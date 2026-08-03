@@ -875,17 +875,34 @@ export function createForexRouter() {
     const repository = appDataSource.getRepository(InvestmentForexTradeRecordEntity);
     const batchRepo = appDataSource.getRepository(InvestmentForexImportBatchEntity);
     const existing = await repository.find({ where: { user_id: userId } });
-    const seen = new Set(existing.map((item) => [
-      item.trade_date,
-      item.instrument,
-      item.order_type,
-      Number(item.open_price).toFixed(2),
-      Number(item.lot_size).toFixed(2),
-      Number(item.close_price).toFixed(2),
-      item.open_time,
-      item.close_time,
-      item.position_id ?? '',
-    ].join('|')));
+
+    /**
+     * 去重策略（两层）：
+     * 1. position_id 非空时，用 "pos:" 前缀 + position_id 作为主去重键。
+     *    position_id 是 MT5 唯一交易标识，同一笔交易在不同文件中品种/价格可能不同，
+     *    但 position_id 相同即视为重复。
+     * 2. position_id 为空时，用 9 字段拼接键作为兜底去重。
+     */
+    const seenPositionIds = new Set<string>();
+    const seenFullKeys = new Set<string>();
+    existing.forEach((item) => {
+      const pid = String(item.position_id ?? '').trim();
+      if (pid) {
+        seenPositionIds.add(pid);
+      }
+      const fullKey = [
+        item.trade_date,
+        item.instrument,
+        item.order_type,
+        Number(item.open_price).toFixed(2),
+        Number(item.lot_size).toFixed(2),
+        Number(item.close_price).toFixed(2),
+        item.open_time,
+        item.close_time,
+        pid,
+      ].join('|');
+      seenFullKeys.add(fullKey);
+    });
 
     let importedCount = 0;
     let duplicateCount = 0;
@@ -909,24 +926,30 @@ export function createForexRouter() {
         return;
       }
 
-      const key = [
-        tradeDate,
-        instrument,
-        orderType,
-        openPrice.toFixed(2),
-        lotSize.toFixed(2),
-        closePrice.toFixed(2),
-        openTime,
-        closeTime,
-        positionId,
-      ].join('|');
+      /** 优先用 position_id 去重，兜底用 9 字段拼接键 */
+      const isDuplicate = positionId
+        ? seenPositionIds.has(positionId)
+        : seenFullKeys.has([
+            tradeDate, instrument, orderType,
+            openPrice.toFixed(2), lotSize.toFixed(2), closePrice.toFixed(2),
+            openTime, closeTime, positionId,
+          ].join('|'));
 
-      if (seen.has(key)) {
+      if (isDuplicate) {
         duplicateCount += 1;
         return;
       }
 
-      seen.add(key);
+      /** 同步更新两个去重集合 */
+      if (positionId) {
+        seenPositionIds.add(positionId);
+      }
+      seenFullKeys.add([
+        tradeDate, instrument, orderType,
+        openPrice.toFixed(2), lotSize.toFixed(2), closePrice.toFixed(2),
+        openTime, closeTime, positionId,
+      ].join('|'));
+
       importedCount += 1;
       toSave.push(repository.create({
         user_id: userId,
