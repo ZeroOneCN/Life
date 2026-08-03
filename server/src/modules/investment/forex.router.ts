@@ -143,13 +143,14 @@ function getPointSize(instrument: string): number {
 }
 
 /**
- * 规范化品种代码：去除常见后缀（.m / .s / m / ecn 等），转大写并处理别名。
+ * 规范化品种代码：去除常见后缀，转大写并处理别名。
  * 规则：
  * 1. 去掉点号及之后的内容（如 XAUUSD.m → XAUUSD, XAUUSD.s → XAUUSD）
- * 2. 去掉末尾连续的小写字母后缀（如 XAUUSDm → XAUUSD, EURUSDecn → EURUSD）
+ * 2. 去掉末尾的非字母数字字符（如 XAUUSD+ → XAUUSD, XAUUSD# → XAUUSD）
+ * 3. 去掉末尾连续的小写字母后缀（如 XAUUSDm → XAUUSD, EURUSDecn → EURUSD）
  *    正则要求开头为大写字母，确保全小写输入（如 xauusd）不会被误处理
- * 3. 转大写
- * 4. 处理常见别名（XAU/GOLD/黄金 → XAUUSD, XAG/SILVER/白银 → XAGUSD）
+ * 4. 转大写
+ * 5. 处理常见别名（XAU/GOLD/黄金 → XAUUSD, XAG/SILVER/白银 → XAGUSD）
  * 未知品种保留规范化后的原值。
  * @param value - 原始品种输入
  * @returns 规范化后的品种代码，空输入返回空字符串
@@ -163,14 +164,17 @@ function normalizeInstrument(value: unknown): string {
   // 1. 去掉点号及之后的内容（处理 XAUUSD.m, XAUUSD.s 等）
   const withoutDot = trimmed.split('.')[0];
 
-  // 2. 去掉末尾连续的小写字母后缀（处理 XAUUSDm, EURUSDecn 等）
-  const suffixMatch = withoutDot.match(/^([A-Z]+[A-Z0-9]*)([a-z]+)$/);
-  const withoutSuffix = suffixMatch ? suffixMatch[1] : withoutDot;
+  // 2. 去掉末尾的非字母数字字符（处理 XAUUSD+, XAUUSD# 等）
+  const withoutSymbols = withoutDot.replace(/[^A-Za-z0-9]+$/, '');
 
-  // 3. 转大写
+  // 3. 去掉末尾连续的小写字母后缀（处理 XAUUSDm, EURUSDecn 等）
+  const suffixMatch = withoutSymbols.match(/^([A-Z]+[A-Z0-9]*)([a-z]+)$/);
+  const withoutSuffix = suffixMatch ? suffixMatch[1] : withoutSymbols;
+
+  // 4. 转大写
   const upper = withoutSuffix.toUpperCase();
 
-  // 4. 别名映射
+  // 5. 别名映射
   if (upper === 'XAG' || upper === 'SILVER' || upper === '白银') {
     return 'XAGUSD';
   }
