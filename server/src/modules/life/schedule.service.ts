@@ -1,11 +1,13 @@
 import dayjs from 'dayjs';
 
+import { appDataSource } from '../../db/data-source';
 import { LifeScheduleEventEntity } from './entities/life-schedule-event.entity';
-import type { LifeScheduleRecurrenceConfig } from './entities/life-schedule-event.entity';
+import type { LifeScheduleRecurrenceConfig, LifeScheduleRecurrenceType } from './entities/life-schedule-event.entity';
 import {
   isScheduleRecurringType,
   normalizeScheduleRecurrenceConfig,
 } from './schedule-recurrence';
+import { AppError } from '../../shared/errors/app-error';
 
 /** 日程事件响应 DTO */
 export interface ScheduleEventDto {
@@ -127,4 +129,66 @@ export function buildScheduleOverview(events: LifeScheduleEventEntity[]): Schedu
     dueThisWeekCount: 0,
     overdueCount: 0,
   });
+}
+
+/** 日程事件创建入参（与 assistant.tools.ts createScheduleEvent 字段对齐） */
+export interface CreateScheduleEventInput {
+  title: string;
+  startAt: string;
+  endAt?: string | null;
+  isAllDay?: boolean;
+  descriptionMarkdown?: string;
+  location?: string | null;
+  color?: string | null;
+  recurrenceType?: LifeScheduleRecurrenceType;
+  recurrenceEndDate?: string | null;
+  reminderMinutes?: number | null;
+}
+
+/**
+ * 创建日程事件（含必填校验、startAt/endAt 格式校验、字段映射、repo.create + save）。
+ * @param userId 用户 ID
+ * @param input 创建入参
+ * @returns 保存后的实体
+ */
+export async function createScheduleEvent(
+  userId: string,
+  input: CreateScheduleEventInput,
+): Promise<LifeScheduleEventEntity> {
+  if (!input.title || !input.startAt) {
+    throw new AppError('缺少必填字段：title/startAt', 400, 400);
+  }
+  const start = dayjs(input.startAt);
+  if (!start.isValid()) {
+    throw new AppError('startAt 格式无效，需为 ISO 日期时间字符串', 400, 400);
+  }
+  const endAt = input.endAt ? dayjs(input.endAt) : null;
+  if (input.endAt && !endAt?.isValid()) {
+    throw new AppError('endAt 格式无效，需为 ISO 日期时间字符串', 400, 400);
+  }
+  const recurrenceType: LifeScheduleRecurrenceType = input.recurrenceType ?? 'none';
+  const repository = appDataSource.getRepository(LifeScheduleEventEntity);
+  const item = await repository.save(repository.create({
+    user_id: userId,
+    title: input.title,
+    description_markdown: input.descriptionMarkdown ?? '',
+    start_at: start.toDate(),
+    end_at: endAt?.toDate() ?? null,
+    is_all_day: input.isAllDay ?? false,
+    location: input.location || null,
+    color: input.color || null,
+    recurrence_type: recurrenceType,
+    recurrence_config: null,
+    recurrence_end_date: input.recurrenceEndDate || null,
+    reminder_minutes: input.reminderMinutes !== undefined && input.reminderMinutes !== null
+      ? Math.max(0, input.reminderMinutes)
+      : null,
+    completed: false,
+    completed_at: null,
+    trashed_at: null,
+    source: 'manual',
+    source_id: null,
+    sort_order: Date.now(),
+  }));
+  return item;
 }

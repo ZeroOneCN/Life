@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 
 import { appDataSource } from '../../db/data-source';
 import { HealthFitnessWeightRecordEntity } from './entities/health-fitness-weight-record.entity';
+import { HealthFitnessDietRecordEntity } from './entities/health-fitness-diet-record.entity';
 import { normalizeDate } from '../../shared/utils/date';
 import { AppError } from '../../shared/errors/app-error';
 
@@ -126,6 +127,46 @@ export async function createWeightRecord(
     skeletal_muscle_mass: input.skeletalMuscleMass,
     subcutaneous_fat_rate: input.subcutaneousFatRate,
     subcutaneous_fat_mass: input.subcutaneousFatMass,
+  }));
+  return item;
+}
+
+/** 饮食记录创建入参（与 assistant.tools.ts createDietRecord 字段对齐） */
+export interface CreateDietRecordInput {
+  date: string;
+  mealType: string;
+  foodName: string;
+  grams: number;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+}
+
+/**
+ * 创建饮食记录（含必填校验、营养素非负处理、repo.create + save）。
+ * @param userId 用户 ID
+ * @param input 创建入参
+ * @returns 保存后的实体
+ */
+export async function createDietRecord(
+  userId: string,
+  input: CreateDietRecordInput,
+): Promise<HealthFitnessDietRecordEntity> {
+  if (!input.date || !input.mealType || !input.foodName || input.grams < 0) {
+    throw new AppError('缺少必填字段：date/mealType/foodName/grams', 400, 400);
+  }
+  const repository = appDataSource.getRepository(HealthFitnessDietRecordEntity);
+  const item = await repository.save(repository.create({
+    user_id: userId,
+    date: input.date,
+    meal_type: input.mealType,
+    food_name: input.foodName,
+    grams: Math.max(0, input.grams),
+    calories: Math.max(0, input.calories ?? 0),
+    protein: Math.max(0, input.protein ?? 0),
+    carbs: Math.max(0, input.carbs ?? 0),
+    fat: Math.max(0, input.fat ?? 0),
   }));
   return item;
 }
