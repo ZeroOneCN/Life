@@ -162,11 +162,28 @@ export default function LoanPage() {
       await loanApi.markBillPaid(id);
       await reload();
       await hydrateNotificationCenterState();
-      showToast('账单已标记为已还。');
+      showToast('账单已一次结清。');
     } catch (error) {
-      showToast(buildApiErrorMessage(error, '标记已还失败。'), 'error');
+      showToast(buildApiErrorMessage(error, '结清失败。'), 'error');
     }
   }, [pendingMarkPaidId, reload, showToast]);
+
+  /**
+   * 部分还款处理：调用后端 partial-repay API 后刷新数据。
+   *
+   * @param billId 账单 ID
+   * @param amount 本次还款总金额
+   * @param options.repaymentDate 可选还款日期
+   * @param options.notes 可选备注
+   */
+  const handlePartialRepay = useCallback(async (
+    billId: string,
+    amount: number,
+    options?: { repaymentDate?: string; notes?: string },
+  ) => {
+    await loanApi.partialRepay(billId, amount, options);
+    await reload();
+  }, [reload]);
 
   const summaryCards = useMemo(() => ([
     { label: '总负债', value: formatLoanAmount(overview.totalDebt), helper: `已还 ${formatLoanAmount(overview.totalPaid)}` },
@@ -233,6 +250,7 @@ export default function LoanPage() {
           onUpdate={(billId, draft) => runWithRefresh(() => loanApi.updateBill(billId, draft).then(() => undefined))}
           onDelete={(billId) => runWithRefresh(() => loanApi.deleteBill(billId).then(() => undefined))}
           onMarkPaid={handleMarkPaid}
+          onPartialRepay={handlePartialRepay}
           showToast={showToast}
         />
       ) : null}
@@ -271,11 +289,11 @@ export default function LoanPage() {
         open={Boolean(pendingMarkPaidId)}
         onClose={() => setPendingMarkPaidId(null)}
         onConfirm={confirmMarkPaid}
-        title="确认标记为已还？"
-        confirmLabel="确认标记已还"
+        title="确认一次结清？"
+        confirmLabel="确认结清"
         confirmTone="primary"
       >
-        标记后账单状态将变为已还，此操作不可撤销。
+        结清后账单剩余金额将全部标记为已还，并自动生成还款记录，此操作不可撤销。
       </DeleteModal>
 
       <Toast toast={toast} />

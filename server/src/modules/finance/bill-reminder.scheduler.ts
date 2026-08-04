@@ -6,9 +6,17 @@ import { SystemUserAccountEntity } from '../system/entities/system-user-account.
 import { ensureNotificationScenesForUser, sendNotificationSceneLogs } from '../../shared/domain/notification';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { FinanceBillReminderSettingEntity } from './entities/finance-bill-reminder-setting.entity';
-import { getUpcomingBills, type BillType, type UnifiedBill } from './bill-aggregator.service';
+import { getUnifiedBillsInRange, type BillType, type UnifiedBill } from './bill-aggregator.service';
 
 const SCHEDULER_KEY = '__billReminderScheduler__';
+
+/**
+ * 逾期账单回溯天数。
+ *
+ * 用于扫描过去 N 天内到期但仍未支付的账单，作为"已逾期"场景推送。
+ * 取 30 天以覆盖常见账单周期，同时避免无限回溯导致通知噪音。
+ */
+const OVERDUE_LOOKBACK_DAYS = 30;
 
 function toNumber(value: unknown): number {
   if (value === null || value === undefined || value === '') {
@@ -81,6 +89,13 @@ async function runReminderTick() {
 /**
  * 为单个用户执行账单提醒检查。
  *
+ * 通知逻辑（根据实际账单日期触发，不再提前 N 天汇总推送）：
+ * 1. 已逾期：到期日 < 今日 且未支付 → 推送逾期提醒
+ * 2. 今日到期：到期日 === 今日 且未支付 → 推送今日到期提醒
+ * 3. 明日到期：到期日 === 明日 且未支付 → 推送提前1天提醒
+ *
+ * 三种场景相互独立，分别推送，由每日 marker 保证一天最多各推送一次。
+ *
  * @param userId 用户 ID
  * @param today 今日日期 YYYY-MM-DD
  */
@@ -106,77 +121,96 @@ async function runRemindersForUser(userId: string, today: string) {
     return;
   }
 
-  const bills = await getUpcomingBills(userId, settings.lead_days, types);
+  const todayMoment = dayjs(today, 'YYYY-MM-DD', true);
+  const tomorrowStr = todayMoment.add(1, 'day').format('YYYY-MM-DD');
 
-  if (bills.length === 0) {
+  // 扫描过去 30 天（覆盖逾期）到明天（覆盖提前1天）的所有账单
+  const startDate = todayMoment.subtract(OVERDUE_LOOKBACK_DAYS, 'day').format('YYYY-MM-DD');
+  const endDate = tomorrowStr;
+
+  const allBills = await getUnifiedBillsInRange(userId, startDate, endDate, types);
+  const unpaidBills = allBills.filter((bill) => bill.status !== 'paid');
+
+  if (unpaidBills.length === 0) {
     return;
   }
 
-  const todayMoment = dayjs(today, 'YYYY-MM-DD', true);
-  const todayBills = bills.filter((b) => dayjs(b.due_date).isSame(todayMoment, 'day'));
-  const upcomingBills = bills.filter((b) => !dayjs(b.due_date).isSame(todayMoment, 'day'));
-  const overdueBills = bills.filter((b) => b.status === 'overdue');
-
-  const totalAmount = bills.reduce((sum, b) => sum + toNumber(b.amount), 0);
-  const overdueAmount = overdueBills.reduce((sum, b) => sum + toNumber(b.amount), 0);
-
-  let title = '';
-  let message = '';
-  let sceneId = 'finance.bill.upcoming';
-
-  if (overdueBills.length > 0) {
-    sceneId = 'finance.bill.overdue';
-    title = `账单逾期提醒：${overdueBills.length} 笔账单已逾期`;
-    message = buildOverdueMessage(overdueBills, upcomingBills, totalAmount, overdueAmount);
-  } else if (todayBills.length > 0) {
-    title = `今日账单提醒：${todayBills.length} 笔账单今日到期`;
-    message = buildTodayMessage(todayBills, upcomingBills, totalAmount);
-  } else {
-    title = `账单提醒：${bills.length} 笔账单将在 ${settings.lead_days} 天内到期`;
-    message = buildUpcomingMessage(upcomingBills, totalAmount);
-  }
+  // 按实际账单日期分三类
+  const overdueBills = unpaidBills.filter((b) => dayjs(b.due_date).isBefore(todayMoment, 'day'));
+  const dueTodayBills = unpaidBills.filter((b) => dayjs(b.due_date).isSame(todayMoment, 'day'));
+  const dueTomorrowBills = unpaidBills.filter((b) => b.due_date === tomorrowStr);
 
   // 确保 scene 记录存在（用户可能从未访问过通知中心，scene 尚未 seed）。
   // 此处不强制启用，避免覆盖用户在通知中心主动禁用的配置。
   // scene 的启用由 PUT /api/finance/bill/setting 接口在 reminder_enabled=true 时联动开启。
   await ensureNotificationScenesForUser(userId, ['finance.bill.upcoming', 'finance.bill.overdue']);
 
-  await sendNotificationSceneLogs({
-    userId,
-    sceneId,
-    title,
-    message,
-    meta: {
-      billCount: bills.length,
-      todayCount: todayBills.length,
-      overdueCount: overdueBills.length,
-      upcomingCount: upcomingBills.length,
-      totalAmount: round2(totalAmount),
-      overdueAmount: round2(overdueAmount),
-      leadDays: settings.lead_days,
-      today,
-      billTitles: bills.map((b) => b.title).join(', '),
-    },
-  });
+  // 场景一：已逾期
+  if (overdueBills.length > 0) {
+    const overdueAmount = overdueBills.reduce((sum, b) => sum + toNumber(b.amount), 0);
+    await sendNotificationSceneLogs({
+      userId,
+      sceneId: 'finance.bill.overdue',
+      title: `账单逾期提醒：${overdueBills.length} 笔账单已逾期`,
+      message: buildOverdueMessage(overdueBills, overdueAmount),
+      meta: {
+        scenario: 'overdue',
+        billCount: overdueBills.length,
+        overdueAmount: round2(overdueAmount),
+        today,
+        billTitles: overdueBills.map((b) => b.title).join(', '),
+      },
+    });
+  }
+
+  // 场景二：今日到期
+  if (dueTodayBills.length > 0) {
+    const todayAmount = dueTodayBills.reduce((sum, b) => sum + toNumber(b.amount), 0);
+    await sendNotificationSceneLogs({
+      userId,
+      sceneId: 'finance.bill.upcoming',
+      title: `今日账单提醒：${dueTodayBills.length} 笔账单今日到期`,
+      message: buildTodayMessage(dueTodayBills, todayAmount),
+      meta: {
+        scenario: 'due_today',
+        billCount: dueTodayBills.length,
+        todayAmount: round2(todayAmount),
+        today,
+        billTitles: dueTodayBills.map((b) => b.title).join(', '),
+      },
+    });
+  }
+
+  // 场景三：明日到期（提前1天）
+  if (dueTomorrowBills.length > 0) {
+    const tomorrowAmount = dueTomorrowBills.reduce((sum, b) => sum + toNumber(b.amount), 0);
+    await sendNotificationSceneLogs({
+      userId,
+      sceneId: 'finance.bill.upcoming',
+      title: `账单提醒：${dueTomorrowBills.length} 笔账单明日到期`,
+      message: buildTomorrowMessage(dueTomorrowBills, tomorrowAmount, tomorrowStr),
+      meta: {
+        scenario: 'due_tomorrow',
+        billCount: dueTomorrowBills.length,
+        tomorrowAmount: round2(tomorrowAmount),
+        tomorrow: tomorrowStr,
+        today,
+        billTitles: dueTomorrowBills.map((b) => b.title).join(', '),
+      },
+    });
+  }
 }
 
 /**
  * 构建逾期提醒消息文本。
  *
  * @param overdueBills 逾期账单列表
- * @param upcomingBills 即将到期账单列表
- * @param totalAmount 总金额
  * @param overdueAmount 逾期金额
  * @returns 消息文本
  */
-function buildOverdueMessage(
-  overdueBills: UnifiedBill[],
-  upcomingBills: UnifiedBill[],
-  totalAmount: number,
-  overdueAmount: number,
-): string {
+function buildOverdueMessage(overdueBills: UnifiedBill[], overdueAmount: number): string {
   const lines: string[] = [];
-  lines.push(`您有 ${overdueBills.length} 笔账单已逾期，逾期金额 ¥${round2(overdueAmount)}。`);
+  lines.push(`您有 ${overdueBills.length} 笔账单已逾期，逾期金额 ¥${round2(overdueAmount)}，请尽快处理。`);
   lines.push('');
   lines.push('逾期账单：');
   for (const bill of overdueBills.slice(0, 5)) {
@@ -186,12 +220,6 @@ function buildOverdueMessage(
   if (overdueBills.length > 5) {
     lines.push(`  等共 ${overdueBills.length} 笔逾期账单`);
   }
-  if (upcomingBills.length > 0) {
-    lines.push('');
-    lines.push(`另有 ${upcomingBills.length} 笔账单即将到期，请及时处理。`);
-  }
-  lines.push('');
-  lines.push(`待付总金额：¥${round2(totalAmount)}`);
   return lines.join('\n');
 }
 
@@ -199,17 +227,12 @@ function buildOverdueMessage(
  * 构建今日到期提醒消息文本。
  *
  * @param todayBills 今日到期账单列表
- * @param upcomingBills 即将到期账单列表
- * @param totalAmount 总金额
+ * @param todayAmount 今日待付金额
  * @returns 消息文本
  */
-function buildTodayMessage(
-  todayBills: UnifiedBill[],
-  upcomingBills: UnifiedBill[],
-  totalAmount: number,
-): string {
+function buildTodayMessage(todayBills: UnifiedBill[], todayAmount: number): string {
   const lines: string[] = [];
-  lines.push(`今日有 ${todayBills.length} 笔账单到期，请及时处理。`);
+  lines.push(`今日有 ${todayBills.length} 笔账单到期，待付金额 ¥${round2(todayAmount)}，请及时处理。`);
   lines.push('');
   lines.push('今日到期：');
   for (const bill of todayBills.slice(0, 5)) {
@@ -218,37 +241,32 @@ function buildTodayMessage(
   if (todayBills.length > 5) {
     lines.push(`  等共 ${todayBills.length} 笔账单`);
   }
-  if (upcomingBills.length > 0) {
-    lines.push('');
-    lines.push(`另有 ${upcomingBills.length} 笔账单即将到期。`);
-  }
-  lines.push('');
-  lines.push(`今日待付金额：¥${round2(todayBills.reduce((s, b) => s + toNumber(b.amount), 0))}`);
-  lines.push(`近期待付总金额：¥${round2(totalAmount)}`);
   return lines.join('\n');
 }
 
 /**
- * 构建即将到期提醒消息文本。
+ * 构建明日到期提醒消息文本（提前1天推送）。
  *
- * @param upcomingBills 即将到期账单列表
- * @param totalAmount 总金额
+ * @param tomorrowBills 明日到期账单列表
+ * @param tomorrowAmount 明日待付金额
+ * @param tomorrowStr 明日日期 YYYY-MM-DD
  * @returns 消息文本
  */
-function buildUpcomingMessage(upcomingBills: UnifiedBill[], totalAmount: number): string {
+function buildTomorrowMessage(
+  tomorrowBills: UnifiedBill[],
+  tomorrowAmount: number,
+  tomorrowStr: string,
+): string {
   const lines: string[] = [];
-  lines.push(`您有 ${upcomingBills.length} 笔账单即将到期，请提前做好还款准备。`);
+  lines.push(`明日（${tomorrowStr}）有 ${tomorrowBills.length} 笔账单到期，待付金额 ¥${round2(tomorrowAmount)}，请提前做好还款准备。`);
   lines.push('');
-  lines.push('即将到期：');
-  for (const bill of upcomingBills.slice(0, 8)) {
-    const daysLeft = dayjs(bill.due_date).diff(dayjs(), 'day');
-    lines.push(`  · ${bill.title} - ¥${round2(bill.amount)}（${daysLeft} 天后）`);
+  lines.push('明日到期：');
+  for (const bill of tomorrowBills.slice(0, 8)) {
+    lines.push(`  · ${bill.title} - ¥${round2(bill.amount)}`);
   }
-  if (upcomingBills.length > 8) {
-    lines.push(`  等共 ${upcomingBills.length} 笔账单`);
+  if (tomorrowBills.length > 8) {
+    lines.push(`  等共 ${tomorrowBills.length} 笔账单`);
   }
-  lines.push('');
-  lines.push(`待付总金额：¥${round2(totalAmount)}`);
   return lines.join('\n');
 }
 

@@ -111,6 +111,37 @@ export const loanApi = {
     return apiPost<{ bill: LoanBill; createdRepayment: boolean }, { billId: string }>('/finance/loan/actions/mark-bill-paid', { billId });
   },
 
+  /**
+   * 部分还款。
+   *
+   * 传入一个总金额，后端按"先利息后本金"顺序抵扣，返回抵扣明细和更新后的账单。
+   *
+   * @param billId 账单 ID
+   * @param amount 本次还款总金额
+   * @param options.repaymentDate 可选还款日期，默认今日
+   * @param options.notes 可选备注
+   */
+  partialRepay(
+    billId: string,
+    amount: number,
+    options?: { repaymentDate?: string; notes?: string },
+  ) {
+    return apiPost<{
+      bill: LoanBill;
+      repayment: LoanRepayment;
+      breakdown: {
+        applyToAmount: number;
+        applyToInterest: number;
+        remainingAmount: number;
+        remainingInterest: number;
+        fullyPaid: boolean;
+      };
+    }, { billId: string; amount: number; repaymentDate?: string; notes?: string }>(
+      '/finance/loan/actions/partial-repay',
+      { billId, amount, repaymentDate: options?.repaymentDate, notes: options?.notes },
+    );
+  },
+
   triggerReminders(title?: string) {
     return apiPost('/finance/loan/actions/trigger-reminders', title ? { title } : {});
   },

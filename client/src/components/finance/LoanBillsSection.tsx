@@ -14,6 +14,8 @@ interface LoanBillsSectionProps {
   onUpdate: (billId: string, draft: LoanBillDraft) => Promise<void>;
   onDelete: (billId: string) => Promise<void>;
   onMarkPaid: (billId: string) => void;
+  /** 部分还款回调，由父组件调用 API 并刷新数据 */
+  onPartialRepay: (billId: string, amount: number, options?: { repaymentDate?: string; notes?: string }) => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
@@ -83,6 +85,7 @@ export function LoanBillsSection({
   onUpdate,
   onDelete,
   onMarkPaid,
+  onPartialRepay,
   showToast,
 }: LoanBillsSectionProps) {
   const [form, setForm] = useState<BillFormState>(() => createDefaultFormState(platforms));
@@ -94,6 +97,11 @@ export function LoanBillsSection({
   const [monthFilter, setMonthFilter] = useState(dayjs().format('YYYY-MM'));
   const [page, setPage] = useState(1);
   const [saving, setSaving] = useState(false);
+  // 部分还款弹窗状态
+  const [partialRepayBill, setPartialRepayBill] = useState<LoanBill | null>(null);
+  const [partialRepayAmount, setPartialRepayAmount] = useState('');
+  const [partialRepayDate, setPartialRepayDate] = useState(dayjs().format('YYYY-MM-DD'));
+  const [partialRepayNotes, setPartialRepayNotes] = useState('');
 
   useEffect(() => {
     setForm((previous) => previous.platformId ? previous : createDefaultFormState(platforms));
@@ -144,6 +152,20 @@ export function LoanBillsSection({
       ),
     },
     {
+      key: 'paid',
+      title: '已还 / 剩余',
+      render: (_value: unknown, row: LoanBill) => {
+        const totalPaid = row.paidAmount + row.paidInterest;
+        const totalRemaining = row.remainingAmount + row.remainingInterest;
+        return (
+          <div className="travel-amount-stack">
+            <span className="loan-paid-amount">已还 {formatLoanAmount(totalPaid)}</span>
+            <strong className="loan-remaining-amount">剩余 {formatLoanAmount(totalRemaining)}</strong>
+          </div>
+        );
+      },
+    },
+    {
       key: 'status',
       title: '状态',
       render: (_value: unknown, row: LoanBill) => {
@@ -165,9 +187,21 @@ export function LoanBillsSection({
       title: '操作',
       render: (_value: unknown, row: LoanBill) => (
         <div className="fitness-row-actions">
-          <Btn tone="secondary" disabled={row.isPaid} onClick={() => onMarkPaid(row.id)}>标记已还</Btn>
           <Btn
             tone="secondary"
+            disabled={row.isPaid}
+            onClick={() => {
+              setPartialRepayBill(row);
+              setPartialRepayAmount('');
+              setPartialRepayDate(dayjs().format('YYYY-MM-DD'));
+              setPartialRepayNotes('');
+            }}
+          >
+            部分还款
+          </Btn>
+          <Btn tone="secondary" disabled={row.isPaid} onClick={() => onMarkPaid(row.id)}>一次结清</Btn>
+          <Btn
+            tone="ghost"
             onClick={() => {
               setEditingBill(row);
               setEditingForm(buildFormState(row));
@@ -231,17 +265,52 @@ export function LoanBillsSection({
     }
   };
 
+  /**
+   * 提交部分还款。
+   *
+   * 校验还款金额后调用父组件传入的 onPartialRepay，成功后关闭弹窗。
+   * 抵扣明细由后端计算并返回，前端只负责展示成功提示。
+   */
+  const handlePartialRepay = async () => {
+    if (!partialRepayBill) {
+      return;
+    }
+
+    const amount = Number(partialRepayAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      showToast('请输入有效的还款金额。', 'error');
+      return;
+    }
+
+    const totalRemaining = partialRepayBill.remainingAmount + partialRepayBill.remainingInterest;
+    if (amount > totalRemaining + 0.01) {
+      showToast(`还款金额不能超过剩余待还金额 ${formatLoanAmount(totalRemaining)}。`, 'error');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await onPartialRepay(partialRepayBill.id, amount, {
+        repaymentDate: partialRepayDate,
+        notes: partialRepayNotes.trim() || undefined,
+      });
+      setPartialRepayBill(null);
+      setPartialRepayAmount('');
+      setPartialRepayNotes('');
+      showToast('部分还款成功。');
+    } catch {
+      // The page container already surfaces API errors.
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <SectionCard
       title="账单"
       description="统一维护账单月份、到期日、本金和利息；标记已还时由后端决定是否自动生成还款记录。"
     >
       <div className="page-stack">
-        <div className="callout callout-info">
-          账单固定归属当前登录用户，不再提供用户 ID 输入框。
-          选择平台和账单月份后，会按平台规则自动给出默认到期日。
-        </div>
-
         <div className="loan-bill-entry-grid">
           <SelectField
             label="贷款平台"
@@ -470,6 +539,81 @@ export function LoanBillsSection({
       >
         删除后，这笔账单将不再参与总览、统计、提醒和自动还款联动，请确认是否继续。
       </DeleteModal>
+
+      <Modal
+        open={Boolean(partialRepayBill)}
+        onClose={() => {
+          setPartialRepayBill(null);
+          setPartialRepayAmount('');
+          setPartialRepayNotes('');
+        }}
+        title={partialRepayBill ? `部分还款：${partialRepayBill.platformName}` : '部分还款'}
+        width={620}
+        footer={(
+          <>
+            <Btn
+              tone="secondary"
+              onClick={() => {
+                setPartialRepayBill(null);
+                setPartialRepayAmount('');
+                setPartialRepayNotes('');
+              }}
+            >
+              取消
+            </Btn>
+            <Btn tone="primary" onClick={() => void handlePartialRepay()} disabled={saving}>
+              确认还款
+            </Btn>
+          </>
+        )}
+      >
+        {partialRepayBill ? (
+          <div className="page-stack">
+            <div className="loan-partial-repay-summary">
+              <div className="loan-partial-repay-summary-row">
+                <span>账单总额</span>
+                <strong>{formatLoanAmount(partialRepayBill.amount + partialRepayBill.interest)}</strong>
+              </div>
+              <div className="loan-partial-repay-summary-row">
+                <span>已还金额</span>
+                <span>{formatLoanAmount(partialRepayBill.paidAmount + partialRepayBill.paidInterest)}</span>
+              </div>
+              <div className="loan-partial-repay-summary-row loan-partial-repay-summary-highlight">
+                <span>剩余待还</span>
+                <strong>
+                  {formatLoanAmount(partialRepayBill.remainingAmount + partialRepayBill.remainingInterest)}
+                </strong>
+              </div>
+              <div className="loan-partial-repay-summary-hint">
+                系统按"先利息后本金"顺序抵扣：先抵扣剩余利息 ¥{partialRepayBill.remainingInterest.toFixed(2)}，再抵扣剩余本金 ¥{partialRepayBill.remainingAmount.toFixed(2)}
+              </div>
+            </div>
+            <Field
+              label="本次还款金额"
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={partialRepayAmount}
+              onChange={(event) => setPartialRepayAmount(event.target.value)}
+              placeholder={`最多 ${formatLoanAmount(partialRepayBill.remainingAmount + partialRepayBill.remainingInterest)}`}
+            />
+            <div className="loan-modal-date-slot">
+              <DatePickerField
+                label="还款日期"
+                value={partialRepayDate}
+                onChange={setPartialRepayDate}
+                clearable={false}
+              />
+            </div>
+            <TextArea
+              label="备注"
+              value={partialRepayNotes}
+              onChange={(event) => setPartialRepayNotes(event.target.value)}
+              placeholder="可选，补充本次还款的说明"
+            />
+          </div>
+        ) : null}
+      </Modal>
     </SectionCard>
   );
 }

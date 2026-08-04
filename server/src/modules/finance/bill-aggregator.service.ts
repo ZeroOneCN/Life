@@ -25,6 +25,8 @@ export interface UnifiedBill {
   type: BillType;
   title: string;
   amount: number;
+  /** 已还金额（贷款账单支持部分还款后剩余的已还部分） */
+  paid_amount: number;
   due_date: string;
   status: BillStatus;
   category: string;
@@ -44,6 +46,9 @@ function toNumber(value: unknown): number {
 /**
  * 从贷款账单转换为统一账单格式。
  *
+ * amount 字段为剩余待还金额（本金+利息-已还），
+ * paid_amount 为已还金额，便于日历/列表展示真实欠款。
+ *
  * @param bill 贷款账单实体
  * @returns 统一格式的账单
  */
@@ -56,11 +61,15 @@ function transformLoanBill(bill: FinanceLoanBillEntity): UnifiedBill {
   } else if (dueMoment.isBefore(today, 'day')) {
     status = 'overdue';
   }
+  const totalAmount = toNumber(bill.amount) + toNumber(bill.interest);
+  const paidAmount = toNumber(bill.paid_amount) + toNumber(bill.paid_interest);
+  const remaining = Math.max(0, totalAmount - paidAmount);
   return {
     id: `loan_${bill.id}`,
     type: 'loan',
     title: `${bill.platform_name} 还款`,
-    amount: toNumber(bill.amount) + toNumber(bill.interest),
+    amount: remaining,
+    paid_amount: paidAmount,
     due_date: bill.due_date,
     status,
     category: '贷款还款',
@@ -90,6 +99,7 @@ function transformSubscriptionBill(record: FinanceSubscriptionRecordEntity): Uni
     type: 'subscription',
     title: `${record.service_name} ${record.auto_renew ? '续费' : '到期'}`,
     amount: toNumber(record.cycle_price),
+    paid_amount: 0,
     due_date: record.end_date,
     status,
     category: record.category_name || '服务订阅',
@@ -128,6 +138,7 @@ function transformRentBill(record: FinanceRentRecordEntity, month: string): Unif
     type: 'rent',
     title: `${record.address_short || record.address} 房租`,
     amount: total,
+    paid_amount: 0,
     due_date: `${month}-01`,
     status: 'pending',
     category: '房租水电',

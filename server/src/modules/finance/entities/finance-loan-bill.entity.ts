@@ -16,6 +16,14 @@ export class FinanceLoanBillEntity extends UserScopedEntity {
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   interest!: number;
 
+  /** 已还本金（累加值，由部分还款 API 维护） */
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  paid_amount!: number;
+
+  /** 已还利息（累加值，由部分还款 API 维护） */
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  paid_interest!: number;
+
   @Column({ type: 'varchar', length: 16 })
   billing_month!: string;
 

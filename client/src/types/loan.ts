@@ -25,6 +25,14 @@ export interface LoanBill {
   platformName: string;
   amount: number;
   interest: number;
+  /** 已还本金（累加值） */
+  paidAmount: number;
+  /** 已还利息（累加值） */
+  paidInterest: number;
+  /** 剩余本金 */
+  remainingAmount: number;
+  /** 剩余利息 */
+  remainingInterest: number;
   billingMonth: string;
   dueDate: string;
   notes: string;

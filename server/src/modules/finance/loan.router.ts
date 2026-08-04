@@ -61,6 +61,19 @@ const markPaidSchema = z.object({
   billId: z.string().trim().min(1),
 });
 
+/**
+ * 部分还款请求体 schema。
+ *
+ * amount 为本次还款总金额，系统按"先利息后本金"顺序抵扣。
+ * repaymentDate / notes 可选，缺省时使用今日和无备注。
+ */
+const partialRepaySchema = z.object({
+  billId: z.string().trim().min(1),
+  amount: z.number().min(0.01),
+  repaymentDate: z.string().optional(),
+  notes: z.string().optional().default(''),
+});
+
 const triggerReminderSchema = z.object({
   title: z.string().trim().min(1).max(255).optional(),
 });
@@ -100,12 +113,20 @@ function mapPlatform(entity: FinanceLoanPlatformEntity) {
 }
 
 function mapBill(entity: FinanceLoanBillEntity) {
+  const amount = Number(entity.amount);
+  const interest = Number(entity.interest);
+  const paidAmount = Number(entity.paid_amount ?? 0);
+  const paidInterest = Number(entity.paid_interest ?? 0);
   return {
     id: entity.id,
     platformId: entity.platform_id,
     platformName: entity.platform_name,
-    amount: Number(entity.amount),
-    interest: Number(entity.interest),
+    amount,
+    interest,
+    paidAmount,
+    paidInterest,
+    remainingAmount: Number(Math.max(0, amount - paidAmount).toFixed(2)),
+    remainingInterest: Number(Math.max(0, interest - paidInterest).toFixed(2)),
     billingMonth: entity.billing_month,
     dueDate: entity.due_date,
     notes: entity.notes,
@@ -140,13 +161,18 @@ function getBillStatus(entity: FinanceLoanBillEntity) {
 }
 
 function buildOverview(bills: FinanceLoanBillEntity[], repayments: FinanceLoanRepaymentEntity[]) {
+  const toNum = (v: unknown) => Number(v) || 0;
   return {
-    totalDebt: Number(bills.reduce((sum, bill) => sum + Number(bill.amount), 0).toFixed(2)),
-    totalPaid: Number(repayments.reduce((sum, repayment) => sum + Number(repayment.amount), 0).toFixed(2)),
+    totalDebt: Number(bills.reduce((sum, bill) => sum + toNum(bill.amount), 0).toFixed(2)),
+    totalPaid: Number(repayments.reduce((sum, repayment) => sum + toNum(repayment.amount), 0).toFixed(2)),
+    // 待还金额 = 各账单剩余本金 + 剩余利息（未结清账单）
     totalUnpaid: Number(
-      bills.filter((bill) => !bill.is_paid).reduce((sum, bill) => sum + Number(bill.amount), 0).toFixed(2),
+      bills
+        .filter((bill) => !bill.is_paid)
+        .reduce((sum, bill) => sum + Math.max(0, toNum(bill.amount) - toNum(bill.paid_amount)) + Math.max(0, toNum(bill.interest) - toNum(bill.paid_interest)), 0)
+        .toFixed(2),
     ),
-    totalInterest: Number(bills.reduce((sum, bill) => sum + Number(bill.interest), 0).toFixed(2)),
+    totalInterest: Number(bills.reduce((sum, bill) => sum + toNum(bill.interest), 0).toFixed(2)),
     totalBillCount: bills.length,
     repaymentCount: repayments.length,
     upcomingCount: bills.filter((bill) => getBillStatus(bill) === 'unpaid').length,
@@ -170,13 +196,26 @@ function buildLoanReminderItems(bills: FinanceLoanBillEntity[], settings: Financ
         severity: 'high' | 'medium';
       }> = [];
 
-      if (settings.repayment_reminder_enabled && diff >= 0 && diff <= settings.upcoming_days) {
+      // 待还金额使用剩余本金+剩余利息（扣除已还部分）
+      const remainingAmount = Math.max(0, Number(bill.amount) - Number(bill.paid_amount ?? 0));
+      const remainingInterest = Math.max(0, Number(bill.interest) - Number(bill.paid_interest ?? 0));
+      const remainingTotal = remainingAmount + remainingInterest;
+
+      // 通知逻辑：根据实际账单日期触发，仅覆盖三种场景：
+      //   diff === 0  今日到期
+      //   diff === 1  明日到期（提前1天）
+      //   diff  < 0   已逾期
+      // 不再使用 upcoming_days 提前多天汇总推送。
+      if (settings.repayment_reminder_enabled && (diff === 0 || diff === 1)) {
+        const isToday = diff === 0;
         items.push({
           bill,
           sceneId: 'loan.repayment_upcoming',
-          title: '贷款还款提醒',
-          message: `${bill.platform_name} 的账单将于 ${bill.due_date} 到期，待还金额 ¥${Number(bill.amount).toFixed(2)}。`,
-          severity: diff === 0 ? 'high' : 'medium',
+          title: isToday ? '贷款今日到期提醒' : '贷款明日到期提醒',
+          message: isToday
+            ? `${bill.platform_name} 的账单今日到期，待还金额 ¥${remainingTotal.toFixed(2)}。`
+            : `${bill.platform_name} 的账单将于明日（${bill.due_date}）到期，待还金额 ¥${remainingTotal.toFixed(2)}。`,
+          severity: isToday ? 'high' : 'medium',
         });
       }
 
@@ -185,7 +224,7 @@ function buildLoanReminderItems(bills: FinanceLoanBillEntity[], settings: Financ
           bill,
           sceneId: 'loan.repayment_overdue',
           title: '贷款逾期提醒',
-          message: `${bill.platform_name} 的账单已逾期 ${Math.abs(diff)} 天，待还金额 ¥${Number(bill.amount).toFixed(2)}。`,
+          message: `${bill.platform_name} 的账单已逾期 ${Math.abs(diff)} 天，待还金额 ¥${remainingTotal.toFixed(2)}。`,
           severity: 'high',
         });
       }
@@ -601,26 +640,29 @@ export function createLoanRouter() {
       throw new AppError('loan_bill_not_found', 404, 404);
     }
 
+    // 一次性结清：将剩余本金和利息全部标记为已还
+    const remainingAmount = Math.max(0, Number(current.amount) - Number(current.paid_amount ?? 0));
+    const remainingInterest = Math.max(0, Number(current.interest) - Number(current.paid_interest ?? 0));
+
+    current.paid_amount = Number(current.amount);
+    current.paid_interest = Number(current.interest);
     current.is_paid = true;
     current.paid_at = dayjs().format('YYYY-MM-DD');
     await billRepo.save(current);
 
     let createdRepayment = false;
     if (settings.auto_repayment_on_mark_paid) {
-      const exists = await repaymentRepo.findOne({
-        where: { bill_id: current.id, user_id: userId },
-      });
-
-      if (!exists) {
+      // 仅当存在剩余金额时才生成还款记录（避免重复结清时产生空记录）
+      if (remainingAmount > 0 || remainingInterest > 0) {
         await repaymentRepo.save(repaymentRepo.create({
           user_id: userId,
           bill_id: current.id,
           platform_id: current.platform_id,
           platform_name: current.platform_name,
-          amount: current.amount,
-          interest: current.interest,
+          amount: remainingAmount,
+          interest: remainingInterest,
           repayment_date: current.paid_at,
-          notes: '标记账单已还时自动生成',
+          notes: '标记账单已还时自动生成（结清剩余）',
         }));
         createdRepayment = true;
       }
@@ -630,6 +672,96 @@ export function createLoanRouter() {
       bill: mapBill(current),
       createdRepayment,
     }, 'mark_loan_bill_paid_success'));
+  }));
+
+  /**
+   * POST /api/finance/loan/actions/partial-repay
+   * 部分还款。
+   *
+   * 接收一个总金额，按"先利息后本金"顺序抵扣：
+   * 1. 先抵扣剩余利息（remainingInterest）
+   * 2. 剩余部分抵扣剩余本金（remainingAmount）
+   * 3. 累加 paid_interest / paid_amount
+   * 4. 若本金和利息均结清，则 is_paid=true、paid_at=today
+   * 5. 自动生成还款记录，金额按实际抵扣的本金/利息拆分
+   */
+  router.post('/actions/partial-repay', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const payload = validateBody(partialRepaySchema, request.body);
+    const billRepo = appDataSource.getRepository(FinanceLoanBillEntity);
+    const repaymentRepo = appDataSource.getRepository(FinanceLoanRepaymentEntity);
+    const current = await billRepo.findOne({
+      where: { id: payload.billId, user_id: userId },
+    });
+
+    if (!current) {
+      throw new AppError('loan_bill_not_found', 404, 404);
+    }
+
+    if (current.is_paid) {
+      throw new AppError('loan_bill_already_paid', 400, 400, '该账单已结清，无需继续还款');
+    }
+
+    const totalAmount = Number(current.amount);
+    const totalInterest = Number(current.interest);
+    const paidAmount = Number(current.paid_amount ?? 0);
+    const paidInterest = Number(current.paid_interest ?? 0);
+    const remainingAmount = Math.max(0, totalAmount - paidAmount);
+    const remainingInterest = Math.max(0, totalInterest - paidInterest);
+
+    if (payload.amount > remainingAmount + remainingInterest + 0.01) {
+      throw new AppError(
+        'loan_partial_repay_exceeds',
+        400,
+        400,
+        `还款金额超过剩余待还金额 ¥${(remainingAmount + remainingInterest).toFixed(2)}`,
+      );
+    }
+
+    // 先利息后本金抵扣
+    let applyToInterest = Math.min(payload.amount, remainingInterest);
+    let applyToAmount = Math.max(0, payload.amount - applyToInterest);
+
+    const newPaidInterest = Number((paidInterest + applyToInterest).toFixed(2));
+    const newPaidAmount = Number((paidAmount + applyToAmount).toFixed(2));
+
+    current.paid_interest = newPaidInterest;
+    current.paid_amount = newPaidAmount;
+
+    const fullyPaid = newPaidAmount >= totalAmount && newPaidInterest >= totalInterest;
+    if (fullyPaid) {
+      current.is_paid = true;
+      current.paid_at = dayjs().format('YYYY-MM-DD');
+    }
+
+    await billRepo.save(current);
+
+    const repaymentDate = payload.repaymentDate
+      ? normalizeDate(payload.repaymentDate)
+      : dayjs().format('YYYY-MM-DD');
+
+    const repayment = await repaymentRepo.save(repaymentRepo.create({
+      user_id: userId,
+      bill_id: current.id,
+      platform_id: current.platform_id,
+      platform_name: current.platform_name,
+      amount: applyToAmount,
+      interest: applyToInterest,
+      repayment_date: repaymentDate,
+      notes: payload.notes || `部分还款：本金 ¥${applyToAmount.toFixed(2)} + 利息 ¥${applyToInterest.toFixed(2)}`,
+    }));
+
+    response.json(successResponse({
+      bill: mapBill(current),
+      repayment: mapRepayment(repayment),
+      breakdown: {
+        applyToAmount: Number(applyToAmount.toFixed(2)),
+        applyToInterest: Number(applyToInterest.toFixed(2)),
+        remainingAmount: Number(Math.max(0, totalAmount - newPaidAmount).toFixed(2)),
+        remainingInterest: Number(Math.max(0, totalInterest - newPaidInterest).toFixed(2)),
+        fullyPaid,
+      },
+    }, 'partial_repay_success'));
   }));
 
   router.post('/actions/trigger-reminders', asyncHandler(async (request: AuthenticatedRequest, response) => {

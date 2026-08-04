@@ -11,6 +11,8 @@ export interface UnifiedBill {
   type: BillType;
   title: string;
   amount: number;
+  /** 已还金额（贷款账单支持部分还款后剩余的已还部分） */
+  paid_amount: number;
   due_date: string;
   status: BillStatus;
   category: string;

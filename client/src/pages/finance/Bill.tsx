@@ -202,7 +202,7 @@ export default function BillPage() {
       }
       const sourceId = bill.id.replace('loan_', '');
       await loanApi.markBillPaid(sourceId);
-      showToast('已标记为已支付，还款记录已同步创建。', 'success');
+      showToast('已一次结清，还款记录已同步创建。', 'success');
       void loadBills(selectedMonth, selectedType);
       void loadSummary(selectedMonth);
       setDetailModalOpen(false);
