@@ -10,6 +10,7 @@ import { successResponse, buildListData } from '../../shared/http/response';
 import { validateBody } from '../../shared/http/validation';
 import { parsePagination } from '../../shared/utils/pagination';
 import { normalizeDate } from '../../shared/utils/date';
+import { evaluateStatus } from '../../shared/utils/medical';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { AppError } from '../../shared/errors/app-error';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
@@ -68,31 +69,6 @@ const triggerSchema = z.object({
 });
 
 const settingService = new BaseUserSettingService(HealthCheckupSettingEntity);
-
-function evaluateStatus(value: number, referenceRange: string) {
-  const normalized = referenceRange.replace(/\s+/g, '');
-  const rangeMatch = normalized.match(/^(-?\d+(?:\.\d+)?)(?:-|~)(-?\d+(?:\.\d+)?)$/);
-
-  if (rangeMatch) {
-    const min = Number(rangeMatch[1]);
-    const max = Number(rangeMatch[2]);
-    return value >= min && value <= max ? 'normal' : 'abnormal';
-  }
-
-  const upperMatch = normalized.match(/^(<=|<)(-?\d+(?:\.\d+)?)$/);
-  if (upperMatch) {
-    const limit = Number(upperMatch[2]);
-    return upperMatch[1] === '<=' ? (value <= limit ? 'normal' : 'abnormal') : (value < limit ? 'normal' : 'abnormal');
-  }
-
-  const lowerMatch = normalized.match(/^(>=|>)(-?\d+(?:\.\d+)?)$/);
-  if (lowerMatch) {
-    const limit = Number(lowerMatch[2]);
-    return lowerMatch[1] === '>=' ? (value >= limit ? 'normal' : 'abnormal') : (value > limit ? 'normal' : 'abnormal');
-  }
-
-  return 'unknown';
-}
 
 function mapRecord(entity: HealthCheckupRecordEntity) {
   return {

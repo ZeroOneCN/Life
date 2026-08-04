@@ -7,6 +7,7 @@ import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
 import { requireAuthUser } from '../../shared/http/request';
 import { successResponse } from '../../shared/http/response';
 import { AppError } from '../../shared/errors/app-error';
+import { calculateBmi } from '../../shared/utils/health';
 import { HealthStepRecordEntity } from './entities/health-step-record.entity';
 import { HealthStepSettingEntity } from './entities/health-step-setting.entity';
 import { HealthFitnessDietRecordEntity } from './entities/health-fitness-diet-record.entity';
@@ -70,18 +71,6 @@ export function createHealthDashboardRouter() {
     const repository = appDataSource.getRepository(HealthFitnessSettingEntity);
     const setting = await repository.findOne({ where: { user_id: authUserId } });
     return Number(setting?.default_height_cm ?? 170);
-  }
-
-  /**
-   * 计算 BMI。
-   * @param weightKg - 体重（kg）
-   * @param heightCm - 身高（cm）
-   * @returns BMI 值，保留 1 位小数；输入非法返回 null
-   */
-  function calculateBmi(weightKg: number, heightCm: number) {
-    if (weightKg <= 0 || heightCm <= 0) return null;
-    const heightM = heightCm / 100;
-    return Number((weightKg / (heightM * heightM)).toFixed(1));
   }
 
   /**

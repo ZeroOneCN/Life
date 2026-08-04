@@ -9,6 +9,7 @@ import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Btn, Modal, PillTabs, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
+import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';
 import { fitnessApi } from '../../services/fitnessApi';
 import type {
   DietRecord,
@@ -44,14 +45,6 @@ const EMPTY_OVERVIEW: FitnessOverviewSummary = {
   todayDietCost: 0,
   trackedDays: 0,
 };
-
-function findCreated<T extends { id: string }>(previous: T[], next: T[]) {
-  return next.filter((item) => !previous.some((record) => record.id === item.id));
-}
-
-function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
-  return previous.filter((item) => !next.some((record) => record.id === item.id)).map((item) => item.id);
-}
 
 export default function FitnessPage() {
   const [innerTab, setInnerTab] = usePageTab<FitnessTab>('diet', TAB_OPTIONS.map((item) => item.value), 'fitnessTab');
@@ -140,7 +133,7 @@ export default function FitnessPage() {
     try {
       const created = findCreated(previous, next);
       const deletedIds = findDeletedIds(previous, next);
-      const updated = next.filter((item) => previous.some((record) => record.id === item.id && JSON.stringify(record) !== JSON.stringify(item)));
+      const updated = findUpdated(previous, next);
 
       await Promise.all([
         ...created.map((item) => createItem(item)),

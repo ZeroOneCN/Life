@@ -7,6 +7,7 @@ import { ensureNotificationScenesForUser, sendNotificationSceneLogs } from '../.
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { FinanceBillReminderSettingEntity } from './entities/finance-bill-reminder-setting.entity';
 import { getUnifiedBillsInRange, type BillType, type UnifiedBill } from './bill-aggregator.service';
+import { toNumber, round2 } from '../../shared/utils/number';
 
 const SCHEDULER_KEY = '__billReminderScheduler__';
 
@@ -17,21 +18,6 @@ const SCHEDULER_KEY = '__billReminderScheduler__';
  * 取 30 天以覆盖常见账单周期，同时避免无限回溯导致通知噪音。
  */
 const OVERDUE_LOOKBACK_DAYS = 30;
-
-function toNumber(value: unknown): number {
-  if (value === null || value === undefined || value === '') {
-    return 0;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function round2(value: number) {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  return Math.round(value * 100) / 100;
-}
 
 function setupScheduler() {
   if ((globalThis as Record<string, unknown>)[SCHEDULER_KEY]) {

@@ -9,6 +9,7 @@ import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
+import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';
 import { formatRentAmount } from '../../services/rent';
 import { rentApi } from '../../services/rentApi';
 import type {
@@ -42,14 +43,6 @@ const EMPTY_OVERVIEW: RentOverviewSummary = {
   endedRecords: 0,
   totalChannels: 0,
 };
-
-function findCreated<T extends { id: string }>(previous: T[], next: T[]) {
-  return next.filter((item) => !previous.some((record) => record.id === item.id));
-}
-
-function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
-  return previous.filter((item) => !next.some((record) => record.id === item.id)).map((item) => item.id);
-}
 
 function hydrateSettings(
   incoming: Partial<RentPageState['settings']> | null | undefined,
@@ -151,7 +144,7 @@ export default function RentPage() {
     try {
       const created = findCreated(previous, next);
       const deletedIds = findDeletedIds(previous, next);
-      const updated = next.filter((item) => previous.some((record) => record.id === item.id && JSON.stringify(record) !== JSON.stringify(item)));
+      const updated = findUpdated(previous, next);
 
       await Promise.all([
         ...created.map(async (item) => rentApi.createRecord({
@@ -208,7 +201,7 @@ export default function RentPage() {
     try {
       const created = findCreated(previous, next);
       const deletedIds = findDeletedIds(previous, next);
-      const updated = next.filter((item) => previous.some((record) => record.id === item.id && JSON.stringify(record) !== JSON.stringify(item)));
+      const updated = findUpdated(previous, next);
 
       await Promise.all([
         ...created.map((item) => {

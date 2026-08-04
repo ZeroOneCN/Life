@@ -6,23 +6,9 @@ import { FinanceBudgetEntity } from './entities/finance-budget.entity';
 import { SystemUserAccountEntity } from '../system/entities/system-user-account.entity';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
 import { calculateCategoryActualExpenses } from './budget-calculator';
+import { toNumber, round2 } from '../../shared/utils/number';
 
 const SCHEDULER_KEY = '__budgetAlertScheduler__';
-
-function toNumber(value: unknown): number {
-  if (value === null || value === undefined || value === '') {
-    return 0;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function round2(value: number) {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  return Math.round(value * 100) / 100;
-}
 
 function setupScheduler() {
   if ((globalThis as Record<string, unknown>)[SCHEDULER_KEY]) {

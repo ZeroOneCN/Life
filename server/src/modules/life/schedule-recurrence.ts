@@ -1,6 +1,11 @@
 import dayjs, { Dayjs } from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 
+import {
+  computeNextOccurrence,
+  isRecurringType,
+  normalizeRecurrenceConfig,
+} from '../../shared/recurrence';
 import type {
   LifeScheduleEventEntity,
   LifeScheduleRecurrenceConfig,
@@ -15,7 +20,7 @@ dayjs.extend(isBetween);
  * @returns 是否为重复类型
  */
 export function isScheduleRecurringType(type: LifeScheduleRecurrenceType): boolean {
-  return type === 'daily' || type === 'weekly' || type === 'monthly';
+  return isRecurringType(type);
 }
 
 /**
@@ -26,20 +31,7 @@ export function isScheduleRecurringType(type: LifeScheduleRecurrenceType): boole
 export function normalizeScheduleRecurrenceConfig(
   config: LifeScheduleRecurrenceConfig | null | undefined,
 ): LifeScheduleRecurrenceConfig | null {
-  if (!config) {
-    return null;
-  }
-  const result: LifeScheduleRecurrenceConfig = {};
-  if (Array.isArray(config.weekdays)) {
-    const unique = [...new Set(config.weekdays.filter((value) => value >= 0 && value <= 6))];
-    if (unique.length) {
-      result.weekdays = unique.sort((left, right) => left - right);
-    }
-  }
-  if (typeof config.dayOfMonth === 'number' && config.dayOfMonth >= 1 && config.dayOfMonth <= 31) {
-    result.dayOfMonth = config.dayOfMonth;
-  }
-  return Object.keys(result).length ? result : null;
+  return normalizeRecurrenceConfig(config);
 }
 
 /**
@@ -54,37 +46,7 @@ export function computeNextScheduleOccurrence(
   recurrenceConfig: LifeScheduleRecurrenceConfig | null | undefined,
   fromBase: Dayjs,
 ): Dayjs | null {
-  if (!isScheduleRecurringType(recurrenceType)) {
-    return null;
-  }
-
-  if (recurrenceType === 'daily') {
-    return fromBase.add(1, 'day');
-  }
-
-  if (recurrenceType === 'weekly') {
-    const weekdays = (recurrenceConfig?.weekdays ?? []).filter((value) => value >= 0 && value <= 6);
-    if (!weekdays.length) {
-      return fromBase.add(7, 'day');
-    }
-    for (let step = 1; step <= 7; step += 1) {
-      const candidate = fromBase.add(step, 'day');
-      if (weekdays.includes(candidate.day())) {
-        return candidate;
-      }
-    }
-    return fromBase.add(1, 'day');
-  }
-
-  if (recurrenceType === 'monthly') {
-    const dayOfMonth = Math.max(1, Math.min(31, Number(recurrenceConfig?.dayOfMonth ?? fromBase.date())));
-    const nextMonth = fromBase.add(1, 'month');
-    const lastDay = nextMonth.daysInMonth();
-    const targetDay = Math.min(dayOfMonth, lastDay);
-    return nextMonth.date(targetDay);
-  }
-
-  return null;
+  return computeNextOccurrence(recurrenceType, recurrenceConfig, fromBase);
 }
 
 /**

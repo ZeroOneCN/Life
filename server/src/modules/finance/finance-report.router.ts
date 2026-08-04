@@ -25,6 +25,7 @@ import { InvestmentForexCapitalFlowEntity } from '../investment/entities/investm
 import { recordAssistantUsage, estimateTokens } from '../system/assistant-usage.service';
 import { startFinanceMonthlyReportScheduler } from './finance-report.scheduler';
 import { startFinanceFollowupScheduler } from './finance-followup.scheduler';
+import { toNumber, round2 } from '../../shared/utils/number';
 
 const monthQuerySchema = z.object({
   month: z.string().optional(),
@@ -143,26 +144,11 @@ const MODULE_LABELS: Record<ModuleBreakdown['module'], string> = {
   rent: '房租',
 };
 
-function round2(value: number) {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  return Math.round(value * 100) / 100;
-}
-
 function calculatePercent(part: number, total: number) {
   if (!total) {
     return 0;
   }
   return Math.round((part / total) * 10000) / 10000;
-}
-
-function toNumber(value: unknown): number {
-  if (value === null || value === undefined || value === '') {
-    return 0;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function startOfMonth(month: string) {

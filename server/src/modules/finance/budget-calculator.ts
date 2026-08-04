@@ -8,14 +8,7 @@ import { FinanceLoanRepaymentEntity } from './entities/finance-loan-repayment.en
 import { FinanceSubscriptionRecordEntity } from './entities/finance-subscription-record.entity';
 import { FinanceRentRecordEntity } from './entities/finance-rent-record.entity';
 import { calculateRentMonthlyCost } from './finance-report.router';
-
-function toNumber(value: unknown): number {
-  if (value === null || value === undefined || value === '') {
-    return 0;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
+import { toNumber } from '../../shared/utils/number';
 
 /**
  * 计算指定月份各分类的实际支出金额。

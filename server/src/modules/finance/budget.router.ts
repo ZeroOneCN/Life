@@ -13,6 +13,7 @@ import { successResponse, buildListData } from '../../shared/http/response';
 import { validateBody } from '../../shared/http/validation';
 import { parsePagination } from '../../shared/utils/pagination';
 import { normalizeDate } from '../../shared/utils/date';
+import { toNumber, round2 } from '../../shared/utils/number';
 import { AppError } from '../../shared/errors/app-error';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
 import { startBudgetAlertScheduler } from './budget-alert.scheduler';
@@ -45,21 +46,6 @@ const budgetProgressQuerySchema = z.object({
   month: z.string().optional(),
   year: z.coerce.number().int().min(2000).max(2100).optional(),
 });
-
-function toNumber(value: unknown): number {
-  if (value === null || value === undefined || value === '') {
-    return 0;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function round2(value: number) {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  return Math.round(value * 100) / 100;
-}
 
 function mapCategory(entity: FinanceBudgetCategoryEntity) {
   return {

@@ -10,6 +10,7 @@ import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, SelectField, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
+import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';
 import { formatTravelAmount, TRAVEL_ALL_BOOKS } from '../../services/travel';
 import { travelApi } from '../../services/travelApi';
 import type {
@@ -45,14 +46,6 @@ const EMPTY_SUMMARY: TravelSummaryStats = {
   topCategoryName: '暂无',
   topPayChannelName: '暂无',
 };
-
-function findCreated<T extends { id: string }>(previous: T[], next: T[]) {
-  return next.filter((item) => !previous.some((record) => record.id === item.id));
-}
-
-function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
-  return previous.filter((item) => !next.some((record) => record.id === item.id)).map((item) => item.id);
-}
 
 function hydrateSettings(
   incoming: Partial<TravelPageState['settings']> | null | undefined,
@@ -174,7 +167,7 @@ export default function TravelPage() {
     try {
       const created = findCreated(previous, next);
       const deletedIds = findDeletedIds(previous, next);
-      const updated = next.filter((item) => previous.some((record) => record.id === item.id && JSON.stringify(record) !== JSON.stringify(item)));
+      const updated = findUpdated(previous, next);
 
       await Promise.all([
         ...created.map((item) => {
@@ -219,7 +212,7 @@ export default function TravelPage() {
     try {
       const created = findCreated(previous, next);
       const deletedIds = findDeletedIds(previous, next);
-      const updated = next.filter((item) => previous.some((record) => record.id === item.id && JSON.stringify(record) !== JSON.stringify(item)));
+      const updated = findUpdated(previous, next);
 
       await Promise.all([
         ...created.map(async (item) => travelApi.createRecord({
@@ -268,7 +261,7 @@ export default function TravelPage() {
     try {
       const created = findCreated(previous, next);
       const deletedIds = findDeletedIds(previous, next);
-      const updated = next.filter((item) => previous.some((record) => record.id === item.id && JSON.stringify(record) !== JSON.stringify(item)));
+      const updated = findUpdated(previous, next);
 
       await Promise.all([
         ...created.map((item) => travelApi.createPayChannel({

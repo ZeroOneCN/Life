@@ -18,6 +18,7 @@ import { LifeTodoTaskEntity } from '../life/entities/life-todo-task.entity';
 import { LifeStorageItemEntity } from '../life/entities/life-storage-item.entity';
 import { LifeCardRecordEntity } from '../life/entities/life-card-record.entity';
 import { LifeScheduleEventEntity } from '../life/entities/life-schedule-event.entity';
+import { toNumber } from '../../shared/utils/number';
 
 dayjs.extend(isBetween);
 
@@ -39,11 +40,6 @@ interface QueryFilters {
   endDate?: string;
   module?: string;
   limit?: number;
-}
-
-function toNumber(value: unknown) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function resolveRange(filters: QueryFilters) {

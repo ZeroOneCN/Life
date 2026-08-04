@@ -4,6 +4,7 @@ import { appDataSource } from '../../db/data-source';
 import { FinanceLoanBillEntity } from './entities/finance-loan-bill.entity';
 import { FinanceSubscriptionRecordEntity } from './entities/finance-subscription-record.entity';
 import { FinanceRentRecordEntity } from './entities/finance-rent-record.entity';
+import { toNumber } from '../../shared/utils/number';
 
 /**
  * 统一账单类型。
@@ -33,14 +34,6 @@ export interface UnifiedBill {
   source_id: string;
   source_name: string;
   notes?: string;
-}
-
-function toNumber(value: unknown): number {
-  if (value === null || value === undefined || value === '') {
-    return 0;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 /**

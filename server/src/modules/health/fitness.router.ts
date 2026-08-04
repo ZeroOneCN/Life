@@ -11,6 +11,7 @@ import { successResponse, buildListData } from '../../shared/http/response';
 import { validateBody } from '../../shared/http/validation';
 import { parsePagination } from '../../shared/utils/pagination';
 import { normalizeDate } from '../../shared/utils/date';
+import { calculateBmi } from '../../shared/utils/health';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { AppError } from '../../shared/errors/app-error';
 import { queryExerciseCalorie, queryFoodNutrition } from './fitness-ai.service';
@@ -158,14 +159,6 @@ function mapWeight(entity: HealthFitnessWeightRecordEntity) {
     createdAt: entity.created_at.toISOString(),
     updatedAt: entity.updated_at.toISOString(),
   };
-}
-
-function calculateBmi(weight: number, heightCm: number) {
-  if (weight <= 0 || heightCm <= 0) {
-    return null;
-  }
-  const heightM = heightCm / 100;
-  return Number((weight / (heightM * heightM)).toFixed(1));
 }
 
 function buildSummary(

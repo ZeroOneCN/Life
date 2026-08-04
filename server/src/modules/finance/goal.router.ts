@@ -14,6 +14,7 @@ import { parsePagination } from '../../shared/utils/pagination';
 import { normalizeDate } from '../../shared/utils/date';
 import { AppError } from '../../shared/errors/app-error';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { toNumber, round2 } from '../../shared/utils/number';
 
 const goalSchema = z.object({
   name: z.string().trim().min(1).max(128),
@@ -41,33 +42,6 @@ const contributionSchema = z.object({
   description: z.string().optional().default(''),
   source: z.enum(['manual', 'auto_transfer', 'interest', 'other']).optional().default('manual'),
 });
-
-/**
- * 将值转换为数字。
- *
- * @param value - 待转换的值
- * @returns 转换后的数字，失败则返回 0
- */
-function toNumber(value: unknown): number {
-  if (value === null || value === undefined || value === '') {
-    return 0;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-/**
- * 四舍五入保留两位小数。
- *
- * @param value - 输入数值
- * @returns 保留两位小数的结果
- */
-function round2(value: number) {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  return Math.round(value * 100) / 100;
-}
 
 /**
  * 将目标实体映射为 API 响应格式，并计算进度数据。

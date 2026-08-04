@@ -9,6 +9,7 @@ import { SectionCard, StatGrid } from '../../components/page';
 import { Btn, PillTabs, Tag, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
+import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';
 import { getAuthUserDisplayName, useAuthState } from '../../services/auth';
 import { medicationApi } from '../../services/medicationApi';
 import type {
@@ -49,14 +50,6 @@ const EMPTY_OVERVIEW: MedicationOverviewSummary = {
   latestRecordDate: null,
   todayDosage: 0,
 };
-
-function findCreated<T extends { id: string }>(previous: T[], next: T[]) {
-  return next.filter((item) => !previous.some((record) => record.id === item.id));
-}
-
-function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
-  return previous.filter((item) => !next.some((record) => record.id === item.id)).map((item) => item.id);
-}
 
 export default function MedicationPage() {
   const authState = useAuthState();
@@ -167,7 +160,7 @@ export default function MedicationPage() {
     try {
       const created = findCreated(previous, next);
       const deletedIds = findDeletedIds(previous, next);
-      const updated = next.filter((item) => previous.some((record) => record.id === item.id && JSON.stringify(record) !== JSON.stringify(item)));
+      const updated = findUpdated(previous, next);
 
       await Promise.all([
         ...created.map((item) => createItem(item)),

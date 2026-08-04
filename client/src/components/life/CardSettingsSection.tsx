@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { NotificationLogTable } from '../NotificationLogTable';
@@ -6,11 +5,10 @@ import { NotificationStatusCard } from '../NotificationStatusCard';
 import { SettingSwitchCard } from '../SettingSwitchCard';
 import { SectionCard } from '../page';
 import { Btn, Field } from '../ui';
+import { useSceneNotificationLogs } from '../../hooks/useSceneNotificationLogs';
 import { formatLifeCardMoney } from '../../services/card';
-import { getNotificationLogs } from '../../services/notificationCenter';
 import { cardApi } from '../../services/cardApi';
 import type { LifeCardPageState, LifeCardRecord } from '../../types/card';
-import type { NotificationLogEntry } from '../../types/notifications';
 
 interface CardSettingsSectionProps {
   cards: LifeCardRecord[];
@@ -26,29 +24,10 @@ export function CardSettingsSection({
   showToast,
 }: CardSettingsSectionProps) {
   const navigate = useNavigate();
-  const [logs, setLogs] = useState<NotificationLogEntry[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      const result = await getNotificationLogs({
-        page: 1,
-        pageSize: 8,
-        sceneIds: ['card.balance_low', 'card.billing_upcoming'],
-      });
-
-      if (!cancelled) {
-        setLogs(result.items);
-      }
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [settings]);
+  const { logs, reload: reloadLogs } = useSceneNotificationLogs(
+    ['card.balance_low', 'card.billing_upcoming'],
+    [settings],
+  );
 
   const lowBalanceCards = cards.filter((card) => card.balance <= settings.balanceThreshold);
   const billingWindowCards = cards.filter((card) => {
@@ -62,12 +41,7 @@ export function CardSettingsSection({
   const triggerLowBalanceReminder = async () => {
     try {
       await cardApi.triggerReminders();
-      const result = await getNotificationLogs({
-        page: 1,
-        pageSize: 8,
-        sceneIds: ['card.balance_low', 'card.billing_upcoming'],
-      });
-      setLogs(result.items);
+      reloadLogs();
       showToast('低余额和账单日前提醒已触发。');
     } catch {
       showToast('提醒触发失败。', 'error');

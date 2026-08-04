@@ -1,15 +1,12 @@
-import { useEffect, useState } from 'react';
-
 import { NotificationLogTable } from '../NotificationLogTable';
 import { NotificationStatusCard } from '../NotificationStatusCard';
 import { SettingSwitchCard } from '../SettingSwitchCard';
 import { SectionCard } from '../page';
 import { Btn, Checkbox, Field } from '../ui';
+import { useSceneNotificationLogs } from '../../hooks/useSceneNotificationLogs';
 import { buildApiErrorMessage } from '../../lib/api';
-import { getNotificationLogs } from '../../services/notificationCenter';
 import { subscriptionApi } from '../../services/subscriptionApi';
 import type { SubscriptionPageState } from '../../types/subscription';
-import type { NotificationLogEntry } from '../../types/notifications';
 
 interface SubscriptionSettingsSectionProps {
   settings: SubscriptionPageState['settings'];
@@ -20,51 +17,15 @@ export function SubscriptionSettingsSection({
   settings,
   onSettingsChange,
 }: SubscriptionSettingsSectionProps) {
-  const [logs, setLogs] = useState<NotificationLogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      setLoading(true);
-      try {
-        const result = await getNotificationLogs({
-          page: 1,
-          pageSize: 8,
-          sceneIds: ['subscription.renewal_upcoming', 'subscription.expired'],
-        });
-
-        if (!cancelled) {
-          setLogs(result.items);
-        }
-      } catch {
-        if (!cancelled) {
-          setLogs([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [settings]);
+  const { logs, loading, reload: reloadLogs } = useSceneNotificationLogs(
+    ['subscription.renewal_upcoming', 'subscription.expired'],
+    [settings],
+  );
 
   const triggerReminder = async () => {
     try {
       await subscriptionApi.triggerReminders();
-      const result = await getNotificationLogs({
-        page: 1,
-        pageSize: 8,
-        sceneIds: ['subscription.renewal_upcoming', 'subscription.expired'],
-      });
-      setLogs(result.items);
+      reloadLogs();
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error(buildApiErrorMessage(error, '订阅提醒触发失败。'));

@@ -9,6 +9,7 @@ import { requireAuthUser } from '../../shared/http/request';
 import { successResponse, buildListData } from '../../shared/http/response';
 import { validateBody } from '../../shared/http/validation';
 import { parsePagination } from '../../shared/utils/pagination';
+import { evaluateStatus } from '../../shared/utils/medical';
 import { AppError } from '../../shared/errors/app-error';
 import { HealthVitalRecordEntity } from './entities/health-vital-record.entity';
 
@@ -60,37 +61,6 @@ const recordSchema = z.object({
   value: z.number(),
   notes: z.string().optional().default(''),
 });
-
-/**
- * 根据参考范围评估状态（复用体检模块的评估逻辑）。
- * @param value - 指标值
- * @param referenceRange - 参考范围字符串
- * @returns 状态：normal / abnormal / attention / unknown
- */
-function evaluateStatus(value: number, referenceRange: string) {
-  const normalized = referenceRange.replace(/\s+/g, '');
-  const rangeMatch = normalized.match(/^(-?\d+(?:\.\d+)?)(?:-|~)(-?\d+(?:\.\d+)?)$/);
-
-  if (rangeMatch) {
-    const min = Number(rangeMatch[1]);
-    const max = Number(rangeMatch[2]);
-    return value >= min && value <= max ? 'normal' : 'abnormal';
-  }
-
-  const upperMatch = normalized.match(/^(<=|<)(-?\d+(?:\.\d+)?)$/);
-  if (upperMatch) {
-    const limit = Number(upperMatch[2]);
-    return upperMatch[1] === '<=' ? (value <= limit ? 'normal' : 'abnormal') : (value < limit ? 'normal' : 'abnormal');
-  }
-
-  const lowerMatch = normalized.match(/^(>=|>)(-?\d+(?:\.\d+)?)$/);
-  if (lowerMatch) {
-    const limit = Number(lowerMatch[2]);
-    return lowerMatch[1] === '>=' ? (value >= limit ? 'normal' : 'abnormal') : (value > limit ? 'normal' : 'abnormal');
-  }
-
-  return 'unknown';
-}
 
 /**
  * 映射实体到 API 返回结构。

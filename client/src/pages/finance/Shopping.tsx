@@ -8,6 +8,7 @@ import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Btn, Modal, PillTabs, SelectField, Tag, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
+import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';
 import { importShoppingWorkbook } from '../../services/shopping';
 import { shoppingApi } from '../../services/shoppingApi';
 import type {
@@ -34,14 +35,6 @@ const EMPTY_SETTINGS: ShoppingPageState['settings'] = {
   currencyMode: 'CNY',
   usdtRate: 7.2,
 };
-
-function findCreated<T extends { id: string }>(previous: T[], next: T[]) {
-  return next.filter((item) => !previous.some((record) => record.id === item.id));
-}
-
-function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
-  return previous.filter((item) => !next.some((record) => record.id === item.id)).map((item) => item.id);
-}
 
 export default forwardRef<{ openImportModal: () => void }, { hideHeader?: boolean }>(function ShoppingPage({ hideHeader = false }, ref) {
   useImperativeHandle(ref, () => ({
@@ -137,7 +130,7 @@ export default forwardRef<{ openImportModal: () => void }, { hideHeader?: boolea
     try {
       const created = findCreated(previous, next);
       const deletedIds = findDeletedIds(previous, next);
-      const updated = next.filter((item) => previous.some((record) => record.id === item.id && JSON.stringify(record) !== JSON.stringify(item)));
+      const updated = findUpdated(previous, next);
 
       await Promise.all([
         ...created.map((item) => createItem(item)),

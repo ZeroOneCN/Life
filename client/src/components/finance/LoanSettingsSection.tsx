@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import dayjs from 'dayjs';
 
 import { NotificationLogTable } from '../NotificationLogTable';
@@ -6,11 +6,10 @@ import { NotificationStatusCard } from '../NotificationStatusCard';
 import { SettingSwitchCard } from '../SettingSwitchCard';
 import { SectionCard } from '../page';
 import { Btn, Field, SelectField } from '../ui';
+import { useSceneNotificationLogs } from '../../hooks/useSceneNotificationLogs';
 import { buildApiErrorMessage } from '../../lib/api';
-import { getNotificationLogs } from '../../services/notificationCenter';
 import { loanApi } from '../../services/loanApi';
 import type { LoanBill, LoanSettings } from '../../types/loan';
-import type { NotificationLogEntry } from '../../types/notifications';
 
 interface LoanSettingsSectionProps {
   bills: LoanBill[];
@@ -25,57 +24,21 @@ export function LoanSettingsSection({
   onSettingsChange,
   showToast,
 }: LoanSettingsSectionProps) {
-  const [logs, setLogs] = useState<NotificationLogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-
   const upcomingBills = useMemo(() => bills.filter((bill) => !bill.isPaid), [bills]);
   const overdueBills = useMemo(
     () => bills.filter((bill) => !bill.isPaid && dayjs(bill.dueDate).isBefore(dayjs(), 'day')),
     [bills],
   );
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      setLoading(true);
-      try {
-        const result = await getNotificationLogs({
-          page: 1,
-          pageSize: 8,
-          sceneIds: ['loan.repayment_upcoming', 'loan.repayment_overdue'],
-        });
-
-        if (!cancelled) {
-          setLogs(result.items);
-        }
-      } catch {
-        if (!cancelled) {
-          setLogs([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [settings]);
+  const { logs, loading, reload: reloadLogs } = useSceneNotificationLogs(
+    ['loan.repayment_upcoming', 'loan.repayment_overdue'],
+    [settings],
+  );
 
   const triggerReminder = async () => {
     try {
       await loanApi.triggerReminders();
-      const result = await getNotificationLogs({
-        page: 1,
-        pageSize: 8,
-        sceneIds: ['loan.repayment_upcoming', 'loan.repayment_overdue'],
-      });
-      setLogs(result.items);
+      reloadLogs();
       showToast('贷款提醒已触发。');
     } catch (error) {
       showToast(buildApiErrorMessage(error, '贷款提醒触发失败。'), 'error');
