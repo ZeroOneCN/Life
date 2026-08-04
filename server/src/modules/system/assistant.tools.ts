@@ -11,6 +11,7 @@ import { FinanceRentRecordEntity } from '../finance/entities/finance-rent-record
 import { HealthFitnessWeightRecordEntity } from '../health/entities/health-fitness-weight-record.entity';
 import { HealthFitnessExerciseRecordEntity } from '../health/entities/health-fitness-exercise-record.entity';
 import { HealthMedicationRecordEntity } from '../health/entities/health-medication-record.entity';
+import { HealthFitnessDietRecordEntity } from '../health/entities/health-fitness-diet-record.entity';
 import { InvestmentForexTradeRecordEntity } from '../investment/entities/investment-forex-trade-record.entity';
 import { InvestmentForexCapitalFlowEntity } from '../investment/entities/investment-forex-capital-flow.entity';
 import { LifeTodoTaskEntity } from '../life/entities/life-todo-task.entity';
@@ -39,7 +40,9 @@ export type AssistantTool =
   | 'create_step'
   | 'create_weight'
   | 'create_medication'
-  | 'create_todo';
+  | 'create_todo'
+  | 'create_schedule_event'
+  | 'create_diet_record';
 
 interface QueryFilters {
   startDate?: string;
@@ -95,6 +98,10 @@ export async function handleAssistantToolCall(
       return createMedication(userId, args);
     case 'create_todo':
       return createTodo(userId, args);
+    case 'create_schedule_event':
+      return createScheduleEvent(userId, args);
+    case 'create_diet_record':
+      return createDietRecord(userId, args);
     default:
       return { error: `Unknown tool: ${tool}` };
   }
@@ -588,6 +595,93 @@ async function createTodo(userId: string, args: Record<string, unknown>) {
   }
 }
 
+/**
+ * 创建日程事件。
+ * @param userId - 用户 ID
+ * @param args - 工具参数（title/startAt 必填，其余可选）
+ * @returns 创建结果
+ */
+async function createScheduleEvent(userId: string, args: Record<string, unknown>) {
+  const title = pickString(args, 'title');
+  const startAt = pickString(args, 'startAt');
+  if (!title || !startAt) {
+    return { error: '缺少必填字段：title/startAt' };
+  }
+  const start = dayjs(startAt);
+  if (!start.isValid()) {
+    return { error: 'startAt 格式无效，需为 ISO 日期时间字符串' };
+  }
+  try {
+    const endAtRaw = pickString(args, 'endAt');
+    const endAt = endAtRaw ? dayjs(endAtRaw) : null;
+    if (endAtRaw && !endAt?.isValid()) {
+      return { error: 'endAt 格式无效，需为 ISO 日期时间字符串' };
+    }
+    const recurrenceType = pickString(args, 'recurrenceType', 'none') as 'none' | 'daily' | 'weekly' | 'monthly';
+    const repo = appDataSource.getRepository(LifeScheduleEventEntity);
+    const record = repo.create({
+      user_id: userId,
+      title,
+      description_markdown: pickString(args, 'descriptionMarkdown'),
+      start_at: start.toDate(),
+      end_at: endAt?.toDate() ?? null,
+      is_all_day: pickBoolean(args, 'isAllDay'),
+      location: pickString(args, 'location') || null,
+      color: pickString(args, 'color') || null,
+      recurrence_type: recurrenceType,
+      recurrence_config: null,
+      recurrence_end_date: pickString(args, 'recurrenceEndDate') || null,
+      reminder_minutes: args.reminderMinutes !== undefined && args.reminderMinutes !== null
+        ? Math.max(0, pickNumber(args, 'reminderMinutes'))
+        : null,
+      completed: false,
+      completed_at: null,
+      trashed_at: null,
+      source: 'manual',
+      source_id: null,
+      sort_order: Date.now(),
+    });
+    const saved = await repo.save(record);
+    return { id: saved.id, message: `已创建日程：${saved.title}（${start.format('YYYY-MM-DD HH:mm')}）` };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : '创建日程事件失败' };
+  }
+}
+
+/**
+ * 创建饮食记录。
+ * @param userId - 用户 ID
+ * @param args - 工具参数（date/mealType/foodName/grams 必填，其余可选）
+ * @returns 创建结果
+ */
+async function createDietRecord(userId: string, args: Record<string, unknown>) {
+  const date = pickString(args, 'date');
+  const mealType = pickString(args, 'mealType');
+  const foodName = pickString(args, 'foodName');
+  const grams = pickNumber(args, 'grams', -1);
+  if (!date || !mealType || !foodName || grams < 0) {
+    return { error: '缺少必填字段：date/mealType/foodName/grams' };
+  }
+  try {
+    const repo = appDataSource.getRepository(HealthFitnessDietRecordEntity);
+    const record = repo.create({
+      user_id: userId,
+      date,
+      meal_type: mealType,
+      food_name: foodName,
+      grams: Math.max(0, grams),
+      calories: Math.max(0, pickNumber(args, 'calories')),
+      protein: Math.max(0, pickNumber(args, 'protein')),
+      carbs: Math.max(0, pickNumber(args, 'carbs')),
+      fat: Math.max(0, pickNumber(args, 'fat')),
+    });
+    const saved = await repo.save(record);
+    return { id: saved.id, message: `已记录饮食：${foodName} ${grams}g（${date} ${mealType}）` };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : '创建饮食记录失败' };
+  }
+}
+
 export const ASSISTANT_TOOLS: Array<{
   type: 'function';
   function: {
@@ -770,6 +864,50 @@ export const ASSISTANT_TOOLS: Array<{
           recurrenceType: { type: 'string', enum: ['none', 'daily', 'weekly', 'monthly'], description: '重复类型' },
         },
         required: ['title'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_schedule_event',
+      description: '创建一条日程事件，支持全天/定时、地点、提醒、重复规则。',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: '事件标题（必填）' },
+          startAt: { type: 'string', description: '开始时间 ISO 格式，如 2026-08-04T09:00:00（必填）' },
+          endAt: { type: 'string', description: '结束时间 ISO 格式，可省略表示瞬时事件' },
+          isAllDay: { type: 'boolean', description: '是否全天事件' },
+          descriptionMarkdown: { type: 'string', description: '事件描述（Markdown）' },
+          location: { type: 'string', description: '地点' },
+          color: { type: 'string', description: '颜色标识（indigo/green/red 等）' },
+          reminderMinutes: { type: 'integer', description: '提前提醒分钟数（如 15/30/60）' },
+          recurrenceType: { type: 'string', enum: ['none', 'daily', 'weekly', 'monthly'], description: '重复类型' },
+          recurrenceEndDate: { type: 'string', description: '重复结束日期 YYYY-MM-DD' },
+        },
+        required: ['title', 'startAt'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_diet_record',
+      description: '创建一条饮食记录，含餐次、食物、克数和营养素。',
+      parameters: {
+        type: 'object',
+        properties: {
+          date: { type: 'string', description: '日期 YYYY-MM-DD（必填）' },
+          mealType: { type: 'string', enum: ['breakfast', 'lunch', 'dinner', 'snack'], description: '餐次（必填）' },
+          foodName: { type: 'string', description: '食物名称（必填）' },
+          grams: { type: 'number', description: '克数（必填）' },
+          calories: { type: 'number', description: '热量 kcal' },
+          protein: { type: 'number', description: '蛋白质 g' },
+          carbs: { type: 'number', description: '碳水化合物 g' },
+          fat: { type: 'number', description: '脂肪 g' },
+        },
+        required: ['date', 'mealType', 'foodName', 'grams'],
       },
     },
   },
