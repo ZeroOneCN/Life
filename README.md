@@ -6,7 +6,7 @@ LifeOS 是一个前后端分离的全栈 Web 应用。前端用 **React 18 + Typ
 
 ## 它能做什么
 
-- **四大业务中心**：健康（步数 / 健身 / 体检 / 用药）、财务（购物 / 旅行 / 贷款 / 订阅 / 房租 / 汇率 / 月报）、生活（物品 / 号卡 / 待办 / 重复任务）、投资（外汇 / 加密 / 港股 / 美股）
+- **四大业务中心**：健康（概览 / 体征睡眠 / 健身 / 步数 / 体检 / 用药 / 报告）、财务（概览 / 消费 / 购物 / 旅行 / 账单 / 贷款 / 订阅 / 房租 / 规划 / 报告 / 汇率）、生活（物品 / 号卡 / 待办 / 日程）、投资（外汇）
 - **统一通知中心**：邮件、企业微信、钉钉、飞书、Telegram、Webhook 都能接，每个场景可以单独配 HTML 模板，发送记录都能查
 - **AI 智能助理**：右下角浮动按钮一键唤起，支持自然语言提问（比如「这个月购物花了多少」），背后是 DeepSeek 的 function calling
 - **DeepSeek Token 看板**：个人中心里实时显示官方账户余额和本站消耗，每 30 秒自动刷新
@@ -43,17 +43,25 @@ LifeOS 是一个前后端分离的全栈 Web 应用。前端用 **React 18 + Typ
 
 ### 健康中心
 
+- **健康概览** (`/health/overview`)：跨模块聚合 — 体重趋势、累计步数、活跃药品、待办体检
+- **体征睡眠** (`/health/vital`)：体征指标 + 睡眠记录
+- **运动健身** (`/health/fitness`)：饮食、运动、体重、购物四个维度一起记；体重体脂精确到 2 位小数；支持 Excel 导入导出
 - **运动步数** (`/health/step`)：按时段（08/12/16/20/23 点）或全天录入；支持按日 / 月 / 年 / 时段看趋势
-- **健身减脂** (`/health/fitness`)：饮食、运动、体重、购物四个维度一起记；体重体脂精确到 2 位小数；支持 Excel 导入导出
 - **体检指标** (`/health/checkup`)：自定义模板（指标 + 阈值），批量录入，异常项自动分析
 - **日常用药** (`/health/medication`)：用药记录 + 购药记录 + 库存估算；双指针库存算法；盒 / 瓶单位智能识别；支持服药提醒
+- **健康报告** (`/health/report`)：AI 生成个性化健康分析报告
 
 ### 财务中心
 
+- **财务概览** (`/finance/overview`)：跨模块聚合 — 待还贷款、订阅数、累计购物、活跃旅行、净资产
+- **消费记录** (`/finance/expense`)：日常消费流水记录
 - **网上购物** (`/finance/shopping`)：商品记录 + 平台管理 + 分类账本；Excel 导入导出
-- **旅行游玩** (`/finance/travel`)：行程 + 费用 + 排行榜 + 报表；多币种 + 状态机（计划 / 进行 / 完成 / 归档）+ 30 天后自动提醒归档 + 汇率换算
+- **旅行记账** (`/finance/travel`)：行程 + 费用 + 排行榜 + 报表；多币种 + 状态机（计划 / 进行 / 完成 / 归档）+ 30 天后自动提醒归档 + 汇率换算
+- **账单管理** (`/finance/bill-mgmt`)：贷款账单追踪 + 部分还款（利息优先本金在后）
+- **账单提醒** (`/finance/bill`)：订阅 / 账单到期提醒；提前 3 天 / 当天 / 逾期三档自动提醒
+- **财务规划** (`/finance/planning`)：预算管理 + 财务目标追踪
 - **贷款还款** (`/finance/loan`)：平台 + 还款计划 + 账单追踪 + 统计
-- **服务订阅** (`/finance/subscription`)：分类 + 记录 + 周期管理；提前 3 天 / 当天 / 逾期三档自动提醒
+- **服务订阅** (`/finance/subscription`)：分类 + 记录 + 周期管理
 - **房租水电** (`/finance/rent`)：渠道 + 缴费记录 + 月度 / 年度统计；水电煤气按月单独记录金额
 - **财务报告** (`/finance/report`)：跨 5 模块聚合（购物 / 旅行 / 贷款 / 订阅 / 房租），自动算收入支出、分类占比、同比环比；每月 1 号自动推送到通知中心
 - **汇率换算** (`/finance/exchange-rate`)：Exchange Rate API v6 实时拉取，1 小时缓存，USD 桥梁折算，离线兜底
@@ -62,7 +70,8 @@ LifeOS 是一个前后端分离的全栈 Web 应用。前端用 **React 18 + Typ
 
 - **物品追踪** (`/life/storage`)：物品归档 + 存放位置；支持从购物账单一键导入；删除物品时联动删除关联购物记录
 - **号卡中心** (`/life/card`)：号卡管理 + 充值 + 账单导入；运营商分类
-- **待办事项** (`/life/todo`)：任务 + 日志 + 回收站；软删除可恢复；支持每日 / 每周 / 每月重复任务
+- **待办事项** (`/life/todo`)：任务 + 日志 + 回收站；软删除可恢复；支持每日 / 每周 / 每月重复任务；自动提醒（逾期 / 即将到期 / 每日任务）
+- **日程管理** (`/life/schedule`)：日历事件 + 重复日程 + 提前提醒
 
 ### 投资中心
 
@@ -445,22 +454,28 @@ cd server && npm run dev
 
 ## 数据库表
 
-共约 41 张表，按模块分组：
+共约 50 张表，按模块分组：
 
 | 模块 | 主要表 |
 |------|--------|
 | 系统 | `system_user_account` / `system_user_profile` / `system_auth_session` / `system_assistant_usage_logs` |
 | 健康步数 | `health_step_record` / `health_step_setting` |
-| 健康健身 | `health_fitness_weight_record` / `health_fitness_diet_record` / `health_fitness_exercise_record` / `health_fitness_shopping_record` / `health_fitness_setting` |
+| 健康健身 | `health_fitness_weight_record` / `health_fitness_diet_record` / `health_fitness_exercise_record` / `health_fitness_shopping_record` / `health_fitness_setting` / `health_exercise_calorie_cache` / `health_food_nutrition_cache` |
+| 健康体征 | `health_vital_record` |
+| 健康睡眠 | `health_sleep_record` |
 | 健康用药 | `health_medication_record` / `health_medication_purchase` / `health_medication_threshold` / `health_medication_summary` / `health_medication_setting` |
 | 健康体检 | `health_checkup_template` / `health_checkup_template_item` / `health_checkup_record` / `health_checkup_setting` |
 | 财务贷款 | `finance_loan_platform` / `finance_loan_repayment` / `finance_loan_bill` / `finance_loan_setting` |
-| 财务房租 | `finance_rent_channel` / `finance_rent_record` / `finance_rent_setting` |
+| 财务房租 | `finance_rent_channel` / `finance_rent_record` / `finance_rent_setting` / `finance_rent_utility_bill` |
 | 财务购物 | `finance_shopping_platform` / `finance_shopping_ledger` / `finance_shopping_record` / `finance_shopping_import_batch` / `finance_shopping_setting` |
 | 财务订阅 | `finance_subscription_category` / `finance_subscription_record` / `finance_subscription_setting` |
 | 财务旅行 | `finance_travel_book` / `finance_travel_expense_record` / `finance_travel_pay_channel` / `finance_travel_import_batch` / `finance_travel_setting` |
+| 财务预算 | `finance_budget` / `finance_budget_category` / `finance_budget_history` |
+| 财务目标 | `finance_goal` / `finance_goal_contribution` |
+| 财务账单 | `finance_bill_reminder_setting` |
 | 投资外汇 | `investment_forex_trade_record` / `investment_forex_capital_flow` / `investment_forex_import_batch` / `investment_forex_setting` |
 | 生活待办 | `life_todo_task` / `life_todo_setting` |
+| 生活日程 | `life_schedule_event` / `life_schedule_setting` |
 | 生活储物 | `life_storage_item` / `life_storage_setting` |
 | 生活号卡 | `life_card_record` / `life_card_carrier` / `life_card_recharge_record` / `life_card_bill_record` / `life_card_bill_import_batch` / `life_card_setting` |
 | 通知 | `notification_center_channel` / `notification_center_scene` / `notification_center_scene_channel` / `notification_center_template` / `notification_center_log` |
@@ -468,7 +483,7 @@ cd server && npm run dev
 
 ## 已知限制与 Roadmap
 
-- **投资中心**：外汇已做完，加密 / 港股 / 美股已上线（前端 localStorage 版本，后端 API 待开发）
+- **投资中心**：外汇已完成后端 API；加密 / 港股 / 美股为前端 localStorage 版本，暂无后端 API 实装计划
 - **DeepSeek Key**：目前所有用户共享一个 key，未来要支持用户级配置
 - **Token 估算**：按 1 字符 ≈ 0.6 token 粗估，没用分词器
 - **测试**：还没配测试框架（计划用 Vitest / Jest + Supertest）
