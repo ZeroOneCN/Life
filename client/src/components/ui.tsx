@@ -289,33 +289,6 @@ export function CardSkeleton({ height = 180 }: { height?: number }) {
   );
 }
 
-export function EmptyState({
-  icon = '📭',
-  title,
-  description,
-  actionLabel,
-  onAction,
-}: {
-  icon?: string;
-  title: string;
-  description?: string;
-  actionLabel?: string;
-  onAction?: () => void;
-}) {
-  return (
-    <div className="empty-state-enhanced">
-      <div className="empty-state-icon" aria-hidden="true">{icon}</div>
-      <h3 className="empty-state-title">{title}</h3>
-      {description ? <p className="empty-state-desc">{description}</p> : null}
-      {actionLabel && onAction ? (
-        <button type="button" className="btn-primary empty-state-action" onClick={onAction}>
-          {actionLabel}
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
 export function PageLoading({ tip = '加载中...' }: { tip?: string }) {
   return (
     <div className="page-loading" role="status" aria-label={tip}>

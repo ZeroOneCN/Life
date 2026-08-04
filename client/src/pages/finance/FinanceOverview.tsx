@@ -185,6 +185,10 @@ export default function FinanceOverviewPage() {
                     { label: '手续费', value: formatUsd(report.investment.totalCommission) },
                     { label: '隔夜费', value: formatUsd(report.investment.totalOvernightFee) },
                     { label: '交易笔数', value: `${report.investment.tradeCount}` },
+                  ]}
+                />
+                <StatGrid
+                  items={[
                     { label: '投资净值', value: formatUsd(report.investment.equity), helper: `≈ ¥${report.investment.equityInReportCurrency.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}` },
                     { label: '投资回报率', value: `${(report.investment.roi * 100).toFixed(2)}%` },
                     { label: '未还贷款', value: formatCurrency(report.netWorth.unpaidLoanTotal) },

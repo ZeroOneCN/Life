@@ -3,7 +3,7 @@
  * 与后端 life_schedule_event 实体字段保持一致（驼峰映射）。
  */
 
-export type ScheduleTab = 'calendar' | 'list' | 'settings' | 'logs' | 'trash';
+export type ScheduleTab = 'events' | 'settings' | 'logs' | 'trash';
 
 export type ScheduleRecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly';
 

@@ -8,6 +8,9 @@ const HealthDashboardPage = lazyWithProgress(() => import('../pages/health/Healt
 const VitalPage = lazyWithProgress(() => import('../pages/health/Vital'));
 const FitnessPage = lazyWithProgress(() => import('../pages/health/Fitness'));
 const CheckupPage = lazyWithProgress(() => import('../pages/health/Checkup'));
+const StepPage = lazyWithProgress(() => import('../pages/health/Step'));
+const MedicationPage = lazyWithProgress(() => import('../pages/health/Medication'));
+const HealthReportPage = lazyWithProgress(() => import('../pages/health/HealthReport'));
 const ShoppingPage = lazyWithProgress(() => import('../pages/finance/Shopping'));
 const TravelPage = lazyWithProgress(() => import('../pages/finance/Travel'));
 const LoanPage = lazyWithProgress(() => import('../pages/finance/Loan'));
@@ -36,21 +39,27 @@ export const menuItems: MenuItemConfig[] = [
     key: 'health',
     icon: 'heart',
     label: '健康中心',
-    groupLabel: '生活管理',
+    groupLabel: '健康管理',
     children: [
       { key: '/health/overview', icon: 'dashboard', label: '健康概览' },
-      { key: '/health/vital', icon: 'heart', label: '健康记录' },
+      { key: '/health/vital', icon: 'heart', label: '体征睡眠' },
       { key: '/health/fitness', icon: 'spark', label: '运动健身' },
-      { key: '/health/checkup', icon: 'task', label: '体检用药' },
+      { key: '/health/step', icon: 'trend', label: '运动步数' },
+      { key: '/health/checkup', icon: 'task', label: '体检指标' },
+      { key: '/health/medication', icon: 'bell', label: '日常用药' },
+      { key: '/health/report', icon: 'chart', label: '健康报告' },
     ],
   },
   {
     key: 'finance',
     icon: 'wallet',
     label: '财务中心',
+    groupLabel: '财务管理',
     children: [
       { key: '/finance/overview', icon: 'dashboard', label: '财务概览' },
       { key: '/finance/expense', icon: 'task', label: '消费记录' },
+      { key: '/finance/shopping', icon: 'box', label: '购物记录' },
+      { key: '/finance/travel', icon: 'spark', label: '旅行记账' },
       { key: '/finance/bill-mgmt', icon: 'wallet', label: '账单管理' },
       { key: '/finance/bill', icon: 'bell', label: '账单提醒' },
       { key: '/finance/planning', icon: 'spark', label: '财务规划' },
@@ -74,21 +83,22 @@ export const menuItems: MenuItemConfig[] = [
     label: '投资中心',
     groupLabel: '投资行情',
     children: [
-      { key: '/investment/forex', icon: 'trend', label: '外汇市场' },
-      { key: '/investment/crypto', icon: 'shield', label: '加密市场' },
-      { key: '/investment/hk-stock', icon: 'chart', label: '港股市场' },
-      { key: '/investment/us-stock', icon: 'chart', label: '美股市场' },
+      { key: '/investment/forex', icon: 'trend', label: '外汇交易' },
     ],
   },
   { key: '/notifications', icon: 'bell', label: '通知中心', groupLabel: '系统' },
+  { key: '/settings/profile', icon: 'shield', label: '个人中心', groupLabel: '系统' },
 ];
 
 export const routes: RouteConfig[] = [
   { path: '/dashboard', label: '首页', breadcrumb: ['首页'], menuKey: '/dashboard', component: Dashboard },
   { path: '/health/overview', label: '健康概览', breadcrumb: ['健康中心', '健康概览'], menuKey: '/health/overview', component: HealthDashboardPage },
-  { path: '/health/vital', label: '健康记录', breadcrumb: ['健康中心', '健康记录'], menuKey: '/health/vital', component: VitalPage },
+  { path: '/health/vital', label: '体征睡眠', breadcrumb: ['健康中心', '体征睡眠'], menuKey: '/health/vital', component: VitalPage },
   { path: '/health/fitness', label: '运动健身', breadcrumb: ['健康中心', '运动健身'], menuKey: '/health/fitness', component: FitnessPage },
-  { path: '/health/checkup', label: '体检用药', breadcrumb: ['健康中心', '体检用药'], menuKey: '/health/checkup', component: CheckupPage },
+  { path: '/health/step', label: '运动步数', breadcrumb: ['健康中心', '运动步数'], menuKey: '/health/step', component: StepPage },
+  { path: '/health/checkup', label: '体检指标', breadcrumb: ['健康中心', '体检指标'], menuKey: '/health/checkup', component: CheckupPage },
+  { path: '/health/medication', label: '日常用药', breadcrumb: ['健康中心', '日常用药'], menuKey: '/health/medication', component: MedicationPage },
+  { path: '/health/report', label: '健康报告', breadcrumb: ['健康中心', '健康报告'], menuKey: '/health/report', component: HealthReportPage },
   { path: '/finance/overview', label: '财务概览', breadcrumb: ['财务中心', '财务概览'], menuKey: '/finance/overview', component: FinanceOverviewPage },
   { path: '/finance/expense', label: '消费记录', breadcrumb: ['财务中心', '消费记录'], menuKey: '/finance/expense', component: ExpensePage },
   { path: '/finance/bill-mgmt', label: '账单管理', breadcrumb: ['财务中心', '账单管理'], menuKey: '/finance/bill-mgmt', component: BillManagementPage },
@@ -100,7 +110,7 @@ export const routes: RouteConfig[] = [
   { path: '/life/card', label: '号卡中心', breadcrumb: ['生活中心', '号卡中心'], menuKey: '/life/card', component: CardPage },
   { path: '/life/todo', label: '待办事项', breadcrumb: ['生活中心', '待办事项'], menuKey: '/life/todo', component: TodoPage },
   { path: '/life/schedule', label: '日程管理', breadcrumb: ['生活中心', '日程管理'], menuKey: '/life/schedule', component: SchedulePage },
-  { path: '/investment/forex', label: '外汇市场', breadcrumb: ['投资中心', '外汇市场'], menuKey: '/investment/forex', component: ForexPage },
+  { path: '/investment/forex', label: '外汇交易', breadcrumb: ['投资中心', '外汇交易'], menuKey: '/investment/forex', component: ForexPage },
   { path: '/investment/crypto', label: '加密市场', breadcrumb: ['投资中心', '加密市场'], menuKey: '/investment/crypto', component: CryptoPage },
   { path: '/investment/hk-stock', label: '港股市场', breadcrumb: ['投资中心', '港股市场'], menuKey: '/investment/hk-stock', component: HKStockPage },
   { path: '/investment/us-stock', label: '美股市场', breadcrumb: ['投资中心', '美股市场'], menuKey: '/investment/us-stock', component: USStockPage },

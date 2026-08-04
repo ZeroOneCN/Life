@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { CheckupBatchEntrySection } from '../../components/health/CheckupBatchEntrySection';
 import { CheckupInsightsSection } from '../../components/health/CheckupInsightsSection';
@@ -18,8 +18,6 @@ import type {
   CheckupTab,
   CheckupTemplate,
 } from '../../types/checkup';
-
-const MedicationPage = lazy(() => import('./Medication'));
 
 const TAB_OPTIONS: Array<{ value: CheckupTab; label: string }> = [
   { value: 'records', label: '指标记录' },
@@ -46,7 +44,6 @@ const EMPTY_OVERVIEW: CheckupOverviewSummary = {
 export default function CheckupPage() {
   const authState = useAuthState();
   const [tab, setTab] = usePageTab<CheckupTab>('records', TAB_OPTIONS.map((item) => item.value), 'checkupTab');
-  const [activeTab, setActiveTab] = useState<'checkup' | 'medication'>('checkup');
   const [records, setRecords] = useState<CheckupRecord[]>([]);
   const [templates, setTemplates] = useState<CheckupTemplate[]>([]);
   const [settings, setSettings] = useState<CheckupPageState['settings']>(EMPTY_SETTINGS);
@@ -129,23 +126,10 @@ export default function CheckupPage() {
       <PageHeader
         title="体检用药"
         subtitle="体检与用药"
-        actions={(
-          <div className="merged-page-tabs">
-            <PillTabs
-              options={[
-                { value: 'checkup', label: '体检指标' },
-                { value: 'medication', label: '日常用药' },
-              ]}
-              value={activeTab}
-              onChange={(v) => setActiveTab(v as 'checkup' | 'medication')}
-            />
-          </div>
-        )}
+        actions={null}
       />
 
-      {activeTab === 'checkup' ? (
-        <>
-          <StatGrid
+      <StatGrid
             items={[
               { label: '指标总数', value: `${overview.totalRecords}`, helper: '累计检查记录' },
               { label: '异常 / 关注', value: `${overview.abnormalCount} / ${overview.attentionCount}`, accent: overview.abnormalCount > 0 ? 'var(--color-warning)' : undefined, helper: overview.abnormalCount > 0 ? '需要关注' : '正常范围' },
@@ -227,12 +211,6 @@ export default function CheckupPage() {
           ) : null}
 
           <Toast toast={toast} />
-        </>
-      ) : (
-        <Suspense fallback={<div className="skeleton-block" />}>
-          <MedicationPage />
-        </Suspense>
-      )}
     </div>
   );
 }

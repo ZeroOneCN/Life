@@ -14,11 +14,15 @@ import { scheduleApi } from '../../services/scheduleApi';
 import type { ScheduleOverviewSummary, ScheduleSettings, ScheduleTab } from '../../types/schedule';
 
 const TAB_OPTIONS: Array<{ value: ScheduleTab; label: string }> = [
-  { value: 'calendar', label: '日历视图' },
-  { value: 'list', label: '事件列表' },
+  { value: 'events', label: '事件管理' },
   { value: 'settings', label: '提醒设置' },
   { value: 'logs', label: '通知日志' },
   { value: 'trash', label: '回收站' },
+];
+
+const VIEW_OPTIONS = [
+  { value: 'calendar', label: '日历视图' },
+  { value: 'list', label: '事件列表' },
 ];
 
 const EMPTY_OVERVIEW: ScheduleOverviewSummary = {
@@ -45,7 +49,8 @@ const EMPTY_SETTINGS: ScheduleSettings = {
  * 日程管理主页面：聚合统计、Tab 切换、5 个子区块。
  */
 export default function SchedulePage() {
-  const [tab, setTab] = usePageTab<ScheduleTab>('calendar', TAB_OPTIONS.map((item) => item.value), 'scheduleTab');
+  const [tab, setTab] = usePageTab<ScheduleTab>('events', TAB_OPTIONS.map((item) => item.value), 'scheduleTab');
+  const [eventView, setEventView] = useState<'calendar' | 'list'>('calendar');
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
@@ -128,20 +133,29 @@ export default function SchedulePage() {
         <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as ScheduleTab)} />
       </SectionCard>
 
-      {tab === 'calendar' ? (
-        <ScheduleCalendarSection
-          settings={settings}
-          showToast={showToast}
-          onChanged={refreshPage}
-        />
-      ) : null}
-
-      {tab === 'list' ? (
-        <ScheduleEventsSection
-          settings={settings}
-          showToast={showToast}
-          onChanged={refreshPage}
-        />
+      {tab === 'events' ? (
+        <>
+          <div className="schedule-view-toggle">
+            <PillTabs
+              value={eventView}
+              onChange={(v) => setEventView(v as 'calendar' | 'list')}
+              options={VIEW_OPTIONS}
+            />
+          </div>
+          {eventView === 'calendar' ? (
+            <ScheduleCalendarSection
+              settings={settings}
+              showToast={showToast}
+              onChanged={refreshPage}
+            />
+          ) : (
+            <ScheduleEventsSection
+              settings={settings}
+              showToast={showToast}
+              onChanged={refreshPage}
+            />
+          )}
+        </>
       ) : null}
 
       {tab === 'settings' ? (

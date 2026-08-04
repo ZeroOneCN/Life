@@ -25,14 +25,6 @@ import { BILL_TYPE_LABELS, BILL_STATUS_LABELS } from '../../types/bill';
 import type { TableColumn } from '../../types/ui';
 
 type ViewMode = 'calendar' | 'list';
-type TabKey = 'all' | 'pending' | 'paid' | 'overdue';
-
-const TAB_OPTIONS = [
-  { value: 'all', label: '全部' },
-  { value: 'pending', label: '待支付' },
-  { value: 'paid', label: '已支付' },
-  { value: 'overdue', label: '已逾期' },
-];
 
 const VIEW_OPTIONS = [
   { value: 'calendar', label: '日历视图' },
@@ -60,7 +52,7 @@ const TYPE_COLOR: Record<BillType, 'blue' | 'pink' | 'green'> = {
 export default function BillPage() {
   const { toast, showToast } = useToastState();
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
-  const [activeTab, setActiveTab] = useState<TabKey>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format('YYYY-MM'));
   const [selectedType, setSelectedType] = useState<string>('all');
 
@@ -118,9 +110,9 @@ export default function BillPage() {
   }, [selectedMonth, selectedType, loadSummary, loadBills, loadSetting]);
 
   const filteredBills = useMemo(() => {
-    if (activeTab === 'all') return bills;
-    return bills.filter((b) => b.status === activeTab);
-  }, [bills, activeTab]);
+    if (statusFilter === 'all') return bills;
+    return bills.filter((b) => b.status === statusFilter);
+  }, [bills, statusFilter]);
 
   const calendarDays = useMemo(() => {
     const monthMoment = dayjs(`${selectedMonth}-01`);
@@ -309,11 +301,16 @@ export default function BillPage() {
             <Btn tone="ghost" onClick={handleToday}>今天</Btn>
             <Btn tone="ghost" onClick={handleNextMonth}>下月</Btn>
           </div>
-          <PillTabs
-            value={activeTab}
-            onChange={(v) => setActiveTab(v as TabKey)}
-            options={TAB_OPTIONS}
-          />
+          <SelectField
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{ width: 120 }}
+          >
+            <option value="all">全部状态</option>
+            <option value="pending">待支付</option>
+            <option value="paid">已支付</option>
+            <option value="overdue">已逾期</option>
+          </SelectField>
         </div>
 
         {viewMode === 'calendar' ? (

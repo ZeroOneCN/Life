@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ComponentPropsWithoutRef } from 'react';
 import dayjs from 'dayjs';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import { Btn, Modal, Tag } from '../../components/ui';
 import { buildApiErrorMessage } from '../../lib/api';
@@ -10,6 +13,25 @@ import {
   type AssistantChatMessage,
   type AssistantToolCallLog,
 } from '../../services/assistant.types';
+
+/**
+ * 安全链接渲染：仅允许 http(s)/mailto/相对路径，强制新窗口打开并加 noopener。
+ * @param props - 标准 <a> 元素属性。
+ */
+function SafeLink(props: ComponentPropsWithoutRef<'a'>) {
+  const { href, children, ...rest } = props;
+  const safeHref = href && /^(https?:|mailto:|\/)/i.test(href) ? href : undefined;
+  return (
+    <a
+      href={safeHref ?? '#'}
+      target="_blank"
+      rel="noopener noreferrer"
+      {...rest}
+    >
+      {children}
+    </a>
+  );
+}
 
 interface ChatBubble {
   id: string;
@@ -116,180 +138,9 @@ function saveHistory(messages: ChatBubble[]) {
 }
 
 /**
- * 极简 Markdown → HTML 渲染器（支持 heading 1-6、bold/em/inline-code/code-block、
- * 有序/无序列表、引用、表格、链接、分隔线、换行），输出已转义的安全 HTML。
+ * AssistantLauncher：右下角悬浮 AI 助理面板，支持拖拽、历史持久化、Markdown 渲染。
+ * @returns 悬浮按钮 + 可展开面板的 React 元素。
  */
-function renderInlineMarkdown(input: string): string {
-  if (!input) {
-    return '';
-  }
-
-  const escapeHtml = (s: string) => s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-
-  const escapeAttr = (s: string) => escapeHtml(s);
-
-  const applyInline = (s: string) => s
-    // inline code
-    .replace(/`([^`\n]+)`/g, (_m, code: string) => `<code>${escapeHtml(code)}</code>`)
-    // bold
-    .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/__([^_\n]+)__/g, '<strong>$1</strong>')
-    // italic
-    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>')
-    .replace(/(^|[^_])_([^_\n]+)_(?!_)/g, '$1<em>$2</em>')
-    // link [text](url)
-    .replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, (_m, text: string, url: string) => {
-      const safeUrl = /^(https?:|mailto:|\/)/i.test(url) ? url : '#';
-      return `<a href="${escapeAttr(safeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}</a>`;
-    });
-
-  const lines = input.replace(/\r\n/g, '\n').split('\n');
-  const html: string[] = [];
-  let listType: 'ul' | 'ol' | null = null;
-  let inCodeBlock = false;
-  let codeBuffer: string[] = [];
-  let inTable = false;
-  let tableHeader: string[] = [];
-  let tableRows: string[][] = [];
-
-  const closeList = () => {
-    if (listType) {
-      html.push(`</${listType}>`);
-      listType = null;
-    }
-  };
-
-  const closeTable = () => {
-    if (inTable) {
-      const headers = tableHeader.map((h) => `<th>${applyInline(escapeHtml(h))}</th>`).join('');
-      const body = tableRows
-        .map((row) => `<tr>${row.map((c) => `<td>${applyInline(escapeHtml(c))}</td>`).join('')}</tr>`)
-        .join('');
-      html.push(`<table><thead><tr>${headers}</tr></thead><tbody>${body}</tbody></table>`);
-      inTable = false;
-      tableHeader = [];
-      tableRows = [];
-    }
-  };
-
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i];
-
-    // code block
-    if (/^```/.test(line.trim())) {
-      if (inCodeBlock) {
-        html.push(`<pre><code>${escapeHtml(codeBuffer.join('\n'))}</code></pre>`);
-        codeBuffer = [];
-        inCodeBlock = false;
-      } else {
-        closeList();
-        closeTable();
-        inCodeBlock = true;
-      }
-      continue;
-    }
-
-    if (inCodeBlock) {
-      codeBuffer.push(line);
-      continue;
-    }
-
-    // table: | a | b |
-    if (/^\s*\|.*\|\s*$/.test(line)) {
-      const cells = line.trim().slice(1, -1).split('|').map((c) => c.trim());
-      if (!inTable) {
-        // 检查下一行是否是分隔行 | --- | --- |
-        const next = lines[i + 1] ?? '';
-        if (/^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/.test(next)) {
-          inTable = true;
-          tableHeader = cells;
-          i += 1;
-        } else {
-          // 单独的 | 行，按普通行处理
-          html.push(`<p>${applyInline(escapeHtml(line))}</p>`);
-        }
-      } else {
-        tableRows.push(cells);
-      }
-      continue;
-    } else if (inTable) {
-      closeTable();
-    }
-
-    // heading
-    const headingMatch = /^(#{1,6})\s+(.*)$/.exec(line);
-    if (headingMatch) {
-      closeList();
-      const level = headingMatch[1].length;
-      const text = applyInline(escapeHtml(headingMatch[2]));
-      html.push(`<h${level}>${text}</h${level}>`);
-      continue;
-    }
-
-    // hr
-    if (/^---+$/.test(line.trim()) || /^\*\*\*+$/.test(line.trim())) {
-      closeList();
-      html.push('<hr/>');
-      continue;
-    }
-
-    // blockquote
-    if (/^>\s?/.test(line)) {
-      closeList();
-      const text = applyInline(escapeHtml(line.replace(/^>\s?/, '')));
-      html.push(`<blockquote>${text}</blockquote>`);
-      continue;
-    }
-
-    // unordered list
-    const ulMatch = /^\s*[-*+]\s+(.*)$/.exec(line);
-    if (ulMatch) {
-      if (listType !== 'ul') {
-        closeList();
-        listType = 'ul';
-        html.push('<ul>');
-      }
-      html.push(`<li>${applyInline(escapeHtml(ulMatch[1]))}</li>`);
-      continue;
-    }
-
-    // ordered list
-    const olMatch = /^\s*\d+\.\s+(.*)$/.exec(line);
-    if (olMatch) {
-      if (listType !== 'ol') {
-        closeList();
-        listType = 'ol';
-        html.push('<ol>');
-      }
-      html.push(`<li>${applyInline(escapeHtml(olMatch[1]))}</li>`);
-      continue;
-    }
-
-    // 空行：结束列表
-    if (!line.trim()) {
-      closeList();
-      continue;
-    }
-
-    // 普通段落
-    closeList();
-    html.push(`<p>${applyInline(escapeHtml(line))}</p>`);
-  }
-
-  closeList();
-  closeTable();
-  if (inCodeBlock && codeBuffer.length) {
-    html.push(`<pre><code>${escapeHtml(codeBuffer.join('\n'))}</code></pre>`);
-  }
-
-  return html.join('');
-}
-
 export function AssistantLauncher() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatBubble[]>(() => loadHistory());
@@ -537,10 +388,14 @@ export function AssistantLauncher() {
                       <span>{bubble.role === 'user' ? '我' : 'AI 助理'}</span>
                       {bubble.pending ? <Tag tone="blue">思考中</Tag> : null}
                     </div>
-                    <div
-                      className="assistant-message-body"
-                      dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(bubble.content) }}
-                    />
+                    <div className="assistant-message-body">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{ a: SafeLink }}
+                      >
+                        {bubble.content}
+                      </ReactMarkdown>
+                    </div>
                     {bubble.toolCalls && bubble.toolCalls.length ? (
                       <div className="assistant-tool-list">
                         {bubble.toolCalls.map((call, index) => {

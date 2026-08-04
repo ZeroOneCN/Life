@@ -1,4 +1,4 @@
-import { lazy, useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { FitnessDashboardSection } from '../../components/health/FitnessDashboardSection';
 import { FitnessDietSection } from '../../components/health/FitnessDietSection';
@@ -20,8 +20,6 @@ import type {
   FitnessTab,
   WeightRecord,
 } from '../../types/fitness';
-
-const StepPage = lazy(() => import('./Step'));
 
 const TAB_OPTIONS: Array<{ value: FitnessTab; label: string }> = [
   { value: 'diet', label: '饮食记录' },
@@ -57,7 +55,6 @@ function findDeletedIds<T extends { id: string }>(previous: T[], next: T[]) {
 
 export default function FitnessPage() {
   const [innerTab, setInnerTab] = usePageTab<FitnessTab>('diet', TAB_OPTIONS.map((item) => item.value), 'fitnessTab');
-  const [activeTab, setActiveTab] = useState<'step' | 'fitness'>('step');
   const [dietRecords, setDietRecords] = useState<DietRecord[]>([]);
   const [exerciseRecords, setExerciseRecords] = useState<ExerciseRecord[]>([]);
   const [shoppingRecords, setShoppingRecords] = useState<FitnessShoppingRecord[]>([]);
@@ -171,28 +168,12 @@ export default function FitnessPage() {
         subtitle="运动与减脂"
         actions={(
           <div className="fitness-page-actions">
-            <div className="merged-page-tabs">
-              <PillTabs
-                options={[
-                  { value: 'step', label: '运动步数' },
-                  { value: 'fitness', label: '健身减脂' },
-                ]}
-                value={activeTab}
-                onChange={(v) => setActiveTab(v as 'step' | 'fitness')}
-              />
-            </div>
             <Btn tone="secondary" onClick={() => setInsightsOpen(true)}>查看健康建议</Btn>
           </div>
         )}
       />
 
-      {activeTab === 'step' ? (
-        <Suspense fallback={<div className="skeleton-block" />}>
-          <StepPage />
-        </Suspense>
-      ) : (
-        <>
-          <StatGrid className="fitness-overview-grid" items={topSummary} />
+      <StatGrid className="fitness-overview-grid" items={topSummary} />
 
       <SectionCard
         title="业务视图"
@@ -315,8 +296,6 @@ export default function FitnessPage() {
       </Modal>
 
       <Toast toast={toast} />
-        </>
-      )}
     </div>
   );
 }

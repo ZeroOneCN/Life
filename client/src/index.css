@@ -130,6 +130,25 @@
   --fw-bold: 700;
   --fw-semibold: 600;
   --fw-medium: 500;
+
+  /* Spacing System (8px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Card System */
+  --card-gap: 16px;
+  --card-padding: 20px;
+  --card-radius: 12px;
+
+  /* Numeric Font (financial data) */
+  --font-numeric: 'Inter', ui-monospace, monospace;
 }
 
 [data-theme="dark"] {
@@ -1110,6 +1129,7 @@ textarea {
   font-size: var(--fs-heading);
   letter-spacing: -0.04em;
   font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-helper {

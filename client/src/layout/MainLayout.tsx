@@ -75,6 +75,38 @@ function SidebarToggleIcon({ collapsed }: { collapsed: boolean }) {
   );
 }
 
+function ThemeIcon({ mode, isDark }: { mode: string; isDark: boolean }) {
+  if (mode === 'auto') {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+  if (isDark) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42m12.72-12.72l1.42-1.42" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function NotificationBellIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22zm6-6V11a6 6 0 1 0-12 0v5l-2 2v1h16v-1l-2-2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function findParentKey(pathname: string) {
   const prefix = pathname.split('/')[1];
   return ['health', 'finance', 'life', 'investment'].includes(prefix) ? prefix : null;
@@ -120,6 +152,17 @@ function MenuNode({
     setShowTooltip(false);
   };
 
+  useEffect(() => {
+    if (!showTooltip) return undefined;
+    const handleReposition = () => setShowTooltip(false);
+    window.addEventListener('resize', handleReposition);
+    window.addEventListener('scroll', handleReposition, true);
+    return () => {
+      window.removeEventListener('resize', handleReposition);
+      window.removeEventListener('scroll', handleReposition, true);
+    };
+  }, [showTooltip]);
+
   if (item.children?.length) {
     return (
       <div className="menu-group" ref={itemRef}>
@@ -131,7 +174,7 @@ function MenuNode({
           className={`menu-link ${isActive ? 'is-active' : ''}`}
           onClick={() => {
             setActiveMenuKey(item.key);
-            setOpenGroups((previous) => (previous.includes(item.key) ? [] : [item.key]));
+            setOpenGroups((previous) => (previous.includes(item.key) ? previous.filter((k) => k !== item.key) : [...previous, item.key]));
           }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
@@ -257,7 +300,12 @@ export default function MainLayout() {
 
   useEffect(() => {
     const parent = findParentKey(location.pathname);
-    setOpenGroups(parent ? [parent] : []);
+    setOpenGroups((previous) => {
+      if (parent && !previous.includes(parent)) {
+        return [...previous, parent];
+      }
+      return previous;
+    });
     setActiveMenuKey(getActiveMenuKey(location.pathname));
     setUserMenuOpen(false);
     setMobileMenuOpen(false);
@@ -398,7 +446,17 @@ export default function MainLayout() {
               title={mode === 'auto' ? '跟随系统' : isDark ? '切换到浅色模式' : '切换到深色模式'}
               onClick={toggleTheme}
             >
-              {mode === 'auto' ? '🔄' : isDark ? '☀️' : '🌙'}
+              <ThemeIcon mode={mode} isDark={isDark} />
+            </button>
+
+            <button
+              className="icon-button notification-bell"
+              type="button"
+              aria-label="通知中心"
+              title="通知中心"
+              onClick={() => navigate('/notifications')}
+            >
+              <NotificationBellIcon />
             </button>
 
             <div className="topbar-user-menu" ref={userMenuRef}>
@@ -517,6 +575,13 @@ export default function MainLayout() {
         >
           <Icon name="task" />
           <span>生活</span>
+        </Link>
+        <Link
+          to="/investment/forex"
+          className={`bottom-nav-item ${activeMenuKey.startsWith('/investment') ? 'is-active' : ''}`}
+        >
+          <Icon name="trend" />
+          <span>投资</span>
         </Link>
         <Link
           to="/settings/profile"

@@ -57,8 +57,13 @@ export function CardStatisticsSection({
             { label: '总号卡数', value: `${overview.totalCards} 张` },
             { label: '低余额数', value: `${overview.lowBalanceCount} 张`, helper: `阈值 ${formatLifeCardMoney(settings.balanceThreshold)}` },
             { label: '总余额', value: formatLifeCardMoney(overview.totalBalance) },
-            { label: '月租合计', value: formatLifeCardMoney(overview.monthlyFeeTotal) },
             { label: '运营商数', value: `${overview.carrierCount}` },
+          ]}
+        />
+        <StatGrid
+          className="card-overview-grid"
+          items={[
+            { label: '月租合计', value: formatLifeCardMoney(overview.monthlyFeeTotal) },
             { label: '本月账单数', value: `${overview.currentMonthBillCount}` },
             { label: '本月账单金额', value: formatLifeCardMoney(overview.currentMonthBillAmount) },
             { label: '累计充值额', value: formatLifeCardMoney(overview.totalRechargeAmount) },

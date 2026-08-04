@@ -39,3 +39,7 @@ npm-debug.log*
 # Misc
 *.local
 linear.app/
+
+# 改版方案与说明文档（本地规划文档，不上传 GitHub）
+改版方案.md
+说明文档.md
