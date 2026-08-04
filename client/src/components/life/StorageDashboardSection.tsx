@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { EmptyState, SectionCard } from '../page';
@@ -22,7 +22,7 @@ interface StorageDashboardSectionProps {
 const EMPTY_OVERVIEW: StorageOverviewSummary = {
   totalCount: 0,
   activeCount: 0,
-  archivedCount: 0,
+  retiredCount: 0,
   totalPurchaseAmount: 0,
   currentDailyCostTotal: 0,
   averageUsageDays: 0,
@@ -87,7 +87,7 @@ export function StorageDashboardSection({
 
   useEffect(() => {
     void loadDashboard();
-  }, [settings.includeArchivedInDashboard, settings.defaultDashboardRange, settings.defaultSort]);
+  }, [settings.includeRetiredInDashboard, settings.defaultDashboardRange, settings.defaultSort]);
 
   const handleRangeChange = async (next: StoragePageSettings['defaultDashboardRange']) => {
     if (next === settings.defaultDashboardRange) return;
@@ -174,7 +174,7 @@ export function StorageDashboardSection({
         <div className="storage-hero-card">
           <span className="storage-hero-label">总物品数</span>
           <strong className="storage-hero-value">{overview.totalCount}</strong>
-          <span className="storage-hero-hint">使用中 {overview.activeCount} · 归档 {overview.archivedCount}</span>
+          <span className="storage-hero-hint">使用中 {overview.activeCount} · 停用 {overview.retiredCount}</span>
         </div>
         <div className="storage-hero-card storage-hero-card-accent">
           <span className="storage-hero-label">累计购入金额</span>
@@ -278,7 +278,7 @@ export function StorageDashboardSection({
               <li key={item.id} className="storage-activity-item">
                 <span className="storage-activity-date">{formatActivityDate(item.purchaseDate)}</span>
                 <span className={`tag ${item.status === 'active' ? 'tag-green' : 'tag-muted'}`}>
-                  {item.status === 'active' ? '使用中' : '已归档'}
+                  {item.status === 'active' ? '使用中' : '已停用'}
                 </span>
                 <span className="storage-activity-name" title={item.itemName}>{item.itemName}</span>
                 <span className="storage-activity-price">{formatStorageMoney(item.purchasePrice)}</span>

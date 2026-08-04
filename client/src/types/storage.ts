@@ -1,6 +1,6 @@
-export type StorageTab = 'items' | 'dashboard' | 'archive' | 'settings';
+export type StorageTab = 'items' | 'dashboard' | 'retired' | 'settings';
 
-export type StorageItemStatus = 'active' | 'archived';
+export type StorageItemStatus = 'active' | 'retired';
 
 export type StorageItemSource = 'manual' | 'shopping';
 
@@ -12,7 +12,7 @@ export interface StorageItemRecord {
   endDate: string;
   notes: string;
   status: StorageItemStatus;
-  archivedAt: string;
+  retiredAt: string;
   source: StorageItemSource;
   shoppingRecordId: string;
   createdAt: string;
@@ -30,7 +30,7 @@ export interface StorageItemDraft {
 export interface StorageOverviewSummary {
   totalCount: number;
   activeCount: number;
-  archivedCount: number;
+  retiredCount: number;
   totalPurchaseAmount: number;
   currentDailyCostTotal: number;
   averageUsageDays: number;
@@ -58,7 +58,7 @@ export interface StorageCostRankingPoint {
 }
 
 export interface StoragePageSettings {
-  includeArchivedInDashboard: boolean;
+  includeRetiredInDashboard: boolean;
   defaultSort: 'latest' | 'purchasePrice' | 'dailyCost';
   defaultDashboardRange: '30d' | '90d' | '365d' | 'all';
 }

@@ -67,7 +67,7 @@ function parseDraft(form: StorageFormState): StorageItemDraft | null {
 }
 
 function getStatusTone(status: StorageItemRecord['status']): 'green' | 'blue' {
-  return status === 'archived' ? 'blue' : 'green';
+  return status === 'retired' ? 'blue' : 'green';
 }
 
 export function StorageItemsSection({
@@ -200,7 +200,7 @@ export function StorageItemsSection({
   return (
     <SectionCard
       title="物品列表"
-      description="新增、编辑、归档和筛选都直接调用后端接口，页面不再持有本地物品主状态。"
+      description="新增、编辑、停用和筛选都直接调用后端接口，页面不再持有本地物品主状态。"
       action={<Btn tone="secondary" disabled={!hasActiveFilters} onClick={() => {
         setKeyword('');
         setStatusFilter('active');
@@ -317,9 +317,9 @@ export function StorageItemsSection({
               onClick={() => setStatusFilter('all')}
             />
             <FilterTag
-              label="已归档"
-              active={statusFilter === 'archived'}
-              onClick={() => setStatusFilter('archived')}
+              label="已停用"
+              active={statusFilter === 'retired'}
+              onClick={() => setStatusFilter('retired')}
             />
           </div>
         </FilterBar>
@@ -400,7 +400,7 @@ export function StorageItemsSection({
                         tone="secondary"
                         onClick={() => setArchivingItem(row)}
                       >
-                        归档
+                        停用
                       </Btn>
                     </div>
                   ),
@@ -500,7 +500,7 @@ export function StorageItemsSection({
                   label="备注"
                   value={editingForm.notes}
                   onChange={(event) => setEditingForm((current) => ({ ...current, notes: event.target.value }))}
-                  placeholder="记录用途、使用感受或归档原因"
+                  placeholder="记录用途、使用感受或停用原因"
                 />
               </div>
             </div>
@@ -515,20 +515,20 @@ export function StorageItemsSection({
           if (!archivingItem) return;
           try {
             await storageApi.archive(archivingItem.id, dayjs().format('YYYY-MM-DD'));
-            showToast('物品已归档，最终摊销结果已固定。');
+            showToast('物品已停用，最终摊销结果已固定。');
             onChanged();
             await loadItems();
           } catch (error) {
-            showToast(buildApiErrorMessage(error, '归档物品失败。'), 'error');
+            showToast(buildApiErrorMessage(error, '停用物品失败。'), 'error');
           } finally {
             setArchivingItem(null);
           }
         }}
-        title="确认归档"
-        confirmLabel="确认归档"
+        title="确认停用"
+        confirmLabel="确认停用"
         confirmTone="primary"
       >
-        确定要将「{archivingItem?.itemName}」归档吗？归档后将固定最终持有天数和日均成本。
+        确定要将「{archivingItem?.itemName}」停用吗？停用后将固定最终持有天数和日均成本。
       </DeleteModal>
     </SectionCard>
   );

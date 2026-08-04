@@ -28,7 +28,7 @@ const itemSchema = z.object({
 });
 
 const settingsSchema = z.object({
-  includeArchivedInDashboard: z.boolean().optional(),
+  includeRetiredInDashboard: z.boolean().optional(),
   defaultSort: z.enum(['latest', 'purchasePrice', 'dailyCost']).optional(),
   defaultDashboardRange: z.enum(['30d', '90d', '365d', 'all']).optional(),
 });
@@ -58,7 +58,7 @@ function mapStorageItem(entity: LifeStorageItemEntity) {
     endDate: entity.end_date ?? '',
     notes: entity.notes,
     status: entity.status,
-    archivedAt: entity.archived_at?.toISOString() ?? '',
+    retiredAt: entity.retired_at?.toISOString() ?? '',
     source: entity.source ?? 'manual',
     shoppingRecordId: entity.shopping_record_id ?? '',
     createdAt: entity.created_at.toISOString(),
@@ -78,7 +78,7 @@ function calculateDailyCost(item: Pick<LifeStorageItemEntity, 'purchase_price' |
 }
 
 function buildOverview(items: LifeStorageItemEntity[], settings: LifeStorageSettingEntity) {
-  const dashboardItems = settings.include_archived_in_dashboard
+  const dashboardItems = settings.include_retired_in_dashboard
     ? items
     : items.filter((item) => item.status === 'active');
 
@@ -94,7 +94,7 @@ function buildOverview(items: LifeStorageItemEntity[], settings: LifeStorageSett
   return {
     totalCount: items.length,
     activeCount: items.filter((item) => item.status === 'active').length,
-    archivedCount: items.filter((item) => item.status === 'archived').length,
+    retiredCount: items.filter((item) => item.status === 'retired').length,
     totalPurchaseAmount: Number(dashboardItems.reduce((sum, item) => sum + Number(item.purchase_price), 0).toFixed(2)),
     currentDailyCostTotal: Number(dashboardItems.reduce((sum, item) => sum + calculateDailyCost(item), 0).toFixed(2)),
     averageUsageDays: dashboardItems.length ? Math.round(totalUsageDays / dashboardItems.length) : 0,
@@ -215,8 +215,8 @@ export function createStorageRouter() {
       purchase_date: normalizeDate(payload.purchaseDate),
       end_date: endDate,
       notes: payload.notes,
-      status: endDate ? 'archived' : 'active',
-      archived_at: endDate ? new Date() : null,
+      status: endDate ? 'retired' : 'active',
+      retired_at: endDate ? new Date() : null,
     }));
 
     response.json(successResponse(mapStorageItem(item), 'create_storage_item_success'));
@@ -259,8 +259,8 @@ export function createStorageRouter() {
       purchase_date: purchaseDate,
       end_date: endDate,
       notes: payload.notes ?? current.notes,
-      status: endDate ? 'archived' : 'active',
-      archived_at: endDate ? (current.archived_at ?? new Date()) : null,
+      status: endDate ? 'retired' : 'active',
+      retired_at: endDate ? (current.retired_at ?? new Date()) : null,
     });
 
     response.json(successResponse(mapStorageItem(next), 'update_storage_item_success'));
@@ -311,7 +311,7 @@ export function createStorageRouter() {
       },
     });
     const settings = await settingService.getOrCreate(userId, {
-      include_archived_in_dashboard: true,
+      include_retired_in_dashboard: true,
       default_sort: 'latest',
       default_dashboard_range: 'all',
     });
@@ -346,13 +346,13 @@ export function createStorageRouter() {
   router.get('/settings', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
     const settings = await settingService.getOrCreate(userId, {
-      include_archived_in_dashboard: true,
+      include_retired_in_dashboard: true,
       default_sort: 'latest',
       default_dashboard_range: 'all',
     });
 
     response.json(successResponse({
-      includeArchivedInDashboard: settings.include_archived_in_dashboard,
+      includeRetiredInDashboard: settings.include_retired_in_dashboard,
       defaultSort: settings.default_sort,
       defaultDashboardRange: settings.default_dashboard_range,
     }));
@@ -362,17 +362,17 @@ export function createStorageRouter() {
     const userId = requireAuthUser(request);
     const payload = validateBody(settingsSchema, request.body);
     const settings = await settingService.update(userId, {
-      include_archived_in_dashboard: payload.includeArchivedInDashboard,
+      include_retired_in_dashboard: payload.includeRetiredInDashboard,
       default_sort: payload.defaultSort,
       default_dashboard_range: payload.defaultDashboardRange,
     }, {
-      include_archived_in_dashboard: true,
+      include_retired_in_dashboard: true,
       default_sort: 'latest',
       default_dashboard_range: 'all',
     });
 
     response.json(successResponse({
-      includeArchivedInDashboard: settings.include_archived_in_dashboard,
+      includeRetiredInDashboard: settings.include_retired_in_dashboard,
       defaultSort: settings.default_sort,
       defaultDashboardRange: settings.default_dashboard_range,
     }, 'update_storage_settings_success'));
@@ -396,8 +396,8 @@ export function createStorageRouter() {
     const next = await repository.save({
       ...current,
       end_date: normalizeDate(payload.endDate, dayjs().format(DATE_FORMAT)),
-      status: 'archived',
-      archived_at: new Date(),
+      status: 'retired',
+      retired_at: new Date(),
     });
 
     response.json(successResponse(mapStorageItem(next), 'archive_storage_item_success'));
@@ -422,7 +422,7 @@ export function createStorageRouter() {
       ...current,
       end_date: null,
       status: 'active',
-      archived_at: null,
+      retired_at: null,
     });
 
     response.json(successResponse(mapStorageItem(next), 'restore_storage_item_success'));
@@ -482,7 +482,7 @@ export function createStorageRouter() {
           end_date: null,
           notes,
           status: 'active',
-          archived_at: null,
+          retired_at: null,
           source: 'shopping',
           shopping_record_id: record.id,
         });

@@ -31,7 +31,7 @@ export function StorageArchiveSection({
       const params: Record<string, unknown> = {
         page,
         page_size: PAGE_SIZE,
-        status: 'archived',
+        status: 'retired',
       };
 
       if (keyword) params.keyword = keyword;
@@ -42,7 +42,7 @@ export function StorageArchiveSection({
       setItems(result.items);
       setTotal(result.total);
     } catch (error) {
-      showToast(buildApiErrorMessage(error, '归档记录加载失败。'), 'error');
+      showToast(buildApiErrorMessage(error, '停用记录加载失败。'), 'error');
     }
   };
 
@@ -66,17 +66,17 @@ export function StorageArchiveSection({
 
   return (
     <SectionCard
-      title="归档记录"
+      title="停用记录"
       description="已结束使用的物品会在这里展示最终使用天数和最终日均成本，恢复和永久删除都走后端。"
     >
       <div className="page-stack">
         <StatGrid
           className="storage-list-summary-grid"
           items={[
-            { label: '归档数量', value: `${total} 条` },
+            { label: '停用数量', value: `${total} 条` },
             { label: '当前页购入金额', value: formatStorageMoney(summary.totalPurchase) },
             { label: '当前页最终日均成本', value: formatStorageMoney(summary.totalDailyCost) },
-            { label: '归档状态', value: total ? '已启用' : '暂无记录' },
+            { label: '停用状态', value: total ? '已启用' : '暂无记录' },
           ]}
         />
 
@@ -125,7 +125,7 @@ export function StorageArchiveSection({
                   key: 'status',
                   title: '状态',
                   width: 92,
-                  render: () => <Tag tone="blue">已归档</Tag>,
+                  render: () => <Tag tone="blue">已停用</Tag>,
                 },
                 {
                   key: 'actions',
@@ -153,7 +153,7 @@ export function StorageArchiveSection({
                         onClick={async () => {
                           try {
                             await storageApi.delete(row.id);
-                            showToast('归档物品已永久删除。');
+                            showToast('停用物品已永久删除。');
                             onChanged();
                             await loadArchive();
                           } catch (error) {
@@ -173,7 +173,7 @@ export function StorageArchiveSection({
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         ) : (
-          <EmptyState title="暂无归档物品" description="当某件物品结束使用后，把它归档到这里，就能固定最终持有天数和最终日均成本。" icon="📁" />
+          <EmptyState title="暂无停用物品" description="当某件物品结束使用后，把它停用到这里，就能固定最终持有天数和最终日均成本。" icon="📁" />
         )}
       </div>
     </SectionCard>

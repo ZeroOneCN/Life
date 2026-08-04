@@ -13,7 +13,7 @@ export interface StorageListParams {
   page?: number;
   page_size?: number;
   keyword?: string;
-  status?: 'all' | 'active' | 'archived';
+  status?: 'all' | 'active' | 'retired';
   source?: 'all' | 'manual' | 'shopping';
   purchaseStartDate?: string;
   purchaseEndDate?: string;

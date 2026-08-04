@@ -57,12 +57,12 @@ function normalizeTimestamp(value: unknown, fallbackDate = dayjs().format(DATE_F
 }
 
 function normalizeStatus(value: unknown): StorageItemStatus {
-  return value === 'archived' ? 'archived' : 'active';
+  return value === 'retired' ? 'retired' : 'active';
 }
 
 function normalizeSettings(settings?: Partial<StoragePageSettings>): StoragePageSettings {
   return {
-    includeArchivedInDashboard: settings?.includeArchivedInDashboard ?? true,
+    includeRetiredInDashboard: settings?.includeRetiredInDashboard ?? true,
     defaultSort:
       settings?.defaultSort === 'purchasePrice' || settings?.defaultSort === 'dailyCost'
         ? settings.defaultSort
@@ -112,8 +112,8 @@ function normalizeStorageItem(
   const endDate = normalizeDate(record.endDate, '');
   const status = normalizeStatus(record.status ?? fallback.sortStatus);
   const safeEndDate = endDate && dayjs(endDate).isBefore(dayjs(purchaseDate), 'day') ? purchaseDate : endDate;
-  const archivedAt = status === 'archived'
-    ? normalizeTimestamp(record.archivedAt, safeEndDate || purchaseDate)
+  const retiredAt = status === 'retired'
+    ? normalizeTimestamp(record.retiredAt, safeEndDate || purchaseDate)
     : '';
 
   return {
@@ -123,8 +123,8 @@ function normalizeStorageItem(
     purchaseDate,
     endDate: safeEndDate,
     notes: normalizeText(record.notes),
-    status: status === 'archived' || safeEndDate ? 'archived' : 'active',
-    archivedAt: status === 'archived' || safeEndDate ? archivedAt || normalizeTimestamp('', safeEndDate || purchaseDate) : '',
+    status: status === 'retired' || safeEndDate ? 'retired' : 'active',
+    retiredAt: status === 'retired' || safeEndDate ? retiredAt || normalizeTimestamp('', safeEndDate || purchaseDate) : '',
     source: (record.source as 'manual' | 'shopping') || 'manual',
     shoppingRecordId: normalizeText(record.shoppingRecordId),
     createdAt,
@@ -144,7 +144,7 @@ function createInitialItems() {
       endDate: '',
       notes: '按自然日持续摊销，适合作为日均成本参考。',
       status: 'active',
-      archivedAt: '',
+      retiredAt: '',
       createdAt: now,
       updatedAt: now,
     }),
@@ -156,7 +156,7 @@ function createInitialItems() {
       endDate: '',
       notes: '高频使用中的办公设备。',
       status: 'active',
-      archivedAt: '',
+      retiredAt: '',
       createdAt: now,
       updatedAt: now,
     }),
@@ -167,8 +167,8 @@ function createInitialItems() {
       purchaseDate: dayjs().subtract(8, 'month').format(DATE_FORMAT),
       endDate: dayjs().subtract(2, 'month').format(DATE_FORMAT),
       notes: '已结束使用，保留最终摊销结果。',
-      status: 'archived',
-      archivedAt: now,
+      status: 'retired',
+      retiredAt: now,
       createdAt: now,
       updatedAt: now,
     }),
@@ -197,7 +197,7 @@ export function formatStorageMoney(value: number) {
 }
 
 export function getStorageStatusLabel(status: StorageItemStatus) {
-  return status === 'archived' ? '已归档' : '使用中';
+  return status === 'retired' ? '已停用' : '使用中';
 }
 
 export function buildInitialStorageState(): StoragePageState {
@@ -230,8 +230,8 @@ export function createStorageItem(items: StorageItemRecord[], draft: StorageItem
       purchaseDate: draft.purchaseDate,
       endDate: draft.endDate,
       notes: draft.notes,
-      status: draft.endDate ? 'archived' : 'active',
-      archivedAt: draft.endDate ? now : '',
+      status: draft.endDate ? 'retired' : 'active',
+      retiredAt: draft.endDate ? now : '',
       createdAt: now,
       updatedAt: now,
     }),
@@ -252,7 +252,7 @@ export function updateStorageItem(
       return item;
     }
 
-    const nextStatus: StorageItemStatus = draft.endDate ? 'archived' : 'active';
+    const nextStatus: StorageItemStatus = draft.endDate ? 'retired' : 'active';
 
     return normalizeStorageItem({
       ...item,
@@ -262,7 +262,7 @@ export function updateStorageItem(
       endDate: draft.endDate,
       notes: draft.notes,
       status: nextStatus,
-      archivedAt: nextStatus === 'archived' ? (item.archivedAt || now) : '',
+      retiredAt: nextStatus === 'retired' ? (item.retiredAt || now) : '',
       updatedAt: now,
     });
   }), settings?.defaultSort ?? 'latest');
@@ -284,8 +284,8 @@ export function archiveStorageItem(
     return normalizeStorageItem({
       ...item,
       endDate,
-      status: 'archived',
-      archivedAt: now,
+      status: 'retired',
+      retiredAt: now,
       updatedAt: now,
     });
   }), settings?.defaultSort ?? 'latest');
@@ -307,7 +307,7 @@ export function restoreStorageItem(
       ...item,
       endDate: '',
       status: 'active',
-      archivedAt: '',
+      retiredAt: '',
       updatedAt: now,
     });
   }), settings?.defaultSort ?? 'latest');
@@ -370,7 +370,7 @@ export function filterStorageItems(
 }
 
 function getDashboardItems(items: StorageItemRecord[], settings: StoragePageSettings) {
-  return items.filter((item) => settings.includeArchivedInDashboard || item.status === 'active');
+  return items.filter((item) => settings.includeRetiredInDashboard || item.status === 'active');
 }
 
 export function buildStorageOverview(items: StorageItemRecord[], settings: StoragePageSettings): StorageOverviewSummary {
@@ -379,7 +379,7 @@ export function buildStorageOverview(items: StorageItemRecord[], settings: Stora
 
   const totalCount = items.length;
   const activeCount = items.filter((item) => item.status === 'active').length;
-  const archivedCount = items.filter((item) => item.status === 'archived').length;
+  const retiredCount = items.filter((item) => item.status === 'retired').length;
   const totalPurchaseAmount = dashboardItems.reduce((sum, item) => sum + item.purchasePrice, 0);
   const currentDailyCostTotal = dashboardItems.reduce((sum, item) => sum + calculateStorageDailyCost(item), 0);
   const totalUsageDays = dashboardItems.reduce((sum, item) => sum + calculateStorageUsageDays(item, today), 0);
@@ -391,7 +391,7 @@ export function buildStorageOverview(items: StorageItemRecord[], settings: Stora
   return {
     totalCount,
     activeCount,
-    archivedCount,
+    retiredCount,
     totalPurchaseAmount: Number(totalPurchaseAmount.toFixed(2)),
     currentDailyCostTotal: Number(currentDailyCostTotal.toFixed(2)),
     averageUsageDays: dashboardItems.length ? Math.round(totalUsageDays / dashboardItems.length) : 0,

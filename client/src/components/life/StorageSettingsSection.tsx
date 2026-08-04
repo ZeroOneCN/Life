@@ -33,14 +33,14 @@ export function StorageSettingsSection({
     >
       <div className="storage-settings-grid">
         <SettingSwitchCard
-          title="看板包含已归档物品"
+          title="看板包含已停用物品"
           description="打开后，成本看板会把已结束使用的物品也纳入趋势和排行。"
-          checked={settings.includeArchivedInDashboard}
+          checked={settings.includeRetiredInDashboard}
           onChange={(checked) => {
-            void savePatch({ includeArchivedInDashboard: checked }, `看板范围已${checked ? '包含' : '排除'}归档物品。`);
+            void savePatch({ includeRetiredInDashboard: checked }, `看板范围已${checked ? '包含' : '排除'}停用物品。`);
           }}
-          statusText={settings.includeArchivedInDashboard ? '已开启' : '已关闭'}
-          impact={settings.includeArchivedInDashboard ? '适合做长期总览回看。' : '适合只盯当前仍在持续摊销的物品。'}
+          statusText={settings.includeRetiredInDashboard ? '已开启' : '已关闭'}
+          impact={settings.includeRetiredInDashboard ? '适合做长期总览回看。' : '适合只盯当前仍在持续摊销的物品。'}
         />
 
         <div className="card switch-card">

@@ -14,14 +14,14 @@ import type { StorageOverviewSummary, StoragePageSettings, StorageTab } from '..
 const TAB_OPTIONS: Array<{ value: StorageTab; label: string }> = [
   { value: 'items', label: '物品列表' },
   { value: 'dashboard', label: '成本看板' },
-  { value: 'archive', label: '归档记录' },
+  { value: 'retired', label: '停用记录' },
   { value: 'settings', label: '页面设置' },
 ];
 
 const EMPTY_OVERVIEW: StorageOverviewSummary = {
   totalCount: 0,
   activeCount: 0,
-  archivedCount: 0,
+  retiredCount: 0,
   totalPurchaseAmount: 0,
   currentDailyCostTotal: 0,
   averageUsageDays: 0,
@@ -31,7 +31,7 @@ const EMPTY_OVERVIEW: StorageOverviewSummary = {
 };
 
 const EMPTY_SETTINGS: StoragePageSettings = {
-  includeArchivedInDashboard: true,
+  includeRetiredInDashboard: true,
   defaultSort: 'latest',
   defaultDashboardRange: 'all',
 };
@@ -100,7 +100,7 @@ export default function StoragePage() {
 
       <SectionCard
         title="业务视图"
-        description="物品列表、成本看板、归档记录和页面设置都以后端数据为准，tab 仅负责界面切换。"
+        description="物品列表、成本看板、停用记录和页面设置都以后端数据为准，tab 仅负责界面切换。"
       >
         <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as StorageTab)} />
       </SectionCard>
@@ -121,7 +121,7 @@ export default function StoragePage() {
         />
       ) : null}
 
-      {tab === 'archive' ? (
+      {tab === 'retired' ? (
         <StorageArchiveSection
           showToast={showToast}
           onChanged={refreshPage}

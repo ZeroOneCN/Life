@@ -23,7 +23,7 @@ export class LifeStorageItemEntity extends UserScopedEntity {
   status!: string;
 
   @Column({ type: 'datetime', nullable: true })
-  archived_at!: Date | null;
+  retired_at!: Date | null;
 
   @Column({ type: 'varchar', length: 20, default: 'manual' })
   source!: string;

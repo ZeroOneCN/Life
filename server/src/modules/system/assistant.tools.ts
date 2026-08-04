@@ -329,8 +329,8 @@ async function queryLife(userId: string, filters: QueryFilters) {
   }).length;
   const inRangeTodoCount = todos.filter((row) => row.due_date && dayjs(row.due_date).isBetween(start, end, 'day', '[]')).length;
 
-  const storedItems = items.filter((row) => !row.archived_at);
-  const archivedItems = items.filter((row) => row.archived_at);
+  const storedItems = items.filter((row) => !row.retired_at);
+  const retiredItems = items.filter((row) => row.retired_at);
 
   const recentActivationCards = cards.filter((row) => {
     if (!row.activation_date) return false;
@@ -359,7 +359,7 @@ async function queryLife(userId: string, filters: QueryFilters) {
       },
       storage: {
         active: storedItems.length,
-        archived: archivedItems.length,
+        retired: retiredItems.length,
       },
       card: {
         total: cards.length,
@@ -370,7 +370,7 @@ async function queryLife(userId: string, filters: QueryFilters) {
         inRange: inRangeScheduleCount,
       },
     },
-    hint: '待办统计使用 buildTodoOverview（重复任务不计入 completed）；日程统计使用 buildScheduleOverview（使用 isScheduleRecurringType 判定重复）；物品追踪区分在用 / 归档；卡片仅给出 30 天内新激活数量。',
+    hint: '待办统计使用 buildTodoOverview（重复任务不计入 completed）；日程统计使用 buildScheduleOverview（使用 isScheduleRecurringType 判定重复）；物品追踪区分在用 / 停用；卡片仅给出 30 天内新激活数量。',
     moduleFilter,
   };
 }
