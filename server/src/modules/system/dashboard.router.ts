@@ -24,6 +24,17 @@ import { LifeTodoTaskEntity } from '../life/entities/life-todo-task.entity';
 import { NotificationCenterChannelEntity } from '../notifications/entities/notification-center-channel.entity';
 import { NotificationCenterLogEntity } from '../notifications/entities/notification-center-log.entity';
 import { NotificationCenterSceneEntity } from '../notifications/entities/notification-center-scene.entity';
+import { DEFAULT_CHANNEL_TYPES, type NotificationChannelType } from '../notifications/notification-scenes';
+
+/** 渠道展示元数据（label + icon），用于 Dashboard 渠道状态卡片 */
+const CHANNEL_LABELS: Record<NotificationChannelType, { label: string; icon: string }> = {
+  email: { label: '邮件', icon: '📧' },
+  wechatWork: { label: '企业微信', icon: '💬' },
+  dingTalk: { label: '钉钉', icon: '📌' },
+  feishu: { label: '飞书', icon: '🐦' },
+  telegram: { label: 'Telegram', icon: '✈️' },
+  webhook: { label: 'Webhook', icon: '🔗' },
+};
 
 interface CacheEntry<T> {
   data: T;
@@ -464,6 +475,18 @@ export function createDashboardRouter() {
         enabledSceneCount: scenes.filter((scene) => scene.enabled).length,
         recentLogs: logs,
         hottestSceneId: logs[0]?.scene_id ?? '',
+        channelStatuses: DEFAULT_CHANNEL_TYPES.map((type) => {
+          const ch = channels.find((c) => c.channel_type === type);
+          const channelMeta = CHANNEL_LABELS[type] ?? { label: type, icon: '📤' };
+          return {
+            type,
+            label: channelMeta.label,
+            icon: channelMeta.icon,
+            enabled: ch?.enabled ?? false,
+            status: ch?.status ?? 'incomplete',
+            hasRecentLog: logs.some((log) => log.channel === type),
+          };
+        }),
       },
     };
 

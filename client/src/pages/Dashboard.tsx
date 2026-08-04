@@ -55,8 +55,16 @@ interface RawDashboardSummaryResponse {
   notifications: {
     enabledChannelCount: number;
     enabledSceneCount: number;
-    recentLogs: Array<{ id: string; created_at: string; channel: 'email' | 'wechatWork' | 'webhook'; scene_id: string | null; kind: 'test' | 'scene'; status: 'success' | 'skipped' | 'error'; title: string; message: string }>;
+    recentLogs: Array<{ id: string; created_at: string; channel: 'email' | 'wechatWork' | 'dingTalk' | 'feishu' | 'telegram' | 'webhook'; scene_id: string | null; kind: 'test' | 'scene'; status: 'success' | 'skipped' | 'error'; title: string; message: string }>;
     hottestSceneId: string;
+    channelStatuses: Array<{
+      type: 'email' | 'wechatWork' | 'dingTalk' | 'feishu' | 'telegram' | 'webhook';
+      label: string;
+      icon: string;
+      enabled: boolean;
+      status: 'ready' | 'incomplete';
+      hasRecentLog: boolean;
+    }>;
   };
 }
 
@@ -189,6 +197,7 @@ export default function Dashboard() {
               sceneId: log.scene_id as DashboardPageSummary['notifications']['recentLogs'][number]['sceneId'],
               kind: log.kind, status: log.status, title: log.title, message: log.message,
             })),
+            channelStatuses: raw.notifications.channelStatuses ?? [],
           },
           upcomingSubscriptions: raw.finance.upcomingSubscriptions.map((item) => ({
             id: item.id,
@@ -241,15 +250,10 @@ export default function Dashboard() {
     return items.sort((a, b) => b.sortKey - a.sortKey);
   }, [summary]);
 
-  /* 从最近日志中判断各渠道是否有最近活动（非配置状态） */
-  const channelActivity = useMemo(() => {
-    if (!summary) return { email: false, wechatWork: false, webhook: false };
-    const channels = new Set(summary.notifications.recentLogs.map((log) => log.channel));
-    return {
-      email: channels.has('email'),
-      wechatWork: channels.has('wechatWork'),
-      webhook: channels.has('webhook'),
-    };
+  /* 渠道状态：从后端 channelStatuses 获取 6 种渠道的启用/配置状态 */
+  const channelStatuses = useMemo(() => {
+    if (!summary?.notifications?.channelStatuses) return [];
+    return summary.notifications.channelStatuses;
   }, [summary]);
 
   if (!summary) {
@@ -534,18 +538,21 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="dash-notif-channel-list">
-              <div className="dash-notif-channel-row">
-                <span className="dash-notif-channel-row-label">邮件通道</span>
-                <Tag tone={channelActivity.email ? 'green' : 'default'}>{channelActivity.email ? '有日志' : '静默'}</Tag>
-              </div>
-              <div className="dash-notif-channel-row">
-                <span className="dash-notif-channel-row-label">企业微信</span>
-                <Tag tone={channelActivity.wechatWork ? 'green' : 'default'}>{channelActivity.wechatWork ? '有日志' : '静默'}</Tag>
-              </div>
-              <div className="dash-notif-channel-row">
-                <span className="dash-notif-channel-row-label">Webhook</span>
-                <Tag tone={channelActivity.webhook ? 'green' : 'default'}>{channelActivity.webhook ? '有日志' : '静默'}</Tag>
-              </div>
+              {channelStatuses.length > 0 ? channelStatuses.map((ch) => (
+                <div className="dash-notif-channel-row" key={ch.type}>
+                  <span className="dash-notif-channel-row-label">
+                    <span aria-hidden="true" style={{ marginRight: 6 }}>{ch.icon}</span>
+                    {ch.label}
+                  </span>
+                  <Tag tone={ch.enabled ? (ch.status === 'ready' ? 'green' : 'orange') : 'default'}>
+                    {!ch.enabled ? '未启用' : ch.status === 'ready' ? (ch.hasRecentLog ? '活跃' : '就绪') : '未配置'}
+                  </Tag>
+                </div>
+              )) : (
+                <div className="dash-notif-channel-row">
+                  <span className="dash-notif-channel-row-label">通知渠道加载中</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -65,12 +65,23 @@ export interface DashboardModuleSnapshot {
   listItems: DashboardSnapshotListItem[];
 }
 
+export interface DashboardChannelStatus {
+  type: 'email' | 'wechatWork' | 'dingTalk' | 'feishu' | 'telegram' | 'webhook';
+  label: string;
+  icon: string;
+  enabled: boolean;
+  status: 'ready' | 'incomplete';
+  hasRecentLog: boolean;
+}
+
 export interface DashboardNotificationSnapshot {
   enabledChannels: number;
   enabledScenes: number;
   logCount: number;
   mostActiveSceneLabel: string;
   recentLogs: NotificationLogEntry[];
+  /** 6 种渠道的详细状态（P3-03 新增） */
+  channelStatuses: DashboardChannelStatus[];
 }
 
 export interface DashboardPageSummary {

@@ -7,28 +7,44 @@ import { NotificationCenterChannelEntity } from '../notifications/entities/notif
 import { NotificationCenterSceneChannelEntity } from '../notifications/entities/notification-center-scene-channel.entity';
 import { NotificationCenterSceneEntity } from '../notifications/entities/notification-center-scene.entity';
 import { NotificationCenterTemplateEntity } from '../notifications/entities/notification-center-template.entity';
+import {
+  DEFAULT_CHANNEL_TYPES,
+  NOTIFICATION_CHANNEL_TYPES,
+  NOTIFICATION_SCENE_IDS,
+  type NotificationChannelType,
+} from '../notifications/notification-scenes';
+import { SCENE_SEED } from '../notifications/scene-seed';
 
 interface ProvisionUserDefaultsOptions {
   userId: string;
   email: string;
+  /** 可选：外部事务 manager，用于嵌套事务（注册流程）。不传则独立开启事务。 */
+  manager?: EntityManager;
 }
 
-const defaultChannels = [
-  {
-    suffix: 'channel-email',
-    type: 'email',
+/**
+ * 渠道元数据（label / 默认启用 / 默认状态 / config 构造器）。
+ * 类型统一引用 DEFAULT_CHANNEL_TYPES，消除 3/6 渠道不一致。
+ */
+interface ChannelMeta {
+  label: string;
+  enabled: boolean;
+  status: 'ready' | 'incomplete';
+  buildConfig: (email: string) => Record<string, unknown>;
+}
+
+const CHANNEL_META: Record<NotificationChannelType, ChannelMeta> = {
+  email: {
     label: '邮件通知',
     enabled: true,
     status: 'ready',
-    buildConfig: (email: string) => ({
+    buildConfig: (email) => ({
       recipient: email,
       senderName: 'LifeOS',
       notes: '适合日报、账单提醒和复查摘要。',
     }),
   },
-  {
-    suffix: 'channel-wechat-work',
-    type: 'wechatWork',
+  wechatWork: {
     label: '企业微信',
     enabled: false,
     status: 'incomplete',
@@ -37,9 +53,37 @@ const defaultChannels = [
       notes: '适合即时提醒和高优先级通知。',
     }),
   },
-  {
-    suffix: 'channel-webhook',
-    type: 'webhook',
+  dingTalk: {
+    label: '钉钉',
+    enabled: false,
+    status: 'incomplete',
+    buildConfig: () => ({
+      webhookUrl: '',
+      secret: '',
+      notes: '适合工作场景即时通知。',
+    }),
+  },
+  feishu: {
+    label: '飞书',
+    enabled: false,
+    status: 'incomplete',
+    buildConfig: () => ({
+      webhookUrl: '',
+      secret: '',
+      notes: '适合团队协作通知。',
+    }),
+  },
+  telegram: {
+    label: 'Telegram',
+    enabled: false,
+    status: 'incomplete',
+    buildConfig: () => ({
+      botToken: '',
+      chatId: '',
+      notes: '绑定 Telegram Bot 后自动填充。',
+    }),
+  },
+  webhook: {
     label: 'Webhook',
     enabled: false,
     status: 'incomplete',
@@ -49,55 +93,81 @@ const defaultChannels = [
       notes: '适合转发到自动化流程。',
     }),
   },
-] as const;
+};
 
-const defaultScenes = [
-  ['todo.reminder', '待办提醒', true, '每天汇总今日待办和临近截止任务。', '用于提醒待办事项、拖延风险和当日优先级。'],
-  ['card.balance_low', '号卡低余额提醒', true, '当余额低于阈值时提醒充值。', '保障常用号码不断联。'],
-  ['card.billing_upcoming', '号卡账单日前提醒', true, '在账单日前若干天提醒确认扣费信息。', '帮助在月结日前检查余额和套餐。'],
-  ['loan.repayment_upcoming', '贷款还款提醒', true, '在还款日前提醒还款计划和金额。', '覆盖临期账单和还款计划。'],
-  ['loan.repayment_overdue', '贷款逾期提醒', true, '账单逾期后立即发出高优先级提醒。', '覆盖逾期账单和风险提示。'],
-  ['checkup.followup_reminder', '体检复查提醒', true, '在复查日期临近或逾期时发出提醒。', '用于追踪复查窗口。'],
-  ['checkup.abnormal_alert', '体检异常指标提醒', true, '保存异常指标时写入提醒日志。', '快速感知异常结果。'],
-  ['medication.dose_reminder', '服药提醒', true, '按时间段提醒服药。', '用于提醒用户完成当日用药安排。'],
-  ['medication.stock_low', '低库存提醒', true, '当药品库存低于阈值时提醒补货。', '用于药品库存预警。'],
-  ['subscription.renewal_upcoming', '订阅即将到期', true, '在订阅进入续费窗口时发送提醒。', '用于软件会员和云服务续费管理。'],
-  ['subscription.expired', '订阅到期或逾期', true, '在到期当天或过期后生成提醒日志。', '用于避免关键服务中断。'],
-] as const;
+/**
+ * 默认场景-渠道关联（仅对默认启用的核心场景建立邮件+企业微信关联）。
+ * scene_id 引用 NOTIFICATION_SCENE_IDS 常量。
+ */
+const DEFAULT_SCENE_CHANNELS: ReadonlyArray<{ scene: string; channel: NotificationChannelType }> = [
+  { scene: NOTIFICATION_SCENE_IDS.TODO_REMINDER, channel: NOTIFICATION_CHANNEL_TYPES.EMAIL },
+  { scene: NOTIFICATION_SCENE_IDS.CARD_BALANCE_LOW, channel: NOTIFICATION_CHANNEL_TYPES.EMAIL },
+  { scene: NOTIFICATION_SCENE_IDS.CARD_BALANCE_LOW, channel: NOTIFICATION_CHANNEL_TYPES.WECHAT_WORK },
+  { scene: NOTIFICATION_SCENE_IDS.CARD_BILLING_UPCOMING, channel: NOTIFICATION_CHANNEL_TYPES.EMAIL },
+  { scene: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_UPCOMING, channel: NOTIFICATION_CHANNEL_TYPES.EMAIL },
+  { scene: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_UPCOMING, channel: NOTIFICATION_CHANNEL_TYPES.WECHAT_WORK },
+  { scene: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_OVERDUE, channel: NOTIFICATION_CHANNEL_TYPES.WECHAT_WORK },
+  { scene: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_OVERDUE, channel: NOTIFICATION_CHANNEL_TYPES.WEBHOOK },
+  { scene: NOTIFICATION_SCENE_IDS.CHECKUP_FOLLOWUP_REMINDER, channel: NOTIFICATION_CHANNEL_TYPES.EMAIL },
+  { scene: NOTIFICATION_SCENE_IDS.CHECKUP_FOLLOWUP_REMINDER, channel: NOTIFICATION_CHANNEL_TYPES.WECHAT_WORK },
+  { scene: NOTIFICATION_SCENE_IDS.CHECKUP_ABNORMAL_ALERT, channel: NOTIFICATION_CHANNEL_TYPES.EMAIL },
+  { scene: NOTIFICATION_SCENE_IDS.MEDICATION_DOSE_REMINDER, channel: NOTIFICATION_CHANNEL_TYPES.EMAIL },
+  { scene: NOTIFICATION_SCENE_IDS.MEDICATION_DOSE_REMINDER, channel: NOTIFICATION_CHANNEL_TYPES.WECHAT_WORK },
+  { scene: NOTIFICATION_SCENE_IDS.MEDICATION_STOCK_LOW, channel: NOTIFICATION_CHANNEL_TYPES.EMAIL },
+  { scene: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_RENEWAL_UPCOMING, channel: NOTIFICATION_CHANNEL_TYPES.EMAIL },
+  { scene: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_EXPIRED, channel: NOTIFICATION_CHANNEL_TYPES.EMAIL },
+  { scene: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_EXPIRED, channel: NOTIFICATION_CHANNEL_TYPES.WECHAT_WORK },
+];
 
-const defaultSceneChannels = [
-  ['todo.reminder', 'email'],
-  ['card.balance_low', 'email'],
-  ['card.balance_low', 'wechatWork'],
-  ['card.billing_upcoming', 'email'],
-  ['loan.repayment_upcoming', 'email'],
-  ['loan.repayment_upcoming', 'wechatWork'],
-  ['loan.repayment_overdue', 'wechatWork'],
-  ['loan.repayment_overdue', 'webhook'],
-  ['checkup.followup_reminder', 'email'],
-  ['checkup.followup_reminder', 'wechatWork'],
-  ['checkup.abnormal_alert', 'email'],
-  ['medication.dose_reminder', 'email'],
-  ['medication.dose_reminder', 'wechatWork'],
-  ['medication.stock_low', 'email'],
-  ['subscription.renewal_upcoming', 'email'],
-  ['subscription.expired', 'email'],
-  ['subscription.expired', 'wechatWork'],
-] as const;
+/**
+ * 默认通知模板（仅核心场景）。finance/travel/schedule 等场景由 scheduler 按需生成。
+ */
+const DEFAULT_TEMPLATES: ReadonlyArray<{ scene: string; title: string; body: string }> = [
+  { scene: NOTIFICATION_SCENE_IDS.TODO_REMINDER, title: '今日待办提醒', body: '你今天有新的待办任务需要处理，请进入 LifeOS 查看详情。' },
+  { scene: NOTIFICATION_SCENE_IDS.CARD_BALANCE_LOW, title: '号卡低余额提醒', body: '你的号卡余额已经低于预设阈值，请及时充值。' },
+  { scene: NOTIFICATION_SCENE_IDS.CARD_BILLING_UPCOMING, title: '号卡账单日前提醒', body: '你的号卡即将进入账单日，请确认套餐与余额状态。' },
+  { scene: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_UPCOMING, title: '贷款还款提醒', body: '你有即将到期的贷款账单，请提前安排还款。' },
+  { scene: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_OVERDUE, title: '贷款逾期提醒', body: '你有已逾期的贷款账单，请尽快处理并关注风险影响。' },
+  { scene: NOTIFICATION_SCENE_IDS.CHECKUP_FOLLOWUP_REMINDER, title: '体检复查提醒', body: '你有进入复查窗口的体检项目，请尽快安排复查。' },
+  { scene: NOTIFICATION_SCENE_IDS.CHECKUP_ABNORMAL_ALERT, title: '体检异常指标提醒', body: '你的体检档案中新增了异常或需关注指标，请及时查看。' },
+  { scene: NOTIFICATION_SCENE_IDS.MEDICATION_DOSE_REMINDER, title: '服药提醒', body: '你有一条新的服药提醒，请按计划完成用药安排。' },
+  { scene: NOTIFICATION_SCENE_IDS.MEDICATION_STOCK_LOW, title: '低库存提醒', body: '你的药品库存已经低于提醒阈值，请及时补货。' },
+  { scene: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_RENEWAL_UPCOMING, title: '服务订阅即将到期', body: '检测到订阅进入续费提醒窗口，请及时确认是否续费。' },
+  { scene: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_EXPIRED, title: '服务订阅已到期', body: '检测到订阅已到期或已逾期，请尽快处理。' },
+];
 
-const defaultTemplates = [
-  ['todo.reminder', '今日待办提醒', '你今天有新的待办任务需要处理，请进入 LifeOS 查看详情。'],
-  ['card.balance_low', '号卡低余额提醒', '你的号卡余额已经低于预设阈值，请及时充值。'],
-  ['card.billing_upcoming', '号卡账单日前提醒', '你的号卡即将进入账单日，请确认套餐与余额状态。'],
-  ['loan.repayment_upcoming', '贷款还款提醒', '你有即将到期的贷款账单，请提前安排还款。'],
-  ['loan.repayment_overdue', '贷款逾期提醒', '你有已逾期的贷款账单，请尽快处理并关注风险影响。'],
-  ['checkup.followup_reminder', '体检复查提醒', '你有进入复查窗口的体检项目，请尽快安排复查。'],
-  ['checkup.abnormal_alert', '体检异常指标提醒', '你的体检档案中新增了异常或需关注指标，请及时查看。'],
-  ['medication.dose_reminder', '服药提醒', '你有一条新的服药提醒，请按计划完成用药安排。'],
-  ['medication.stock_low', '低库存提醒', '你的药品库存已经低于提醒阈值，请及时补货。'],
-  ['subscription.renewal_upcoming', '服务订阅即将到期', '检测到订阅进入续费提醒窗口，请及时确认是否续费。'],
-  ['subscription.expired', '服务订阅已到期', '检测到订阅已到期或已逾期，请尽快处理。'],
-] as const;
+/**
+ * 默认启用场景白名单（与 SCENE_SEED 的 enabled=false 区分）。
+ * 仅核心场景默认启用，其余由用户按需开启。
+ */
+const DEFAULT_ENABLED_SCENES = new Set<string>([
+  NOTIFICATION_SCENE_IDS.TODO_REMINDER,
+  NOTIFICATION_SCENE_IDS.CARD_BALANCE_LOW,
+  NOTIFICATION_SCENE_IDS.CARD_BILLING_UPCOMING,
+  NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_UPCOMING,
+  NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_OVERDUE,
+  NOTIFICATION_SCENE_IDS.CHECKUP_FOLLOWUP_REMINDER,
+  NOTIFICATION_SCENE_IDS.CHECKUP_ABNORMAL_ALERT,
+  NOTIFICATION_SCENE_IDS.MEDICATION_DOSE_REMINDER,
+  NOTIFICATION_SCENE_IDS.MEDICATION_STOCK_LOW,
+  NOTIFICATION_SCENE_IDS.SUBSCRIPTION_RENEWAL_UPCOMING,
+  NOTIFICATION_SCENE_IDS.SUBSCRIPTION_EXPIRED,
+]);
+
+/** 场景默认 summary/description（核心场景覆盖 SCENE_SEED 的空值） */
+const SCENE_DESCRIPTIONS: Record<string, { summary: string; description: string }> = {
+  [NOTIFICATION_SCENE_IDS.TODO_REMINDER]: { summary: '每天汇总今日待办和临近截止任务。', description: '用于提醒待办事项、拖延风险和当日优先级。' },
+  [NOTIFICATION_SCENE_IDS.CARD_BALANCE_LOW]: { summary: '当余额低于阈值时提醒充值。', description: '保障常用号码不断联。' },
+  [NOTIFICATION_SCENE_IDS.CARD_BILLING_UPCOMING]: { summary: '在账单日前若干天提醒确认扣费信息。', description: '帮助在月结日前检查余额和套餐。' },
+  [NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_UPCOMING]: { summary: '在还款日前提醒还款计划和金额。', description: '覆盖临期账单和还款计划。' },
+  [NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_OVERDUE]: { summary: '账单逾期后立即发出高优先级提醒。', description: '覆盖逾期账单和风险提示。' },
+  [NOTIFICATION_SCENE_IDS.CHECKUP_FOLLOWUP_REMINDER]: { summary: '在复查日期临近或逾期时发出提醒。', description: '用于追踪复查窗口。' },
+  [NOTIFICATION_SCENE_IDS.CHECKUP_ABNORMAL_ALERT]: { summary: '保存异常指标时写入提醒日志。', description: '快速感知异常结果。' },
+  [NOTIFICATION_SCENE_IDS.MEDICATION_DOSE_REMINDER]: { summary: '按时间段提醒服药。', description: '用于提醒用户完成当日用药安排。' },
+  [NOTIFICATION_SCENE_IDS.MEDICATION_STOCK_LOW]: { summary: '当药品库存低于阈值时提醒补货。', description: '用于药品库存预警。' },
+  [NOTIFICATION_SCENE_IDS.SUBSCRIPTION_RENEWAL_UPCOMING]: { summary: '在订阅进入续费窗口时发送提醒。', description: '用于软件会员和云服务续费管理。' },
+  [NOTIFICATION_SCENE_IDS.SUBSCRIPTION_EXPIRED]: { summary: '在到期当天或过期后生成提醒日志。', description: '用于避免关键服务中断。' },
+};
 
 const defaultCardCarriers = [
   ['life-card-carrier-cmcc', '中国移动', '适合日常通话与流量套餐管理。'],
@@ -121,16 +191,19 @@ async function ensureNotificationChannels(manager: EntityManager, userId: string
   });
   const existingTypes = new Set(existing.map((item) => item.channel_type));
 
-  const next = defaultChannels
-    .filter((item) => !existingTypes.has(item.type))
-    .map((item) => repository.create({
-      user_id: userId,
-      channel_type: item.type,
-      label: item.label,
-      enabled: item.enabled,
-      status: item.status,
-      config_json: item.buildConfig(email),
-    }));
+  const next = DEFAULT_CHANNEL_TYPES
+    .filter((type) => !existingTypes.has(type))
+    .map((type) => {
+      const meta = CHANNEL_META[type];
+      return repository.create({
+        user_id: userId,
+        channel_type: type,
+        label: meta.label,
+        enabled: meta.enabled,
+        status: meta.status,
+        config_json: meta.buildConfig(email),
+      });
+    });
 
   if (next.length) {
     await repository.save(next);
@@ -152,40 +225,44 @@ async function ensureNotificationScenes(manager: EntityManager, userId: string) 
   const existingTemplateSceneIds = new Set(existingTemplates.map((item) => item.scene_id));
   const existingRelationKeys = new Set(existingRelations.map((item) => `${item.scene_id}:${item.channel_type}`));
 
-  const scenesToCreate = defaultScenes
-    .filter(([sceneId]) => !existingSceneIds.has(sceneId))
-    .map(([sceneId, label, enabled, summary, description]) => sceneRepo.create({
-      user_id: userId,
-      scene_id: sceneId,
-      label,
-      enabled,
-      summary,
-      description,
-    }));
+  // 复用 SCENE_SEED（20 个全量场景），核心场景默认启用
+  const scenesToCreate = SCENE_SEED
+    .filter((seed) => !existingSceneIds.has(seed.scene_id))
+    .map((seed) => {
+      const desc = SCENE_DESCRIPTIONS[seed.scene_id];
+      return sceneRepo.create({
+        user_id: userId,
+        scene_id: seed.scene_id,
+        label: seed.label,
+        enabled: DEFAULT_ENABLED_SCENES.has(seed.scene_id),
+        summary: desc?.summary ?? seed.summary,
+        description: desc?.description ?? seed.description,
+      });
+    });
 
   if (scenesToCreate.length) {
     await sceneRepo.save(scenesToCreate);
   }
 
-  const templatesToCreate = defaultTemplates
-    .filter(([sceneId]) => !existingTemplateSceneIds.has(sceneId))
-    .map(([sceneId, title, body]) => templateRepo.create({
+  const templatesToCreate = DEFAULT_TEMPLATES
+    .filter((item) => !existingTemplateSceneIds.has(item.scene))
+    .map((item) => templateRepo.create({
       user_id: userId,
-      scene_id: sceneId,
-      title,
-      body,
+      scene_id: item.scene,
+      title: item.title,
+      body: item.body,
     }));
 
   if (templatesToCreate.length) {
     await templateRepo.save(templatesToCreate);
   }
 
-  const relationsToCreate = defaultSceneChannels
-    .filter(([sceneId, channelType]) => !existingRelationKeys.has(`${sceneId}:${channelType}`))
-    .map(([sceneId, channelType]) => relationRepo.create({
+  const relationsToCreate = DEFAULT_SCENE_CHANNELS
+    .filter((item) => !existingRelationKeys.has(`${item.scene}:${item.channel}`))
+    .map((item) => relationRepo.create({
       user_id: userId,
-      scene_id: sceneId,
-      channel_type: channelType,
+      scene_id: item.scene,
+      channel_type: item.channel,
     }));
 
   if (relationsToCreate.length) {
@@ -226,10 +303,17 @@ async function ensureSubscriptionCategories(manager: EntityManager, userId: stri
 }
 
 export async function provisionUserDefaults(options: ProvisionUserDefaultsOptions) {
-  await appDataSource.transaction(async (manager) => {
+  const run = async (manager: EntityManager) => {
     await ensureNotificationChannels(manager, options.userId, options.email);
     await ensureNotificationScenes(manager, options.userId);
     await ensureCardCarriers(manager, options.userId);
     await ensureSubscriptionCategories(manager, options.userId);
-  });
+  };
+
+  if (options.manager) {
+    // 嵌套事务：复用外部 manager（TypeORM 在事务内 transaction 会用 savepoint）
+    await options.manager.transaction(run);
+  } else {
+    await appDataSource.transaction(run);
+  }
 }

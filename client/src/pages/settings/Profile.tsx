@@ -9,11 +9,13 @@ import { buildApiErrorMessage, getApiFieldErrors } from '../../lib/api';
 import { changePassword, updateAuthProfile, useAuthState } from '../../services/auth';
 import { useTheme } from '../../hooks/useTheme';
 
-type ProfileTab = 'profile' | 'security';
+type ProfileTab = 'profile' | 'security' | 'integrations' | 'preferences';
 
 const TAB_OPTIONS: Array<{ value: ProfileTab; label: string }> = [
   { value: 'profile', label: '个人资料' },
   { value: 'security', label: '账户安全' },
+  { value: 'integrations', label: '集成与通知' },
+  { value: 'preferences', label: '偏好设置' },
 ];
 
 export default function ProfileSettingsPage() {
@@ -21,7 +23,8 @@ export default function ProfileSettingsPage() {
   const { toast, showToast } = useToastState();
   const { mode, setMode } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = (searchParams.get('tab') === 'security' ? 'security' : 'profile') as ProfileTab;
+  const validTabs: ProfileTab[] = ['profile', 'security', 'integrations', 'preferences'];
+  const initialTab = (validTabs.includes(searchParams.get('tab') as ProfileTab) ? searchParams.get('tab') : 'profile') as ProfileTab;
   const [tab, setTab] = useState<ProfileTab>(initialTab);
   const [profileSaving, setProfileSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
@@ -252,9 +255,6 @@ export default function ProfileSettingsPage() {
         </SectionCard>
       ) : null}
 
-      {tab === 'profile' ? <DeepseekUsageWidget /> : null}
-      {tab === 'profile' ? <TelegramBindWidget /> : null}
-
       {tab === 'profile' ? (
         <SectionCard
           title="显示设置"
@@ -272,6 +272,39 @@ export default function ProfileSettingsPage() {
                 <option value="light">浅色模式</option>
                 <option value="dark">深色模式</option>
               </SelectField>
+            </div>
+          </div>
+        </SectionCard>
+      ) : null}
+
+      {tab === 'integrations' ? (
+        <>
+          <DeepseekUsageWidget />
+          <TelegramBindWidget />
+          <SectionCard
+            title="通知渠道"
+            description="管理 6 种通知渠道的启用与配置，支持邮件、企业微信、钉钉、飞书、Telegram 和 Webhook。"
+          >
+            <div className="profile-shell">
+              <div className="profile-meta-panel">
+                <strong>通知中心</strong>
+                <span>点击下方按钮进入通知中心管理页面，配置渠道参数、场景开关和消息模板。</span>
+                <a href="/notifications" className="dash-link-primary">进入通知中心 →</a>
+              </div>
+            </div>
+          </SectionCard>
+        </>
+      ) : null}
+
+      {tab === 'preferences' ? (
+        <SectionCard
+          title="偏好设置"
+          description="界面语言、数据格式等个人偏好（后续扩展）。"
+        >
+          <div className="profile-shell">
+            <div className="profile-meta-panel">
+              <strong>暂无更多偏好项</strong>
+              <span>当前偏好仅包含主题模式（已移至个人资料 Tab）。后续将支持语言、日期格式、数字精度等偏好。</span>
             </div>
           </div>
         </SectionCard>

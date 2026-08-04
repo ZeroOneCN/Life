@@ -5,6 +5,8 @@
  * 抽取到独立文件是为了让 shared/domain/notification.ts 中的 ensureNotificationScenesForUser
  * 能够复用同一份种子数据，避免 scheduler 在 scene 未初始化时静默丢弃通知。
  */
+import { NOTIFICATION_SCENE_IDS } from './notification-scenes';
+
 export interface NotificationSceneSeed {
   scene_id: string;
   label: string;
@@ -14,24 +16,24 @@ export interface NotificationSceneSeed {
 }
 
 export const SCENE_SEED: ReadonlyArray<NotificationSceneSeed> = [
-  { scene_id: 'todo.reminder', label: '待办提醒', enabled: false, summary: '', description: '' },
-  { scene_id: 'card.balance_low', label: '号卡低余额提醒', enabled: false, summary: '', description: '' },
-  { scene_id: 'card.billing_upcoming', label: '号卡账单日前提醒', enabled: false, summary: '', description: '' },
-  { scene_id: 'loan.repayment_upcoming', label: '贷款还款提醒', enabled: false, summary: '', description: '' },
-  { scene_id: 'loan.repayment_overdue', label: '贷款逾期提醒', enabled: false, summary: '', description: '' },
-  { scene_id: 'checkup.followup_reminder', label: '体检复查提醒', enabled: false, summary: '', description: '' },
-  { scene_id: 'checkup.abnormal_alert', label: '体检异常提醒', enabled: false, summary: '', description: '' },
-  { scene_id: 'medication.dose_reminder', label: '服药提醒', enabled: false, summary: '', description: '' },
-  { scene_id: 'medication.stock_low', label: '低库存提醒', enabled: false, summary: '', description: '' },
-  { scene_id: 'subscription.renewal_upcoming', label: '订阅即将到期', enabled: false, summary: '', description: '' },
-  { scene_id: 'subscription.expired', label: '订阅到期或逾期', enabled: false, summary: '', description: '' },
-  { scene_id: 'finance.report.monthly', label: '月度财务报告', enabled: false, summary: '', description: '' },
-  { scene_id: 'finance.budget.warning', label: '预算预警提醒', enabled: false, summary: '', description: '' },
-  { scene_id: 'finance.budget.overspend', label: '预算超支警告', enabled: false, summary: '', description: '' },
-  { scene_id: 'finance.bill.upcoming', label: '账单即将到期提醒', enabled: false, summary: '', description: '' },
-  { scene_id: 'finance.bill.overdue', label: '账单逾期提醒', enabled: false, summary: '', description: '' },
-  { scene_id: 'finance.goal.completed', label: '储蓄目标达成庆祝', enabled: false, summary: '', description: '' },
-  { scene_id: 'finance.goal.warning', label: '储蓄目标进度预警', enabled: false, summary: '', description: '' },
-  { scene_id: 'travel.followup', label: '旅行归档跟进', enabled: false, summary: '', description: '' },
-  { scene_id: 'schedule.reminder', label: '日程提醒', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.TODO_REMINDER, label: '待办提醒', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.CARD_BALANCE_LOW, label: '号卡低余额提醒', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.CARD_BILLING_UPCOMING, label: '号卡账单日前提醒', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_UPCOMING, label: '贷款还款提醒', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_OVERDUE, label: '贷款逾期提醒', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.CHECKUP_FOLLOWUP_REMINDER, label: '体检复查提醒', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.CHECKUP_ABNORMAL_ALERT, label: '体检异常提醒', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.MEDICATION_DOSE_REMINDER, label: '服药提醒', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.MEDICATION_STOCK_LOW, label: '低库存提醒', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_RENEWAL_UPCOMING, label: '订阅即将到期', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_EXPIRED, label: '订阅到期或逾期', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.FINANCE_REPORT_MONTHLY, label: '月度财务报告', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.FINANCE_BUDGET_WARNING, label: '预算预警提醒', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.FINANCE_BUDGET_OVERSPEND, label: '预算超支警告', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.FINANCE_BILL_UPCOMING, label: '账单即将到期提醒', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.FINANCE_BILL_OVERDUE, label: '账单逾期提醒', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.FINANCE_GOAL_COMPLETED, label: '储蓄目标达成庆祝', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.FINANCE_GOAL_WARNING, label: '储蓄目标进度预警', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.TRAVEL_FOLLOWUP, label: '旅行归档跟进', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.SCHEDULE_REMINDER, label: '日程提醒', enabled: false, summary: '', description: '' },
 ];

@@ -34,7 +34,7 @@ export default function NotFound() {
             <Btn tone="primary">返回首页</Btn>
           </Link>
           <Link to="javascript:history.back()">
-            <Btn tone="default">返回上一页</Btn>
+            <Btn tone="secondary">返回上一页</Btn>
           </Link>
         </div>
       </div>

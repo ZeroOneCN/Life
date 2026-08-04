@@ -1,7 +1,10 @@
 import { randomInt } from 'node:crypto';
 import dayjs from 'dayjs';
 
+import { env } from '../../../config/env';
 import { appDataSource } from '../../../db/data-source';
+import { NotificationCenterChannelEntity } from '../../notifications/entities/notification-center-channel.entity';
+import { NOTIFICATION_CHANNEL_TYPES } from '../../notifications/notification-scenes';
 import { TelegramBindingEntity } from '../entities/telegram.entity';
 
 /** 绑定码有效期（分钟） */
@@ -86,7 +89,52 @@ export async function consumeBindCode(
 
   await repo.save(binding);
 
+  // 同步通知中心 telegram 渠道：自动创建/更新，填充 chatId + botToken
+  await syncTelegramNotificationChannel(binding.user_id, chatId, username);
+
   return { success: true, userId: binding.user_id, message: '绑定成功！' };
+}
+
+/**
+ * 绑定成功后同步通知中心的 telegram 渠道。
+ * 若渠道不存在则创建，存在则更新 chatId 并标记为 ready。
+ * @param userId - LifeOS 用户 ID
+ * @param chatId - Telegram 聊天 ID
+ * @param username - Telegram 用户名（可选，用于备注）
+ */
+async function syncTelegramNotificationChannel(userId: string, chatId: string, username?: string): Promise<void> {
+  try {
+    const channelRepo = appDataSource.getRepository(NotificationCenterChannelEntity);
+    const existing = await channelRepo.findOne({
+      where: { user_id: userId, channel_type: NOTIFICATION_CHANNEL_TYPES.TELEGRAM },
+    });
+
+    const config = {
+      botToken: env.TELEGRAM_BOT_TOKEN,
+      chatId,
+      notes: username ? `已绑定 @${username}` : '已通过 Telegram Bot 绑定',
+    };
+
+    if (existing) {
+      existing.config_json = config;
+      existing.status = 'ready';
+      existing.enabled = true;
+      await channelRepo.save(existing);
+    } else {
+      const created = channelRepo.create({
+        user_id: userId,
+        channel_type: NOTIFICATION_CHANNEL_TYPES.TELEGRAM,
+        label: 'Telegram',
+        enabled: true,
+        status: 'ready',
+        config_json: config,
+      });
+      await channelRepo.save(created);
+    }
+  } catch (error) {
+    // 同步失败不阻断绑定流程，仅记录日志
+    console.error('[telegram-bind] sync notification channel failed:', error);
+  }
 }
 
 /**

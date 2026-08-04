@@ -101,6 +101,7 @@ export function NotificationTemplateEditor({ scene, template, onSaved }: Notific
     }
   };
   const previewHtml = useMemo(() => renderPreview(htmlBody, SAMPLE_VARS), [htmlBody]);
+  const previewText = useMemo(() => renderPreview(body, SAMPLE_VARS), [body]);
   const previewTitle = useMemo(() => renderPreview(title, SAMPLE_VARS), [title]);
 
   const dirty =

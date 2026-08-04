@@ -73,4 +73,11 @@ export const storageApi = {
       totalCount: number;
     }, Record<string, unknown>>('/life/storage/actions/sync-from-shopping', {});
   },
+
+  importFromShopping(ids: string[]) {
+    return apiPost<{
+      importedCount: number;
+      duplicateCount: number;
+    }, { ids: string[] }>('/life/storage/actions/import-from-shopping', { ids });
+  },
 };

@@ -116,46 +116,55 @@ export function createAuthRouter() {
     }
 
     const payload = validateBody(registerSchema, request.body);
-    const accountRepo = appDataSource.getRepository(SystemUserAccountEntity);
-    const profileRepo = appDataSource.getRepository(SystemUserProfileEntity);
 
-    const existing = await accountRepo.findOne({
-      where: [
-        { username: payload.username },
-        { email: payload.email },
-      ],
-    });
+    // 事务化注册：account + profile + provision 在同一事务内完成，
+    // 任一步骤失败则整体回滚，避免产生半成品用户。
+    const { id: accountId, username, email } = await appDataSource.transaction(async (manager) => {
+      const accountRepo = manager.getRepository(SystemUserAccountEntity);
+      const profileRepo = manager.getRepository(SystemUserProfileEntity);
 
-    if (existing) {
-      throw new AppError('account_already_exists', 409, 409);
-    }
+      const existing = await accountRepo.findOne({
+        where: [
+          { username: payload.username },
+          { email: payload.email },
+        ],
+      });
 
-    const passwordHash = await hashPassword(payload.password);
-    const account = await accountRepo.save(accountRepo.create({
-      username: payload.username,
-      email: payload.email,
-      password_hash: passwordHash,
-      is_active: true,
-    }));
+      if (existing) {
+        throw new AppError('account_already_exists', 409, 409);
+      }
 
-    await profileRepo.save(profileRepo.create({
-      id: account.id,
-      user_id: account.id,
-      nickname: payload.nickname ?? payload.username,
-      avatar_url: '',
-      timezone: 'Asia/Shanghai',
-      preferences_json: null,
-    }));
+      const passwordHash = await hashPassword(payload.password);
+      const account = await accountRepo.save(accountRepo.create({
+        username: payload.username,
+        email: payload.email,
+        password_hash: passwordHash,
+        is_active: true,
+      }));
 
-    await provisionUserDefaults({
-      userId: account.id,
-      email: account.email,
+      await profileRepo.save(profileRepo.create({
+        id: account.id,
+        user_id: account.id,
+        nickname: payload.nickname ?? payload.username,
+        avatar_url: '',
+        timezone: 'Asia/Shanghai',
+        preferences_json: null,
+      }));
+
+      // provisionUserDefaults 内部会开启嵌套事务（savepoint），复用当前 manager
+      await provisionUserDefaults({
+        userId: account.id,
+        email: account.email,
+        manager,
+      });
+
+      return { id: account.id, username: account.username, email: account.email };
     });
 
     response.json(successResponse({
-      id: account.id,
-      username: account.username,
-      email: account.email,
+      id: accountId,
+      username,
+      email,
     }, 'register_success'));
   }));
 
@@ -260,13 +269,23 @@ export function createAuthRouter() {
       throw new AppError('unauthorized', 401, 401);
     }
 
+    const body = (request.body ?? {}) as { refreshToken?: string };
     const sessionRepo = appDataSource.getRepository(SystemAuthSessionEntity);
-    await sessionRepo.update({
-      user_id: userId,
-      revoked: false,
-    }, {
-      revoked: true,
-    });
+
+    if (body.refreshToken) {
+      // 精细化：仅撤销当前 session（通过 refreshToken hash 匹配）
+      const refreshTokenHash = sha256Hash(body.refreshToken);
+      await sessionRepo.update(
+        { user_id: userId, refresh_token_hash: refreshTokenHash, revoked: false },
+        { revoked: true },
+      );
+    } else {
+      // 兜底：无 refreshToken 时撤销所有未撤销会话（兼容旧前端）
+      await sessionRepo.update(
+        { user_id: userId, revoked: false },
+        { revoked: true },
+      );
+    }
 
     response.json(successResponse({ ok: true }, 'logout_success'));
   }));

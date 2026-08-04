@@ -12,6 +12,14 @@ export type NotificationSceneId =
   | 'medication.stock_low'
   | 'subscription.renewal_upcoming'
   | 'subscription.expired'
+  | 'finance.report.monthly'
+  | 'finance.budget.warning'
+  | 'finance.budget.overspend'
+  | 'finance.bill.upcoming'
+  | 'finance.bill.overdue'
+  | 'finance.goal.completed'
+  | 'finance.goal.warning'
+  | 'travel.followup'
   | 'schedule.reminder';
 
 export type NotificationTemplateFormat = 'text' | 'html';

@@ -189,7 +189,12 @@ export async function changePassword(payload: ChangePasswordPayload) {
 
 export async function logout() {
   try {
-    await apiPost('/auth/logout');
+    const current = getAuthSession();
+    const body: { refreshToken?: string } = {};
+    if (current?.refreshToken) {
+      body.refreshToken = current.refreshToken;
+    }
+    await apiPost('/auth/logout', body);
   } catch {
     // Ignore logout transport failures and clear local session anyway.
   } finally {

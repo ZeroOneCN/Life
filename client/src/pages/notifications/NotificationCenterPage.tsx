@@ -19,6 +19,7 @@ import {
 import type { NotificationChannelType, NotificationSceneId, NotificationLogEntry, NotificationTemplate } from '../../types/notifications';
 
 const DEFAULT_TEMPLATE: NotificationTemplate = {
+  sceneId: 'todo.reminder',
   title: '{{title}}',
   body: '{{message}}',
   format: 'text',
@@ -367,21 +368,18 @@ export default function NotificationCenterPage() {
                 active={logStatusFilter === 'success'}
                 onClick={() => setLogStatusFilter('success')}
                 count={notificationState.logs.filter((l) => l.status === 'success').length}
-                tone="green"
               />
               <FilterTag
                 label="失败"
                 active={logStatusFilter === 'error'}
                 onClick={() => setLogStatusFilter('error')}
                 count={notificationState.logs.filter((l) => l.status === 'error').length}
-                tone="red"
               />
               <FilterTag
                 label="跳过"
                 active={logStatusFilter === 'skipped'}
                 onClick={() => setLogStatusFilter('skipped')}
                 count={notificationState.logs.filter((l) => l.status === 'skipped').length}
-                tone="orange"
               />
             </div>
           </div>
