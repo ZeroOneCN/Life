@@ -6,6 +6,7 @@ import { SubscriptionRecordsSection } from '../../components/finance/Subscriptio
 import { SubscriptionSettingsSection } from '../../components/finance/SubscriptionSettingsSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, Tag, Toast, useToastState } from '../../components/ui';
+import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';
@@ -53,6 +54,7 @@ const EMPTY_SETTINGS: SubscriptionPageState['settings'] = {
 
 export default function SubscriptionPage() {
   const [tab, setTab] = usePageTab<SubscriptionTab>('records', TAB_OPTIONS.map((item) => item.value), 'subscriptionTab');
+  useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;

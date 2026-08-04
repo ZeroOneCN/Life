@@ -7,6 +7,7 @@ import { MedicationRecordsSection } from '../../components/health/MedicationReco
 import { MedicationSummarySection } from '../../components/health/MedicationSummarySection';
 import { SectionCard, StatGrid } from '../../components/page';
 import { Btn, PillTabs, Tag, Toast, useToastState } from '../../components/ui';
+import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';
@@ -54,6 +55,7 @@ const EMPTY_OVERVIEW: MedicationOverviewSummary = {
 export default function MedicationPage() {
   const authState = useAuthState();
   const [tab, setTab] = usePageTab<MedicationTab>('records', TAB_OPTIONS.map((item) => item.value), 'medicationTab');
+  useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const [records, setRecords] = useState<MedicationRecord[]>([]);
   const [purchases, setPurchases] = useState<MedicationPurchaseRecord[]>([]);
   const [summaries, setSummaries] = useState<MedicationDailySummary[]>([]);

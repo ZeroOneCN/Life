@@ -7,6 +7,7 @@ import { RentStatisticsSection } from '../../components/finance/RentStatisticsSe
 import { RentUtilityBillsSection } from '../../components/finance/RentUtilityBillsSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
+import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';
@@ -55,6 +56,7 @@ function hydrateSettings(
 
 export default function RentPage() {
   const [tab, setTab] = usePageTab<RentTab>('records', TAB_OPTIONS.map((item) => item.value), 'rentTab');
+  useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const [records, setRecords] = useState<RentHousingRecord[]>([]);
   const [channels, setChannels] = useState<RentChannel[]>([]);
   const [settings, setSettings] = useState<RentPageState['settings']>(EMPTY_SETTINGS);

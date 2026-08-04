@@ -6,6 +6,7 @@ import { ShoppingPlatformsSection } from '../../components/finance/ShoppingPlatf
 import { ShoppingRecordsSection } from '../../components/finance/ShoppingRecordsSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Btn, Modal, PillTabs, SelectField, Tag, Toast, useToastState } from '../../components/ui';
+import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';

@@ -8,6 +8,7 @@ import { LoanSettingsSection } from '../../components/finance/LoanSettingsSectio
 import { LoanStatisticsSection } from '../../components/finance/LoanStatisticsSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Btn, DeleteModal, PillTabs, Toast, useToastState } from '../../components/ui';
+import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { hydrateNotificationCenterState } from '../../services/notificationCenter';
@@ -53,6 +54,7 @@ const EMPTY_OVERVIEW: LoanOverviewSummary = {
 
 export default function LoanPage() {
   const [tab, setTab] = usePageTab<LoanTab>('dashboard', TAB_OPTIONS.map((item) => item.value), 'loanTab');
+  useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const { toast, showToast } = useToastState();
   const [platforms, setPlatforms] = useState<LoanPlatform[]>([]);
   const [bills, setBills] = useState<LoanBill[]>([]);

@@ -7,6 +7,7 @@ import { DeepseekUsageWidget } from '../../components/settings/DeepseekUsageWidg
 import TelegramBindWidget from '../../components/settings/TelegramBindWidget';
 import { buildApiErrorMessage, getApiFieldErrors } from '../../lib/api';
 import { changePassword, updateAuthProfile, useAuthState } from '../../services/auth';
+import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { useTheme } from '../../hooks/useTheme';
 
 type ProfileTab = 'profile' | 'security' | 'integrations' | 'preferences';
@@ -26,6 +27,7 @@ export default function ProfileSettingsPage() {
   const validTabs: ProfileTab[] = ['profile', 'security', 'integrations', 'preferences'];
   const initialTab = (validTabs.includes(searchParams.get('tab') as ProfileTab) ? searchParams.get('tab') : 'profile') as ProfileTab;
   const [tab, setTab] = useState<ProfileTab>(initialTab);
+  useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const [profileSaving, setProfileSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});

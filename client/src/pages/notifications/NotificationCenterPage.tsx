@@ -5,6 +5,7 @@ import { NotificationLogTable } from '../../components/NotificationLogTable';
 import { NotificationTemplateEditor } from '../../components/notifications/NotificationTemplateEditor';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Btn, Checkbox, DeleteModal, FilterTag, PillTabs, SearchInput, Switch, Tag, Toast, useToastState } from '../../components/ui';
+import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import {
@@ -46,6 +47,7 @@ const channelLabels: Record<NotificationChannelType, string> = {
 export default function NotificationCenterPage() {
   const notificationState = useNotificationCenterState();
   const [tab, setTab] = usePageTab('overview', tabOptions.map((item) => item.value));
+  useBreadcrumbTail(tabOptions.find((item) => item.value === tab)?.label);
   const [loading, setLoading] = useState(true);
   const [showClearModal, setShowClearModal] = useState(false);
   const [logPage, setLogPage] = useState(1);

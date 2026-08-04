@@ -8,6 +8,7 @@ import { TravelStatsSection } from '../../components/finance/TravelStatsSection'
 import { CurrencyConverter } from '../../components/finance/CurrencyConverter';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, SelectField, Toast, useToastState } from '../../components/ui';
+import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';
@@ -71,6 +72,7 @@ function hydrateSettings(
 
 export default function TravelPage() {
   const [tab, setTab] = usePageTab<TravelTab>('books', TAB_OPTIONS.map((item) => item.value), 'travelTab');
+  useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const [books, setBooks] = useState<TravelBook[]>([]);
   const [records, setRecords] = useState<TravelExpenseRecord[]>([]);
   const [payChannels, setPayChannels] = useState<TravelPayChannel[]>([]);

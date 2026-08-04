@@ -7,6 +7,7 @@ import { CardSettingsSection } from '../../components/life/CardSettingsSection';
 import { CardStatisticsSection } from '../../components/life/CardStatisticsSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, Tag, Toast, useToastState } from '../../components/ui';
+import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';
@@ -50,6 +51,7 @@ const EMPTY_SETTINGS: LifeCardPageState['settings'] = {
 
 export default function CardPage() {
   const [tab, setTab] = usePageTab<CardTab>('cards', TAB_OPTIONS.map((item) => item.value), 'cardTab');
+  useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;

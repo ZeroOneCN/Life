@@ -6,6 +6,7 @@ import { StorageItemsSection } from '../../components/life/StorageItemsSection';
 import { StorageSettingsSection } from '../../components/life/StorageSettingsSection';
 import { PageHeader, SectionCard } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
+import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { storageApi } from '../../services/storageApi';

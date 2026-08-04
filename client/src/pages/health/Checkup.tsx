@@ -6,6 +6,7 @@ import { CheckupRecordsSection } from '../../components/health/CheckupRecordsSec
 import { CheckupTemplatesSection } from '../../components/health/CheckupTemplatesSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Btn, PillTabs, Tag, Toast, useToastState } from '../../components/ui';
+import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { getAuthUserDisplayName, useAuthState } from '../../services/auth';
@@ -44,6 +45,7 @@ const EMPTY_OVERVIEW: CheckupOverviewSummary = {
 export default function CheckupPage() {
   const authState = useAuthState();
   const [tab, setTab] = usePageTab<CheckupTab>('records', TAB_OPTIONS.map((item) => item.value), 'checkupTab');
+  useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const [records, setRecords] = useState<CheckupRecord[]>([]);
   const [templates, setTemplates] = useState<CheckupTemplate[]>([]);
   const [settings, setSettings] = useState<CheckupPageState['settings']>(EMPTY_SETTINGS);

@@ -7,6 +7,7 @@ import { ScheduleSettingsSection } from '../../components/life/ScheduleSettingsS
 import { ScheduleTrashSection } from '../../components/life/ScheduleTrashSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
+import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { hydrateNotificationCenterState } from '../../services/notificationCenter';
@@ -50,6 +51,7 @@ const EMPTY_SETTINGS: ScheduleSettings = {
  */
 export default function SchedulePage() {
   const [tab, setTab] = usePageTab<ScheduleTab>('events', TAB_OPTIONS.map((item) => item.value), 'scheduleTab');
+  useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const [eventView, setEventView] = useState<'calendar' | 'list'>('calendar');
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);

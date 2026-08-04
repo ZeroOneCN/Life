@@ -6,6 +6,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AssistantLauncher } from '../components/shared/AssistantLauncher';
 import { menuItems, routes } from '../config/navigation';
 import { useTheme } from '../hooks/useTheme';
+import { BreadcrumbTailProvider, useBreadcrumbTailContext } from '../hooks/useBreadcrumbTail';
 import { logout, useAuthState } from '../services/auth';
 import type { IconKey, MenuItemConfig } from '../types/navigation';
 
@@ -114,6 +115,66 @@ function findParentKey(pathname: string) {
 
 function getActiveMenuKey(pathname: string) {
   return findParentKey(pathname) ?? pathname;
+}
+
+/**
+ * 面包屑导航组件。
+ *
+ * 在静态面包屑（来自路由配置）基础上，从 BreadcrumbTailContext 读取
+ * 页面组件注入的第三级标签（通常是当前 Tab 名称），动态追加到末尾。
+ */
+function BreadcrumbNav({ breadcrumb }: { breadcrumb: string[] }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { tail } = useBreadcrumbTailContext();
+
+  const items = useMemo(() => {
+    const result: Array<{ label: string; path?: string }> = [];
+    const pathParts = location.pathname.split('/').filter(Boolean);
+    const effectiveBreadcrumb = tail ? [...breadcrumb, tail] : breadcrumb;
+
+    effectiveBreadcrumb.forEach((label, index) => {
+      if (index === effectiveBreadcrumb.length - 1) {
+        result.push({ label });
+      } else if (index === 0 && pathParts.length >= 2) {
+        const moduleKey = pathParts[0];
+        const overviewPath = `/${moduleKey}/overview`;
+        const hasOverview = routes.some((r) => r.path === overviewPath);
+        result.push({
+          label,
+          path: hasOverview ? overviewPath : '/dashboard',
+        });
+      } else {
+        result.push({ label });
+      }
+    });
+
+    return result;
+  }, [breadcrumb, tail, location.pathname]);
+
+  return (
+    <div className="breadcrumb" aria-label="面包屑导航">
+      {items.map((item, index) => (
+        <span key={item.label} className={index === items.length - 1 ? 'is-current' : ''}>
+          {index ? <span className="breadcrumb-sep" aria-hidden="true">/</span> : null}
+          {item.path ? (
+            <button
+              type="button"
+              className="breadcrumb-link"
+              onClick={() => navigate(item.path!)}
+              aria-label={`跳转到${item.label}`}
+            >
+              {item.label}
+            </button>
+          ) : (
+            <span aria-current={index === items.length - 1 ? 'page' : undefined}>
+              {item.label}
+            </span>
+          )}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function MenuNode({
@@ -261,28 +322,6 @@ export default function MainLayout() {
   const route = routes.find((item) => item.path === location.pathname);
   const breadcrumb = route?.breadcrumb ?? ['页面'];
 
-  const breadcrumbItems = useMemo(() => {
-    const items: Array<{ label: string; path?: string }> = [];
-    const pathParts = location.pathname.split('/').filter(Boolean);
-
-    breadcrumb.forEach((label, index) => {
-      if (index === breadcrumb.length - 1) {
-        items.push({ label });
-      } else if (index === 0 && pathParts.length >= 2) {
-        const module = pathParts[0];
-        const overviewPath = `/${module}/overview`;
-        const hasOverview = routes.some((r) => r.path === overviewPath);
-        items.push({
-          label,
-          path: hasOverview ? overviewPath : '/dashboard',
-        });
-      } else {
-        items.push({ label });
-      }
-    });
-
-    return items;
-  }, [breadcrumb, location.pathname]);
   const sidebarWidth = collapsed ? 88 : 260;
   const currentUser = authState.session?.user ?? null;
   const userDisplayName = useMemo(
@@ -415,27 +454,7 @@ export default function MainLayout() {
             >
               <SidebarToggleIcon collapsed={collapsed} />
             </button>
-            <div className="breadcrumb" aria-label="面包屑导航">
-              {breadcrumbItems.map((item, index) => (
-                <span key={item.label} className={index === breadcrumbItems.length - 1 ? 'is-current' : ''}>
-                  {index ? <span className="breadcrumb-sep" aria-hidden="true">/</span> : null}
-                  {item.path ? (
-                    <button
-                      type="button"
-                      className="breadcrumb-link"
-                      onClick={() => navigate(item.path!)}
-                      aria-label={`跳转到${item.label}`}
-                    >
-                      {item.label}
-                    </button>
-                  ) : (
-                    <span aria-current={index === breadcrumbItems.length - 1 ? 'page' : undefined}>
-                      {item.label}
-                    </span>
-                  )}
-                </span>
-              ))}
-            </div>
+            <BreadcrumbNav breadcrumb={breadcrumb} />
           </div>
 
           <div className="topbar-right">

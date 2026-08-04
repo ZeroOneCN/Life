@@ -6,6 +6,7 @@ import { TodoTasksSection } from '../../components/life/TodoTasksSection';
 import { TodoTrashSection } from '../../components/life/TodoTrashSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
+import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { hydrateNotificationCenterState } from '../../services/notificationCenter';
@@ -42,6 +43,7 @@ const EMPTY_SETTINGS: TodoReminderSettings = {
 
 export default function TodoPage() {
   const [tab, setTab] = usePageTab<TodoTab>('tasks', TAB_OPTIONS.map((item) => item.value), 'todoTab');
+  useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;

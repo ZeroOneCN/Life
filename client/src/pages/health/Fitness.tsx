@@ -7,6 +7,7 @@ import { FitnessShoppingSection } from '../../components/health/FitnessShoppingS
 import { FitnessWeightSection } from '../../components/health/FitnessWeightSection';
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Btn, Modal, PillTabs, Toast, useToastState } from '../../components/ui';
+import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';

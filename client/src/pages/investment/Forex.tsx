@@ -6,6 +6,7 @@ import { ForexDashboardSection } from '../../components/investment/ForexDashboar
 import { ForexTradesSection } from '../../components/investment/ForexTradesSection';
 import { PageHeader, SectionCard } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
+import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';
@@ -53,6 +54,7 @@ const EMPTY_SETTINGS: ForexPageState['settings'] = {
 
 export default function ForexPage() {
   const [tab, setTab] = usePageTab<ForexTab>('dashboard', TAB_OPTIONS.map((item) => item.value), 'forexTab');
+  useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
