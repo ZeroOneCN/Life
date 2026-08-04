@@ -8,7 +8,6 @@ import { FinanceTravelExpenseRecordEntity } from '../finance/entities/finance-tr
 import { FinanceLoanRepaymentEntity } from '../finance/entities/finance-loan-repayment.entity';
 import { FinanceSubscriptionRecordEntity } from '../finance/entities/finance-subscription-record.entity';
 import { FinanceRentRecordEntity } from '../finance/entities/finance-rent-record.entity';
-import { HealthStepRecordEntity } from '../health/entities/health-step-record.entity';
 import { HealthFitnessWeightRecordEntity } from '../health/entities/health-fitness-weight-record.entity';
 import { HealthFitnessExerciseRecordEntity } from '../health/entities/health-fitness-exercise-record.entity';
 import { HealthMedicationRecordEntity } from '../health/entities/health-medication-record.entity';
@@ -19,6 +18,13 @@ import { LifeStorageItemEntity } from '../life/entities/life-storage-item.entity
 import { LifeCardRecordEntity } from '../life/entities/life-card-record.entity';
 import { LifeScheduleEventEntity } from '../life/entities/life-schedule-event.entity';
 import { toNumber } from '../../shared/utils/number';
+import { sumShoppingAmount, createShoppingRecord } from '../finance/shopping.service';
+import { sumTravelNetAmount } from '../finance/travel.service';
+import { sumLoanRepaymentAmount } from '../finance/loan.service';
+import { getDailyMaxSteps, createStepRecord } from '../health/step.service';
+import { createWeightRecord } from '../health/fitness.service';
+import { buildTodoOverview, createTodoTask } from '../life/todo.service';
+import { buildScheduleOverview } from '../life/schedule.service';
 
 dayjs.extend(isBetween);
 
@@ -120,12 +126,9 @@ async function queryFinance(userId: string, filters: QueryFilters) {
       .getMany(),
   ]);
 
-  const shoppingSum = shopping.reduce((sum, row) => sum + toNumber(row.price), 0);
-  const travelSum = travel.reduce((sum, row) => {
-    const net = toNumber(row.amount) - toNumber(row.discount_amount);
-    return sum + (net > 0 ? net : toNumber(row.amount));
-  }, 0);
-  const loanSum = loan.reduce((sum, row) => sum + toNumber(row.amount) + toNumber(row.interest), 0);
+  const shoppingSum = sumShoppingAmount(shopping);
+  const travelSum = sumTravelNetAmount(travel);
+  const loanSum = sumLoanRepaymentAmount(loan);
   const subscriptionSum = subscription.reduce((sum, row) => {
     const cycle = (row.billing_cycle || 'monthly').toLowerCase();
     const price = toNumber(row.cycle_price);
@@ -176,26 +179,7 @@ async function queryHealth(userId: string, filters: QueryFilters) {
   const { start, end } = resolveRange(filters);
   const type = filters.module;
 
-  const stepRepo = appDataSource.getRepository(HealthStepRecordEntity);
-  const stepRows = await stepRepo
-    .createQueryBuilder('s')
-    .select('DATE(s.record_time)', 'date')
-    .addSelect('MAX(s.steps)', 'dailyMaxSteps')
-    .addSelect('COUNT(*)', 'recordCount')
-    .where('s.user_id = :userId', { userId })
-    .andWhere('s.record_time BETWEEN :startTs AND :endTs', {
-      startTs: `${start} 00:00:00`,
-      endTs: `${end} 23:59:59`,
-    })
-    .groupBy('DATE(s.record_time)')
-    .orderBy('DATE(s.record_time)', 'ASC')
-    .getRawMany<{ date: string; dailyMaxSteps: string | number; recordCount: string | number }>();
-
-  const stepDailyTotals = stepRows.map((row) => ({
-    date: typeof row.date === 'string' ? row.date : dayjs(row.date as unknown as Date).format('YYYY-MM-DD'),
-    steps: Number(row.dailyMaxSteps) || 0,
-    recordCount: Number(row.recordCount) || 0,
-  }));
+  const stepDailyTotals = await getDailyMaxSteps(userId, start, end);
   const stepSum = stepDailyTotals.reduce((sum, row) => sum + row.steps, 0);
 
   const [weights, exercises, medications] = await Promise.all([
@@ -219,7 +203,7 @@ async function queryHealth(userId: string, filters: QueryFilters) {
     range: { start, end },
     summary: {
       step: {
-        recordCount: stepRows.reduce((sum, row) => sum + (Number(row.recordCount) || 0), 0),
+        recordCount: stepDailyTotals.reduce((sum, row) => sum + row.recordCount, 0),
         activeDays: stepDailyTotals.length,
         totalSteps: Math.round(stepSum),
         averageDailySteps: stepDailyTotals.length ? Math.round(stepSum / stepDailyTotals.length) : 0,
@@ -334,14 +318,16 @@ async function queryLife(userId: string, filters: QueryFilters) {
     appDataSource.getRepository(LifeScheduleEventEntity).find({ where: { user_id: userId } }),
   ]);
 
+  const todoOverview = buildTodoOverview(todos);
+  // 额外统计：overdue / dueSoon / inRange（buildTodoOverview 不含这些）
   const activeTodos = todos.filter((row) => !row.trashed_at && !row.completed);
-  const overdueTodos = activeTodos.filter((row) => row.due_date && dayjs(row.due_date).isBefore(dayjs(), 'day'));
-  const dueSoonTodos = activeTodos.filter((row) => {
+  const overdueCount = activeTodos.filter((row) => row.due_date && dayjs(row.due_date).isBefore(dayjs(), 'day')).length;
+  const dueSoonCount = activeTodos.filter((row) => {
     if (!row.due_date) return false;
     const diff = dayjs(row.due_date).startOf('day').diff(dayjs().startOf('day'), 'day');
     return diff >= 0 && diff <= 7;
-  });
-  const dueRangeTodos = todos.filter((row) => row.due_date && dayjs(row.due_date).isBetween(start, end, 'day', '[]'));
+  }).length;
+  const inRangeTodoCount = todos.filter((row) => row.due_date && dayjs(row.due_date).isBetween(start, end, 'day', '[]')).length;
 
   const storedItems = items.filter((row) => !row.archived_at);
   const archivedItems = items.filter((row) => row.archived_at);
@@ -351,31 +337,25 @@ async function queryLife(userId: string, filters: QueryFilters) {
     return dayjs(row.activation_date).isAfter(dayjs().subtract(30, 'day'), 'day');
   });
 
-  // 日程统计：区分今日 / 区间内 / 重复事件
-  const activeSchedules = schedules.filter((row) => !row.trashed_at);
-  const todaySchedules = activeSchedules.filter((row) => {
-    if (row.recurrence_type === 'none') {
-      return dayjs(row.start_at).isSame(dayjs(), 'day');
-    }
-    return true; // 重复事件按今日可能有实例处理
-  });
-  const inRangeSchedules = activeSchedules.filter((row) => {
+  // 日程统计：使用 service 层 buildScheduleOverview（口径与 router 一致）
+  const scheduleOverview = buildScheduleOverview(schedules);
+  // 额外统计：inRange（buildScheduleOverview 不含此字段）
+  const inRangeScheduleCount = schedules.filter((row) => {
+    if (row.trashed_at) return false;
     if (row.recurrence_type === 'none') {
       return dayjs(row.start_at).isBetween(start, end, 'day', '[]');
     }
     return true;
-  });
-  const recurringSchedules = activeSchedules.filter((row) => row.recurrence_type !== 'none');
+  }).length;
 
   return {
     range: { start, end },
     summary: {
       todo: {
-        total: activeTodos.length,
-        overdue: overdueTodos.length,
-        dueSoon: dueSoonTodos.length,
-        completed: todos.filter((row) => row.completed && !row.trashed_at).length,
-        inRange: dueRangeTodos.length,
+        ...todoOverview,
+        overdue: overdueCount,
+        dueSoon: dueSoonCount,
+        inRange: inRangeTodoCount,
       },
       storage: {
         active: storedItems.length,
@@ -386,14 +366,11 @@ async function queryLife(userId: string, filters: QueryFilters) {
         recentlyActivated: recentActivationCards.length,
       },
       schedule: {
-        total: activeSchedules.length,
-        today: todaySchedules.length,
-        inRange: inRangeSchedules.length,
-        recurring: recurringSchedules.length,
-        completed: activeSchedules.filter((row) => row.completed).length,
+        ...scheduleOverview,
+        inRange: inRangeScheduleCount,
       },
     },
-    hint: '待办仅统计未完成未删除；物品追踪区分在用 / 归档；卡片仅给出 30 天内新激活数量；日程区分今日 / 区间内 / 重复事件。',
+    hint: '待办统计使用 buildTodoOverview（重复任务不计入 completed）；日程统计使用 buildScheduleOverview（使用 isScheduleRecurringType 判定重复）；物品追踪区分在用 / 归档；卡片仅给出 30 天内新激活数量。',
     moduleFilter,
   };
 }
@@ -443,29 +420,22 @@ function pickStringArray(value: unknown, field: string): string[] {
  * @returns 创建结果（含 id 和写入字段摘要）
  */
 async function createShopping(userId: string, args: Record<string, unknown>) {
-  const ledgerId = pickString(args, 'ledgerId');
-  const date = pickString(args, 'date');
-  const platform = pickString(args, 'platform');
-  const itemName = pickString(args, 'itemName');
-  const price = pickNumber(args, 'price');
-  if (!ledgerId || !date || !platform || !itemName) {
-    return { error: '缺少必填字段：ledgerId/date/platform/itemName' };
+  try {
+    const saved = await createShoppingRecord(userId, {
+      ledgerId: pickString(args, 'ledgerId'),
+      date: pickString(args, 'date'),
+      platform: pickString(args, 'platform'),
+      itemName: pickString(args, 'itemName'),
+      price: pickNumber(args, 'price'),
+      spec: pickString(args, 'spec') || undefined,
+      unitPrice: args.unitPrice !== undefined ? pickNumber(args, 'unitPrice') : null,
+      orderNo: pickString(args, 'orderNo') || undefined,
+      note: pickString(args, 'note') || undefined,
+    });
+    return { id: saved.id, message: `已创建购物记录：${saved.item_name} ¥${saved.price}` };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : '创建购物记录失败' };
   }
-  const repo = appDataSource.getRepository(FinanceShoppingRecordEntity);
-  const record = repo.create({
-    user_id: userId,
-    ledger_id: ledgerId,
-    date,
-    platform,
-    item_name: itemName,
-    price,
-    spec: pickString(args, 'spec'),
-    unit_price: args.unitPrice !== undefined ? pickNumber(args, 'unitPrice') : null,
-    order_no: pickString(args, 'orderNo'),
-    note: pickString(args, 'note'),
-  });
-  const saved = await repo.save(record);
-  return { id: saved.id, message: `已创建购物记录：${itemName} ¥${price}` };
 }
 
 /**
@@ -509,27 +479,21 @@ async function createSubscription(userId: string, args: Record<string, unknown>)
  * @returns 创建结果
  */
 async function createStep(userId: string, args: Record<string, unknown>) {
-  const steps = Math.max(0, Math.round(pickNumber(args, 'steps')));
-  const recordTimeStr = pickString(args, 'recordTime');
-  if (!steps || !recordTimeStr) {
+  const steps = pickNumber(args, 'steps');
+  const recordTime = pickString(args, 'recordTime');
+  if (!steps || !recordTime) {
     return { error: '缺少必填字段：steps/recordTime' };
   }
-  const parsed = dayjs(recordTimeStr);
-  if (!parsed.isValid()) {
-    return { error: `recordTime 解析失败：${recordTimeStr}` };
+  try {
+    const saved = await createStepRecord(userId, {
+      steps,
+      recordTime,
+      hour: args.hour === undefined || args.hour === null ? null : pickNumber(args, 'hour'),
+    });
+    return { id: saved.id, message: `已记录步数：${saved.steps} 步（${dayjs(saved.record_time).format('YYYY-MM-DD HH:mm')}）` };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : '创建步数记录失败' };
   }
-  const hourRaw = args.hour;
-  const hour = hourRaw === undefined || hourRaw === null ? null : Math.max(0, Math.min(23, Math.round(Number(hourRaw))));
-
-  const repo = appDataSource.getRepository(HealthStepRecordEntity);
-  const record = repo.create({
-    user_id: userId,
-    steps,
-    hour,
-    record_time: parsed.toDate(),
-  });
-  const saved = await repo.save(record);
-  return { id: saved.id, message: `已记录步数：${steps} 步（${parsed.format('YYYY-MM-DD HH:mm')}）` };
 }
 
 /**
@@ -544,20 +508,31 @@ async function createWeight(userId: string, args: Record<string, unknown>) {
   if (!date || !weight) {
     return { error: '缺少必填字段：date/weight' };
   }
-  const repo = appDataSource.getRepository(HealthFitnessWeightRecordEntity);
-  const record = repo.create({
-    user_id: userId,
-    date,
-    weight,
-    height: pickNumber(args, 'height'),
-    body_fat: pickNumber(args, 'bodyFat'),
-    visceral_fat: pickNumber(args, 'visceralFat'),
-    fat_mass: pickNumber(args, 'fatMass'),
-    muscle_rate: pickNumber(args, 'muscleRate'),
-    muscle_mass: pickNumber(args, 'muscleMass'),
-  });
-  const saved = await repo.save(record);
-  return { id: saved.id, message: `已记录体重：${weight} kg（${date}）` };
+  try {
+    const saved = await createWeightRecord(userId, {
+      date,
+      weight,
+      height: args.height !== undefined && args.height !== null ? pickNumber(args, 'height') : undefined,
+      bodyFat: args.bodyFat !== undefined && args.bodyFat !== null ? pickNumber(args, 'bodyFat') : undefined,
+      visceralFat: args.visceralFat !== undefined && args.visceralFat !== null ? pickNumber(args, 'visceralFat') : undefined,
+      fatMass: args.fatMass !== undefined && args.fatMass !== null ? pickNumber(args, 'fatMass') : undefined,
+      muscleRate: args.muscleRate !== undefined && args.muscleRate !== null ? pickNumber(args, 'muscleRate') : undefined,
+      muscleMass: args.muscleMass !== undefined && args.muscleMass !== null ? pickNumber(args, 'muscleMass') : undefined,
+      bodyWaterRate: args.bodyWaterRate !== undefined && args.bodyWaterRate !== null ? pickNumber(args, 'bodyWaterRate') : undefined,
+      bodyWaterMass: args.bodyWaterMass !== undefined && args.bodyWaterMass !== null ? pickNumber(args, 'bodyWaterMass') : undefined,
+      proteinRate: args.proteinRate !== undefined && args.proteinRate !== null ? pickNumber(args, 'proteinRate') : undefined,
+      proteinMass: args.proteinMass !== undefined && args.proteinMass !== null ? pickNumber(args, 'proteinMass') : undefined,
+      boneRate: args.boneRate !== undefined && args.boneRate !== null ? pickNumber(args, 'boneRate') : undefined,
+      boneMass: args.boneMass !== undefined && args.boneMass !== null ? pickNumber(args, 'boneMass') : undefined,
+      skeletalMuscleRate: args.skeletalMuscleRate !== undefined && args.skeletalMuscleRate !== null ? pickNumber(args, 'skeletalMuscleRate') : undefined,
+      skeletalMuscleMass: args.skeletalMuscleMass !== undefined && args.skeletalMuscleMass !== null ? pickNumber(args, 'skeletalMuscleMass') : undefined,
+      subcutaneousFatRate: args.subcutaneousFatRate !== undefined && args.subcutaneousFatRate !== null ? pickNumber(args, 'subcutaneousFatRate') : undefined,
+      subcutaneousFatMass: args.subcutaneousFatMass !== undefined && args.subcutaneousFatMass !== null ? pickNumber(args, 'subcutaneousFatMass') : undefined,
+    });
+    return { id: saved.id, message: `已记录体重：${saved.weight} kg（${saved.date}）` };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : '创建体重记录失败' };
+  }
 }
 
 /**
@@ -596,21 +571,21 @@ async function createTodo(userId: string, args: Record<string, unknown>) {
   if (!title) {
     return { error: '缺少必填字段：title' };
   }
-  const repo = appDataSource.getRepository(LifeTodoTaskEntity);
-  const record = repo.create({
-    user_id: userId,
-    title,
-    description_markdown: pickString(args, 'descriptionMarkdown'),
-    due_date: pickString(args, 'dueDate') || null,
-    priority: pickString(args, 'priority', 'medium'),
-    tags_json: pickStringArray(args, 'tags'),
-    is_daily: pickBoolean(args, 'isDaily'),
-    recurrence_type: (pickString(args, 'recurrenceType', 'none') as 'none' | 'daily' | 'weekly' | 'monthly'),
-    completed: false,
-    sort_order: Date.now(),
-  });
-  const saved = await repo.save(record);
-  return { id: saved.id, message: `已创建待办：${title}` };
+  try {
+    const saved = await createTodoTask(userId, {
+      title,
+      descriptionMarkdown: pickString(args, 'descriptionMarkdown') || undefined,
+      dueDate: pickString(args, 'dueDate') || undefined,
+      priority: (pickString(args, 'priority', 'medium') as 'high' | 'medium' | 'low') || undefined,
+      tags: pickStringArray(args, 'tags').length ? pickStringArray(args, 'tags') : undefined,
+      isDaily: pickBoolean(args, 'isDaily') || undefined,
+      recurrenceType: (pickString(args, 'recurrenceType', 'none') as 'none' | 'daily' | 'weekly' | 'monthly') || undefined,
+      recurrenceConfig: null,
+    });
+    return { id: saved.id, message: `已创建待办：${saved.title}` };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : '创建待办任务失败' };
+  }
 }
 
 export const ASSISTANT_TOOLS: Array<{
