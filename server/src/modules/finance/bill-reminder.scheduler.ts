@@ -4,6 +4,7 @@ import { env } from '../../config/env';
 import { appDataSource } from '../../db/data-source';
 import { SystemUserAccountEntity } from '../system/entities/system-user-account.entity';
 import { ensureNotificationScenesForUser, sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { FinanceBillReminderSettingEntity } from './entities/finance-bill-reminder-setting.entity';
 import { getUnifiedBillsInRange, type BillType, type UnifiedBill } from './bill-aggregator.service';
@@ -129,14 +130,14 @@ async function runRemindersForUser(userId: string, today: string) {
   // 确保 scene 记录存在（用户可能从未访问过通知中心，scene 尚未 seed）。
   // 此处不强制启用，避免覆盖用户在通知中心主动禁用的配置。
   // scene 的启用由 PUT /api/finance/bill/setting 接口在 reminder_enabled=true 时联动开启。
-  await ensureNotificationScenesForUser(userId, ['finance.bill.upcoming', 'finance.bill.overdue']);
+  await ensureNotificationScenesForUser(userId, [NOTIFICATION_SCENE_IDS.FINANCE_BILL_UPCOMING, NOTIFICATION_SCENE_IDS.FINANCE_BILL_OVERDUE]);
 
   // 场景一：已逾期
   if (overdueBills.length > 0) {
     const overdueAmount = overdueBills.reduce((sum, b) => sum + toNumber(b.amount), 0);
     await sendNotificationSceneLogs({
       userId,
-      sceneId: 'finance.bill.overdue',
+      sceneId: NOTIFICATION_SCENE_IDS.FINANCE_BILL_OVERDUE,
       title: `账单逾期提醒：${overdueBills.length} 笔账单已逾期`,
       message: buildOverdueMessage(overdueBills, overdueAmount),
       meta: {
@@ -154,7 +155,7 @@ async function runRemindersForUser(userId: string, today: string) {
     const todayAmount = dueTodayBills.reduce((sum, b) => sum + toNumber(b.amount), 0);
     await sendNotificationSceneLogs({
       userId,
-      sceneId: 'finance.bill.upcoming',
+      sceneId: NOTIFICATION_SCENE_IDS.FINANCE_BILL_UPCOMING,
       title: `今日账单提醒：${dueTodayBills.length} 笔账单今日到期`,
       message: buildTodayMessage(dueTodayBills, todayAmount),
       meta: {
@@ -172,7 +173,7 @@ async function runRemindersForUser(userId: string, today: string) {
     const tomorrowAmount = dueTomorrowBills.reduce((sum, b) => sum + toNumber(b.amount), 0);
     await sendNotificationSceneLogs({
       userId,
-      sceneId: 'finance.bill.upcoming',
+      sceneId: NOTIFICATION_SCENE_IDS.FINANCE_BILL_UPCOMING,
       title: `账单提醒：${dueTomorrowBills.length} 笔账单明日到期`,
       message: buildTomorrowMessage(dueTomorrowBills, tomorrowAmount, tomorrowStr),
       meta: {

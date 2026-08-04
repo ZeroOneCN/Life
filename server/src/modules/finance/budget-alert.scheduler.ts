@@ -5,6 +5,7 @@ import { appDataSource } from '../../db/data-source';
 import { FinanceBudgetEntity } from './entities/finance-budget.entity';
 import { SystemUserAccountEntity } from '../system/entities/system-user-account.entity';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 import { calculateCategoryActualExpenses } from './budget-calculator';
 import { toNumber, round2 } from '../../shared/utils/number';
 
@@ -100,7 +101,7 @@ async function runAlertsForUser(userId: string, month: string, today: string) {
         const overAmount = round2(actualAmount - budgetAmount);
         await sendNotificationSceneLogs({
           userId,
-          sceneId: 'finance.budget.overspend',
+          sceneId: NOTIFICATION_SCENE_IDS.FINANCE_BUDGET_OVERSPEND,
           title: `预算超支警告：${budget.name}`,
           message: `「${budget.name}」预算 ¥${round2(budgetAmount)}，当前已支出 ¥${round2(actualAmount)}（${round2(percent)}%），已超出预算 ¥${overAmount}。请关注支出情况。`,
           meta: {
@@ -122,7 +123,7 @@ async function runAlertsForUser(userId: string, month: string, today: string) {
       // 预警提醒，每月一次
       await sendNotificationSceneLogs({
         userId,
-        sceneId: 'finance.budget.warning',
+        sceneId: NOTIFICATION_SCENE_IDS.FINANCE_BUDGET_WARNING,
         title: `预算预警：${budget.name}`,
         message: `「${budget.name}」预算 ¥${round2(budgetAmount)}，当前已支出 ¥${round2(actualAmount)}（${round2(percent)}%），接近预警线 ${round2(threshold)}%。请注意控制支出。`,
         meta: {

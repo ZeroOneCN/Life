@@ -5,6 +5,7 @@ import { appDataSource } from '../../db/data-source';
 import { NotificationCenterLogEntity } from '../notifications/entities/notification-center-log.entity';
 import { SystemUserAccountEntity } from '../system/entities/system-user-account.entity';
 import { ensureNotificationScenesForUser, sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 import {
   buildMonthlyReport,
   buildMonthlyReportMessage,
@@ -13,7 +14,7 @@ import {
 const SCHEDULER_KEY = '__financeMonthlyReportScheduler__';
 const MONTH_DAY_TRIGGER = 1;
 const TRIGGER_HOUR = 9;
-const SCENE_ID = 'finance.report.monthly';
+const SCENE_ID = NOTIFICATION_SCENE_IDS.FINANCE_REPORT_MONTHLY;
 
 function describeMonth(month: string) {
   const [year, monthIndex] = month.split('-').map((value) => Number(value));

@@ -14,6 +14,7 @@ import { parsePagination } from '../../shared/utils/pagination';
 import { normalizeDate } from '../../shared/utils/date';
 import { AppError } from '../../shared/errors/app-error';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 import { toNumber, round2 } from '../../shared/utils/number';
 
 const goalSchema = z.object({
@@ -288,7 +289,7 @@ export function createGoalRouter() {
     if (!wasCompleted && isNowCompleted) {
       await sendNotificationSceneLogs({
         userId,
-        sceneId: 'finance.goal.completed',
+        sceneId: NOTIFICATION_SCENE_IDS.FINANCE_GOAL_COMPLETED,
         title: '🎉 目标达成！',
         message: `恭喜你完成了「${next.name}」目标！`,
         meta: {
@@ -401,7 +402,7 @@ export function createGoalRouter() {
     if (!wasCompleted && isNowCompleted) {
       await sendNotificationSceneLogs({
         userId,
-        sceneId: 'finance.goal.completed',
+        sceneId: NOTIFICATION_SCENE_IDS.FINANCE_GOAL_COMPLETED,
         title: '🎉 目标达成！',
         message: `恭喜你完成了「${savedGoal.name}」目标！`,
         meta: {

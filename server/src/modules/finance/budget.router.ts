@@ -16,6 +16,7 @@ import { normalizeDate } from '../../shared/utils/date';
 import { toNumber, round2 } from '../../shared/utils/number';
 import { AppError } from '../../shared/errors/app-error';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 import { startBudgetAlertScheduler } from './budget-alert.scheduler';
 import { calculateCategoryActualExpenses } from './budget-calculator';
 
@@ -597,7 +598,7 @@ export function createBudgetRouter() {
         const overAmount = Math.abs(progress.remainingAmount);
         const sent = await sendNotificationSceneLogs({
           userId,
-          sceneId: 'finance.budget.overspend',
+          sceneId: NOTIFICATION_SCENE_IDS.FINANCE_BUDGET_OVERSPEND,
           title: `预算超支警告：${budget.name}`,
           message: `「${budget.name}」预算 ¥${progress.budgetAmount}，当前已支出 ¥${progress.actualAmount}（${progress.progressPercent}%），已超出预算 ¥${overAmount}。请关注支出情况。`,
           meta: {
@@ -618,7 +619,7 @@ export function createBudgetRouter() {
       } else if (progress.status === 'warning' && !budget.last_warning_marker.startsWith(`${budget.id}:${month}`)) {
         const sent = await sendNotificationSceneLogs({
           userId,
-          sceneId: 'finance.budget.warning',
+          sceneId: NOTIFICATION_SCENE_IDS.FINANCE_BUDGET_WARNING,
           title: `预算预警：${budget.name}`,
           message: `「${budget.name}」预算 ¥${progress.budgetAmount}，当前已支出 ¥${progress.actualAmount}（${progress.progressPercent}%），接近预警线 ${progress.warningThresholdPercent}%。请注意控制支出。`,
           meta: {

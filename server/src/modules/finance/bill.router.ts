@@ -7,6 +7,7 @@ import { requireAuthUser } from '../../shared/http/request';
 import { successResponse } from '../../shared/http/response';
 import { validateBody } from '../../shared/http/validation';
 import { ensureNotificationScenesForUser } from '../../shared/domain/notification';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { FinanceBillReminderSettingEntity } from './entities/finance-bill-reminder-setting.entity';
 import {
@@ -137,7 +138,7 @@ export function createBillRouter() {
       if (setting.reminder_enabled) {
         await ensureNotificationScenesForUser(
           userId,
-          ['finance.bill.upcoming', 'finance.bill.overdue'],
+          [NOTIFICATION_SCENE_IDS.FINANCE_BILL_UPCOMING, NOTIFICATION_SCENE_IDS.FINANCE_BILL_OVERDUE],
           { enableScenes: true },
         );
       }
@@ -164,7 +165,7 @@ export function createBillRouter() {
       if (updated.reminder_enabled) {
         await ensureNotificationScenesForUser(
           userId,
-          ['finance.bill.upcoming', 'finance.bill.overdue'],
+          [NOTIFICATION_SCENE_IDS.FINANCE_BILL_UPCOMING, NOTIFICATION_SCENE_IDS.FINANCE_BILL_OVERDUE],
           { enableScenes: true },
         );
       }

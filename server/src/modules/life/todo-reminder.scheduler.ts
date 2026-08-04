@@ -4,6 +4,7 @@ import { env } from '../../config/env';
 import { appDataSource } from '../../db/data-source';
 import { SystemUserAccountEntity } from '../system/entities/system-user-account.entity';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { LifeTodoTaskEntity } from './entities/life-todo-task.entity';
 import { LifeTodoSettingEntity } from './entities/life-todo-setting.entity';
@@ -170,7 +171,7 @@ async function runRemindersForUser(userId: string, today: string, now: dayjs.Day
 
   await sendNotificationSceneLogs({
     userId,
-    sceneId: 'todo.reminder',
+    sceneId: NOTIFICATION_SCENE_IDS.TODO_REMINDER,
     title,
     message,
     meta: {

@@ -13,6 +13,7 @@ import { validateBody } from '../../shared/http/validation';
 import { normalizeMonth } from '../../shared/utils/date';
 import { normalizeText } from '../../shared/utils/text';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 import { convertCurrency } from './exchange-rate.service';
 import { FinanceShoppingRecordEntity } from '../finance/entities/finance-shopping-record.entity';
 import { FinanceTravelExpenseRecordEntity } from '../finance/entities/finance-travel-expense-record.entity';
@@ -699,7 +700,7 @@ export function createFinanceReportRouter() {
     // 真正下发到所有已绑定渠道（email / 企业微信 / 钉钉 / 飞书 / Telegram / Webhook）
     const logs = await sendNotificationSceneLogs({
       userId,
-      sceneId: 'finance.report.monthly',
+      sceneId: NOTIFICATION_SCENE_IDS.FINANCE_REPORT_MONTHLY,
       title,
       message,
       meta: {
@@ -772,7 +773,7 @@ category 取值：expense / subscription / loan / rent / investment / budget
 
       recordAssistantUsage({
         userId,
-        scene: 'finance.report.monthly',
+        scene: NOTIFICATION_SCENE_IDS.FINANCE_REPORT_MONTHLY,
         requestCount: 1,
         prompt: promptTokens,
         completion: completionTokens,
@@ -787,7 +788,7 @@ category 取值：expense / subscription / loan / rent / investment / budget
     } catch (error) {
       recordAssistantUsage({
         userId,
-        scene: 'finance.report.monthly',
+        scene: NOTIFICATION_SCENE_IDS.FINANCE_REPORT_MONTHLY,
         requestCount: 1,
         prompt: estimateTokens(systemPrompt + userPrompt),
         completion: 0,

@@ -8,6 +8,7 @@ import { LifeScheduleEventEntity } from './entities/life-schedule-event.entity';
 import { LifeScheduleSettingEntity } from './entities/life-schedule-setting.entity';
 import { LifeTodoTaskEntity } from './entities/life-todo-task.entity';
 import { NotificationCenterLogEntity } from '../notifications/entities/notification-center-log.entity';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 import { asyncHandler } from '../../shared/http/async-handler';
 import { requireAuthUser } from '../../shared/http/request';
 import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
@@ -598,7 +599,7 @@ export function createScheduleRouter() {
     const log = await logRepo.save(logRepo.create({
       user_id: userId,
       channel: 'email',
-      scene_id: 'schedule.reminder',
+      scene_id: NOTIFICATION_SCENE_IDS.SCHEDULE_REMINDER,
       kind: 'scene',
       status: 'success',
       title: payload.title ?? '日程提醒',
@@ -616,7 +617,7 @@ export function createScheduleRouter() {
     const [items, total] = await repository.findAndCount({
       where: {
         user_id: userId,
-        scene_id: 'schedule.reminder',
+        scene_id: NOTIFICATION_SCENE_IDS.SCHEDULE_REMINDER,
       },
       order: { created_at: 'DESC' },
       skip,

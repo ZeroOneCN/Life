@@ -14,6 +14,7 @@ import {
   type NotificationChannelType,
 } from '../notifications/notification-scenes';
 import { SCENE_SEED } from '../notifications/scene-seed';
+import { TEMPLATE_SEED } from '../notifications/template-seed';
 
 interface ProvisionUserDefaultsOptions {
   userId: string;
@@ -119,22 +120,7 @@ const DEFAULT_SCENE_CHANNELS: ReadonlyArray<{ scene: string; channel: Notificati
   { scene: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_EXPIRED, channel: NOTIFICATION_CHANNEL_TYPES.WECHAT_WORK },
 ];
 
-/**
- * 默认通知模板（仅核心场景）。finance/travel/schedule 等场景由 scheduler 按需生成。
- */
-const DEFAULT_TEMPLATES: ReadonlyArray<{ scene: string; title: string; body: string }> = [
-  { scene: NOTIFICATION_SCENE_IDS.TODO_REMINDER, title: '今日待办提醒', body: '你今天有新的待办任务需要处理，请进入 LifeOS 查看详情。' },
-  { scene: NOTIFICATION_SCENE_IDS.CARD_BALANCE_LOW, title: '号卡低余额提醒', body: '你的号卡余额已经低于预设阈值，请及时充值。' },
-  { scene: NOTIFICATION_SCENE_IDS.CARD_BILLING_UPCOMING, title: '号卡账单日前提醒', body: '你的号卡即将进入账单日，请确认套餐与余额状态。' },
-  { scene: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_UPCOMING, title: '贷款还款提醒', body: '你有即将到期的贷款账单，请提前安排还款。' },
-  { scene: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_OVERDUE, title: '贷款逾期提醒', body: '你有已逾期的贷款账单，请尽快处理并关注风险影响。' },
-  { scene: NOTIFICATION_SCENE_IDS.CHECKUP_FOLLOWUP_REMINDER, title: '体检复查提醒', body: '你有进入复查窗口的体检项目，请尽快安排复查。' },
-  { scene: NOTIFICATION_SCENE_IDS.CHECKUP_ABNORMAL_ALERT, title: '体检异常指标提醒', body: '你的体检档案中新增了异常或需关注指标，请及时查看。' },
-  { scene: NOTIFICATION_SCENE_IDS.MEDICATION_DOSE_REMINDER, title: '服药提醒', body: '你有一条新的服药提醒，请按计划完成用药安排。' },
-  { scene: NOTIFICATION_SCENE_IDS.MEDICATION_STOCK_LOW, title: '低库存提醒', body: '你的药品库存已经低于提醒阈值，请及时补货。' },
-  { scene: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_RENEWAL_UPCOMING, title: '服务订阅即将到期', body: '检测到订阅进入续费提醒窗口，请及时确认是否续费。' },
-  { scene: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_EXPIRED, title: '服务订阅已到期', body: '检测到订阅已到期或已逾期，请尽快处理。' },
-];
+// 通知模板统一复用 TEMPLATE_SEED（20 个 HTML 富文本模板），消除 provision 双轨制。
 
 /**
  * 默认启用场景白名单（与 SCENE_SEED 的 enabled=false 区分）。
@@ -244,13 +230,16 @@ async function ensureNotificationScenes(manager: EntityManager, userId: string) 
     await sceneRepo.save(scenesToCreate);
   }
 
-  const templatesToCreate = DEFAULT_TEMPLATES
-    .filter((item) => !existingTemplateSceneIds.has(item.scene))
-    .map((item) => templateRepo.create({
+  // 复用 TEMPLATE_SEED（20 个 HTML 富文本模板），与通知中心 router 共用同一份种子
+  const templatesToCreate = TEMPLATE_SEED
+    .filter((seed) => !existingTemplateSceneIds.has(seed.scene_id))
+    .map((seed) => templateRepo.create({
       user_id: userId,
-      scene_id: item.scene,
-      title: item.title,
-      body: item.body,
+      scene_id: seed.scene_id,
+      title: seed.title,
+      body: seed.body,
+      format: seed.format,
+      html_body: seed.html_body,
     }));
 
   if (templatesToCreate.length) {

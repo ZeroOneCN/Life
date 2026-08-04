@@ -4,6 +4,7 @@ import { env } from '../../config/env';
 import { appDataSource } from '../../db/data-source';
 import { SystemUserAccountEntity } from '../system/entities/system-user-account.entity';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { LifeScheduleEventEntity } from './entities/life-schedule-event.entity';
 import { LifeScheduleSettingEntity } from './entities/life-schedule-setting.entity';
@@ -162,7 +163,7 @@ async function runRemindersForUser(userId: string, today: string, now: dayjs.Day
     const message = buildReminderMessage(todayReminders, '今日');
     await sendNotificationSceneLogs({
       userId,
-      sceneId: 'schedule.reminder',
+      sceneId: NOTIFICATION_SCENE_IDS.SCHEDULE_REMINDER,
       title,
       message,
       meta: {
@@ -181,7 +182,7 @@ async function runRemindersForUser(userId: string, today: string, now: dayjs.Day
     const message = buildReminderMessage(tomorrowReminders, '明日');
     await sendNotificationSceneLogs({
       userId,
-      sceneId: 'schedule.reminder',
+      sceneId: NOTIFICATION_SCENE_IDS.SCHEDULE_REMINDER,
       title,
       message,
       meta: {

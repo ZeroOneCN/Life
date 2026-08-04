@@ -9,6 +9,7 @@ import { NotificationCenterLogEntity } from '../notifications/entities/notificat
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { FinanceSubscriptionSettingEntity } from '../finance/entities/finance-subscription-setting.entity';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 
 const SCHEDULER_KEY = '__financeFollowupScheduler__';
 const FOLLOWUP_DAYS_AFTER = 30;
@@ -94,7 +95,7 @@ async function runTravelFollowupsForUser(userId: string, today: string) {
 
     await sendNotificationSceneLogs({
       userId,
-      sceneId: 'travel.followup',
+      sceneId: NOTIFICATION_SCENE_IDS.TRAVEL_FOLLOWUP,
       title: `旅行「${book.name}」已结束 ${days} 天`,
       message,
     });
@@ -140,7 +141,7 @@ async function runSubscriptionRemindersForUser(userId: string, today: string) {
       if (record.last_upcoming_reminder_marker !== marker) {
         await sendNotificationSceneLogs({
           userId,
-          sceneId: 'subscription.renewal_upcoming',
+          sceneId: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_RENEWAL_UPCOMING,
           title: `${record.service_name} 即将${record.auto_renew ? '自动续费' : '到期'}`,
           message: `将于 ${record.end_date}（${diff} 天后）${record.auto_renew ? '自动续费' : '到期'}，续费价格 ${record.cycle_price}。`,
         });
@@ -155,7 +156,7 @@ async function runSubscriptionRemindersForUser(userId: string, today: string) {
       if (record.last_expired_reminder_marker !== marker) {
         await sendNotificationSceneLogs({
           userId,
-          sceneId: 'subscription.expired',
+          sceneId: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_EXPIRED,
           title: `${record.service_name} 已${record.auto_renew ? '自动续费' : '到期'}`,
           message: `上次续费日期 ${record.end_date}${record.auto_renew ? '，已自动续费。' : '，请评估是否需要保留。'}`,
         });

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { appDataSource } from '../../db/data-source';
 import { SystemAssistantUsageLogEntity } from './entities/system-assistant-usage-log.entity';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 
 export interface AssistantUsageStats {
   totalCalls: number;
@@ -248,7 +249,7 @@ const SCENE_LABELS: Record<string, string> = {
   'fitness.food': '饮食营养查询',
   'fitness.exercise': '运动消耗查询',
   'telegram': 'Telegram 快速录入',
-  'finance.report.monthly': '财务月报摘要',
+  [NOTIFICATION_SCENE_IDS.FINANCE_REPORT_MONTHLY]: '财务月报摘要',
   'health.report.week': '健康周报',
   'health.report.month': '健康月报',
   'health.report.year': '健康年报',

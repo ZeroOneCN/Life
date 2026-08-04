@@ -23,6 +23,7 @@ import {
   sendNotificationSceneLogs,
   syncNotificationScenesEnabled,
 } from '../../shared/domain/notification';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 
 const cardSchema = z.object({
   phoneNumber: z.string().trim().min(1).max(32),
@@ -125,7 +126,7 @@ async function triggerRuleBasedCardReminders(
       if (card.last_balance_reminder_marker !== marker) {
         logs.push(...(await sendNotificationSceneLogs({
           userId,
-          sceneId: 'card.balance_low',
+          sceneId: NOTIFICATION_SCENE_IDS.CARD_BALANCE_LOW,
           title: '号卡低余额提醒',
           message: `${card.phone_number} 当前余额 ${Number(card.balance).toFixed(2)}，已低于阈值 ${Number(settings.balance_threshold).toFixed(2)}。`,
         })));
@@ -144,7 +145,7 @@ async function triggerRuleBasedCardReminders(
         if (card.last_billing_reminder_marker !== marker) {
           logs.push(...(await sendNotificationSceneLogs({
             userId,
-            sceneId: 'card.billing_upcoming',
+            sceneId: NOTIFICATION_SCENE_IDS.CARD_BILLING_UPCOMING,
             title: '号卡账单日前提醒',
             message: `${card.phone_number} 将在 ${billingDate.format('YYYY-MM-DD')} 进入账单日窗口，请检查余额和套餐。`,
           })));
@@ -787,8 +788,8 @@ export function createCardRouter() {
     });
 
     await syncNotificationScenesEnabled(userId, [
-      { sceneId: 'card.balance_low', enabled: settings.balance_low_enabled },
-      { sceneId: 'card.billing_upcoming', enabled: settings.billing_upcoming_enabled },
+      { sceneId: NOTIFICATION_SCENE_IDS.CARD_BALANCE_LOW, enabled: settings.balance_low_enabled },
+      { sceneId: NOTIFICATION_SCENE_IDS.CARD_BILLING_UPCOMING, enabled: settings.billing_upcoming_enabled },
     ]);
 
     response.json(successResponse({
@@ -931,13 +932,13 @@ export function createCardRouter() {
     const logs = [
       ...(await sendNotificationSceneLogs({
         userId,
-        sceneId: 'card.balance_low',
+        sceneId: NOTIFICATION_SCENE_IDS.CARD_BALANCE_LOW,
         title: payload.title ?? '号卡低余额提醒',
         message: '已手动触发号卡低余额提醒。',
       })),
       ...(await sendNotificationSceneLogs({
         userId,
-        sceneId: 'card.billing_upcoming',
+        sceneId: NOTIFICATION_SCENE_IDS.CARD_BILLING_UPCOMING,
         title: payload.title ?? '号卡账单日前提醒',
         message: '已手动触发号卡账单日前提醒。',
       })),

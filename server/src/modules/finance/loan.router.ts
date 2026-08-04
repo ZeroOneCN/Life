@@ -20,6 +20,7 @@ import {
   sendNotificationSceneLogs,
   syncNotificationScenesEnabled,
 } from '../../shared/domain/notification';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 
 const platformSchema = z.object({
   name: z.string().trim().min(1).max(128),
@@ -190,7 +191,7 @@ function buildLoanReminderItems(bills: FinanceLoanBillEntity[], settings: Financ
       const diff = dueDate.diff(today, 'day');
       const items: Array<{
         bill: FinanceLoanBillEntity;
-        sceneId: 'loan.repayment_upcoming' | 'loan.repayment_overdue';
+        sceneId: typeof NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_UPCOMING | typeof NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_OVERDUE;
         title: string;
         message: string;
         severity: 'high' | 'medium';
@@ -210,7 +211,7 @@ function buildLoanReminderItems(bills: FinanceLoanBillEntity[], settings: Financ
         const isToday = diff === 0;
         items.push({
           bill,
-          sceneId: 'loan.repayment_upcoming',
+          sceneId: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_UPCOMING,
           title: isToday ? '贷款今日到期提醒' : '贷款明日到期提醒',
           message: isToday
             ? `${bill.platform_name} 的账单今日到期，待还金额 ¥${remainingTotal.toFixed(2)}。`
@@ -222,7 +223,7 @@ function buildLoanReminderItems(bills: FinanceLoanBillEntity[], settings: Financ
       if (settings.overdue_reminder_enabled && diff < 0) {
         items.push({
           bill,
-          sceneId: 'loan.repayment_overdue',
+          sceneId: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_OVERDUE,
           title: '贷款逾期提醒',
           message: `${bill.platform_name} 的账单已逾期 ${Math.abs(diff)} 天，待还金额 ¥${remainingTotal.toFixed(2)}。`,
           severity: 'high',
@@ -614,11 +615,11 @@ export function createLoanRouter() {
 
     await syncNotificationScenesEnabled(userId, [
       {
-        sceneId: 'loan.repayment_upcoming',
+        sceneId: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_UPCOMING,
         enabled: settings.repayment_reminder_enabled,
       },
       {
-        sceneId: 'loan.repayment_overdue',
+        sceneId: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_OVERDUE,
         enabled: settings.overdue_reminder_enabled,
       },
     ]);
@@ -776,13 +777,13 @@ export function createLoanRouter() {
       result.logs.push(
         ...(await sendNotificationSceneLogs({
           userId,
-          sceneId: 'loan.repayment_upcoming',
+          sceneId: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_UPCOMING,
           title: payload.title ?? '贷款还款提醒',
           message: '已手动触发贷款还款提醒。',
         })),
         ...(await sendNotificationSceneLogs({
           userId,
-          sceneId: 'loan.repayment_overdue',
+          sceneId: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_OVERDUE,
           title: payload.title ?? '贷款逾期提醒',
           message: '已手动触发贷款逾期提醒。',
         })),

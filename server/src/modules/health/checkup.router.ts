@@ -14,6 +14,7 @@ import { evaluateStatus } from '../../shared/utils/medical';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { AppError } from '../../shared/errors/app-error';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 import { HealthCheckupRecordEntity } from './entities/health-checkup-record.entity';
 import { HealthCheckupSettingEntity } from './entities/health-checkup-setting.entity';
 import { HealthCheckupTemplateItemEntity } from './entities/health-checkup-template-item.entity';
@@ -409,7 +410,7 @@ export function createCheckupRouter() {
         title: abnormalRecords.length / Math.max(1, records.length) >= 0.35 ? '异常指标占比较高' : '发现异常指标',
         description: `当前共有 ${abnormalRecords.length} 条异常指标，建议优先复核高风险项目。`,
         affectedCount: abnormalRecords.length,
-        sceneId: 'checkup.abnormal_alert',
+        sceneId: NOTIFICATION_SCENE_IDS.CHECKUP_ABNORMAL_ALERT,
       });
     }
 
@@ -420,7 +421,7 @@ export function createCheckupRouter() {
         title: dueFollowUps.some((item) => item.daysUntilDue < 0) ? '存在逾期复查项目' : '复查窗口临近',
         description: `当前有 ${dueFollowUps.length} 项进入复查提醒窗口。`,
         affectedCount: dueFollowUps.length,
-        sceneId: 'checkup.followup_reminder',
+        sceneId: NOTIFICATION_SCENE_IDS.CHECKUP_FOLLOWUP_REMINDER,
       });
     }
 
@@ -497,13 +498,13 @@ export function createCheckupRouter() {
     const [followUpLogs, abnormalLogs] = await Promise.all([
       sendNotificationSceneLogs({
         userId,
-        sceneId: 'checkup.followup_reminder',
+        sceneId: NOTIFICATION_SCENE_IDS.CHECKUP_FOLLOWUP_REMINDER,
         title: payload.title ?? '体检复查提醒',
         message: payload.message ?? '检测到体检项目已进入复查窗口，请及时安排复查。',
       }),
       sendNotificationSceneLogs({
         userId,
-        sceneId: 'checkup.abnormal_alert',
+        sceneId: NOTIFICATION_SCENE_IDS.CHECKUP_ABNORMAL_ALERT,
         title: payload.title ?? '体检异常指标提醒',
         message: payload.message ?? '检测到体检项目存在异常指标，请尽快查看并跟进。',
       }),

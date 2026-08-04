@@ -7,6 +7,7 @@ import { appDataSource } from '../../db/data-source';
 import { LifeTodoTaskEntity } from './entities/life-todo-task.entity';
 import { LifeTodoSettingEntity } from './entities/life-todo-setting.entity';
 import { NotificationCenterLogEntity } from '../notifications/entities/notification-center-log.entity';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 import { asyncHandler } from '../../shared/http/async-handler';
 import { requireAuthUser } from '../../shared/http/request';
 import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
@@ -602,7 +603,7 @@ export function createTodoRouter() {
     const log = await logRepo.save(logRepo.create({
       user_id: userId,
       channel: 'email',
-      scene_id: 'todo.reminder',
+      scene_id: NOTIFICATION_SCENE_IDS.TODO_REMINDER,
       kind: 'scene',
       status: 'success',
       title: payload.title ?? '待办提醒',
@@ -619,7 +620,7 @@ export function createTodoRouter() {
     const [items, total] = await repository.findAndCount({
       where: {
         user_id: userId,
-        scene_id: 'todo.reminder',
+        scene_id: NOTIFICATION_SCENE_IDS.TODO_REMINDER,
       },
       order: {
         created_at: 'DESC',

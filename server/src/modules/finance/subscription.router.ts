@@ -19,6 +19,7 @@ import {
   sendNotificationSceneLogs,
   syncNotificationScenesEnabled,
 } from '../../shared/domain/notification';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 
 const recordSchema = z.object({
   serviceName: z.string().trim().min(1).max(255),
@@ -173,7 +174,7 @@ async function triggerSubscriptionReminderLogs(
       if (record.last_upcoming_reminder_marker !== marker) {
         logs.push(...(await sendNotificationSceneLogs({
           userId,
-          sceneId: 'subscription.renewal_upcoming',
+          sceneId: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_RENEWAL_UPCOMING,
           title: '服务订阅即将到期',
           message: `${record.service_name} 将在 ${record.end_date} 到期，距离到期还有 ${diff} 天。`,
         })));
@@ -186,7 +187,7 @@ async function triggerSubscriptionReminderLogs(
       if (record.last_expired_reminder_marker !== marker) {
         logs.push(...(await sendNotificationSceneLogs({
           userId,
-          sceneId: 'subscription.expired',
+          sceneId: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_EXPIRED,
           title: '服务订阅已到期',
           message: diff === 0
             ? `${record.service_name} 今天到期，请及时确认续费或停用。`
@@ -590,8 +591,8 @@ export function createSubscriptionRouter() {
     });
 
     await syncNotificationScenesEnabled(userId, [
-      { sceneId: 'subscription.renewal_upcoming', enabled: settings.reminder_enabled },
-      { sceneId: 'subscription.expired', enabled: settings.expiry_day_reminder_enabled },
+      { sceneId: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_RENEWAL_UPCOMING, enabled: settings.reminder_enabled },
+      { sceneId: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_EXPIRED, enabled: settings.expiry_day_reminder_enabled },
     ]);
 
     response.json(successResponse({
@@ -638,7 +639,7 @@ export function createSubscriptionRouter() {
           recordId: record.id,
           serviceName: record.service_name,
           endDate: record.end_date,
-          sceneId: 'subscription.renewal_upcoming',
+          sceneId: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_RENEWAL_UPCOMING,
           marker: `${base}:upcoming`,
           message: `${record.service_name} 将在 ${record.end_date} 到期，距离到期还有 ${diff} 天。`,
         });
@@ -648,7 +649,7 @@ export function createSubscriptionRouter() {
           recordId: record.id,
           serviceName: record.service_name,
           endDate: record.end_date,
-          sceneId: 'subscription.expired',
+          sceneId: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_EXPIRED,
           marker: `${base}:expired`,
           message: diff === 0
             ? `${record.service_name} 今日到期，请及时处理续费或停用。`
@@ -685,13 +686,13 @@ export function createSubscriptionRouter() {
       logs.push(
         ...(await sendNotificationSceneLogs({
           userId,
-          sceneId: 'subscription.renewal_upcoming',
+          sceneId: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_RENEWAL_UPCOMING,
           title: payload.title ?? '服务订阅即将到期',
           message: '已手动触发订阅即将到期提醒。',
         })),
         ...(await sendNotificationSceneLogs({
           userId,
-          sceneId: 'subscription.expired',
+          sceneId: NOTIFICATION_SCENE_IDS.SUBSCRIPTION_EXPIRED,
           title: payload.title ?? '服务订阅已到期',
           message: '已手动触发订阅到期或逾期提醒。',
         })),

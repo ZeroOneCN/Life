@@ -13,6 +13,7 @@ import { normalizeDate } from '../../shared/utils/date';
 import { BaseUserSettingService } from '../../shared/db/base-user-setting.service';
 import { AppError } from '../../shared/errors/app-error';
 import { sendNotificationSceneLogs } from '../../shared/domain/notification';
+import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
 import { HealthMedicationPurchaseEntity } from './entities/health-medication-purchase.entity';
 import { HealthMedicationRecordEntity } from './entities/health-medication-record.entity';
 import { HealthMedicationSettingEntity } from './entities/health-medication-setting.entity';
@@ -670,7 +671,7 @@ export function createMedicationRouter() {
     const payload = validateBody(triggerSchema, request.body);
     const logs = await sendNotificationSceneLogs({
       userId,
-      sceneId: 'medication.dose_reminder',
+      sceneId: NOTIFICATION_SCENE_IDS.MEDICATION_DOSE_REMINDER,
       title: payload.title ?? '服药提醒',
       message: payload.message ?? '请按计划完成今天的服药安排。',
     });
@@ -683,7 +684,7 @@ export function createMedicationRouter() {
     const payload = validateBody(triggerSchema, request.body);
     const logs = await sendNotificationSceneLogs({
       userId,
-      sceneId: 'medication.stock_low',
+      sceneId: NOTIFICATION_SCENE_IDS.MEDICATION_STOCK_LOW,
       title: payload.title ?? '药品低库存提醒',
       message: payload.message ?? '检测到药品库存已低于提醒阈值，请及时补货。',
     });
