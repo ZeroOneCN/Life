@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Between } from 'typeorm';
 
 import { appDataSource } from '../../db/data-source';
+import { deepseek } from '../../shared/services/deepseek.client';
 import { asyncHandler } from '../../shared/http/async-handler';
 import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
 import { requireAuthUser } from '../../shared/http/request';
@@ -21,6 +22,7 @@ import { FinanceRentRecordEntity } from '../finance/entities/finance-rent-record
 import { FinanceLoanBillEntity } from '../finance/entities/finance-loan-bill.entity';
 import { InvestmentForexTradeRecordEntity } from '../investment/entities/investment-forex-trade-record.entity';
 import { InvestmentForexCapitalFlowEntity } from '../investment/entities/investment-forex-capital-flow.entity';
+import { recordAssistantUsage, estimateTokens } from '../system/assistant-usage.service';
 import { startFinanceMonthlyReportScheduler } from './finance-report.scheduler';
 import { startFinanceFollowupScheduler } from './finance-followup.scheduler';
 
@@ -727,6 +729,91 @@ export function createFinanceReportRouter() {
     });
 
     response.json(successResponse({ logs, report }, 'push_finance_monthly_report_success'));
+  }));
+
+  /**
+   * POST /ai-summary
+   * 基于月报数据生成 AI 财务摘要（JSON mode）。
+   * 返回结构化摘要：summary / suggestions / risks。
+   */
+  router.post('/ai-summary', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const payload = validateBody(notifySchema, request.body);
+    const month = normalizeMonth(payload.month || undefined);
+
+    if (!deepseek.enabled) {
+      response.json(successResponse({
+        enabled: false,
+        summary: 'AI 摘要未启用（未配置 DEEPSEEK_API_KEY）',
+        suggestions: [],
+        risks: [],
+      }));
+      return;
+    }
+
+    const report = await buildMonthlyReport(userId, month);
+
+    const systemPrompt = `你是一名专业的个人财务顾问。请根据用户的月度财务报告，生成结构化摘要与建议。
+只返回 JSON，格式：
+{
+  "summary": string,  // 一句话总结本月财务状况（30字以内）
+  "suggestions": Array<{ category: string, title: string, detail: string }>,  // 3-5 条具体建议
+  "risks": Array<string>  // 识别到的财务风险（每项20字以内）
+}
+category 取值：expense / subscription / loan / rent / investment / budget
+语气专业但友好。`;
+
+    const userPrompt = `月份：${describeMonth(report.month)}
+【总支出】¥${report.totalExpense.toFixed(2)}（环比 ${report.monthOverMonthChange >= 0 ? '+' : ''}${report.monthOverMonthChange.toFixed(2)} / ${report.monthOverMonthChangePercent >= 0 ? '+' : ''}${(report.monthOverMonthChangePercent * 100).toFixed(1)}%）
+【同比】${report.yearOverYearChange >= 0 ? '+' : ''}${report.yearOverYearChange.toFixed(2)} / ${report.yearOverYearChangePercent >= 0 ? '+' : ''}${(report.yearOverYearChangePercent * 100).toFixed(1)}%
+【模块拆解】${report.moduleBreakdown.map((m) => `${MODULE_LABELS[m.module]}: ¥${m.amount.toFixed(2)}`).join('；')}
+【投资】净收益 $${report.investment.netPnl.toFixed(2)}（手续费 $${report.investment.totalCommission.toFixed(2)}）
+【净资产】¥${report.netWorth.netWorth.toFixed(2)}（含未还贷款 ¥${report.netWorth.unpaidLoanTotal.toFixed(2)}）
+【大额支出】${report.topExpenses.slice(0, 5).map((e) => `${e.title}: ¥${e.amount.toFixed(2)}`).join('；') || '无'}`;
+
+    try {
+      const { data, promptTokens, completionTokens } = await deepseek.chatJson<{
+        summary: string;
+        suggestions: Array<{ category: string; title: string; detail: string }>;
+        risks: string[];
+      }>(
+        [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        { temperature: 0.4, maxTokens: 1024 },
+      );
+
+      recordAssistantUsage({
+        userId,
+        scene: 'finance.report.monthly',
+        requestCount: 1,
+        prompt: promptTokens,
+        completion: completionTokens,
+        status: 'success',
+      });
+
+      response.json(successResponse({
+        enabled: true,
+        ...data,
+        generatedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+      }));
+    } catch (error) {
+      recordAssistantUsage({
+        userId,
+        scene: 'finance.report.monthly',
+        requestCount: 1,
+        prompt: estimateTokens(systemPrompt + userPrompt),
+        completion: 0,
+        status: 'error',
+      });
+      response.json(successResponse({
+        enabled: true,
+        summary: `AI 摘要生成失败：${String(error)}`,
+        suggestions: [],
+        risks: [],
+      }));
+    }
   }));
 
   return router;

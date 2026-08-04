@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { env } from '../../config/env';
 import { appDataSource } from '../../db/data-source';
+import { deepseek } from '../../shared/services/deepseek.client';
 import { asyncHandler } from '../../shared/http/async-handler';
 import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
 import { requireAuthUser } from '../../shared/http/request';
@@ -533,25 +534,18 @@ export function createHealthReportRouter() {
       { role: 'user' as const, content: userPrompt },
     ];
 
-    const aiResponse = await fetch(`${env.DEEPSEEK_BASE_URL}/v1/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages,
-        response_format: { type: 'json_object' },
+    let parsed: unknown;
+    let promptTokens = 0;
+    let completionTokens = 0;
+    try {
+      const result = await deepseek.chatJson<unknown>(messages, {
         temperature: 0.4,
-        max_tokens: 1500,
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const text = await aiResponse.text();
-      const error = new Error(`DeepSeek HTTP ${aiResponse.status}: ${text.slice(0, 200)}`);
-      // 异步记录用量
+        maxTokens: 1500,
+      });
+      parsed = result.data;
+      promptTokens = result.promptTokens;
+      completionTokens = result.completionTokens;
+    } catch (error) {
       setImmediate(() => {
         void recordAssistantUsage({
           userId,
@@ -562,16 +556,7 @@ export function createHealthReportRouter() {
           status: 'error',
         });
       });
-      throw new AppError(error.message, 502, 502);
-    }
-
-    const aiJson = (await aiResponse.json()) as { choices?: Array<{ message?: { content?: string } }> };
-    const content = aiJson.choices?.[0]?.message?.content || '{}';
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(content);
-    } catch {
-      throw new AppError('AI 返回非 JSON 格式', 502, 502);
+      throw new AppError(String(error), 502, 502);
     }
 
     // Zod 校验
@@ -593,8 +578,8 @@ export function createHealthReportRouter() {
         userId,
         scene: `health.report.${period}`,
         requestCount: 1,
-        prompt: estimateTokens(systemPrompt + userPrompt),
-        completion: estimateTokens(content),
+        prompt: promptTokens || estimateTokens(systemPrompt + userPrompt),
+        completion: completionTokens,
         status: 'success',
       });
     });

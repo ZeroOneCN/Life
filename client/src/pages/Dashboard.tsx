@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { EmptyState, PageHeader } from '../components/page';
 import { Skeleton, Tag } from '../components/ui';
 import { buildApiErrorMessage, apiGet } from '../lib/api';
+import { fetchDeepseekUsage, type DeepseekUsageSnapshot } from '../services/deepseekUsageApi';
 import type {
   DashboardAgendaItem,
   DashboardModuleSnapshot,
@@ -133,13 +134,18 @@ export default function Dashboard() {
   const [summary, setSummary] = useState<DashboardPageSummary | null>(null);
   const [netPnlRaw, setNetPnlRaw] = useState<number>(0);
   const [loadingError, setLoadingError] = useState<string>('');
+  const [aiUsage, setAiUsage] = useState<DeepseekUsageSnapshot | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        const raw = await apiGet<RawDashboardSummaryResponse>('/dashboard/summary');
+        const [raw, usage] = await Promise.all([
+          apiGet<RawDashboardSummaryResponse>('/dashboard/summary'),
+          fetchDeepseekUsage().catch(() => null),
+        ]);
         if (cancelled) return;
+        if (usage) setAiUsage(usage);
 
         const buildModule = (title: string, metrics: Array<{ label: string; value: string; helper?: string }>, chartKind: 'bar' | 'line'): DashboardModuleSnapshot => ({
           title, subtitle: '', metrics, chartTitle: '', chartDescription: '', chartKind, chartData: [], listTitle: '', listDescription: '', listItems: [],
@@ -541,6 +547,60 @@ export default function Dashboard() {
                 <Tag tone={channelActivity.webhook ? 'green' : 'default'}>{channelActivity.webhook ? '有日志' : '静默'}</Tag>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* ====== 8. AI 助理调用记录 ====== */}
+        <div className="dash-masonry-item dash-card">
+          <div className="dash-card-hd is-tight">
+            <div className="dash-card-icon dash-bg-invest"><IconChart /></div>
+            <div className="dash-card-title-area">
+              <h3>AI 助理</h3>
+              <span>调用次数与 Token 消耗</span>
+            </div>
+            <Link to="/settings/profile" className="dash-link-primary">详情 →</Link>
+          </div>
+          <div className="dash-card-bd">
+            {aiUsage ? (
+              <>
+                <div className="dash-notif-stats">
+                  <div className="dash-notif-stat">
+                    <div className="dash-notif-stat-value is-primary">{aiUsage.local.todayCalls}</div>
+                    <div className="dash-notif-stat-label">今日调用</div>
+                  </div>
+                  <div className="dash-notif-stat">
+                    <div className="dash-notif-stat-value">{aiUsage.local.todayTokens.toLocaleString()}</div>
+                    <div className="dash-notif-stat-label">今日 Token</div>
+                  </div>
+                  <div className="dash-notif-stat">
+                    <div className="dash-notif-stat-value">{aiUsage.local.totalCalls.toLocaleString()}</div>
+                    <div className="dash-notif-stat-label">累计调用</div>
+                  </div>
+                  <div className="dash-notif-stat">
+                    <div className="dash-notif-stat-value">{aiUsage.local.totalTokens.toLocaleString()}</div>
+                    <div className="dash-notif-stat-label">累计 Token</div>
+                  </div>
+                </div>
+                {aiUsage.scenes.length > 0 ? (
+                  <div className="dash-upcoming-sub-list">
+                    {aiUsage.scenes.slice(0, 4).map((scene) => (
+                      <div key={scene.scene} className="dash-upcoming-sub-item">
+                        <div className="dash-upcoming-sub-main">
+                          <strong>{scene.label}</strong>
+                          <span className="subtle-text">{scene.totalCalls} 次调用</span>
+                        </div>
+                        <div className="dash-upcoming-sub-meta">
+                          <span className="subtle-text">{scene.totalTokens.toLocaleString()} tokens</span>
+                          <span className="dash-upcoming-sub-price">¥{scene.estimatedCost.toFixed(4)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <EmptyState title="AI 未启用" description="未配置 DEEPSEEK_API_KEY 或加载失败" />
+            )}
           </div>
         </div>
 

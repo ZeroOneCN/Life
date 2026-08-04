@@ -22,7 +22,17 @@ import { LifeScheduleEventEntity } from '../life/entities/life-schedule-event.en
 dayjs.extend(isBetween);
 
 export type AssistantModule = 'finance' | 'health' | 'investment' | 'life';
-export type AssistantTool = 'query_finance' | 'query_health' | 'query_investment' | 'query_life';
+export type AssistantTool =
+  | 'query_finance'
+  | 'query_health'
+  | 'query_investment'
+  | 'query_life'
+  | 'create_shopping'
+  | 'create_subscription'
+  | 'create_step'
+  | 'create_weight'
+  | 'create_medication'
+  | 'create_todo';
 
 interface QueryFilters {
   startDate?: string;
@@ -71,6 +81,18 @@ export async function handleAssistantToolCall(
       return queryInvestment(userId, filters);
     case 'query_life':
       return queryLife(userId, filters);
+    case 'create_shopping':
+      return createShopping(userId, args);
+    case 'create_subscription':
+      return createSubscription(userId, args);
+    case 'create_step':
+      return createStep(userId, args);
+    case 'create_weight':
+      return createWeight(userId, args);
+    case 'create_medication':
+      return createMedication(userId, args);
+    case 'create_todo':
+      return createTodo(userId, args);
     default:
       return { error: `Unknown tool: ${tool}` };
   }
@@ -380,6 +402,221 @@ async function queryLife(userId: string, filters: QueryFilters) {
   };
 }
 
+// ==================== 写入工具：create_* ====================
+
+/**
+ * 安全取字符串字段，失败返回默认值。
+ */
+function pickString(value: unknown, field: string, defaultValue = ''): string {
+  if (typeof value !== 'object' || value === null) return defaultValue;
+  const v = (value as Record<string, unknown>)[field];
+  return typeof v === 'string' ? v : defaultValue;
+}
+
+/**
+ * 安全取数字字段，失败返回默认值。
+ */
+function pickNumber(value: unknown, field: string, defaultValue = 0): number {
+  if (typeof value !== 'object' || value === null) return defaultValue;
+  const v = (value as Record<string, unknown>)[field];
+  const n = Number(v);
+  return Number.isFinite(n) ? n : defaultValue;
+}
+
+/**
+ * 安全取布尔字段，失败返回 false。
+ */
+function pickBoolean(value: unknown, field: string): boolean {
+  if (typeof value !== 'object' || value === null) return false;
+  return Boolean((value as Record<string, unknown>)[field]);
+}
+
+/**
+ * 安全取字符串数组字段，失败返回空数组。
+ */
+function pickStringArray(value: unknown, field: string): string[] {
+  if (typeof value !== 'object' || value === null) return [];
+  const v = (value as Record<string, unknown>)[field];
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+}
+
+/**
+ * 创建购物记录。
+ * @param userId - 用户 ID
+ * @param args - 工具参数（ledgerId/date/platform/itemName/price 必填）
+ * @returns 创建结果（含 id 和写入字段摘要）
+ */
+async function createShopping(userId: string, args: Record<string, unknown>) {
+  const ledgerId = pickString(args, 'ledgerId');
+  const date = pickString(args, 'date');
+  const platform = pickString(args, 'platform');
+  const itemName = pickString(args, 'itemName');
+  const price = pickNumber(args, 'price');
+  if (!ledgerId || !date || !platform || !itemName) {
+    return { error: '缺少必填字段：ledgerId/date/platform/itemName' };
+  }
+  const repo = appDataSource.getRepository(FinanceShoppingRecordEntity);
+  const record = repo.create({
+    user_id: userId,
+    ledger_id: ledgerId,
+    date,
+    platform,
+    item_name: itemName,
+    price,
+    spec: pickString(args, 'spec'),
+    unit_price: args.unitPrice !== undefined ? pickNumber(args, 'unitPrice') : null,
+    order_no: pickString(args, 'orderNo'),
+    note: pickString(args, 'note'),
+  });
+  const saved = await repo.save(record);
+  return { id: saved.id, message: `已创建购物记录：${itemName} ¥${price}` };
+}
+
+/**
+ * 创建订阅记录。
+ * @param userId - 用户 ID
+ * @param args - 工具参数（serviceName/categoryId/startDate/endDate/billingCycle/cyclePrice 必填）
+ * @returns 创建结果
+ */
+async function createSubscription(userId: string, args: Record<string, unknown>) {
+  const serviceName = pickString(args, 'serviceName');
+  const categoryId = pickString(args, 'categoryId');
+  const startDate = pickString(args, 'startDate');
+  const endDate = pickString(args, 'endDate');
+  const billingCycle = pickString(args, 'billingCycle', 'monthly');
+  const cyclePrice = pickNumber(args, 'cyclePrice');
+  if (!serviceName || !categoryId || !startDate || !endDate) {
+    return { error: '缺少必填字段：serviceName/categoryId/startDate/endDate' };
+  }
+  const repo = appDataSource.getRepository(FinanceSubscriptionRecordEntity);
+  const record = repo.create({
+    user_id: userId,
+    service_name: serviceName,
+    plan_name: pickString(args, 'planName'),
+    category_id: categoryId,
+    category_name: pickString(args, 'categoryName'),
+    start_date: startDate,
+    end_date: endDate,
+    billing_cycle: billingCycle,
+    cycle_price: cyclePrice,
+    auto_renew: pickBoolean(args, 'autoRenew'),
+    notes: pickString(args, 'notes'),
+  });
+  const saved = await repo.save(record);
+  return { id: saved.id, message: `已创建订阅：${serviceName} ¥${cyclePrice}/${billingCycle}` };
+}
+
+/**
+ * 创建步数记录。
+ * @param userId - 用户 ID
+ * @param args - 工具参数（steps/recordTime 必填）
+ * @returns 创建结果
+ */
+async function createStep(userId: string, args: Record<string, unknown>) {
+  const steps = Math.max(0, Math.round(pickNumber(args, 'steps')));
+  const recordTimeStr = pickString(args, 'recordTime');
+  if (!steps || !recordTimeStr) {
+    return { error: '缺少必填字段：steps/recordTime' };
+  }
+  const parsed = dayjs(recordTimeStr);
+  if (!parsed.isValid()) {
+    return { error: `recordTime 解析失败：${recordTimeStr}` };
+  }
+  const hourRaw = args.hour;
+  const hour = hourRaw === undefined || hourRaw === null ? null : Math.max(0, Math.min(23, Math.round(Number(hourRaw))));
+
+  const repo = appDataSource.getRepository(HealthStepRecordEntity);
+  const record = repo.create({
+    user_id: userId,
+    steps,
+    hour,
+    record_time: parsed.toDate(),
+  });
+  const saved = await repo.save(record);
+  return { id: saved.id, message: `已记录步数：${steps} 步（${parsed.format('YYYY-MM-DD HH:mm')}）` };
+}
+
+/**
+ * 创建体重记录。
+ * @param userId - 用户 ID
+ * @param args - 工具参数（date/weight 必填，其余身体成分指标可选）
+ * @returns 创建结果
+ */
+async function createWeight(userId: string, args: Record<string, unknown>) {
+  const date = pickString(args, 'date');
+  const weight = pickNumber(args, 'weight');
+  if (!date || !weight) {
+    return { error: '缺少必填字段：date/weight' };
+  }
+  const repo = appDataSource.getRepository(HealthFitnessWeightRecordEntity);
+  const record = repo.create({
+    user_id: userId,
+    date,
+    weight,
+    height: pickNumber(args, 'height'),
+    body_fat: pickNumber(args, 'bodyFat'),
+    visceral_fat: pickNumber(args, 'visceralFat'),
+    fat_mass: pickNumber(args, 'fatMass'),
+    muscle_rate: pickNumber(args, 'muscleRate'),
+    muscle_mass: pickNumber(args, 'muscleMass'),
+  });
+  const saved = await repo.save(record);
+  return { id: saved.id, message: `已记录体重：${weight} kg（${date}）` };
+}
+
+/**
+ * 创建用药记录。
+ * @param userId - 用户 ID
+ * @param args - 工具参数（date/medicineName 必填，breakfast/lunch/dinner 可选）
+ * @returns 创建结果
+ */
+async function createMedication(userId: string, args: Record<string, unknown>) {
+  const date = pickString(args, 'date');
+  const medicineName = pickString(args, 'medicineName');
+  if (!date || !medicineName) {
+    return { error: '缺少必填字段：date/medicineName' };
+  }
+  const repo = appDataSource.getRepository(HealthMedicationRecordEntity);
+  const record = repo.create({
+    user_id: userId,
+    date,
+    medicine_name: medicineName,
+    breakfast: Math.max(0, pickNumber(args, 'breakfast')),
+    lunch: Math.max(0, pickNumber(args, 'lunch')),
+    dinner: Math.max(0, pickNumber(args, 'dinner')),
+  });
+  const saved = await repo.save(record);
+  return { id: saved.id, message: `已记录用药：${medicineName}（${date}）` };
+}
+
+/**
+ * 创建待办任务。
+ * @param userId - 用户 ID
+ * @param args - 工具参数（title 必填，其余可选）
+ * @returns 创建结果
+ */
+async function createTodo(userId: string, args: Record<string, unknown>) {
+  const title = pickString(args, 'title');
+  if (!title) {
+    return { error: '缺少必填字段：title' };
+  }
+  const repo = appDataSource.getRepository(LifeTodoTaskEntity);
+  const record = repo.create({
+    user_id: userId,
+    title,
+    description_markdown: pickString(args, 'descriptionMarkdown'),
+    due_date: pickString(args, 'dueDate') || null,
+    priority: pickString(args, 'priority', 'medium'),
+    tags_json: pickStringArray(args, 'tags'),
+    is_daily: pickBoolean(args, 'isDaily'),
+    recurrence_type: (pickString(args, 'recurrenceType', 'none') as 'none' | 'daily' | 'weekly' | 'monthly'),
+    completed: false,
+    sort_order: Date.now(),
+  });
+  const saved = await repo.save(record);
+  return { id: saved.id, message: `已创建待办：${title}` };
+}
+
 export const ASSISTANT_TOOLS: Array<{
   type: 'function';
   function: {
@@ -443,6 +680,125 @@ export const ASSISTANT_TOOLS: Array<{
         properties: {
           module: { type: 'string', enum: ['todo', 'storage', 'card', 'schedule'], description: '指定模块' },
         },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_shopping',
+      description: '创建一条购物记录。需先通过 query_finance 或其他方式获取有效的 ledgerId（账本 ID）。',
+      parameters: {
+        type: 'object',
+        properties: {
+          ledgerId: { type: 'string', description: '账本 ID（必填）' },
+          date: { type: 'string', description: '购买日期 YYYY-MM-DD（必填）' },
+          platform: { type: 'string', description: '购买平台，如「淘宝」「京东」（必填）' },
+          itemName: { type: 'string', description: '商品名称（必填）' },
+          price: { type: 'number', description: '商品价格（元，必填）' },
+          spec: { type: 'string', description: '规格' },
+          orderNo: { type: 'string', description: '订单号' },
+          note: { type: 'string', description: '备注' },
+        },
+        required: ['ledgerId', 'date', 'platform', 'itemName', 'price'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_subscription',
+      description: '创建一条订阅记录（如流媒体、会员服务）。',
+      parameters: {
+        type: 'object',
+        properties: {
+          serviceName: { type: 'string', description: '服务名称，如「Netflix」「Spotify」（必填）' },
+          categoryId: { type: 'string', description: '分类 ID（必填）' },
+          categoryName: { type: 'string', description: '分类名称' },
+          planName: { type: 'string', description: '套餐名称' },
+          startDate: { type: 'string', description: '开始日期 YYYY-MM-DD（必填）' },
+          endDate: { type: 'string', description: '结束日期 YYYY-MM-DD（必填）' },
+          billingCycle: { type: 'string', enum: ['monthly', 'quarterly', 'yearly', 'one_time'], description: '计费周期' },
+          cyclePrice: { type: 'number', description: '周期价格（元）' },
+          autoRenew: { type: 'boolean', description: '是否自动续费' },
+          notes: { type: 'string', description: '备注' },
+        },
+        required: ['serviceName', 'categoryId', 'startDate', 'endDate', 'billingCycle', 'cyclePrice'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_step',
+      description: '创建一条步数记录。同一日期同一小时不可重复。',
+      parameters: {
+        type: 'object',
+        properties: {
+          steps: { type: 'integer', description: '步数（必填，≥0）' },
+          recordTime: { type: 'string', description: '记录时间，ISO 字符串或 YYYY-MM-DD HH:mm（必填）' },
+          hour: { type: 'integer', description: '小时 0-23，可省略' },
+        },
+        required: ['steps', 'recordTime'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_weight',
+      description: '创建一条体重记录（支持身体成分指标）。',
+      parameters: {
+        type: 'object',
+        properties: {
+          date: { type: 'string', description: '日期 YYYY-MM-DD（必填）' },
+          weight: { type: 'number', description: '体重 kg（必填）' },
+          height: { type: 'number', description: '身高 cm' },
+          bodyFat: { type: 'number', description: '体脂率 %' },
+          visceralFat: { type: 'number', description: '内脏脂肪等级' },
+          fatMass: { type: 'number', description: '脂肪量 kg' },
+          muscleRate: { type: 'number', description: '肌肉率 %' },
+          muscleMass: { type: 'number', description: '肌肉量 kg' },
+        },
+        required: ['date', 'weight'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_medication',
+      description: '创建一条用药记录（三餐剂量可选）。',
+      parameters: {
+        type: 'object',
+        properties: {
+          date: { type: 'string', description: '日期 YYYY-MM-DD（必填）' },
+          medicineName: { type: 'string', description: '药品名称（必填）' },
+          breakfast: { type: 'number', description: '早餐剂量' },
+          lunch: { type: 'number', description: '午餐剂量' },
+          dinner: { type: 'number', description: '晚餐剂量' },
+        },
+        required: ['date', 'medicineName'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_todo',
+      description: '创建一条待办任务。',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: '任务标题（必填）' },
+          descriptionMarkdown: { type: 'string', description: '任务描述（Markdown）' },
+          dueDate: { type: 'string', description: '截止日期 YYYY-MM-DD' },
+          priority: { type: 'string', enum: ['high', 'medium', 'low'], description: '优先级' },
+          tags: { type: 'array', items: { type: 'string' }, description: '标签数组' },
+          isDaily: { type: 'boolean', description: '是否每日重复' },
+          recurrenceType: { type: 'string', enum: ['none', 'daily', 'weekly', 'monthly'], description: '重复类型' },
+        },
+        required: ['title'],
       },
     },
   },

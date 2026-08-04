@@ -2,11 +2,8 @@ import { randomUUID } from 'node:crypto';
 
 import { z } from 'zod';
 
-import { env } from '../../config/env';
 import { appDataSource } from '../../db/data-source';
-import {
-  estimateTokens,
-} from '../system/assistant-usage.service';
+import { deepseek } from '../../shared/services/deepseek.client';
 import { recordAssistantUsage } from '../system/assistant-usage.service';
 import { HealthExerciseCalorieCacheEntity } from './entities/health-exercise-calorie-cache.entity';
 import { HealthFoodNutritionCacheEntity } from './entities/health-food-nutrition-cache.entity';
@@ -67,56 +64,6 @@ export async function ensureFitnessCacheTables(): Promise<void> {
   } catch (error) {
     console.error('[fitness-cache] ensure tables failed:', error);
   }
-}
-
-/**
- * 调用 DeepSeek 一次性 JSON 模式对话。
- * 失败时抛 Error（含状态码和提示）。
- */
-async function callDeepSeekJson<T>(messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>): Promise<{
-  data: T;
-  promptTokens: number;
-  completionTokens: number;
-}> {
-  if (!env.DEEPSEEK_API_KEY) {
-    throw new Error('DEEPSEEK_API_KEY 未配置，无法调用 AI 营养查询');
-  }
-
-  const response = await fetch(`${env.DEEPSEEK_BASE_URL}/v1/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'deepseek-chat',
-      messages,
-      response_format: { type: 'json_object' },
-      temperature: 0.2,
-      max_tokens: 256,
-    }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`DeepSeek HTTP ${response.status}: ${text.slice(0, 200)}`);
-  }
-
-  const json = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  const content = json.choices?.[0]?.message?.content || '{}';
-  let parsed: T;
-  try {
-    parsed = JSON.parse(content) as T;
-  } catch (error) {
-    throw new Error(`AI 返回非 JSON：${content.slice(0, 200)}`);
-  }
-
-  const prompt = messages.reduce((sum, message) => sum + estimateTokens(message.content), 0);
-  const completion = estimateTokens(content);
-
-  return { data: parsed, promptTokens: prompt, completionTokens: completion };
 }
 
 const foodResultSchema = z.object({
@@ -184,10 +131,13 @@ export async function queryFoodNutrition(input: {
   try {
     const systemPrompt = '你是一名专业的营养师。请根据用户输入的食物名称，估算每 100g 该食物的热量（千卡）、蛋白质（克）、碳水（克）、脂肪（克）。务必只返回 JSON，格式：{"calories":number,"protein":number,"carbs":number,"fat":number,"note":string}。note 字段一句话备注烹饪方式或食用建议，不超过 30 字。';
     const userPrompt = `食物名称：${foodName}`;
-    const { data, promptTokens, completionTokens } = await callDeepSeekJson<unknown>([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ]);
+    const { data, promptTokens, completionTokens } = await deepseek.chatJson<unknown>(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      { temperature: 0.2, maxTokens: 256 },
+    );
     const parsed = foodResultSchema.parse(data);
 
     // 写回缓存
@@ -280,10 +230,13 @@ export async function queryExerciseCalorie(input: {
   try {
     const systemPrompt = '你是一名专业的健身教练。请根据用户输入的运动名称，给出该运动的标准信息：1)建议单次时长（分钟，整数，常见 15-90）；2)每分钟消耗热量（千卡，60kg 成人中等强度，单数，保留 1 位小数）；3)运动分类（cardio 有氧 / strength 力量 / flexibility 柔韧）；4)推荐强度（low 轻 / medium 中 / high 高）。只返回 JSON：{"suggestedDurationMin":number,"caloriesPerMin":number,"suggestedType":"cardio|strength|flexibility","suggestedIntensity":"low|medium|high"}';
     const userPrompt = `运动名称：${exerciseName}`;
-    const { data, promptTokens, completionTokens } = await callDeepSeekJson<unknown>([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ]);
+    const { data, promptTokens, completionTokens } = await deepseek.chatJson<unknown>(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      { temperature: 0.2, maxTokens: 256 },
+    );
     const parsed = exerciseResultSchema.parse(data);
 
     try {

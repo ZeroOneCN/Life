@@ -43,8 +43,8 @@ interface ChatBubble {
   createdAt: number;
 }
 
-const MAX_HISTORY = 20;
-const MAX_PERSISTED = 40;
+const MAX_HISTORY = 50;
+const MAX_PERSISTED = 100;
 const STORAGE_KEY = 'lifeos-assistant-history-v1';
 const POSITION_STORAGE_KEY = 'lifeos-assistant-position-v1';
 

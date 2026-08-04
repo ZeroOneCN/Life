@@ -1,4 +1,4 @@
-import { env } from '../../../config/env';
+import { deepseek } from '../../../shared/services/deepseek.client';
 import { recordAssistantUsage, estimateTokens } from '../../system/assistant-usage.service';
 
 /** AI 解析结果 */
@@ -12,14 +12,14 @@ interface AiParseResult {
 }
 
 /**
- * 使用 DeepSeek AI 解析自然语言输入
- * 仅在快捷指令无法匹配时作为 fallback
+ * 使用 DeepSeek AI 解析自然语言输入（JSON mode）。
+ * 仅在快捷指令无法匹配时作为 fallback。
  * @param text - 用户原始输入文本
  * @param userId - LifeOS 用户 ID（用于记录 Token 消耗）
  * @returns AI 解析结果，解析失败或未配置 API Key 返回 null
  */
 export async function parseWithAi(text: string, userId?: string): Promise<AiParseResult | null> {
-  if (!env.DEEPSEEK_API_KEY) {
+  if (!deepseek.enabled) {
     return null;
   }
 
@@ -29,62 +29,37 @@ export async function parseWithAi(text: string, userId?: string): Promise<AiPars
   const userContent = text;
 
   try {
-    const response = await fetch(`${env.DEEPSEEK_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userContent },
-        ],
-        temperature: 0.1,
-        max_tokens: 200,
-      }),
-    });
+    const { data, promptTokens, completionTokens } = await deepseek.chatJson<AiParseResult>(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent },
+      ],
+      { temperature: 0.1, maxTokens: 200 },
+    );
 
-    if (!response.ok) {
-      // 记录失败的调用
-      if (userId) {
-        recordAssistantUsage({
-          userId,
-          scene: 'telegram',
-          requestCount: 1,
-          prompt: estimateTokens(systemPrompt) + estimateTokens(userContent),
-          completion: 0,
-          status: 'error',
-        });
-      }
-      return null;
+    if (userId) {
+      recordAssistantUsage({
+        userId,
+        scene: 'telegram',
+        requestCount: 1,
+        prompt: promptTokens,
+        completion: completionTokens,
+        status: 'success',
+      });
     }
 
-    const json = (await response.json()) as { choices: Array<{ message: { content: string } }> };
-    const content = json.choices?.[0]?.message?.content;
-    if (!content) return null;
-
-    // 提取 JSON（可能被 markdown 包裹）
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return null;
-
-    const result = JSON.parse(jsonMatch[0]) as AiParseResult;
-
-    // 记录成功的 AI 调用消耗
+    return data;
+  } catch (error) {
     if (userId) {
       recordAssistantUsage({
         userId,
         scene: 'telegram',
         requestCount: 1,
         prompt: estimateTokens(systemPrompt) + estimateTokens(userContent),
-        completion: estimateTokens(content),
-        status: 'success',
+        completion: 0,
+        status: 'error',
       });
     }
-
-    return result;
-  } catch {
     return null;
   }
 }

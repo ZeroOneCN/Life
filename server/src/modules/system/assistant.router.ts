@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { z } from 'zod';
 
 import { env } from '../../config/env';
+import { deepseek, type DeepSeekMessage } from '../../shared/services/deepseek.client';
 import { asyncHandler } from '../../shared/http/async-handler';
 import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
 import { requireAuthUser } from '../../shared/http/request';
@@ -76,101 +77,6 @@ const chatSchema = z.object({
   messages: z.array(messageSchema).min(1).max(30),
 });
 
-interface DeepSeekMessage {
-  role: 'system' | 'user' | 'assistant' | 'tool';
-  content?: string;
-  tool_call_id?: string;
-  tool_calls?: Array<{
-    id: string;
-    type: 'function';
-    function: { name: string; arguments: string };
-  }>;
-}
-
-async function callDeepSeek(messages: DeepSeekMessage[], tools = ASSISTANT_TOOLS) {
-  const response = await fetch(`${env.DEEPSEEK_BASE_URL}/v1/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'deepseek-chat',
-      messages,
-      tools,
-      tool_choice: 'auto',
-      temperature: 0.5,
-      max_tokens: 1024,
-    }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`DeepSeek HTTP ${response.status}: ${text.slice(0, 200)}`);
-  }
-
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: DeepSeekMessage }>;
-  };
-  return data.choices?.[0]?.message;
-}
-
-/**
- * 查询 DeepSeek 账户余额（官方 `/user/balance` 端点）。
- * 用于在个人中心展示 Token / 余额消耗组件。
- * 返回值单位为「元」，遵循 DeepSeek 官方余额字段定义。
- */
-async function fetchDeepSeekBalance() {
-  if (!env.DEEPSEEK_API_KEY) {
-    return {
-      enabled: false,
-      reason: 'DEEPSEEK_API_KEY 未配置',
-    } as const;
-  }
-
-  const response = await fetch(`${env.DEEPSEEK_BASE_URL}/user/balance`, {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
-    },
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    return {
-      enabled: true,
-      ok: false,
-      reason: `HTTP ${response.status}: ${text.slice(0, 200)}`,
-    } as const;
-  }
-
-  const data = (await response.json()) as {
-    is_available?: boolean;
-    balance_infos?: Array<{
-      currency: string;
-      total_balance: string;
-      granted_balance?: string;
-      topped_up_balance?: string;
-    }>;
-  };
-
-  const infos = (data.balance_infos ?? []).map((item) => ({
-    currency: item.currency,
-    totalBalance: Number(item.total_balance ?? '0'),
-    grantedBalance: item.granted_balance !== undefined ? Number(item.granted_balance) : null,
-    toppedUpBalance: item.topped_up_balance !== undefined ? Number(item.topped_up_balance) : null,
-  }));
-
-  return {
-    enabled: true,
-    ok: true,
-    isAvailable: data.is_available !== false,
-    balances: infos,
-    fetchedAt: new Date().toISOString(),
-  } as const;
-}
-
 export function createAssistantRouter() {
   const router = Router();
 
@@ -228,7 +134,7 @@ export function createAssistantRouter() {
       const toolCallsLog: Array<{ tool: string; args: unknown; result: unknown }> = [];
 
       try {
-        let reply = await callDeepSeek(conversation);
+        let { message: reply } = await deepseek.chat(conversation, { tools: ASSISTANT_TOOLS });
         let safety = 0;
         let totalRequests = 1;
         while (reply?.tool_calls && reply.tool_calls.length && safety < 4) {
@@ -264,7 +170,7 @@ export function createAssistantRouter() {
               });
             }
           }
-          reply = await callDeepSeek(conversation);
+          ({ message: reply } = await deepseek.chat(conversation, { tools: ASSISTANT_TOOLS }));
         }
 
         /* 估算本次会话的 token 消耗并入库（异步，不阻塞响应） */
@@ -308,7 +214,7 @@ export function createAssistantRouter() {
     asyncHandler(async (request: AuthenticatedRequest, response) => {
       const userId = requireAuthUser(request);
       const [snapshot, local, sceneBreakdown] = await Promise.all([
-        fetchDeepSeekBalance(),
+        deepseek.fetchBalance(),
         getAssistantUsageStats(userId),
         getAssistantUsageByScene(userId),
       ]);
