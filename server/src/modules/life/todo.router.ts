@@ -23,6 +23,7 @@ import {
   resolveRecurrenceType,
 } from './todo-recurrence';
 import type { LifeTodoRecurrenceConfig } from './entities/life-todo-task.entity';
+import { startTodoReminderScheduler } from './todo-reminder.scheduler';
 
 const recurrenceTypeSchema = z.enum(['none', 'daily', 'weekly', 'monthly']);
 
@@ -182,6 +183,7 @@ function isRecurringEntity(task: LifeTodoTaskEntity): boolean {
 }
 
 export function createTodoRouter() {
+  startTodoReminderScheduler();
   const router = Router();
 
   router.get('/tasks', asyncHandler(async (request: AuthenticatedRequest, response) => {
