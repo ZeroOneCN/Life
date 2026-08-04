@@ -252,6 +252,7 @@ const SCENE_LABELS: Record<string, string> = {
   'health.report.week': '健康周报',
   'health.report.month': '健康月报',
   'health.report.year': '健康年报',
+  'investment.forex.analysis': '外汇交易分析',
 };
 
 /**

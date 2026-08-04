@@ -6,10 +6,9 @@ import { asyncHandler } from '../../shared/http/async-handler';
 import type { AuthenticatedRequest } from '../../shared/http/auth-middleware';
 import { requireAuthUser } from '../../shared/http/request';
 import { successResponse } from '../../shared/http/response';
+import { deepseek } from '../../shared/services/deepseek.client';
+import { recordAssistantUsage } from './assistant-usage.service';
 import { InvestmentForexTradeRecordEntity } from '../investment/entities/investment-forex-trade-record.entity';
-
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || '';
-const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com';
 
 function buildPrompt(stats: {
   total_trades: number;
@@ -144,7 +143,7 @@ export function createAnalysisRouter() {
     };
 
     // If no DeepSeek API key, return stats only
-    if (!DEEPSEEK_API_KEY) {
+    if (!deepseek.enabled) {
       response.json(successResponse({
         stats,
         conclusion: '## 未配置 AI 分析\n\n请在服务端 `.env` 文件中设置 `DEEPSEEK_API_KEY` 以启用 AI 智能分析。\n\n以下为统计摘要，你可以基于这些数据进行人工分析。',
@@ -153,41 +152,33 @@ export function createAnalysisRouter() {
     }
 
     try {
-      const deepseekResponse = await fetch(`${DEEPSEEK_BASE_URL}/v1/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [
-            { role: 'user', content: buildPrompt(stats) },
-          ],
-          temperature: 0.7,
-          max_tokens: 2048,
-        }),
+      const { message, promptTokens, completionTokens } = await deepseek.chat(
+        [{ role: 'user', content: buildPrompt(stats) }],
+        { temperature: 0.7, maxTokens: 2048 },
+      );
+
+      const conclusion = message?.content || '## 分析结果为空\n\nAI 未返回有效分析内容，请稍后重试。';
+
+      recordAssistantUsage({
+        userId,
+        scene: 'investment.forex.analysis',
+        requestCount: 1,
+        prompt: promptTokens,
+        completion: completionTokens,
+        status: 'success',
       });
-
-      if (!deepseekResponse.ok) {
-        const errorText = await deepseekResponse.text();
-        console.error('[DeepSeek] API error:', deepseekResponse.status, errorText);
-        response.json(successResponse({
-          stats,
-          conclusion: `## AI 分析调用失败\n\nDeepSeek API 返回错误 (${deepseekResponse.status})。请检查 API Key 和网络连接。\n\n以下为统计摘要：`,
-        }));
-        return;
-      }
-
-      const data = await deepseekResponse.json() as {
-        choices?: Array<{ message?: { content?: string } }>;
-      };
-
-      const conclusion = data.choices?.[0]?.message?.content || '## 分析结果为空\n\nAI 未返回有效分析内容，请稍后重试。';
 
       response.json(successResponse({ stats, conclusion }));
     } catch (error) {
       console.error('[DeepSeek] Request failed:', error);
+      recordAssistantUsage({
+        userId,
+        scene: 'investment.forex.analysis',
+        requestCount: 1,
+        prompt: 0,
+        completion: 0,
+        status: 'error',
+      });
       response.json(successResponse({
         stats,
         conclusion: `## AI 分析请求失败\n\n无法连接到 DeepSeek API：${String(error)}\n\n以下为统计摘要：`,
