@@ -84,6 +84,16 @@ export interface DashboardNotificationSnapshot {
   channelStatuses: DashboardChannelStatus[];
 }
 
+/** AI 助理调用记录条目（P2-13 新增，用于 Dashboard「最近动态」时间线） */
+export interface DashboardAiActivityLog {
+  id: string;
+  createdAt: string;
+  scene: string;
+  sceneLabel: string;
+  tokens: number;
+  status: 'success' | 'error';
+}
+
 export interface DashboardPageSummary {
   overviewCards: DashboardOverviewCard[];
   agenda: DashboardAgendaItem[];
@@ -94,4 +104,6 @@ export interface DashboardPageSummary {
   notifications: DashboardNotificationSnapshot;
   upcomingSubscriptions: DashboardUpcomingSubscription[];
   connectedModuleCount: number;
+  /** 最近 AI 助理调用记录（P2-13 新增） */
+  aiLogs: DashboardAiActivityLog[];
 }

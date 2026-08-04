@@ -10494,6 +10494,10 @@ img {
   background: color-mix(in srgb, var(--color-warning) 8%, transparent);
   color: var(--color-warning);
 }
+.dash-timeline-cell-module.is-ai {
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
+  color: var(--color-success);
+}
 
 .dash-timeline-cell-title {
   font-size: var(--fs-label);

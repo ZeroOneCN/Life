@@ -66,6 +66,14 @@ interface RawDashboardSummaryResponse {
       hasRecentLog: boolean;
     }>;
   };
+  aiLogs: Array<{
+    id: string;
+    created_at: string;
+    scene: string;
+    sceneLabel: string;
+    tokens: number;
+    status: 'success' | 'error';
+  }>;
 }
 
 function formatMoney(value: number) { return `¥${value.toFixed(2)}`; }
@@ -210,6 +218,14 @@ export default function Dashboard() {
             daysLeft: item.daysLeft,
           })),
           connectedModuleCount: Number(raw.overviewCards.find((item) => item.key === 'modules')?.value ?? 0),
+          aiLogs: raw.aiLogs.map((log) => ({
+            id: log.id,
+            createdAt: log.created_at,
+            scene: log.scene,
+            sceneLabel: log.sceneLabel,
+            tokens: log.tokens,
+            status: log.status,
+          })),
         });
         setLoadingError('');
       } catch (error) {
@@ -246,6 +262,23 @@ export default function Dashboard() {
       /* 日期只有 YYYY-MM-DD 时补全为 00:00:00 */
       const time = raw !== '-' && raw.length <= 10 ? `${raw} 00:00:00` : raw;
       items.push({ time, module: item.module, moduleClass: 'is-agenda', title: item.title, sortKey });
+    });
+    summary.aiLogs.slice(0, 6).forEach((log) => {
+      const d = new Date(log.createdAt);
+      const year = d.getFullYear();
+      const month = (d.getMonth() + 1).toString().padStart(2, '0');
+      const day = d.getDate().toString().padStart(2, '0');
+      const hour = d.getHours().toString().padStart(2, '0');
+      const minute = d.getMinutes().toString().padStart(2, '0');
+      const second = d.getSeconds().toString().padStart(2, '0');
+      const statusTag = log.status === 'error' ? '〔失败〕' : '';
+      items.push({
+        time: `${year}-${month}-${day} ${hour}:${minute}:${second}`,
+        module: 'AI',
+        moduleClass: 'is-ai',
+        title: `${log.sceneLabel}（${log.tokens} tokens）${statusTag}`,
+        sortKey: d.getTime(),
+      });
     });
     return items.sort((a, b) => b.sortKey - a.sortKey);
   }, [summary]);

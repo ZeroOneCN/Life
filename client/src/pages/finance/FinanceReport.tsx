@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { EmptyState, PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Btn, DataTable, SelectField, Tag, useToastState, Toast } from '../../components/ui';
-import { financeReportApi } from '../../services/financeReportApi';
+import { financeReportApi, type FinanceReportAiSummary } from '../../services/financeReportApi';
 import { buildApiErrorMessage } from '../../lib/api';
 import type {
   FinanceMonthlyReport,
@@ -82,6 +82,8 @@ export default function FinanceReportPage() {
   const [yearReport, setYearReport] = useState<FinanceYearlyReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [pushing, setPushing] = useState(false);
+  const [aiSummary, setAiSummary] = useState<FinanceReportAiSummary | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const monthOptions = useMemo(() => {
     const options: Array<{ value: string; label: string }> = [];
@@ -122,6 +124,7 @@ export default function FinanceReportPage() {
 
   useEffect(() => {
     void loadMonthly(month);
+    setAiSummary(null);
   }, [month]);
 
   useEffect(() => {
@@ -152,6 +155,25 @@ export default function FinanceReportPage() {
       showToast(buildApiErrorMessage(error, '月报推送失败。'), 'error');
     } finally {
       setPushing(false);
+    }
+  };
+
+  /**
+   * 加载 AI 财务月报摘要。调用 /finance/report/ai-summary 端点，
+   * 由 DeepSeek 基于月报数据生成总结、建议和风险提示。
+   */
+  const handleLoadAiSummary = async () => {
+    setAiLoading(true);
+    try {
+      const result = await financeReportApi.getAiSummary(month);
+      setAiSummary(result);
+      if (!result.enabled) {
+        showToast('AI 摘要未启用，请在服务端配置 DEEPSEEK_API_KEY。', 'warning');
+      }
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, 'AI 摘要生成失败。'), 'error');
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -291,6 +313,76 @@ export default function FinanceReportPage() {
           </div>
         ) : (
           <EmptyState title="暂无数据" description="请先在财务各模块录入数据。" icon="📊" />
+        )}
+      </SectionCard>
+
+      <SectionCard
+        title="AI 摘要"
+        description="基于本月财务数据，由 AI 生成总结、改进建议和风险提示。"
+        action={(
+          <Btn
+            tone="primary"
+            onClick={handleLoadAiSummary}
+            disabled={aiLoading || !report}
+          >
+            {aiLoading ? '生成中…' : aiSummary ? '重新生成' : '生成 AI 摘要'}
+          </Btn>
+        )}
+      >
+        {aiLoading ? (
+          <EmptyState title="AI 正在分析…" description="正在基于月报数据生成摘要，请稍候。" icon="🤖" />
+        ) : aiSummary ? (
+          <div className="finance-report-ai">
+            {aiSummary.enabled ? (
+              <>
+                <div className="finance-report-ai-summary">
+                  <h4>本月总结</h4>
+                  <p>{aiSummary.summary}</p>
+                </div>
+                {aiSummary.suggestions.length > 0 && (
+                  <div className="finance-report-ai-suggestions">
+                    <h4>改进建议</h4>
+                    <ul>
+                      {aiSummary.suggestions.map((item, index) => (
+                        <li key={index}>
+                          <Tag tone="blue">{item.category}</Tag>
+                          <strong>{item.title}</strong>
+                          <span className="subtle-text">{item.detail}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {aiSummary.risks.length > 0 && (
+                  <div className="finance-report-ai-risks">
+                    <h4>风险提示</h4>
+                    <div className="inline-row" style={{ flexWrap: 'wrap', gap: 8 }}>
+                      {aiSummary.risks.map((risk, index) => (
+                        <Tag key={index} tone="red">{risk}</Tag>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {aiSummary.generatedAt && (
+                  <div className="subtle-text" style={{ marginTop: 8 }}>
+                    生成时间：{new Date(aiSummary.generatedAt).toLocaleString('zh-CN')}
+                  </div>
+                )}
+              </>
+            ) : (
+              <EmptyState
+                title="AI 摘要未启用"
+                description={aiSummary.summary}
+                icon="⚙️"
+              />
+            )}
+          </div>
+        ) : (
+          <EmptyState
+            title="点击上方按钮生成 AI 摘要"
+            description="AI 将基于本月财务数据生成总结、建议和风险提示。"
+            icon="💡"
+          />
         )}
       </SectionCard>
 

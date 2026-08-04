@@ -25,6 +25,8 @@ import { NotificationCenterChannelEntity } from '../notifications/entities/notif
 import { NotificationCenterLogEntity } from '../notifications/entities/notification-center-log.entity';
 import { NotificationCenterSceneEntity } from '../notifications/entities/notification-center-scene.entity';
 import { DEFAULT_CHANNEL_TYPES, type NotificationChannelType } from '../notifications/notification-scenes';
+import { SystemAssistantUsageLogEntity } from './entities/system-assistant-usage-log.entity';
+import { getAssistantSceneLabel } from './assistant-usage.service';
 
 /** 渠道展示元数据（label + icon），用于 Dashboard 渠道状态卡片 */
 const CHANNEL_LABELS: Record<NotificationChannelType, { label: string; icon: string }> = {
@@ -300,6 +302,7 @@ export function createDashboardRouter() {
       checkups,
       forexTrades,
       forexCapitalFlows,
+      aiLogs,
     ] = await Promise.all([
       appDataSource.getRepository(LifeTodoTaskEntity).find({ where: { user_id: userId } }),
       appDataSource.getRepository(FinanceSubscriptionRecordEntity).find({ where: { user_id: userId } }),
@@ -319,6 +322,7 @@ export function createDashboardRouter() {
       appDataSource.getRepository(HealthCheckupRecordEntity).find({ where: { user_id: userId } }),
       appDataSource.getRepository(InvestmentForexTradeRecordEntity).find({ where: { user_id: userId } }),
       appDataSource.getRepository(InvestmentForexCapitalFlowEntity).find({ where: { user_id: userId } }),
+      appDataSource.getRepository(SystemAssistantUsageLogEntity).find({ where: { user_id: userId }, order: { created_at: 'DESC' }, take: 6 }),
     ]);
 
     const pendingTodos = todos.filter((task) => !task.completed && !task.trashed_at).length;
@@ -488,6 +492,14 @@ export function createDashboardRouter() {
           };
         }),
       },
+      aiLogs: aiLogs.map((log) => ({
+        id: log.id,
+        created_at: log.created_at,
+        scene: log.scene,
+        sceneLabel: getAssistantSceneLabel(log.scene),
+        tokens: Number(log.prompt_tokens) + Number(log.completion_tokens),
+        status: log.status,
+      })),
     };
 
     setCachedData(cacheKey, result);
