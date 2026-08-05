@@ -14818,17 +14818,16 @@ select:focus-visible {
   position: relative;
 }
 
-/* C7 页面适配：workspace-area 内统一内容留白与宽度 */
+/* C7 页面适配：workspace-area 内统一内容留白（铺满，不限制行宽） */
 .workspace-area .page-stack {
   padding: 24px 28px 48px;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 @media (max-width: 767px) {
   .workspace-area .page-stack {
     padding: 16px 16px 72px;
-    max-width: none;
+    width: 100%;
   }
 }
 
