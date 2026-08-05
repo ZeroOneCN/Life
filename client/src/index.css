@@ -17527,6 +17527,247 @@ select:focus-visible {
   margin-top: 12px;
 }
 
+/* ===================================================================
+   v3-D0 控件统一覆盖层（页面改造方案 v3.0 阶段 D0）
+   总原则：统一基线 → 全部控件同规则，不允许"有的有效果、有的没效果"。
+   视觉反馈用「背景 / 边框 / 圆角」表达，不依赖阴影；
+   交互反馈统一「hover 背景变化 → active scale」；
+   输入框 focus 一律无外圈光圈，仅边框变色（键盘可达性由 :focus-visible 承担）。
+   =================================================================== */
+
+/* ---------- 0.1 焦点系统：输入框无外圈光圈，仅边框变色 ---------- */
+input:focus,
+select:focus,
+textarea:focus {
+  box-shadow: none;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: none;
+}
+
+/* 日期/时间容器（div 触发）：focus 仅边框变色，去掉光圈 */
+.date-native-input:focus {
+  box-shadow: none;
+}
+.date-picker-input:focus,
+.date-picker-input:focus-within,
+.date-picker-input.is-open {
+  border-color: var(--color-primary);
+  box-shadow: none;
+}
+.time-picker-input:focus,
+.time-picker-input:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: none;
+}
+
+/* ---------- 0.2 输入控件统一基线（radius 8 / canvas / height 40） ---------- */
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+select {
+  height: 40px;
+  border-radius: 8px;
+}
+textarea {
+  border-radius: 8px;
+}
+.date-native-input,
+.time-picker-input {
+  min-height: 40px;
+  border-radius: 8px;
+  background: var(--color-canvas);
+}
+.vital-entry-input,
+.vital-select,
+.health-report-date-input {
+  background: var(--color-canvas);
+}
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- 0.3 按钮统一（hover 背景、active scale、无位移、无硬编码阴影） ---------- */
+.btn {
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+.btn:hover {
+  transform: none;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  transform: none;
+}
+
+/* 主按钮去掉硬编码紫色阴影 */
+.btn-primary,
+.btn-primary:hover {
+  box-shadow: none;
+}
+
+/* 补齐缺失的 hover 背景（此前仅位移无背景变化） */
+.btn-ghost:hover {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+.btn-danger:hover {
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+}
+.btn-danger-fill:hover {
+  background: color-mix(in srgb, var(--color-danger) 88%, white);
+}
+
+/* 图标按钮统一一套：32×32 / radius 8 / hover surface-2 → surface-3 / active scale */
+.icon-btn,
+.btn-icon,
+.icon-button,
+.command-bar-icon-btn {
+  border-radius: 8px;
+}
+.icon-btn {
+  width: 32px;
+  height: 32px;
+}
+.icon-button {
+  min-width: 32px;
+  min-height: 32px;
+}
+.icon-button:hover,
+.btn-icon:hover {
+  transform: none;
+  background: var(--color-surface-2);
+}
+.icon-button:active,
+.icon-btn:active,
+.btn-icon:active,
+.command-bar-icon-btn:active {
+  transform: scale(0.95);
+}
+.btn-icon-secondary:hover {
+  background: var(--color-primary-soft);
+}
+.btn-icon-danger:hover {
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+}
+.command-bar-menu-item.is-danger:hover {
+  color: var(--color-danger);
+}
+
+/* ---------- 0.4 卡片统一（radius 12 / canvas / 无阴影 hover） ---------- */
+.card:hover,
+.stat-card:hover,
+.chart-card:hover {
+  transform: none;
+}
+
+.stat-card {
+  border-radius: 12px;
+}
+.stat-card:hover {
+  box-shadow: none;
+  border-color: var(--color-hairline-strong);
+}
+
+.dash-card {
+  border-radius: 12px;
+}
+.dash-card:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--color-primary) 25%, var(--color-hairline));
+}
+
+.goal-card {
+  background: var(--color-canvas);
+}
+.goal-card:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+/* ---------- 0.5 Tag / Label ---------- */
+.tag {
+  font-size: 13px;
+  padding: 5px 12px;
+}
+.tag-sm {
+  font-size: 12px;
+  padding: 2px 8px;
+}
+.tag-default {
+  background: var(--color-surface-2);
+  color: var(--color-ink-secondary);
+}
+.field-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ink-secondary);
+}
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.field-hint {
+  font-size: 12px;
+  color: var(--color-ink-tertiary);
+}
+
+/* ---------- 0.6 弹窗两套合一 + 浮层/菜单无阴影 ---------- */
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+.modal-panel {
+  background: var(--color-surface-1);
+  border-radius: 12px;
+  box-shadow: none;
+}
+.command-bar-modal-backdrop {
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+.command-bar-modal-btn {
+  border-radius: 9999px;
+  padding: 8px 16px;
+  font-weight: 600;
+}
+.command-bar-modal-btn.is-danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+}
+.command-bar-modal-btn.is-danger:hover {
+  background: var(--color-danger-strong);
+  border-color: var(--color-danger-strong);
+}
+.command-bar-menu,
+.nav-rail-popover,
+.command-palette,
+.assistant-panel,
+.workspace-tab-context-menu {
+  box-shadow: none;
+}
+/* 浮层圆角统一（AI 面板 16→12、Tab 右键菜单 8→10） */
+.assistant-panel {
+  border-radius: 12px;
+}
+.workspace-tab-context-menu {
+  border-radius: 10px;
+}
+
+/* 侧边栏菜单 hover 统一 surface-2（classic 布局） */
+.menu-link:hover {
+  background: var(--color-surface-2);
+}
+
 .schedule-event-form {
   display: grid;
   gap: 12px;
