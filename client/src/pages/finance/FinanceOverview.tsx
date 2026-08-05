@@ -2,11 +2,19 @@ import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, Tag, Toast, useToastState } from '../../components/ui';
+import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { financeReportApi } from '../../services/financeReportApi';
 import type { FinanceMonthlyReport, FinanceReportModuleKey } from '../../types/financeReport';
 
 const FinanceReportPage = lazy(() => import('./FinanceReport'));
+
+type OverviewTab = 'overview' | 'report';
+
+const TAB_OPTIONS: Array<{ value: OverviewTab; label: string }> = [
+  { value: 'overview', label: '本期概览' },
+  { value: 'report', label: '周期报告' },
+];
 
 const MODULE_LABELS: Record<FinanceReportModuleKey, string> = {
   shopping: '购物',
@@ -91,22 +99,15 @@ export default function FinanceOverviewPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader
-        title="财务概览"
-        subtitle="财务数据概览"
-        actions={
-          <div className="merged-page-tabs">
-            <PillTabs
-              options={[
-                { value: 'overview', label: '本期概览' },
-                { value: 'report', label: '周期报告' },
-              ]}
-              value={activeTab}
-              onChange={(v) => setActiveTab(v as 'overview' | 'report')}
-            />
-          </div>
-        }
-      />
+      <PageHeader title="财务概览" subtitle="财务数据概览" />
+
+      <div className="merged-tabs-top">
+        <PillTabs
+          options={TAB_OPTIONS}
+          value={activeTab}
+          onChange={(v) => setActiveTab(v as OverviewTab)}
+        />
+      </div>
 
       {activeTab === 'overview' ? (
         <>

@@ -18,6 +18,7 @@ import {
   useToastState,
 } from '../../components/ui';
 import { buildApiErrorMessage } from '../../lib/api';
+import { usePageTab } from '../../hooks/usePageTab';
 import { billApi } from '../../services/billApi';
 import { loanApi } from '../../services/loanApi';
 import type { UnifiedBill, BillSummary, BillReminderSetting, BillType, BillStatus } from '../../types/bill';
@@ -51,7 +52,7 @@ const TYPE_COLOR: Record<BillType, 'blue' | 'pink' | 'green'> = {
  */
 export default function BillPage() {
   const { toast, showToast } = useToastState();
-  const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+  const [viewMode, setViewMode] = usePageTab<ViewMode>('calendar', ['calendar', 'list'], 'billView');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format('YYYY-MM'));
   const [selectedType, setSelectedType] = useState<string>('all');

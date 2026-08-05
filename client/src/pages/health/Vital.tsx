@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 
 import { PageHeader } from '../../components/page';
 import { DeleteModal, Modal, PillTabs, Toast, useToastState } from '../../components/ui';
+import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { vitalApi } from '../../services/vitalApi';
 import { sleepApi } from '../../services/sleepApi';
@@ -32,7 +33,7 @@ const TAB_OPTIONS = [
  */
 export default function VitalPage() {
   const { toast, showToast } = useToastState();
-  const [activeTab, setActiveTab] = useState<TabKey>('vital');
+  const [activeTab, setActiveTab] = usePageTab<TabKey>('vital', ['vital', 'sleep'], 'vitalTab');
 
   // ===== 体征状态 =====
   const [metrics, setMetrics] = useState<VitalMetricInfo[]>([]);
@@ -383,19 +384,15 @@ export default function VitalPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader
-        title="健康记录"
-        subtitle="体征与睡眠"
-        actions={(
-          <div className="merged-page-tabs">
-            <PillTabs
-              options={TAB_OPTIONS.map((t) => ({ value: t.value, label: t.label }))}
-              value={activeTab}
-              onChange={(v) => setActiveTab(v as TabKey)}
-            />
-          </div>
-        )}
-      />
+      <PageHeader title="健康记录" subtitle="体征与睡眠" />
+
+      <div className="merged-tabs-top">
+        <PillTabs
+          options={TAB_OPTIONS.map((t) => ({ value: t.value, label: t.label }))}
+          value={activeTab}
+          onChange={(v) => setActiveTab(v as TabKey)}
+        />
+      </div>
 
       {activeTab === 'vital' ? (
         <>

@@ -3,23 +3,24 @@ import dayjs from 'dayjs';
 
 import { EmptyState, PageHeader, SectionCard, StatGrid } from '../../components/page';
 import {
+  PillTabs,
   Btn,
   DataTable,
-  DeleteIcon,
   DeleteModal,
-  EditIcon,
-  Field,
-  IconBtn,
   Modal,
   Pagination,
-  PillTabs,
+  Field,
   SelectField,
   Switch,
   Tag,
   TextArea,
+  IconBtn,
+  EditIcon,
+  DeleteIcon,
   Toast,
   useToastState,
 } from '../../components/ui';
+import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
 import { budgetApi } from '../../services/budgetApi';
 import type {
@@ -56,7 +57,7 @@ const HISTORY_PAGE_SIZE = 20;
  */
 export default function BudgetPage({ embedded = false }: { embedded?: boolean }) {
   const { toast, showToast } = useToastState();
-  const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  const [activeTab, setActiveTab] = usePageTab<TabKey>('overview', ['overview', 'budgets', 'comparison', 'history'], 'budgetTab');
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format('YYYY-MM'));
   const [selectedYear, setSelectedYear] = useState(dayjs().year());
 

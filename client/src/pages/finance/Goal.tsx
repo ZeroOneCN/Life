@@ -20,6 +20,7 @@ import {
 } from '../../components/ui';
 import { buildApiErrorMessage } from '../../lib/api';
 import { goalApi } from '../../services/goalApi';
+import { usePageTab } from '../../hooks/usePageTab';
 import type {
   FinanceGoal,
   GoalSummary,
@@ -80,7 +81,7 @@ const ArrowLeftIcon = ({ size = 16 }: { size?: number }) => (
  */
 export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
   const { toast, showToast } = useToastState();
-  const [activeTab, setActiveTab] = useState<TabKey>('all');
+  const [activeTab, setActiveTab] = usePageTab<TabKey>('all', ['all', 'active', 'completed'], 'goalTab');
 
   const [goals, setGoals] = useState<FinanceGoal[]>([]);
   const [goalsLoading, setGoalsLoading] = useState(false);

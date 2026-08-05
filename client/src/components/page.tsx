@@ -89,3 +89,21 @@ export function EmptyState({
     </div>
   );
 }
+
+/**
+ * 上下文栏：横向排列账本/货币/周期等上下文选择器 + 统计 Tag
+ *
+ * 统一放置于 PageHeader 与内容区之间，替代各页面散落的"当前上下文"SectionCard。
+ * 使用方式：将 Select / 切换按钮 / Tag 作为 children 传入，组件负责横向排布与间距。
+ *
+ * @param label - 可选分组前缀文案（如"当前账本"）
+ * @param children - 上下文控件（SelectField、PillTabs、Tag 等）
+ */
+export function ContextBar({ label, children }: { label?: string; children: ReactNode }) {
+  return (
+    <div className="context-bar">
+      {label ? <span className="context-bar-label">{label}</span> : null}
+      {children}
+    </div>
+  );
+}

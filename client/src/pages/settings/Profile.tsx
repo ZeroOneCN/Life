@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { useSearchParams } from 'react-router-dom';
 
 import { PageHeader, SectionCard } from '../../components/page';
 import { Btn, Field, PillTabs, SelectField, Tag, Toast, useToastState } from '../../components/ui';
@@ -8,6 +7,7 @@ import TelegramBindWidget from '../../components/settings/TelegramBindWidget';
 import { buildApiErrorMessage, getApiFieldErrors } from '../../lib/api';
 import { changePassword, updateAuthProfile, useAuthState } from '../../services/auth';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
+import { usePageTab } from '../../hooks/usePageTab';
 import { useTheme } from '../../hooks/useTheme';
 
 type ProfileTab = 'profile' | 'security' | 'integrations' | 'preferences';
@@ -23,10 +23,7 @@ export default function ProfileSettingsPage() {
   const authState = useAuthState();
   const { toast, showToast } = useToastState();
   const { mode, setMode } = useTheme();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const validTabs: ProfileTab[] = ['profile', 'security', 'integrations', 'preferences'];
-  const initialTab = (validTabs.includes(searchParams.get('tab') as ProfileTab) ? searchParams.get('tab') : 'profile') as ProfileTab;
-  const [tab, setTab] = useState<ProfileTab>(initialTab);
+  const [tab, setTab] = usePageTab<ProfileTab>('profile', ['profile', 'security', 'integrations', 'preferences'], 'tab');
   useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const [profileSaving, setProfileSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
@@ -58,14 +55,6 @@ export default function ProfileSettingsPage() {
       avatarUrl: user.avatarUrl ?? '',
     });
   }, [user]);
-
-  useEffect(() => {
-    setSearchParams((previous) => {
-      const next = new URLSearchParams(previous);
-      next.set('tab', tab);
-      return next;
-    }, { replace: true });
-  }, [setSearchParams, tab]);
 
   const avatarInitial = useMemo(() => {
     if (!user) {

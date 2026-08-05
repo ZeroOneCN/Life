@@ -1,5 +1,4 @@
-import { useState } from 'react';
-
+import { usePageTab } from '../../hooks/usePageTab';
 import { PageHeader } from '../../components/page';
 import { PillTabs } from '../../components/ui';
 import LoanPage from './Loan';
@@ -15,25 +14,20 @@ const TAB_OPTIONS: Array<{ value: BillMgmtTab; label: string }> = [
 ];
 
 export default function BillManagementPage() {
-  const [activeTab, setActiveTab] = useState<BillMgmtTab>('loan');
+  const [activeTab, setActiveTab] = usePageTab<BillMgmtTab>('loan', ['loan', 'subscription', 'rent'], 'billMgmtTab');
 
   return (
     <div className="page-stack finance-merged-page">
-      <PageHeader
-        title="账单管理"
-        subtitle="周期性账单"
-        actions={(
-          <div className="merged-page-tabs">
-            <PillTabs
-              options={TAB_OPTIONS}
-              value={activeTab}
-              onChange={(v) => setActiveTab(v as BillMgmtTab)}
-            />
-          </div>
-        )}
-      />
+      <PageHeader title="账单管理" subtitle="周期性账单" />
 
       <div className="merged-content">
+        <div className="merged-tabs-top">
+          <PillTabs
+            options={TAB_OPTIONS}
+            value={activeTab}
+            onChange={(v) => setActiveTab(v as BillMgmtTab)}
+          />
+        </div>
         {activeTab === 'loan' ? <LoanPage /> : null}
         {activeTab === 'subscription' ? <SubscriptionPage /> : null}
         {activeTab === 'rent' ? <RentPage /> : null}

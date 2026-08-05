@@ -5,8 +5,8 @@ import { MedicationAnalysisSection } from '../../components/health/MedicationAna
 import { MedicationPurchasesSection } from '../../components/health/MedicationPurchasesSection';
 import { MedicationRecordsSection } from '../../components/health/MedicationRecordsSection';
 import { MedicationSummarySection } from '../../components/health/MedicationSummarySection';
-import { SectionCard, StatGrid } from '../../components/page';
-import { Btn, PillTabs, Tag, Toast, useToastState } from '../../components/ui';
+import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { Btn, PillTabs, StatGridSkeleton, Tag, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
@@ -199,6 +199,10 @@ export default function MedicationPage() {
 
   return (
     <div className="page-stack">
+      <PageHeader title="用药" subtitle="药品库存、用药记录与每日总结" />
+      {loading ? (
+        <StatGridSkeleton cols={4} />
+      ) : (
       <StatGrid
         items={[
           { label: '累计用量', value: `${overview.totalDosage}`, helper: `共 ${overview.trackedDays} 天追踪` },
@@ -207,6 +211,7 @@ export default function MedicationPage() {
           { label: '今日用量', value: `${overview.todayDosage}`, accent: overview.todayDosage > 0 ? 'var(--color-primary)' : undefined, helper: overview.todayDosage === 0 ? '今日暂无记录' : undefined },
         ]}
       />
+      )}
 
       <SectionCard
         title="业务视图"
