@@ -57,6 +57,18 @@ export interface WorkspaceTab {
 export type InspectorMode = 'detail' | 'ai' | 'actions' | null;
 
 /**
+ * Inspector 详情数据（detail 模式渲染内容）
+ */
+export interface InspectorDetail {
+  /** 详情标题（如交易单号/商品名） */
+  title: string;
+  /** 副标题（如日期/状态） */
+  subtitle?: string;
+  /** 字段列表 */
+  fields: Array<{ label: string; value: string; accent?: string }>;
+}
+
+/**
  * 收藏项类型
  * - page: 页面收藏
  * - record: 记录收藏（阶段 C 预留）
@@ -94,6 +106,8 @@ interface WorkspaceState {
   pins: WorkspacePin[];
   /** Inspector 模式 */
   inspectorMode: InspectorMode;
+  /** Inspector 详情数据（detail 模式渲染内容） */
+  inspectorDetail: InspectorDetail | null;
   /** Inspector 宽度（px） */
   inspectorWidth: number;
   /** Nav Rail 是否展开（240px） */
@@ -122,6 +136,8 @@ interface WorkspaceState {
   setTabLayout: (id: string, layout: WorkspaceLayout) => void;
   /** 设置 Inspector 模式 */
   setInspectorMode: (mode: InspectorMode) => void;
+  /** 设置 Inspector 详情数据 */
+  setInspectorDetail: (detail: InspectorDetail | null) => void;
   /** 设置 Inspector 宽度 */
   setInspectorWidth: (width: number) => void;
   /** 添加收藏（页面/记录/筛选） */
@@ -201,6 +217,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   activeTabId: null,
   pins: [],
   inspectorMode: null,
+  inspectorDetail: null,
   inspectorWidth: 320,
   navRailExpanded: false,
   commandPaletteOpen: false,
@@ -331,6 +348,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   setInspectorMode: (mode) => set({ inspectorMode: mode }),
+  setInspectorDetail: (detail) => set({ inspectorDetail: detail }),
   setInspectorWidth: (width) => set({ inspectorWidth: Math.max(280, Math.min(560, width)) }),
 
   addPin: (pin) => {

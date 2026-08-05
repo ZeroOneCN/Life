@@ -30,6 +30,7 @@ const MODE_META: Record<'detail' | 'ai' | 'actions', { title: string; icon: stri
 export default function Inspector() {
   const location = useLocation();
   const mode = useWorkspaceStore((s) => s.inspectorMode);
+  const detail = useWorkspaceStore((s) => s.inspectorDetail);
   const width = useWorkspaceStore((s) => s.inspectorWidth);
   const setInspectorMode = useWorkspaceStore((s) => s.setInspectorMode);
   const setInspectorWidth = useWorkspaceStore((s) => s.setInspectorWidth);
@@ -72,12 +73,17 @@ export default function Inspector() {
     }
   }, [location.pathname, mode, setInspectorMode]);
 
-  // C3 上下文注入：构建当前页面上下文描述
+  // C3 上下文注入：构建当前页面上下文描述；detail 模式时附带选中记录摘要
   const aiContext = useMemo(() => {
     const route = routes.find((r) => r.path === location.pathname);
     const pageLabel = route?.label ?? location.pathname;
-    return `用户当前在「${pageLabel}」页面（${location.pathname}）。回答时优先关联该页面相关的数据。`;
-  }, [location.pathname]);
+    const pageDesc = `用户当前在「${pageLabel}」页面（${location.pathname}）。回答时优先关联该页面相关的数据。`;
+    if (mode === 'detail' && detail) {
+      const summary = detail.fields.map((f) => `${f.label}：${f.value}`).join('；');
+      return `${pageDesc}\n当前选中的记录：${detail.title}${detail.subtitle ? `（${detail.subtitle}）` : ''}${summary ? `。字段：${summary}` : ''}`;
+    }
+    return pageDesc;
+  }, [location.pathname, mode, detail]);
 
   if (mode === null) return null;
 
@@ -120,10 +126,25 @@ export default function Inspector() {
         {mode === 'ai' ? (
           <AssistantChatPanel context={aiContext} />
         ) : mode === 'detail' ? (
-          <div className="inspector-empty">
-            <p>尚未选择详情项</p>
-            <span>在列表中选中一条记录后，这里会显示详情。该能力随页面 Split 改造（阶段 C）逐步接入。</span>
-          </div>
+          detail ? (
+            <div className="inspector-detail">
+              <h3 className="inspector-detail-title">{detail.title}</h3>
+              {detail.subtitle ? <p className="inspector-detail-subtitle">{detail.subtitle}</p> : null}
+              <dl className="inspector-detail-fields">
+                {detail.fields.map((field) => (
+                  <div className="inspector-detail-field" key={field.label}>
+                    <dt>{field.label}</dt>
+                    <dd style={field.accent ? { color: field.accent } : undefined}>{field.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ) : (
+            <div className="inspector-empty">
+              <p>尚未选择详情项</p>
+              <span>在列表中选中一条记录后，这里会显示详情。该能力随页面 Split 改造（阶段 C）逐步接入。</span>
+            </div>
+          )
         ) : (
           <div className="inspector-empty">
             <p>快捷操作</p>

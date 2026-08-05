@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
+import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, EyeIcon, Field, IconBtn, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
 import {
   FOREX_ORDER_TYPE_OPTIONS,
   FOREX_TRADE_PAGE_SIZE,
@@ -27,6 +27,7 @@ import {
 } from '../../services/forex';
 import { forexApi } from '../../services/forexApi';
 import type { ForexCapitalFlow, ForexImportResult, ForexInstrument, ForexOrderType, ForexTradeDraft, ForexTradeRecord } from '../../types/forex';
+import { useWorkspaceStore } from '../../stores/workspace.store';
 
 interface ForexTradesSectionProps {
   trades: ForexTradeRecord[];
@@ -191,6 +192,31 @@ export function ForexTradesSection({
   const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const setInspectorMode = useWorkspaceStore((s) => s.setInspectorMode);
+  const setInspectorDetail = useWorkspaceStore((s) => s.setInspectorDetail);
+
+  /**
+   * 在右侧 Inspector 中打开交易记录详情。
+   * @param record - 交易记录
+   */
+  const openDetail = (record: ForexTradeRecord) => {
+    setInspectorDetail({
+      title: `${getForexInstrumentLabel(record.instrument)} · ${record.orderType === 'buy' ? '做多' : '做空'}`,
+      subtitle: dayjs(record.tradeDate).format('YYYY-MM-DD'),
+      fields: [
+        { label: '开仓价', value: String(record.openPrice) },
+        { label: '平仓价', value: String(record.closePrice) },
+        { label: '手数', value: `${record.lotSize} 手` },
+        { label: '手续费', value: formatForexMoney(record.commission) },
+        { label: '隔夜费', value: formatForexMoney(record.overnightFee) },
+        { label: '净盈亏', value: formatForexMoney(record.pnl), accent: record.pnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
+        { label: '持仓时间', value: record.holdTime || '-' },
+        { label: '备注', value: record.remark || '-' },
+      ],
+    });
+    setInspectorMode('detail');
+  };
+
   /** 动态品种选项：从交易记录中提取所有唯一品种，并始终包含默认选项 */
   const instrumentOptions = useMemo(() => getForexInstrumentOptions(trades), [trades]);
 
@@ -306,6 +332,12 @@ export function ForexTradesSection({
       title: '操作',
       render: (_value: unknown, row: ForexTradeRecord) => (
         <div className="fitness-row-actions">
+          <IconBtn
+            tone="secondary"
+            icon={<EyeIcon />}
+            title="详情"
+            onClick={() => openDetail(row)}
+          />
           <IconBtn
             tone="secondary"
             icon={<EditIcon />}

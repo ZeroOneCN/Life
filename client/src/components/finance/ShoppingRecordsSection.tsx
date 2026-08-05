@@ -10,6 +10,7 @@ import {
   DeleteModal,
   EditIcon,
   ExportButton,
+  EyeIcon,
   Field,
   FilterBar,
   FilterTag,
@@ -31,6 +32,7 @@ import {
   updateShoppingRecord,
 } from '../../services/shopping';
 import type { ShoppingCurrencyMode, ShoppingLedger, ShoppingPlatform, ShoppingRecord, ShoppingRecordDraft } from '../../types/shopping';
+import { useWorkspaceStore } from '../../stores/workspace.store';
 
 interface ShoppingRecordsSectionProps {
   activeLedgerId: string;
@@ -135,6 +137,30 @@ export function ShoppingRecordsSection({
   const [editingForm, setEditingForm] = useState<ShoppingFormState>(() => createDefaultFormState(activeLedgerId, platforms));
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
+  const setInspectorMode = useWorkspaceStore((s) => s.setInspectorMode);
+  const setInspectorDetail = useWorkspaceStore((s) => s.setInspectorDetail);
+
+  /**
+   * 在右侧 Inspector 中打开购物记录详情。
+   * @param record - 购物记录
+   */
+  const openDetail = (record: ShoppingRecord) => {
+    setInspectorDetail({
+      title: record.itemName,
+      subtitle: `${record.date} · ${record.platform}`,
+      fields: [
+        { label: '平台', value: record.platform || '-' },
+        { label: '规格', value: record.spec || '-' },
+        { label: '总价', value: formatShoppingAmount(record.price, currencyMode, usdtRate) },
+        { label: '单价', value: record.unitPrice === null ? '-' : formatShoppingAmount(record.unitPrice, currencyMode, usdtRate) },
+        { label: '订单号', value: record.orderNo || '-' },
+        { label: '账本', value: ledgerNameMap[record.ledgerId] ?? record.ledgerId },
+        { label: '备注', value: record.note || '-' },
+      ],
+    });
+    setInspectorMode('detail');
+  };
+
   useEffect(() => {
     setForm((previous) => ({
       ...previous,
@@ -224,6 +250,12 @@ export function ShoppingRecordsSection({
       title: '操作',
       render: (_value: unknown, row: ShoppingRecord) => (
         <div className="fitness-row-actions">
+          <IconBtn
+            tone="secondary"
+            icon={<EyeIcon />}
+            title="详情"
+            onClick={() => openDetail(row)}
+          />
           <IconBtn
             tone="secondary"
             icon={<EditIcon />}

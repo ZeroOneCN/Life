@@ -2,8 +2,9 @@ import dayjs from 'dayjs';
 
 import { EmptyState, SectionCard } from '../../page';
 import { Btn, FilterBar, FilterTag, Tag } from '../../ui';
-import { EditIcon, DeleteIcon } from '../../ui';
+import { EditIcon, DeleteIcon, EyeIcon } from '../../ui';
 import type { VitalRecord, VitalMetricInfo, VitalMetricKey } from '../../../types/vital';
+import { useWorkspaceStore } from '../../../stores/workspace.store';
 
 interface VitalRecordsSectionProps {
   records: VitalRecord[];
@@ -54,6 +55,27 @@ export function VitalRecordsSection({
   onDelete,
 }: VitalRecordsSectionProps) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const setInspectorMode = useWorkspaceStore((s) => s.setInspectorMode);
+  const setInspectorDetail = useWorkspaceStore((s) => s.setInspectorDetail);
+
+  /**
+   * 在右侧 Inspector 中打开体征记录详情。
+   * @param record - 体征记录
+   */
+  const openDetail = (record: VitalRecord) => {
+    const statusTag = STATUS_TAGS[record.status] ?? STATUS_TAGS.unknown;
+    setInspectorDetail({
+      title: record.metricLabel,
+      subtitle: dayjs(record.recordTime).format('YYYY-MM-DD HH:mm'),
+      fields: [
+        { label: '数值', value: `${record.value} ${record.unit}` },
+        { label: '参考范围', value: record.referenceRange || '-' },
+        { label: '状态', value: statusTag.text, accent: statusTag.tone === 'red' ? 'var(--color-danger)' : statusTag.tone === 'orange' ? 'var(--color-warning)' : statusTag.tone === 'green' ? 'var(--color-success)' : undefined },
+        { label: '备注', value: record.notes || '-' },
+      ],
+    });
+    setInspectorMode('detail');
+  };
 
   return (
     <SectionCard
@@ -115,6 +137,14 @@ export function VitalRecordsSection({
                       <td className="muted">{record.notes || '-'}</td>
                       <td style={{ textAlign: 'right' }}>
                         <div className="table-actions">
+                          <button
+                            type="button"
+                            className="icon-btn"
+                            onClick={() => openDetail(record)}
+                            title="详情"
+                          >
+                            <EyeIcon />
+                          </button>
                           <button
                             type="button"
                             className="icon-btn"

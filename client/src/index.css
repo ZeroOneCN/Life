@@ -16119,6 +16119,58 @@ select:focus-visible {
   color: var(--color-ink-muted);
 }
 
+/* Inspector 详情（D3：detail 模式渲染选中记录） */
+.inspector-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+.inspector-detail-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+  word-break: break-all;
+}
+.inspector-detail-subtitle {
+  margin: -6px 0 0;
+  font-size: 12px;
+  color: var(--color-ink-tertiary);
+}
+.inspector-detail-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  border: 1px solid var(--color-hairline);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.inspector-detail-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 12px;
+  font-size: 12px;
+}
+.inspector-detail-field + .inspector-detail-field {
+  border-top: 1px solid var(--color-hairline);
+}
+.inspector-detail-field dt {
+  color: var(--color-ink-secondary);
+  white-space: nowrap;
+}
+.inspector-detail-field dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--color-ink);
+  text-align: right;
+  word-break: break-all;
+}
+
 /* AssistantChatPanel 容器（供 Inspector AI 模式复用） */
 .assistant-chat-panel {
   display: flex;
