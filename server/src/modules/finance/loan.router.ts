@@ -166,11 +166,11 @@ function buildOverview(bills: FinanceLoanBillEntity[], repayments: FinanceLoanRe
   return {
     totalDebt: Number(bills.reduce((sum, bill) => sum + toNum(bill.amount), 0).toFixed(2)),
     totalPaid: Number(repayments.reduce((sum, repayment) => sum + toNum(repayment.amount), 0).toFixed(2)),
-    // 待还金额 = 各账单剩余本金 + 剩余利息（未结清账单）
+    // 待还金额 = 各账单剩余欠款（amount 已含利息，不再单独累加 interest）
     totalUnpaid: Number(
       bills
         .filter((bill) => !bill.is_paid)
-        .reduce((sum, bill) => sum + Math.max(0, toNum(bill.amount) - toNum(bill.paid_amount)) + Math.max(0, toNum(bill.interest) - toNum(bill.paid_interest)), 0)
+        .reduce((sum, bill) => sum + Math.max(0, toNum(bill.amount) - toNum(bill.paid_amount)), 0)
         .toFixed(2),
     ),
     totalInterest: Number(bills.reduce((sum, bill) => sum + toNum(bill.interest), 0).toFixed(2)),
@@ -197,10 +197,9 @@ function buildLoanReminderItems(bills: FinanceLoanBillEntity[], settings: Financ
         severity: 'high' | 'medium';
       }> = [];
 
-      // 待还金额使用剩余本金+剩余利息（扣除已还部分）
+      // 待还金额 = 剩余欠款（amount 已含利息，无需再加 interest）
       const remainingAmount = Math.max(0, Number(bill.amount) - Number(bill.paid_amount ?? 0));
-      const remainingInterest = Math.max(0, Number(bill.interest) - Number(bill.paid_interest ?? 0));
-      const remainingTotal = remainingAmount + remainingInterest;
+      const remainingTotal = remainingAmount;
 
       // 通知逻辑：根据实际账单日期触发，仅覆盖三种场景：
       //   diff === 0  今日到期
@@ -641,9 +640,8 @@ export function createLoanRouter() {
       throw new AppError('loan_bill_not_found', 404, 404);
     }
 
-    // 一次性结清：将剩余本金和利息全部标记为已还
+    // 一次性结清：amount 已含利息，只需将剩余欠款全部标记为已还
     const remainingAmount = Math.max(0, Number(current.amount) - Number(current.paid_amount ?? 0));
-    const remainingInterest = Math.max(0, Number(current.interest) - Number(current.paid_interest ?? 0));
 
     current.paid_amount = Number(current.amount);
     current.paid_interest = Number(current.interest);
@@ -654,14 +652,14 @@ export function createLoanRouter() {
     let createdRepayment = false;
     if (settings.auto_repayment_on_mark_paid) {
       // 仅当存在剩余金额时才生成还款记录（避免重复结清时产生空记录）
-      if (remainingAmount > 0 || remainingInterest > 0) {
+      if (remainingAmount > 0) {
         await repaymentRepo.save(repaymentRepo.create({
           user_id: userId,
           bill_id: current.id,
           platform_id: current.platform_id,
           platform_name: current.platform_name,
           amount: remainingAmount,
-          interest: remainingInterest,
+          interest: 0,
           repayment_date: current.paid_at,
           notes: '标记账单已还时自动生成（结清剩余）',
         }));
@@ -679,12 +677,11 @@ export function createLoanRouter() {
    * POST /api/finance/loan/actions/partial-repay
    * 部分还款。
    *
-   * 接收一个总金额，按"先利息后本金"顺序抵扣：
-   * 1. 先抵扣剩余利息（remainingInterest）
-   * 2. 剩余部分抵扣剩余本金（remainingAmount）
-   * 3. 累加 paid_interest / paid_amount
-   * 4. 若本金和利息均结清，则 is_paid=true、paid_at=today
-   * 5. 自动生成还款记录，金额按实际抵扣的本金/利息拆分
+   * amount 字段即欠款总额（已含利息），还款金额全部抵扣欠款本金：
+   * 1. 校验金额不超过剩余欠款（amount - paid_amount）
+   * 2. 还款全额累加 paid_amount
+   * 3. 若剩余欠款清零则 is_paid=true、paid_at=today
+   * 4. 自动生成还款记录（interest 恒为 0，利息已含在欠款内）
    */
   router.post('/actions/partial-repay', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
@@ -704,32 +701,25 @@ export function createLoanRouter() {
     }
 
     const totalAmount = Number(current.amount);
-    const totalInterest = Number(current.interest);
     const paidAmount = Number(current.paid_amount ?? 0);
-    const paidInterest = Number(current.paid_interest ?? 0);
     const remainingAmount = Math.max(0, totalAmount - paidAmount);
-    const remainingInterest = Math.max(0, totalInterest - paidInterest);
 
-    if (payload.amount > remainingAmount + remainingInterest + 0.01) {
+    if (payload.amount > remainingAmount + 0.01) {
       throw new AppError(
         'loan_partial_repay_exceeds',
         400,
         400,
-        `还款金额超过剩余待还金额 ¥${(remainingAmount + remainingInterest).toFixed(2)}`,
+        `还款金额超过剩余待还金额 ¥${remainingAmount.toFixed(2)}`,
       );
     }
 
-    // 先利息后本金抵扣
-    let applyToInterest = Math.min(payload.amount, remainingInterest);
-    let applyToAmount = Math.max(0, payload.amount - applyToInterest);
-
-    const newPaidInterest = Number((paidInterest + applyToInterest).toFixed(2));
+    // amount 已含利息：还款全部抵扣欠款，无需再为利息单独支付
+    const applyToAmount = payload.amount;
     const newPaidAmount = Number((paidAmount + applyToAmount).toFixed(2));
 
-    current.paid_interest = newPaidInterest;
     current.paid_amount = newPaidAmount;
 
-    const fullyPaid = newPaidAmount >= totalAmount && newPaidInterest >= totalInterest;
+    const fullyPaid = newPaidAmount >= totalAmount;
     if (fullyPaid) {
       current.is_paid = true;
       current.paid_at = dayjs().format('YYYY-MM-DD');
@@ -747,9 +737,9 @@ export function createLoanRouter() {
       platform_id: current.platform_id,
       platform_name: current.platform_name,
       amount: applyToAmount,
-      interest: applyToInterest,
+      interest: 0,
       repayment_date: repaymentDate,
-      notes: payload.notes || `部分还款：本金 ¥${applyToAmount.toFixed(2)} + 利息 ¥${applyToInterest.toFixed(2)}`,
+      notes: payload.notes || `部分还款：本金 ¥${applyToAmount.toFixed(2)}`,
     }));
 
     response.json(successResponse({
@@ -757,9 +747,9 @@ export function createLoanRouter() {
       repayment: mapRepayment(repayment),
       breakdown: {
         applyToAmount: Number(applyToAmount.toFixed(2)),
-        applyToInterest: Number(applyToInterest.toFixed(2)),
+        applyToInterest: 0,
         remainingAmount: Number(Math.max(0, totalAmount - newPaidAmount).toFixed(2)),
-        remainingInterest: Number(Math.max(0, totalInterest - newPaidInterest).toFixed(2)),
+        remainingInterest: 0,
         fullyPaid,
       },
     }, 'partial_repay_success'));

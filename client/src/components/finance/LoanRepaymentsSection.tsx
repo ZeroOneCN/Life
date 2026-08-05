@@ -187,8 +187,9 @@ export function LoanRepaymentsSection({
         ...previous,
         billId,
         platformId: matchedBill?.platformId ?? previous.platformId,
+        // amount 已含利息，还款金额即欠款本身，利息归零
         amount: matchedBill ? String(matchedBill.amount) : previous.amount,
-        interest: matchedBill ? String(matchedBill.interest) : previous.interest,
+        interest: matchedBill ? '0' : previous.interest,
       }));
       return;
     }
@@ -197,8 +198,9 @@ export function LoanRepaymentsSection({
       ...previous,
       billId,
       platformId: matchedBill?.platformId ?? previous.platformId,
+      // amount 已含利息，还款金额即欠款本身，利息归零
       amount: matchedBill ? String(matchedBill.amount) : previous.amount,
-      interest: matchedBill ? String(matchedBill.interest) : previous.interest,
+      interest: matchedBill ? '0' : previous.interest,
     }));
   };
 

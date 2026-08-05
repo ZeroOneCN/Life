@@ -18,13 +18,13 @@ export interface LoanRepaymentDto {
 }
 
 /**
- * 计算还款记录总金额（amount + interest 求和）。
- * 用于 assistant.tools.ts queryFinance 的 loan 汇总口径。
+ * 计算还款记录总金额（amount 已含利息，利息不再单独累加）。
+ * 用于 assistant-query.service.ts queryFinance 的 loan 汇总口径。
  * @param records 还款记录列表
  * @returns 总金额（保留 2 位小数）
  */
 export function sumLoanRepaymentAmount(records: FinanceLoanRepaymentEntity[]): number {
-  const total = records.reduce((sum, row) => sum + toNumber(row.amount) + toNumber(row.interest), 0);
+  const total = records.reduce((sum, row) => sum + toNumber(row.amount), 0);
   return Number(total.toFixed(2));
 }
 
@@ -83,10 +83,11 @@ export function buildLoanBillOverview(
   return {
     totalDebt: Number(bills.reduce((sum, bill) => sum + toNum(bill.amount), 0).toFixed(2)),
     totalPaid: Number(repayments.reduce((sum, repayment) => sum + toNum(repayment.amount), 0).toFixed(2)),
+    // 待还金额 = 各账单剩余欠款（amount 已含利息，不再单独累加 interest）
     totalUnpaid: Number(
       bills
         .filter((bill) => !bill.is_paid)
-        .reduce((sum, bill) => sum + Math.max(0, toNum(bill.amount) - toNum(bill.paid_amount)) + Math.max(0, toNum(bill.interest) - toNum(bill.paid_interest)), 0)
+        .reduce((sum, bill) => sum + Math.max(0, toNum(bill.amount) - toNum(bill.paid_amount)), 0)
         .toFixed(2),
     ),
     totalInterest: Number(bills.reduce((sum, bill) => sum + toNum(bill.interest), 0).toFixed(2)),

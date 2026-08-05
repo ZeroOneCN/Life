@@ -349,7 +349,8 @@ export async function buildMonthlyReport(
     }
 
     for (const row of loanRows) {
-      const amount = toNumber(row.amount) + toNumber(row.interest);
+      // 还款金额即 amount（利息已含在欠款内，还款记录 interest 恒为 0）
+      const amount = toNumber(row.amount);
       moduleTotals.loan.amount += amount;
       moduleTotals.loan.count += 1;
       const category = `贷款·${row.platform_name || '未知平台'}`;
@@ -479,7 +480,11 @@ export async function buildMonthlyReport(
     };
 
     // --- 净资产计算：将投资净值按汇率换算为人民币后减去未还贷款（CNY）
-    const unpaidLoanTotal = unpaidLoanBills.reduce((sum, bill) => sum + toNumber(bill.amount) + toNumber(bill.interest), 0);
+    // 未还贷款 = 各未结清账单的剩余欠款（amount 已含利息）
+    const unpaidLoanTotal = unpaidLoanBills.reduce(
+      (sum, bill) => sum + Math.max(0, toNumber(bill.amount) - toNumber(bill.paid_amount)),
+      0,
+    );
     const netWorth: NetWorthSummary = {
       investmentEquity: round2(investmentEquity),
       unpaidLoanTotal: round2(unpaidLoanTotal),
@@ -577,7 +582,7 @@ export function totalExpenseForMonth(userId: string, month: string) {
       const net = toNumber(row.amount) - toNumber(row.discount_amount);
       return sum + (net > 0 ? net : toNumber(row.amount));
     }, 0);
-    const loanSum = loanRows.reduce((sum, row) => sum + toNumber(row.amount) + toNumber(row.interest), 0);
+    const loanSum = loanRows.reduce((sum, row) => sum + toNumber(row.amount), 0);
     const subscriptionSum = subscriptionRows.reduce((sum, row) => {
       const cycle = (row.billing_cycle || 'monthly').toLowerCase();
       const price = toNumber(row.cycle_price);

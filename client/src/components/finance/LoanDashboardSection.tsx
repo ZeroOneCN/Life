@@ -88,8 +88,8 @@ export function LoanDashboardSection({
                         </Tag>
                       </div>
                       <div className="loan-summary-card-metrics">
-                        <span>本金 {formatLoanAmount(bill.amount)}</span>
-                        <span>利息 {formatLoanAmount(bill.interest)}</span>
+                        <span>欠款 {formatLoanAmount(bill.amount)}</span>
+                        {bill.interest > 0 ? <span>含利息 {formatLoanAmount(bill.interest)}</span> : null}
                       </div>
                       <div className="fitness-row-actions">
                         <Btn tone="secondary" onClick={() => onOpenTab('bills')}>打开账单</Btn>
@@ -128,7 +128,7 @@ export function LoanDashboardSection({
                     </div>
                     <div className="loan-summary-card-metrics">
                       <span>已还 {formatLoanAmount(item.paidAmount)}</span>
-                      <span>利息 {formatLoanAmount(item.totalInterest)}</span>
+                      <span>含利息 {formatLoanAmount(item.totalInterest)}</span>
                     </div>
                   </article>
                 ))}

@@ -39,8 +39,8 @@ export interface UnifiedBill {
 /**
  * 从贷款账单转换为统一账单格式。
  *
- * amount 字段为剩余待还金额（本金+利息-已还），
- * paid_amount 为已还金额，便于日历/列表展示真实欠款。
+ * amount 字段为欠款总额（已含利息），paid_amount 为已还欠款，
+ * 便于日历/列表展示真实剩余欠款。
  *
  * @param bill 贷款账单实体
  * @returns 统一格式的账单
@@ -54,8 +54,8 @@ function transformLoanBill(bill: FinanceLoanBillEntity): UnifiedBill {
   } else if (dueMoment.isBefore(today, 'day')) {
     status = 'overdue';
   }
-  const totalAmount = toNumber(bill.amount) + toNumber(bill.interest);
-  const paidAmount = toNumber(bill.paid_amount) + toNumber(bill.paid_interest);
+  const totalAmount = toNumber(bill.amount);
+  const paidAmount = toNumber(bill.paid_amount);
   const remaining = Math.max(0, totalAmount - paidAmount);
   return {
     id: `loan_${bill.id}`,

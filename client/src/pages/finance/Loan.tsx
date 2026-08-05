@@ -187,18 +187,13 @@ export default function LoanPage() {
     await reload();
   }, [reload]);
 
-  // 未还账单的剩余利息（待还金额已含此部分，仅作说明性展示）
-  const unpaidInterest = useMemo(
-    () => bills.filter((bill) => !bill.isPaid).reduce((sum, bill) => sum + bill.remainingInterest, 0),
-    [bills],
-  );
-
   const summaryCards = useMemo(() => ([
     { label: '总负债', value: formatLoanAmount(overview.totalDebt), helper: `已还 ${formatLoanAmount(overview.totalPaid)}` },
-    { label: '待还金额', value: formatLoanAmount(overview.totalUnpaid), helper: `含利息 ${formatLoanAmount(unpaidInterest)}` },
+    // 待还金额 = 剩余欠款（amount 已含利息），不单独展示利息
+    { label: '待还金额', value: formatLoanAmount(overview.totalUnpaid) },
     { label: '风险账单', value: `${overview.overdueCount} 逾期`, accent: overview.overdueCount > 0 ? 'var(--color-danger)' : undefined, helper: overview.upcomingCount > 0 ? `${overview.upcomingCount} 笔即将到期` : '无即将到期' },
     { label: '当前账单数', value: `${overview.totalBillCount}`, helper: overview.totalBillCount > 0 ? '点击查看详情' : '暂无账单' },
-  ]), [overview, unpaidInterest]);
+  ]), [overview]);
 
   return (
     <div className="page-stack">

@@ -141,7 +141,7 @@ export function LoanBillsSection({
       title: '欠款',
       render: (_value: unknown, row: LoanBill) => (
         <div className="travel-amount-stack">
-          <strong>{formatLoanAmount(row.amount + row.interest)}</strong>
+          <strong>{formatLoanAmount(row.amount)}</strong>
           {row.interest > 0 ? <span>含利息 {formatLoanAmount(row.interest)}</span> : null}
         </div>
       ),
@@ -149,16 +149,12 @@ export function LoanBillsSection({
     {
       key: 'paid',
       title: '已还 / 剩余',
-      render: (_value: unknown, row: LoanBill) => {
-        const totalPaid = row.paidAmount + row.paidInterest;
-        const totalRemaining = row.remainingAmount + row.remainingInterest;
-        return (
-          <div className="travel-amount-stack">
-            <span className="loan-paid-amount">已还 {formatLoanAmount(totalPaid)}</span>
-            <strong className="loan-remaining-amount">剩余 {formatLoanAmount(totalRemaining)}</strong>
-          </div>
-        );
-      },
+      render: (_value: unknown, row: LoanBill) => (
+        <div className="travel-amount-stack">
+          <span className="loan-paid-amount">已还 {formatLoanAmount(row.paidAmount)}</span>
+          <strong className="loan-remaining-amount">剩余 {formatLoanAmount(row.remainingAmount)}</strong>
+        </div>
+      ),
     },
     {
       key: 'status',
@@ -277,7 +273,7 @@ export function LoanBillsSection({
       return;
     }
 
-    const totalRemaining = partialRepayBill.remainingAmount + partialRepayBill.remainingInterest;
+    const totalRemaining = partialRepayBill.remainingAmount;
     if (amount > totalRemaining + 0.01) {
       showToast(`还款金额不能超过剩余待还金额 ${formatLoanAmount(totalRemaining)}。`, 'error');
       return;
@@ -551,20 +547,22 @@ export function LoanBillsSection({
             <div className="loan-partial-repay-summary">
               <div className="loan-partial-repay-summary-row">
                 <span>欠款总额</span>
-                <strong>{formatLoanAmount(partialRepayBill.amount + partialRepayBill.interest)}</strong>
+                <strong>{formatLoanAmount(partialRepayBill.amount)}</strong>
               </div>
               <div className="loan-partial-repay-summary-row">
                 <span>已还金额</span>
-                <span>{formatLoanAmount(partialRepayBill.paidAmount + partialRepayBill.paidInterest)}</span>
+                <span>{formatLoanAmount(partialRepayBill.paidAmount)}</span>
               </div>
               <div className="loan-partial-repay-summary-row loan-partial-repay-summary-highlight">
                 <span>剩余待还</span>
                 <strong>
-                  {formatLoanAmount(partialRepayBill.remainingAmount + partialRepayBill.remainingInterest)}
+                  {formatLoanAmount(partialRepayBill.remainingAmount)}
                 </strong>
               </div>
               <div className="loan-partial-repay-summary-hint">
-                欠款已含利息 ¥{partialRepayBill.interest.toFixed(2)}（剩余利息 ¥{partialRepayBill.remainingInterest.toFixed(2)} 将优先抵扣，其余抵扣本金）
+                {partialRepayBill.interest > 0
+                  ? `欠款已含利息 ¥${partialRepayBill.interest.toFixed(2)}，只需偿还欠款本身，无需再额外支付利息。`
+                  : '本次还款金额直接抵扣欠款，无需额外支付利息。'}
               </div>
             </div>
             <Field
@@ -574,25 +572,25 @@ export function LoanBillsSection({
               step="0.01"
               value={partialRepayAmount}
               onChange={(event) => setPartialRepayAmount(event.target.value)}
-              placeholder={`最多 ${formatLoanAmount(partialRepayBill.remainingAmount + partialRepayBill.remainingInterest)}`}
+              placeholder={`最多 ${formatLoanAmount(partialRepayBill.remainingAmount)}`}
             />
             <div className="loan-partial-repay-quick">
               <span className="field-label">快捷填入</span>
               <Btn
                 tone="ghost"
-                onClick={() => setPartialRepayAmount(((partialRepayBill.remainingAmount + partialRepayBill.remainingInterest) / 4).toFixed(2))}
+                onClick={() => setPartialRepayAmount((partialRepayBill.remainingAmount / 4).toFixed(2))}
               >
                 1/4
               </Btn>
               <Btn
                 tone="ghost"
-                onClick={() => setPartialRepayAmount(((partialRepayBill.remainingAmount + partialRepayBill.remainingInterest) / 2).toFixed(2))}
+                onClick={() => setPartialRepayAmount((partialRepayBill.remainingAmount / 2).toFixed(2))}
               >
                 1/2
               </Btn>
               <Btn
                 tone="ghost"
-                onClick={() => setPartialRepayAmount((partialRepayBill.remainingAmount + partialRepayBill.remainingInterest).toFixed(2))}
+                onClick={() => setPartialRepayAmount(partialRepayBill.remainingAmount.toFixed(2))}
               >
                 全部结清
               </Btn>
