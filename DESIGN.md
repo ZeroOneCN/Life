@@ -189,6 +189,34 @@ The brand uses **product UI mockups** more than photography. Dashboard composite
 **`footer-light`** — site-wide footer.
 - Background `{colors.canvas}`, text `{colors.ink-mute}`, type `{typography.caption}`, padding `{spacing.huge} {spacing.xl}` (64px 24px). Holds 4–6 columns of link groups, social icons, and a small legal row.
 
+### Product Page Components (Application UI)
+
+> **Scope**: These components are used inside the authenticated application (dashboard, health/finance/life/investment centers), not on marketing pages. Implemented in `client/src/components/page.tsx`.
+
+**`PageHeader`** — page-level title block.
+- Title `{typography.heading-lg}` (24px, weight 600), subtitle `{typography.body-md}` (16px, `{colors.ink-mute}`).
+- Padding `{spacing.lg} 0` (16px top/bottom). Optional `actions` slot on the right (buttons or filters).
+
+**`SectionCard`** — the universal content container.
+- Background `{colors.canvas}`, 1px `{colors.hairline}` border, rounded `{rounded.md}` 12px.
+- Padding: 20px (`--card-padding`).
+- Gap between SectionCards: 16px (`--card-gap`), enforced by parent `.page-stack` flex column.
+- Header: title `{typography.heading-sm}` (20px, weight 600) + optional description (`{typography.caption}`, `{colors.ink-mute}`) + optional `action` slot (right-aligned).
+- Shadow: `0 1px 3px rgba(0,0,0,0.08)` (Level 1).
+
+**`StatGrid`** — top-of-page metric cards.
+- Default 4 items; max 6 items (exceeding must split into two StatGrids or move to a Dashboard Section).
+- Each item: `{ label, value, accent?, helper? }`.
+  - `label`: `{typography.caption}` (13px, `{colors.ink-mute}`).
+  - `value`: `{typography.heading-sm}` (20px, weight 600, `tabular-nums` for numerics).
+  - `helper`: `{typography.overline}` (11px, `{colors.ink-mute-2}`).
+  - `accent`: optional CSS color for the value (e.g. `var(--color-success)` for gains).
+- Grid: `repeat(auto-fit, minmax(180px, 1fr))`, gap 12px.
+
+**`EmptyState`** — unified empty placeholder (only one in the codebase).
+- Props: `{ title, description?, icon?, action? }`.
+- Centered layout, `{colors.ink-mute}` text, 48px icon above title.
+
 ## Do's and Don'ts
 
 ### Do
