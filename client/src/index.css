@@ -15434,15 +15434,12 @@ select:focus-visible {
 }
 
 .nav-rail-popover {
-  position: absolute;
-  top: 0;
-  left: calc(100% + 8px);
   min-width: 200px;
   background: var(--color-surface-1);
   border: 1px solid var(--color-hairline);
   border-radius: 10px;
   padding: 6px;
-  z-index: 50;
+  z-index: 300;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
   display: flex;
   flex-direction: column;
@@ -16197,13 +16194,6 @@ select:focus-visible {
 
   .nav-rail-item-label {
     display: none;
-  }
-
-  .nav-rail-popover {
-    bottom: calc(100% + 8px);
-    top: auto;
-    left: 50%;
-    transform: translateX(-50%);
   }
 
   .workspace-area {

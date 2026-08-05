@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { createPortal } from 'react-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { menuItems } from '../config/navigation';
 import { useWorkspaceStore } from '../stores/workspace.store';
@@ -73,8 +74,10 @@ function NavRailNode({
   onSelect: (key: string) => void;
 }) {
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [tooltip, setTooltip] = useState(false);
+  // popover 固定定位坐标（折叠态使用，避免被 rail 的 overflow/层叠裁剪）
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
   const nodeRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
   const isActive = activeMenuKey === item.key || isItemActive(item, pathname);
   const hasChildren = !!item.children?.length;
 
@@ -90,14 +93,22 @@ function NavRailNode({
     return () => document.removeEventListener('mousedown', handle);
   }, [popoverOpen]);
 
-  // 折叠态：点击带子项的节点 → 切换 popover；无子项 → 直接选中
+  // 折叠态：点击带子项的节点 → 在按钮右侧弹出二级菜单；无子项 → 直接选中
   // 展开态：点击带子项的节点 → 选中并展开二级（直接显示在 Rail 内）
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
     onSelect(item.key);
     if (hasChildren && !expanded) {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      // 右侧空间不足（popover 约 200px）时改为左侧弹出
+      const left = rect.right + 8 + 200 > window.innerWidth ? rect.left - 208 : rect.right + 8;
+      setPopoverPos({ top: rect.top, left: Math.max(8, left) });
       setPopoverOpen((v) => !v);
     } else {
       setPopoverOpen(false);
+      // 无子项节点（首页/通知/个人中心）：直接路由跳转
+      if (!hasChildren) {
+        navigate(item.key);
+      }
     }
   };
 
@@ -129,25 +140,34 @@ function NavRailNode({
         ) : null}
       </button>
 
-      {/* 折叠态：popover 显示二级 */}
-      {hasChildren && !expanded && popoverOpen ? (
-        <div className="nav-rail-popover" role="menu">
-          <div className="nav-rail-popover-title">{item.label}</div>
-          {item.children!.map((child) => (
-            <Link
-              key={child.key}
-              to={child.key}
-              className={`nav-rail-popover-item ${pathname === child.key ? 'is-active' : ''}`}
-              onClick={() => {
-                setPopoverOpen(false);
-                onSelect(item.key);
-              }}
-            >
-              <Icon name={child.icon} />
-              <span>{child.label}</span>
-            </Link>
-          ))}
-        </div>
+      {/* 折叠态：popover 显示二级（Portal 到 body，fixed 定位，避免被 rail 裁剪/遮挡） */}
+      {/* 注意：popover 内阻止 mousedown 冒泡，避免外部关闭监听器先卸载 Link 导致导航丢失 */}
+      {hasChildren && !expanded && popoverOpen && popoverPos ? (
+        createPortal(
+          <div
+            className="nav-rail-popover"
+            role="menu"
+            style={{ position: 'fixed', top: popoverPos.top, left: popoverPos.left }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="nav-rail-popover-title">{item.label}</div>
+            {item.children!.map((child) => (
+              <Link
+                key={child.key}
+                to={child.key}
+                className={`nav-rail-popover-item ${pathname === child.key ? 'is-active' : ''}`}
+                onClick={() => {
+                  setPopoverOpen(false);
+                  onSelect(item.key);
+                }}
+              >
+                <Icon name={child.icon} />
+                <span>{child.label}</span>
+              </Link>
+            ))}
+          </div>,
+          document.body,
+        )
       ) : null}
 
       {/* 展开态：二级直接渲染 */}
@@ -221,10 +241,52 @@ export default function NavRail() {
         {navRailExpanded ? <span className="nav-rail-brand-text">LifeOS2</span> : null}
       </div>
 
-      {/* 收藏区占位（阶段 C 实装） */}
+      {/* 收藏区 */}
       <div className="nav-rail-section nav-rail-pinned" aria-label="收藏">
         <div className="nav-rail-section-label">{navRailExpanded ? '收藏' : ''}</div>
-        <div className="nav-rail-empty-hint">{navRailExpanded ? '右键页面可固定到收藏' : ''}</div>
+        {pins.length === 0 ? (
+          <div className="nav-rail-empty-hint">
+            {navRailExpanded ? '在页面菜单中点击 ☆ 收藏' : ''}
+          </div>
+        ) : (
+          <div className="nav-rail-pin-list">
+            {pins.map((pin) => (
+              <div
+                key={pin.id}
+                className={`nav-rail-pin ${location.pathname === pin.path ? 'is-active' : ''}`}
+                title={pin.path}
+              >
+                <Link
+                  to={pin.path ?? '#'}
+                  className="nav-rail-pin-link"
+                  onClick={() => setActiveMenuKey(findParentKey(pin.path ?? '') ?? pin.path ?? '')}
+                >
+                  <span className="nav-rail-item-icon">
+                    <Icon name={(pin.icon as IconKey) ?? 'dashboard'} />
+                  </span>
+                  {navRailExpanded ? <span className="nav-rail-pin-title">{pin.title}</span> : null}
+                </Link>
+                {navRailExpanded ? (
+                  <button
+                    type="button"
+                    className="nav-rail-pin-remove"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      removePin(pin.id);
+                    }}
+                    aria-label={`取消收藏 ${pin.title}`}
+                    title="取消收藏"
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 主导航 */}
