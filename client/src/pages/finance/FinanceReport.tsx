@@ -71,7 +71,7 @@ function formatChange(change: number, percent: number) {
   return `${sign}${formatCurrency(change)}（${sign}${(percent * 100).toFixed(1)}%）`;
 }
 
-export default function FinanceReportPage() {
+export default function FinanceReportPage({ embedded = false }: { embedded?: boolean }) {
   const { toast, showToast } = useToastState();
   const [month, setMonth] = useState<string>(() => {
     const now = new Date();
@@ -193,16 +193,18 @@ export default function FinanceReportPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader
-        title="财务月报 / 年报"
-        subtitle="财务分析报告"
-        actions={(
-          <>
-            <Tag tone="blue">月度自动推送</Tag>
-            <Tag tone="green">5 模块 + 投资聚合</Tag>
-          </>
-        )}
-      />
+      {!embedded && (
+        <PageHeader
+          title="财务月报 / 年报"
+          subtitle="财务分析报告"
+          actions={(
+            <>
+              <Tag tone="blue">月度自动推送</Tag>
+              <Tag tone="green">5 模块 + 投资聚合</Tag>
+            </>
+          )}
+        />
+      )}
 
       <SectionCard
         title="月度报告"

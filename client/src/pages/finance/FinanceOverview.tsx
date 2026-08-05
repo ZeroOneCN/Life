@@ -69,7 +69,7 @@ function formatChange(change: number, percent: number) {
  */
 export default function FinanceOverviewPage() {
   const { toast, showToast } = useToastState();
-  const [activeTab, setActiveTab] = useState<'overview' | 'report'>('overview');
+  const [activeTab, setActiveTab] = usePageTab<OverviewTab>('overview', ['overview', 'report'], 'financeOverviewTab');
   const [report, setReport] = useState<FinanceMonthlyReport | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -203,7 +203,7 @@ export default function FinanceOverviewPage() {
       ) : (
         <div className="finance-overview-report">
           <Suspense fallback={<div className="skeleton-block" />}>
-            <FinanceReportPage />
+            <FinanceReportPage embedded />
           </Suspense>
         </div>
       )}

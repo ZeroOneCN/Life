@@ -63,8 +63,6 @@ interface ForexDashboardSectionProps {
   capitalFlows: ForexCapitalFlow[];
   startDate: string;
   endDate: string;
-  onStartDateChange: (value: string) => void;
-  onEndDateChange: (value: string) => void;
   summary?: ForexDashboardSummary;
 }
 
@@ -543,8 +541,6 @@ export function ForexDashboardSection({
   capitalFlows,
   startDate,
   endDate,
-  onStartDateChange,
-  onEndDateChange,
   summary: externalSummary,
 }: ForexDashboardSectionProps) {
   const summary = externalSummary ?? useMemo(
@@ -676,21 +672,6 @@ export function ForexDashboardSection({
       action={<Tag tone="blue">{`${startDate} 至 ${endDate}`}</Tag>}
     >
       <div className="page-stack">
-        <div className="forex-filter-grid">
-          <DatePickerField
-            label="开始日期"
-            value={startDate}
-            onChange={onStartDateChange}
-            placeholder="选择开始日期"
-          />
-          <DatePickerField
-            label="结束日期"
-            value={endDate}
-            onChange={onEndDateChange}
-            placeholder="选择结束日期"
-          />
-        </div>
-
         <StatGrid
           className="forex-dashboard-stat-grid"
           items={[

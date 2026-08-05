@@ -6,7 +6,7 @@ import { TravelLeaderboardSection } from '../../components/finance/TravelLeaderb
 import { TravelReportSection } from '../../components/finance/TravelReportSection';
 import { TravelStatsSection } from '../../components/finance/TravelStatsSection';
 import { CurrencyConverter } from '../../components/finance/CurrencyConverter';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { ContextBar, PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, SelectField, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -305,22 +305,17 @@ export default function TravelPage() {
         subtitle={loading ? '正在加载旅行数据...' : '旅行支出'}
       />
 
-      <SectionCard
-        title="当前上下文"
-        description="当前登录用户与活跃账本由后端设置统一驱动，页面不再从浏览器本地业务存储读取。"
-      >
-        <div className="travel-context-grid">
-          <SelectField
-            label="当前行程账本"
-            value={activeBook?.id ?? ''}
-            onChange={(event) => handleActiveBookChange(event.target.value)}
-          >
-            {books.map((book) => (
-              <option key={book.id} value={book.id}>{book.name}</option>
-            ))}
-          </SelectField>
-        </div>
-      </SectionCard>
+      <ContextBar label="当前上下文">
+        <SelectField
+          label="当前行程账本"
+          value={activeBook?.id ?? ''}
+          onChange={(event) => handleActiveBookChange(event.target.value)}
+        >
+          {books.map((book) => (
+            <option key={book.id} value={book.id}>{book.name}</option>
+          ))}
+        </SelectField>
+      </ContextBar>
 
       <StatGrid
         items={[
@@ -377,6 +372,7 @@ export default function TravelPage() {
       ) : null}
 
       {tab === 'details' ? (
+        <>
         <TravelDetailsSection
           activeBookId={activeBook?.id ?? ''}
           detailsBookId={settings.detailsBookId}
@@ -394,6 +390,8 @@ export default function TravelPage() {
           }}
           showToast={showToast}
         />
+        <CurrencyConverter defaultFrom="USD" defaultTo="CNY" defaultAmount={100} />
+        </>
       ) : null}
 
       {tab === 'stats' ? (
@@ -440,8 +438,6 @@ export default function TravelPage() {
           showToast={showToast}
         />
       ) : null}
-
-      <CurrencyConverter defaultFrom="USD" defaultTo="CNY" defaultAmount={100} />
 
       <Toast toast={toast} />
     </div>

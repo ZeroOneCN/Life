@@ -141,11 +141,13 @@ export default function NotificationCenterPage() {
         actions={<Tag tone="blue">{loading ? '同步中' : '后端已接入'}</Tag>}
       />
 
-      <PillTabs
-        options={tabOptions.map((item) => ({ value: item.value, label: item.label }))}
-        value={tab}
-        onChange={(value) => setTab(value as (typeof tabOptions)[number]['value'])}
-      />
+      <div className="merged-tabs-top">
+        <PillTabs
+          options={tabOptions.map((item) => ({ value: item.value, label: item.label }))}
+          value={tab}
+          onChange={(value) => setTab(value as (typeof tabOptions)[number]['value'])}
+        />
+      </div>
 
       {tab === 'overview' ? (
         <>

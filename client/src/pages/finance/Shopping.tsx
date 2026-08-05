@@ -4,7 +4,7 @@ import { ShoppingDashboardSection } from '../../components/finance/ShoppingDashb
 import { ShoppingLedgersSection } from '../../components/finance/ShoppingLedgersSection';
 import { ShoppingPlatformsSection } from '../../components/finance/ShoppingPlatformsSection';
 import { ShoppingRecordsSection } from '../../components/finance/ShoppingRecordsSection';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { ContextBar, PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { Btn, Modal, PillTabs, SelectField, Tag, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -186,35 +186,30 @@ export default forwardRef<{ openImportModal: () => void }, { hideHeader?: boolea
       )}
 
       {tab !== 'ledgers' ? (
-      <SectionCard
-        title="当前上下文"
-        description="账本上下文与货币模式都以后端 settings 为准。"
-        action={<Tag tone="green">{settings.currencyMode === 'USDT' ? `1 USDT = ¥${(settings.usdtRate ?? 7).toFixed(2)}` : '人民币主视图'}</Tag>}
-      >
-        <div className="shopping-context-grid">
-          <SelectField
-            label="当前账本"
-            value={activeLedger?.id ?? ''}
-            onChange={(event) => {
-              void updateSettings({ activeLedgerId: event.target.value });
-            }}
-          >
-            {ledgers.map((ledger) => (
-              <option key={ledger.id} value={ledger.id}>{ledger.name}</option>
-            ))}
-          </SelectField>
-          <SelectField
-            label="货币模式"
-            value={settings.currencyMode}
-            onChange={(event) => {
-              void updateSettings({ currencyMode: event.target.value as ShoppingCurrencyMode });
-            }}
-          >
-            <option value="CNY">人民币</option>
-            <option value="USDT">USDT</option>
-          </SelectField>
-        </div>
-      </SectionCard>
+      <ContextBar label="当前上下文">
+        <SelectField
+          label="当前账本"
+          value={activeLedger?.id ?? ''}
+          onChange={(event) => {
+            void updateSettings({ activeLedgerId: event.target.value });
+          }}
+        >
+          {ledgers.map((ledger) => (
+            <option key={ledger.id} value={ledger.id}>{ledger.name}</option>
+          ))}
+        </SelectField>
+        <SelectField
+          label="货币模式"
+          value={settings.currencyMode}
+          onChange={(event) => {
+            void updateSettings({ currencyMode: event.target.value as ShoppingCurrencyMode });
+          }}
+        >
+          <option value="CNY">人民币</option>
+          <option value="USDT">USDT</option>
+        </SelectField>
+        <Tag tone="green">{settings.currencyMode === 'USDT' ? `1 USDT = ¥${(settings.usdtRate ?? 7).toFixed(2)}` : '人民币主视图'}</Tag>
+      </ContextBar>
       ) : null}
 
       <StatGrid

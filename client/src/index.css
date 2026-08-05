@@ -16387,9 +16387,6 @@ select:focus-visible {
 .finance-merged-page .merged-content .page-header {
   display: none;
 }
-.finance-overview-report .page-header {
-  display: none;
-}
 
 .merged-content .merged-toolbar {
   display: flex;
