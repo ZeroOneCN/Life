@@ -185,6 +185,8 @@ export default function NavRail() {
   const location = useLocation();
   const navRailExpanded = useWorkspaceStore((s) => s.navRailExpanded);
   const toggleNavRail = useWorkspaceStore((s) => s.toggleNavRail);
+  const pins = useWorkspaceStore((s) => s.pins);
+  const removePin = useWorkspaceStore((s) => s.removePin);
   const [activeMenuKey, setActiveMenuKey] = useState<string>(() => findParentKey(location.pathname) ?? location.pathname);
 
   // 路由切换时同步激活态

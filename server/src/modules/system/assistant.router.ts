@@ -110,6 +110,10 @@ export function createAssistantRouter() {
 
       const conversation: DeepSeekMessage[] = [
         { role: 'system', content: buildSystemPrompt() },
+        // C3 上下文注入：合并前端传来的 system 上下文（如当前页面/选中项摘要）
+        ...payload.messages
+          .filter((message) => message.role === 'system')
+          .map<DeepSeekMessage>((message) => ({ role: 'system', content: message.content })),
         ...payload.messages
           .filter((message) => message.role === 'user' || message.role === 'assistant' || message.role === 'tool')
           .map<DeepSeekMessage>((message) => {

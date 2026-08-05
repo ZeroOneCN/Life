@@ -8,6 +8,7 @@ import { setDensity } from '../hooks/useDeviceCapabilities';
 import type { DeviceCapabilities } from '../hooks/useDeviceCapabilities';
 import { useBreadcrumbTailContext } from '../hooks/useBreadcrumbTail';
 import { logout, useAuthState } from '../services/auth';
+import type { IconKey } from '../types/navigation';
 
 type ThemeMode = 'light' | 'dark' | 'auto';
 type Density = DeviceCapabilities['density'];
@@ -106,6 +107,8 @@ export default function CommandBar() {
   const { tail } = useBreadcrumbTailContext();
   const setCommandPaletteOpen = useWorkspaceStore((s) => s.setCommandPaletteOpen);
   const commandPaletteOpen = useWorkspaceStore((s) => s.commandPaletteOpen);
+  const pins = useWorkspaceStore((s) => s.pins);
+  const togglePinByPath = useWorkspaceStore((s) => s.togglePinByPath);
 
   const [densityOpen, setDensityOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
@@ -121,6 +124,22 @@ export default function CommandBar() {
   const userMenuRef = useRef<HTMLDivElement | null>(null);
 
   const breadcrumb = useMemo(() => buildBreadcrumb(location.pathname, tail), [location.pathname, tail]);
+
+  // 当前页收藏状态
+  const isCurrentPinned = pins.some((p) => p.path === location.pathname && p.type === 'page');
+
+  /**
+   * 切换收藏当前页
+   */
+  const handleTogglePin = () => {
+    const route = routes.find((r) => r.path === location.pathname);
+    togglePinByPath({
+      path: location.pathname,
+      title: route?.label ?? location.pathname,
+      icon: route?.menuKey ? (route.menuKey.split('/').pop() as IconKey) : 'dashboard',
+      type: 'page',
+    });
+  };
 
   const currentUser = authState.session?.user ?? null;
   const userDisplayName = currentUser?.nickname || currentUser?.username || '当前用户';
@@ -216,6 +235,24 @@ export default function CommandBar() {
             </span>
           ))}
         </nav>
+
+        {/* 收藏当前页 */}
+        <button
+          type="button"
+          className={`command-bar-pin-btn ${isCurrentPinned ? 'is-pinned' : ''}`}
+          onClick={handleTogglePin}
+          aria-label={isCurrentPinned ? '取消收藏当前页' : '收藏当前页'}
+          title={isCurrentPinned ? '取消收藏当前页' : '收藏当前页'}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill={isCurrentPinned ? 'currentColor' : 'none'} aria-hidden="true">
+            <path
+              d="M12 2l2.9 6.26 6.86.63-5.2 4.53 1.55 6.71L12 16.7l-6.11 3.43 1.55-6.71-5.2-4.53 6.86-.63L12 2z"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
       </div>
 
       {/* 右侧：密度 / 主题 / 通知 / 用户 */}

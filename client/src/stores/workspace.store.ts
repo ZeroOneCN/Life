@@ -57,6 +57,32 @@ export interface WorkspaceTab {
 export type InspectorMode = 'detail' | 'ai' | 'actions' | null;
 
 /**
+ * 收藏项类型
+ * - page: 页面收藏
+ * - record: 记录收藏（阶段 C 预留）
+ * - filter: 筛选收藏（阶段 C 预留）
+ */
+export type PinType = 'page' | 'record' | 'filter';
+
+/**
+ * 收藏项
+ */
+export interface WorkspacePin {
+  /** 唯一 ID */
+  id: string;
+  /** 显示名 */
+  title: string;
+  /** 跳转路径（page 类型） */
+  path?: string;
+  /** 类型 */
+  type: PinType;
+  /** 图标名（IconKey） */
+  icon?: string;
+  /** 创建时间戳 */
+  createdAt: number;
+}
+
+/**
  * 工作区状态（Zustand store）
  */
 interface WorkspaceState {
@@ -64,6 +90,8 @@ interface WorkspaceState {
   tabs: WorkspaceTab[];
   /** 当前活跃 Tab ID */
   activeTabId: string | null;
+  /** 收藏列表 */
+  pins: WorkspacePin[];
   /** Inspector 模式 */
   inspectorMode: InspectorMode;
   /** Inspector 宽度（px） */
@@ -96,6 +124,12 @@ interface WorkspaceState {
   setInspectorMode: (mode: InspectorMode) => void;
   /** 设置 Inspector 宽度 */
   setInspectorWidth: (width: number) => void;
+  /** 添加收藏（页面/记录/筛选） */
+  addPin: (pin: Omit<WorkspacePin, 'id' | 'createdAt'>) => void;
+  /** 移除收藏 */
+  removePin: (id: string) => void;
+  /** 根据路径切换收藏状态，返回是否已收藏 */
+  togglePinByPath: (config: Omit<WorkspacePin, 'id' | 'createdAt'>) => boolean;
   /** 切换 Nav Rail 展开/折叠 */
   toggleNavRail: () => void;
   /** 打开/关闭命令面板 */
@@ -122,19 +156,20 @@ function generateTabId(): string {
 
 /**
  * 从 localStorage 恢复工作区状态
- * @returns 恢复的 tabs 和 activeTabId，或 null
+ * @returns 恢复的 tabs、pins 和 activeTabId，或 null
  */
-function restoreFromStorage(): { tabs: WorkspaceTab[]; activeTabId: string | null } | null {
+function restoreFromStorage(): { tabs: WorkspaceTab[]; pins: WorkspacePin[]; activeTabId: string | null } | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as { tabs: WorkspaceTab[]; activeTabId: string | null };
+    const parsed = JSON.parse(raw) as { tabs: WorkspaceTab[]; pins?: WorkspacePin[]; activeTabId: string | null };
     if (!Array.isArray(parsed.tabs)) return null;
     // 过滤过期 Tab（超过 7 天未访问）
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const validTabs = parsed.tabs.filter((t) => t.lastVisited >= sevenDaysAgo);
-    return { tabs: validTabs, activeTabId: parsed.activeTabId };
+    const pins = Array.isArray(parsed.pins) ? parsed.pins : [];
+    return { tabs: validTabs, pins, activeTabId: parsed.activeTabId };
   } catch {
     return null;
   }
@@ -144,11 +179,12 @@ function restoreFromStorage(): { tabs: WorkspaceTab[]; activeTabId: string | nul
  * 持久化工作区状态到 localStorage
  * @param tabs - Tab 列表
  * @param activeTabId - 活跃 Tab ID
+ * @param pins - 收藏列表（可选，缺省时保留 store 内当前值）
  */
-function persistToStorage(tabs: WorkspaceTab[], activeTabId: string | null): void {
+function persistToStorage(tabs: WorkspaceTab[], activeTabId: string | null, pins?: WorkspacePin[]): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tabs, activeTabId }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tabs, activeTabId, pins }));
   } catch {
     // localStorage 满或不可用，静默失败
   }
@@ -163,6 +199,7 @@ function persistToStorage(tabs: WorkspaceTab[], activeTabId: string | null): voi
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   tabs: [],
   activeTabId: null,
+  pins: [],
   inspectorMode: null,
   inspectorWidth: 320,
   navRailExpanded: false,
@@ -180,7 +217,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           t.id === existing.id ? { ...t, lastVisited: Date.now() } : t,
         ),
       });
-      persistToStorage(get().tabs, get().activeTabId);
+      persistToStorage(get().tabs, get().activeTabId, get().pins);
       return;
     }
 
@@ -212,7 +249,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     set({ tabs: nextTabs, activeTabId: newTab.id });
-    persistToStorage(get().tabs, get().activeTabId);
+    persistToStorage(get().tabs, get().activeTabId, get().pins);
   },
 
   closeTab: (id) => {
@@ -235,7 +272,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       activeTabId: nextActiveId,
       recentlyClosed: [...state.recentlyClosed.slice(-9), closed],
     });
-    persistToStorage(get().tabs, get().activeTabId);
+    persistToStorage(get().tabs, get().activeTabId, get().pins);
   },
 
   setActiveTab: (id) => {
@@ -245,14 +282,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         t.id === id ? { ...t, lastVisited: Date.now() } : t,
       ),
     });
-    persistToStorage(get().tabs, get().activeTabId);
+    persistToStorage(get().tabs, get().activeTabId, get().pins);
   },
 
   updateTab: (id, patch) => {
     set({
       tabs: get().tabs.map((t) => (t.id === id ? { ...t, ...patch } : t)),
     });
-    persistToStorage(get().tabs, get().activeTabId);
+    persistToStorage(get().tabs, get().activeTabId, get().pins);
   },
 
   pinTab: (id, pinned) => {
@@ -267,14 +304,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       ...state.tabs.filter((t) => t.id !== id && !t.pinned),
     ];
     set({ tabs: nextTabs });
-    persistToStorage(get().tabs, get().activeTabId);
+    persistToStorage(get().tabs, get().activeTabId, get().pins);
   },
 
   setTabLayout: (id, layout) => {
     set({
       tabs: get().tabs.map((t) => (t.id === id ? { ...t, layout } : t)),
     });
-    persistToStorage(get().tabs, get().activeTabId);
+    persistToStorage(get().tabs, get().activeTabId, get().pins);
   },
 
   reorderTabs: (fromId: string, toId: string) => {
@@ -287,7 +324,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const [moved] = next.splice(fromIndex, 1);
     next.splice(toIndex, 0, moved);
     set({ tabs: next });
-    persistToStorage(get().tabs, get().activeTabId);
+    persistToStorage(get().tabs, get().activeTabId, get().pins);
   },
 
   closeOtherTabs: (id: string) => {
@@ -302,11 +339,37 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         : id,
       recentlyClosed: [...state.recentlyClosed.slice(-9), ...closed],
     });
-    persistToStorage(get().tabs, get().activeTabId);
+    persistToStorage(get().tabs, get().activeTabId, get().pins);
   },
 
   setInspectorMode: (mode) => set({ inspectorMode: mode }),
   setInspectorWidth: (width) => set({ inspectorWidth: Math.max(280, Math.min(560, width)) }),
+
+  addPin: (pin) => {
+    const state = get();
+    // 避免重复收藏（同 path + type 视为同一项）
+    const duplicated = state.pins.some((p) => p.path === pin.path && p.type === pin.type);
+    if (duplicated) return;
+    const newPin: WorkspacePin = { ...pin, id: generateTabId(), createdAt: Date.now() };
+    set({ pins: [...state.pins, newPin] });
+    persistToStorage(get().tabs, get().activeTabId, get().pins);
+  },
+
+  removePin: (id) => {
+    set({ pins: get().pins.filter((p) => p.id !== id) });
+    persistToStorage(get().tabs, get().activeTabId, get().pins);
+  },
+
+  togglePinByPath: (config) => {
+    const state = get();
+    const existing = state.pins.find((p) => p.path === config.path && p.type === config.type);
+    if (existing) {
+      get().removePin(existing.id);
+      return false;
+    }
+    get().addPin(config);
+    return true;
+  },
   toggleNavRail: () => set({ navRailExpanded: !get().navRailExpanded }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
 
@@ -323,8 +386,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (restored && restored.tabs.length > 0) {
       set({
         tabs: restored.tabs,
+        pins: restored.pins,
         activeTabId: restored.activeTabId || restored.tabs[0].id,
       });
+    } else if (restored) {
+      // 仅有收藏、无 Tab 时也恢复收藏
+      set({ pins: restored.pins });
     }
   },
 }));

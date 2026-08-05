@@ -1,7 +1,7 @@
 export type AssistantTool = 'query_finance' | 'query_health' | 'query_investment' | 'query_life';
 
 export interface AssistantChatMessage {
-  role: 'user' | 'assistant' | 'tool';
+  role: 'user' | 'assistant' | 'tool' | 'system';
   content: string;
   toolCallId?: string;
 }

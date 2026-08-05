@@ -10,6 +10,7 @@ import { useWorkspaceStore } from '../stores/workspace.store';
 
 import CommandBar from './CommandBar';
 import CommandPalette from './CommandPalette';
+import Inspector from './Inspector';
 import NavRail from './NavRail';
 import StatusBar from './StatusBar';
 import WorkspaceTabBar from './WorkspaceTabBar';
@@ -151,6 +152,7 @@ export default function AppShell() {
               </ErrorBoundary>
             </main>
           </div>
+          <Inspector />
         </div>
         <StatusBar />
         <AssistantLauncher />
