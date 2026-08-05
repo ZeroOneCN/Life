@@ -15622,6 +15622,312 @@ select:focus-visible {
   font-size: 10px;
 }
 
+/* === CommandPalette 类型徽章 === */
+.command-palette-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.command-palette-item-type {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.command-palette-item-type.type-page {
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  color: var(--color-primary);
+}
+
+.command-palette-item-type.type-action {
+  background: color-mix(in srgb, #27a644 18%, transparent);
+  color: #27a644;
+}
+
+.command-palette-item-type.type-record {
+  background: color-mix(in srgb, #d92d20 18%, transparent);
+  color: #d92d20;
+}
+
+.command-palette-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* === WorkspaceTabBar 工作区标签栏 === */
+.workspace-container {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workspace-tab-bar {
+  display: flex;
+  align-items: stretch;
+  height: 36px;
+  background: var(--color-canvas);
+  border-bottom: 1px solid var(--color-hairline);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.workspace-tab-bar-list {
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  padding: 0 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  flex: 1;
+}
+
+.workspace-tab-bar-list::-webkit-scrollbar {
+  height: 0;
+}
+
+.workspace-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 8px 0 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px 6px 0 0;
+  color: var(--color-ink-subtle);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  position: relative;
+  transition: background 100ms ease, color 100ms ease;
+  max-width: 180px;
+  user-select: none;
+}
+
+.workspace-tab:hover {
+  background: var(--color-surface-2);
+  color: var(--color-ink-muted);
+}
+
+.workspace-tab.is-active {
+  background: var(--color-surface-1);
+  color: var(--color-ink);
+}
+
+.workspace-tab.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--color-primary);
+  border-radius: 2px 2px 0 0;
+}
+
+.workspace-tab.is-drag-over {
+  border-left: 2px solid var(--color-primary);
+  padding-left: 10px;
+}
+
+.workspace-tab.is-dragging {
+  opacity: 0.5;
+}
+
+.workspace-tab.is-pinned {
+  padding-left: 8px;
+}
+
+.workspace-tab-pin-icon {
+  display: inline-flex;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.workspace-tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspace-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--color-ink-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 100ms ease, background 100ms ease, color 100ms ease;
+}
+
+.workspace-tab:hover .workspace-tab-close,
+.workspace-tab.is-active .workspace-tab-close {
+  opacity: 1;
+}
+
+.workspace-tab-close:hover {
+  background: var(--color-surface-3);
+  color: var(--color-ink);
+}
+
+/* Tab 右键菜单 */
+.workspace-tab-context-menu {
+  position: fixed;
+  min-width: 160px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.workspace-tab-context-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--color-ink-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 100ms ease, color 100ms ease;
+}
+
+.workspace-tab-context-item:hover:not(:disabled) {
+  background: var(--color-surface-2);
+  color: var(--color-ink);
+}
+
+.workspace-tab-context-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.workspace-tab-context-item.is-danger:hover {
+  color: #d92d20;
+}
+
+.workspace-tab-context-divider {
+  height: 1px;
+  background: var(--color-hairline);
+  margin: 2px 0;
+}
+
+/* === SplitView 分屏容器 === */
+.split-view {
+  display: grid;
+  grid-template-columns: var(--split-left, 40%) auto 1fr;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  gap: 0;
+}
+
+.split-view.is-dragging {
+  cursor: col-resize;
+}
+
+.split-view-pane {
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+.split-view-left {
+  border-right: none;
+}
+
+.split-view-divider {
+  width: 5px;
+  background: var(--color-hairline);
+  cursor: col-resize;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 100ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.split-view-divider:hover,
+.split-view.is-dragging .split-view-divider {
+  background: var(--color-primary);
+}
+
+.split-view-divider-grip {
+  width: 3px;
+  height: 28px;
+  background: var(--color-ink-tertiary);
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 100ms ease;
+}
+
+.split-view-divider:hover .split-view-divider-grip,
+.split-view.is-dragging .split-view-divider-grip {
+  opacity: 0.6;
+  background: var(--color-on-primary, #fff);
+}
+
+.split-view-divider:focus-visible {
+  outline: 2px solid var(--color-primary-focus);
+  outline-offset: -1px;
+}
+
+/* SplitView 移动端退化为上下堆叠 */
+@media (max-width: 767px) {
+  .split-view {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas: 'left' 'divider' 'right';
+  }
+
+  .split-view-left {
+    grid-area: left;
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .split-view-divider {
+    grid-area: divider;
+    width: 100%;
+    height: 5px;
+    cursor: row-resize;
+  }
+
+  .split-view-right {
+    grid-area: right;
+  }
+}
+
 /* === 响应式：移动端 NavRail 转 BottomNav（阶段 A 简化处理） === */
 @media (max-width: 767px) {
   .app-shell {

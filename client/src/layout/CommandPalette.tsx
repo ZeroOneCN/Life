@@ -6,12 +6,15 @@ import { useWorkspaceStore } from '../stores/workspace.store';
 import type { IconKey } from '../types/navigation';
 
 /**
- * 命令面板项类型
+ * 命令项类型
+ * - page: 页面跳转
+ * - action: 动作执行（如新建 Tab、切换主题、切换密度）
+ * - record: 记录搜索（阶段 C 接入后端 API）
  */
-type CommandItemType = 'page' | 'action';
+type CommandItemType = 'page' | 'action' | 'record';
 
 /**
- * 命令面板项
+ * 命令项
  */
 interface CommandItem {
   /** 唯一 key */
@@ -26,6 +29,8 @@ interface CommandItem {
   path?: string;
   /** 图标 key（可选） */
   icon?: IconKey;
+  /** 执行动作（action 类型） */
+  run?: () => void;
 }
 
 /**
@@ -73,33 +78,103 @@ function matchItem(item: CommandItem, query: string): boolean {
 }
 
 /**
- * CommandPalette 命令面板组件（阶段 A 占位版）
+ * CommandPalette 命令面板组件
  *
- * 阶段 A：仅支持页面搜索与跳转，无记录搜索、无动作执行。
- * 阶段 B 将扩展为完整命令面板（页面/记录/动作三类 + 历史权重）。
+ * 三类搜索：
+ * - 页面（`/` 前缀或默认）：搜索菜单页面
+ * - 动作（`>` 前缀）：搜索可执行动作（切换主题、切换密度、折叠 NavRail 等）
+ * - 记录（`@` 前缀）：搜索业务记录（阶段 C 接入后端 API）
  *
  * 交互：
  * - ↑↓ 选择
- * - Enter 执行（跳转）
+ * - Enter 执行
  * - Esc 关闭
- * - 输入 `>` 仅搜索动作（阶段 B）
- * - 输入 `@` 仅搜索记录（阶段 B）
- * - 输入 `/` 仅搜索页面（阶段 B）
+ * - 输入 `>` 仅搜索动作
+ * - 输入 `@` 仅搜索记录
+ * - 输入 `/` 仅搜索页面
  *
  * @returns CommandPalette JSX
  */
 export default function CommandPalette() {
   const navigate = useNavigate();
   const setCommandPaletteOpen = useWorkspaceStore((s) => s.setCommandPaletteOpen);
+  const toggleNavRail = useWorkspaceStore((s) => s.toggleNavRail);
+  const setInspectorMode = useWorkspaceStore((s) => s.setInspectorMode);
+  const restoreRecentlyClosed = useWorkspaceStore((s) => s.restoreRecentlyClosed);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const allPages = useMemo(() => flattenPages(), []);
 
+  // 动作集合（随 store 状态动态生成）
+  const actions = useMemo<CommandItem[]>(() => {
+    return [
+      {
+        key: 'action-toggle-navrail',
+        title: '折叠/展开导航栏',
+        group: '视图',
+        type: 'action',
+        run: () => toggleNavRail(),
+      },
+      {
+        key: 'action-inspector-ai',
+        title: '打开 AI 副驾',
+        group: '视图',
+        type: 'action',
+        run: () => setInspectorMode('ai'),
+      },
+      {
+        key: 'action-inspector-detail',
+        title: '打开详情面板',
+        group: '视图',
+        type: 'action',
+        run: () => setInspectorMode('detail'),
+      },
+      {
+        key: 'action-inspector-close',
+        title: '关闭 Inspector 面板',
+        group: '视图',
+        type: 'action',
+        run: () => setInspectorMode(null),
+      },
+      {
+        key: 'action-restore-tab',
+        title: '恢复最近关闭的 Tab',
+        group: '工作区',
+        type: 'action',
+        run: () => restoreRecentlyClosed(),
+      },
+      {
+        key: 'action-goto-dashboard',
+        title: '前往仪表盘',
+        group: '导航',
+        type: 'action',
+        run: () => navigate('/dashboard'),
+      },
+    ];
+  }, [toggleNavRail, setInspectorMode, restoreRecentlyClosed, navigate]);
+
+  // 解析查询前缀，确定过滤模式与实际查询词
+  const { mode, searchQuery } = useMemo(() => {
+    const trimmed = query.trim();
+    if (trimmed.startsWith('>')) return { mode: 'action' as const, searchQuery: trimmed.slice(1) };
+    if (trimmed.startsWith('@')) return { mode: 'record' as const, searchQuery: trimmed.slice(1) };
+    if (trimmed.startsWith('/')) return { mode: 'page' as const, searchQuery: trimmed.slice(1) };
+    return { mode: 'all' as const, searchQuery: trimmed };
+  }, [query]);
+
   const filtered = useMemo(() => {
-    return allPages.filter((item) => matchItem(item, query));
-  }, [allPages, query]);
+    // 全模式时合并页面与动作，页面优先
+    if (mode === 'all') {
+      const matchedPages = allPages.filter((item) => matchItem(item, searchQuery));
+      const matchedActions = actions.filter((item) => matchItem(item, searchQuery));
+      return [...matchedPages, ...matchedActions];
+    }
+    if (mode === 'record') return [];
+    const pool = mode === 'action' ? actions : allPages;
+    return pool.filter((item) => matchItem(item, searchQuery));
+  }, [allPages, actions, mode, searchQuery]);
 
   // 确保 activeIndex 在范围内
   useEffect(() => {
@@ -137,6 +212,9 @@ export default function CommandPalette() {
         if (target.path) {
           navigate(target.path);
           setCommandPaletteOpen(false);
+        } else if (target.run) {
+          target.run();
+          setCommandPaletteOpen(false);
         }
       }
     };
@@ -144,12 +222,10 @@ export default function CommandPalette() {
     return () => window.removeEventListener('keydown', handler);
   }, [filtered, activeIndex, navigate, setCommandPaletteOpen]);
 
-  // 点击背景关闭
   const handleBackdropClick = () => {
     setCommandPaletteOpen(false);
   };
 
-  // 点击面板阻止冒泡
   const handlePanelClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
@@ -158,8 +234,19 @@ export default function CommandPalette() {
     if (item.path) {
       navigate(item.path);
       setCommandPaletteOpen(false);
+    } else if (item.run) {
+      item.run();
+      setCommandPaletteOpen(false);
     }
   };
+
+  const placeholder = mode === 'action'
+    ? '搜索动作...（如：切换主题、打开 AI）'
+    : mode === 'record'
+      ? '搜索记录...（阶段 C 接入后端 API）'
+      : mode === 'page'
+        ? '搜索页面...（如：仪表盘、购物记录）'
+        : '搜索页面或动作...（> 动作 / @ 记录 / / 页面）';
 
   return (
     <div
@@ -179,7 +266,7 @@ export default function CommandPalette() {
             ref={inputRef}
             type="text"
             className="command-palette-input"
-            placeholder="搜索页面...（阶段 B 将支持记录与动作）"
+            placeholder={placeholder}
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -192,7 +279,9 @@ export default function CommandPalette() {
 
         <div className="command-palette-list">
           {filtered.length === 0 ? (
-            <div className="command-palette-empty">无匹配结果</div>
+            <div className="command-palette-empty">
+              {mode === 'record' ? '记录搜索将在阶段 C 接入后端 API' : '无匹配结果'}
+            </div>
           ) : (
             filtered.map((item, index) => (
               <button
@@ -202,7 +291,12 @@ export default function CommandPalette() {
                 onClick={() => handleItemClick(item)}
                 onMouseEnter={() => setActiveIndex(index)}
               >
-                <span className="command-palette-item-title">{item.title}</span>
+                <span className="command-palette-item-main">
+                  <span className={`command-palette-item-type type-${item.type}`} aria-hidden="true">
+                    {item.type === 'page' ? 'P' : item.type === 'action' ? 'A' : 'R'}
+                  </span>
+                  <span className="command-palette-item-title">{item.title}</span>
+                </span>
                 <span className="command-palette-item-group">{item.group}</span>
               </button>
             ))
@@ -211,9 +305,13 @@ export default function CommandPalette() {
 
         <div className="command-palette-footer">
           <span><span className="command-palette-kbd-inline">↑↓</span> 选择</span>
-          <span><span className="command-palette-kbd-inline">Enter</span> 跳转</span>
+          <span><span className="command-palette-kbd-inline">Enter</span> 执行</span>
           <span><span className="command-palette-kbd-inline">Esc</span> 关闭</span>
-          <span className="command-palette-hint">阶段 A 占位 · 阶段 B 实装完整搜索</span>
+          <span className="command-palette-hint">
+            <span className="command-palette-kbd-inline">&gt;</span>动作
+            <span className="command-palette-kbd-inline">@</span>记录
+            <span className="command-palette-kbd-inline">/</span>页面
+          </span>
         </div>
       </div>
     </div>

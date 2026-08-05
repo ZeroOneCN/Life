@@ -86,6 +86,10 @@ interface WorkspaceState {
   updateTab: (id: string, patch: Partial<WorkspaceTab>) => void;
   /** Pin/Unpin Tab */
   pinTab: (id: string, pinned: boolean) => void;
+  /** 拖拽排序：将 fromId 移到 toId 位置 */
+  reorderTabs: (fromId: string, toId: string) => void;
+  /** 关闭其他 Tab（保留指定 id 与已 Pin 的） */
+  closeOtherTabs: (id: string) => void;
   /** 设置 Tab 布局模式 */
   setTabLayout: (id: string, layout: WorkspaceLayout) => void;
   /** 设置 Inspector 模式 */
@@ -269,6 +273,34 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   setTabLayout: (id, layout) => {
     set({
       tabs: get().tabs.map((t) => (t.id === id ? { ...t, layout } : t)),
+    });
+    persistToStorage(get().tabs, get().activeTabId);
+  },
+
+  reorderTabs: (fromId: string, toId: string) => {
+    const state = get();
+    if (fromId === toId) return;
+    const fromIndex = state.tabs.findIndex((t) => t.id === fromId);
+    const toIndex = state.tabs.findIndex((t) => t.id === toId);
+    if (fromIndex < 0 || toIndex < 0) return;
+    const next = [...state.tabs];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    set({ tabs: next });
+    persistToStorage(get().tabs, get().activeTabId);
+  },
+
+  closeOtherTabs: (id: string) => {
+    const state = get();
+    const kept = state.tabs.filter((t) => t.id === id || t.pinned);
+    if (kept.length === state.tabs.length) return;
+    const closed = state.tabs.filter((t) => t.id !== id && !t.pinned);
+    set({
+      tabs: kept,
+      activeTabId: state.activeTabId && kept.some((t) => t.id === state.activeTabId)
+        ? state.activeTabId
+        : id,
+      recentlyClosed: [...state.recentlyClosed.slice(-9), ...closed],
     });
     persistToStorage(get().tabs, get().activeTabId);
   },
