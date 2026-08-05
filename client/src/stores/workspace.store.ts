@@ -221,7 +221,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       return;
     }
 
-    // 新建 Tab
+    // 新建 Tab（无数量上限，可无限打开）
     const newTab: WorkspaceTab = {
       id: generateTabId(),
       path: config.path,
@@ -236,19 +236,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       lastVisited: Date.now(),
     };
 
-    let nextTabs = [...state.tabs, newTab];
-
-    // 超过上限：按 LRU 关闭非 Pin 的最旧 Tab
-    if (nextTabs.length > MAX_TABS) {
-      const unpinned = nextTabs.filter((t) => !t.pinned);
-      if (unpinned.length > 0) {
-        const oldest = unpinned.reduce((a, b) => (a.lastVisited < b.lastVisited ? a : b));
-        nextTabs = nextTabs.filter((t) => t.id !== oldest.id);
-        set({ recentlyClosed: [...state.recentlyClosed.slice(-9), oldest] });
-      }
-    }
-
-    set({ tabs: nextTabs, activeTabId: newTab.id });
+    set({ tabs: [...state.tabs, newTab], activeTabId: newTab.id });
     persistToStorage(get().tabs, get().activeTabId, get().pins);
   },
 

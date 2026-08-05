@@ -15358,6 +15358,8 @@ select:focus-visible {
   font: inherit;
   font-size: 13px;
   text-align: left;
+  /* 相对定位：让激活条 ::before 始终以按钮自身为基准，跟随按钮而非整个节点 */
+  position: relative;
   transition: background 120ms ease, color 120ms ease;
 }
 
