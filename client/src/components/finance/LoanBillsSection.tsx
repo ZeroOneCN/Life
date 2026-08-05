@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 
 import { DatePickerField, MonthPickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
+import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag } from '../ui';
 import { LOAN_ALL_PLATFORMS, LOAN_BILL_PAGE_SIZE, formatLoanAmount, getLoanBillStatus, suggestLoanDueDate } from '../../services/loan';
 import type { LoanBill, LoanBillDraft, LoanPlatform } from '../../types/loan';
 
@@ -25,7 +25,6 @@ interface BillFormState {
   interest: string;
   billingMonth: string;
   dueDate: string;
-  notes: string;
 }
 
 function createDefaultFormState(platforms: LoanPlatform[]): BillFormState {
@@ -37,7 +36,6 @@ function createDefaultFormState(platforms: LoanPlatform[]): BillFormState {
     interest: '',
     billingMonth,
     dueDate: firstPlatform ? suggestLoanDueDate(firstPlatform, billingMonth) : '',
-    notes: '',
   };
 }
 
@@ -48,7 +46,6 @@ function buildFormState(bill: LoanBill): BillFormState {
     interest: String(bill.interest),
     billingMonth: bill.billingMonth,
     dueDate: bill.dueDate,
-    notes: bill.notes,
   };
 }
 
@@ -74,7 +71,6 @@ function parseDraft(form: BillFormState): LoanBillDraft | null {
     interest,
     billingMonth: form.billingMonth,
     dueDate: form.dueDate,
-    notes: form.notes.trim(),
   };
 }
 
@@ -101,7 +97,6 @@ export function LoanBillsSection({
   const [partialRepayBill, setPartialRepayBill] = useState<LoanBill | null>(null);
   const [partialRepayAmount, setPartialRepayAmount] = useState('');
   const [partialRepayDate, setPartialRepayDate] = useState(dayjs().format('YYYY-MM-DD'));
-  const [partialRepayNotes, setPartialRepayNotes] = useState('');
 
   useEffect(() => {
     setForm((previous) => previous.platformId ? previous : createDefaultFormState(platforms));
@@ -143,11 +138,11 @@ export function LoanBillsSection({
     { key: 'dueDate', title: '到期日', dataIndex: 'dueDate' as const },
     {
       key: 'amount',
-      title: '本金 / 利息',
+      title: '欠款',
       render: (_value: unknown, row: LoanBill) => (
         <div className="travel-amount-stack">
-          <strong>{formatLoanAmount(row.amount)}</strong>
-          <span>利息 {formatLoanAmount(row.interest)}</span>
+          <strong>{formatLoanAmount(row.amount + row.interest)}</strong>
+          {row.interest > 0 ? <span>含利息 {formatLoanAmount(row.interest)}</span> : null}
         </div>
       ),
     },
@@ -178,11 +173,6 @@ export function LoanBillsSection({
       },
     },
     {
-      key: 'notes',
-      title: '备注',
-      render: (_value: unknown, row: LoanBill) => row.notes || '-',
-    },
-    {
       key: 'actions',
       title: '操作',
       render: (_value: unknown, row: LoanBill) => (
@@ -194,7 +184,6 @@ export function LoanBillsSection({
               setPartialRepayBill(row);
               setPartialRepayAmount('');
               setPartialRepayDate(dayjs().format('YYYY-MM-DD'));
-              setPartialRepayNotes('');
             }}
           >
             部分还款
@@ -231,7 +220,13 @@ export function LoanBillsSection({
     setSaving(true);
     try {
       await onCreate(draft);
-      setForm(createDefaultFormState(platforms));
+      // 连续录入：保留贷款平台与账单月份，仅清空金额/利息，方便快速录入下一笔
+      setForm((previous) => ({
+        ...createDefaultFormState(platforms),
+        platformId: previous.platformId,
+        billingMonth: previous.billingMonth,
+        dueDate: resolveSuggestedDueDate(previous.platformId, previous.billingMonth) || previous.dueDate,
+      }));
       showToast('贷款账单已创建。');
     } catch {
       // The page container already surfaces API errors.
@@ -292,11 +287,9 @@ export function LoanBillsSection({
     try {
       await onPartialRepay(partialRepayBill.id, amount, {
         repaymentDate: partialRepayDate,
-        notes: partialRepayNotes.trim() || undefined,
       });
       setPartialRepayBill(null);
       setPartialRepayAmount('');
-      setPartialRepayNotes('');
       showToast('部分还款成功。');
     } catch {
       // The page container already surfaces API errors.
@@ -369,12 +362,6 @@ export function LoanBillsSection({
               clearable={false}
             />
           </div>
-          <Field
-            label="备注"
-            value={form.notes}
-            onChange={(event) => setForm((previous) => ({ ...previous, notes: event.target.value }))}
-            placeholder="例如：家居和数码配件分期"
-          />
           <div className="loan-inline-action">
             <span className="field-label">保存账单</span>
             <Btn tone="primary" onClick={() => void handleCreate()} disabled={saving || !platforms.length}>新建账单</Btn>
@@ -507,12 +494,6 @@ export function LoanBillsSection({
               />
             </div>
           </div>
-          <TextArea
-            label="备注"
-            value={editingForm.notes}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, notes: event.target.value }))}
-            placeholder="补充这笔账单的消费背景、分期说明或后续处理备注"
-          />
         </div>
       </Modal>
 
@@ -545,7 +526,6 @@ export function LoanBillsSection({
         onClose={() => {
           setPartialRepayBill(null);
           setPartialRepayAmount('');
-          setPartialRepayNotes('');
         }}
         title={partialRepayBill ? `部分还款：${partialRepayBill.platformName}` : '部分还款'}
         width={620}
@@ -556,7 +536,6 @@ export function LoanBillsSection({
               onClick={() => {
                 setPartialRepayBill(null);
                 setPartialRepayAmount('');
-                setPartialRepayNotes('');
               }}
             >
               取消
@@ -571,7 +550,7 @@ export function LoanBillsSection({
           <div className="page-stack">
             <div className="loan-partial-repay-summary">
               <div className="loan-partial-repay-summary-row">
-                <span>账单总额</span>
+                <span>欠款总额</span>
                 <strong>{formatLoanAmount(partialRepayBill.amount + partialRepayBill.interest)}</strong>
               </div>
               <div className="loan-partial-repay-summary-row">
@@ -585,7 +564,7 @@ export function LoanBillsSection({
                 </strong>
               </div>
               <div className="loan-partial-repay-summary-hint">
-                系统按"先利息后本金"顺序抵扣：先抵扣剩余利息 ¥{partialRepayBill.remainingInterest.toFixed(2)}，再抵扣剩余本金 ¥{partialRepayBill.remainingAmount.toFixed(2)}
+                欠款已含利息 ¥{partialRepayBill.interest.toFixed(2)}（剩余利息 ¥{partialRepayBill.remainingInterest.toFixed(2)} 将优先抵扣，其余抵扣本金）
               </div>
             </div>
             <Field
@@ -597,6 +576,27 @@ export function LoanBillsSection({
               onChange={(event) => setPartialRepayAmount(event.target.value)}
               placeholder={`最多 ${formatLoanAmount(partialRepayBill.remainingAmount + partialRepayBill.remainingInterest)}`}
             />
+            <div className="loan-partial-repay-quick">
+              <span className="field-label">快捷填入</span>
+              <Btn
+                tone="ghost"
+                onClick={() => setPartialRepayAmount(((partialRepayBill.remainingAmount + partialRepayBill.remainingInterest) / 4).toFixed(2))}
+              >
+                1/4
+              </Btn>
+              <Btn
+                tone="ghost"
+                onClick={() => setPartialRepayAmount(((partialRepayBill.remainingAmount + partialRepayBill.remainingInterest) / 2).toFixed(2))}
+              >
+                1/2
+              </Btn>
+              <Btn
+                tone="ghost"
+                onClick={() => setPartialRepayAmount((partialRepayBill.remainingAmount + partialRepayBill.remainingInterest).toFixed(2))}
+              >
+                全部结清
+              </Btn>
+            </div>
             <div className="loan-modal-date-slot">
               <DatePickerField
                 label="还款日期"
@@ -605,12 +605,6 @@ export function LoanBillsSection({
                 clearable={false}
               />
             </div>
-            <TextArea
-              label="备注"
-              value={partialRepayNotes}
-              onChange={(event) => setPartialRepayNotes(event.target.value)}
-              placeholder="可选，补充本次还款的说明"
-            />
           </div>
         ) : null}
       </Modal>

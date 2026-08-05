@@ -38,15 +38,16 @@ export function LoanDashboardSection({
     <SectionCard
       title="总览"
       description="快速查看当前贷款规模、待还压力和近期优先处理的账单。"
-    >
-      <div className="page-stack">
+      action={(
         <div className="loan-dashboard-actions">
           <Btn tone="secondary" onClick={() => onOpenTab('bills')}>查看账单</Btn>
           <Btn tone="secondary" onClick={() => onOpenTab('repayments')}>查看还款</Btn>
           <Btn tone="secondary" onClick={() => onOpenTab('statistics')}>查看统计</Btn>
           <Btn tone="primary" onClick={() => onOpenTab('settings')}>提醒设置</Btn>
         </div>
-
+      )}
+    >
+      <div className="page-stack">
         <StatGrid
           items={[
             { label: '总负债', value: formatLoanAmount(overview.totalDebt) },

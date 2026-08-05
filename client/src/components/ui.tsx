@@ -427,7 +427,7 @@ export function ExportButton({
     <div className="export-button-wrapper" ref={containerRef}>
       <button
         type="button"
-        className="btn-secondary export-button"
+        className="btn btn-secondary export-button"
         onClick={() => setIsOpen(!isOpen)}
         disabled={disabled}
       >
