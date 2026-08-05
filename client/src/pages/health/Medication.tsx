@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 
 import { MedicationAnalysisSection } from '../../components/health/MedicationAnalysisSection';
@@ -10,7 +10,7 @@ import { Btn, PillTabs, Tag, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
-import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';
+import { createSyncCollection } from '../../lib/collection';
 import { getAuthUserDisplayName, useAuthState } from '../../services/auth';
 import { medicationApi } from '../../services/medicationApi';
 import type {
@@ -151,30 +151,7 @@ export default function MedicationPage() {
     }
   }, [reload, showToast]);
 
-  const syncCollection = useCallback(async <T extends { id: string }>(
-    previous: T[],
-    next: T[],
-    createItem: (item: T) => Promise<unknown>,
-    updateItem: (item: T) => Promise<unknown>,
-    deleteItem: (id: string) => Promise<unknown>,
-    errorMessage: string,
-  ) => {
-    try {
-      const created = findCreated(previous, next);
-      const deletedIds = findDeletedIds(previous, next);
-      const updated = findUpdated(previous, next);
-
-      await Promise.all([
-        ...created.map((item) => createItem(item)),
-        ...updated.map((item) => updateItem(item)),
-        ...deletedIds.map((id) => deleteItem(id)),
-      ]);
-      await reload();
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, errorMessage), 'error');
-      await reload();
-    }
-  }, [reload, showToast]);
+  const syncCollection = useMemo(() => createSyncCollection({ reload, showToast }), [reload, showToast]);
 
   const handleSaveSummary = useCallback(async (date: string, content: string) => {
     try {

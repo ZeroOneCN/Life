@@ -9,7 +9,7 @@ import { Btn, Modal, PillTabs, SelectField, Tag, Toast, useToastState } from '..
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
-import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';
+import { createSyncCollection } from '../../lib/collection';
 import { importShoppingWorkbook } from '../../services/shopping';
 import { shoppingApi } from '../../services/shoppingApi';
 import type {
@@ -120,30 +120,7 @@ export default forwardRef<{ openImportModal: () => void }, { hideHeader?: boolea
     }
   }, [reload, showToast]);
 
-  const syncCollection = useCallback(async <T extends { id: string }>(
-    previous: T[],
-    next: T[],
-    createItem: (item: T) => Promise<unknown>,
-    updateItem: (item: T) => Promise<unknown>,
-    deleteItem: (id: string) => Promise<unknown>,
-    errorMessage: string,
-  ) => {
-    try {
-      const created = findCreated(previous, next);
-      const deletedIds = findDeletedIds(previous, next);
-      const updated = findUpdated(previous, next);
-
-      await Promise.all([
-        ...created.map((item) => createItem(item)),
-        ...updated.map((item) => updateItem(item)),
-        ...deletedIds.map((id) => deleteItem(id)),
-      ]);
-      await reload();
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, errorMessage), 'error');
-      await reload();
-    }
-  }, [reload, showToast]);
+  const syncCollection = useMemo(() => createSyncCollection({ reload, showToast }), [reload, showToast]);
 
   const activeLedger = useMemo(
     () => ledgers.find((ledger) => ledger.id === settings.activeLedgerId) ?? ledgers.find((ledger) => ledger.isActive) ?? ledgers[0] ?? null,

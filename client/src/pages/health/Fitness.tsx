@@ -10,7 +10,7 @@ import { Btn, Modal, PillTabs, Toast, useToastState } from '../../components/ui'
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
-import { findCreated, findDeletedIds, findUpdated } from '../../lib/collection';
+import { createSyncCollection } from '../../lib/collection';
 import { fitnessApi } from '../../services/fitnessApi';
 import type {
   DietRecord,
@@ -123,30 +123,7 @@ export default function FitnessPage() {
     }
   }, [reload, showToast]);
 
-  const syncCollection = useCallback(async <T extends { id: string }>(
-    previous: T[],
-    next: T[],
-    createItem: (item: T) => Promise<unknown>,
-    updateItem: (item: T) => Promise<unknown>,
-    deleteItem: (id: string) => Promise<unknown>,
-    errorMessage: string,
-  ) => {
-    try {
-      const created = findCreated(previous, next);
-      const deletedIds = findDeletedIds(previous, next);
-      const updated = findUpdated(previous, next);
-
-      await Promise.all([
-        ...created.map((item) => createItem(item)),
-        ...updated.map((item) => updateItem(item)),
-        ...deletedIds.map((id) => deleteItem(id)),
-      ]);
-      await reload();
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, errorMessage), 'error');
-      await reload();
-    }
-  }, [reload, showToast]);
+  const syncCollection = useMemo(() => createSyncCollection({ reload, showToast }), [reload, showToast]);
 
   const topSummary = useMemo(() => ([
     { label: '今日净热量', value: `${overview.todayNetCalories.toFixed(0)} kcal`, helper: `摄入${overview.todayCaloriesIn.toFixed(0)} / 消耗${overview.todayCaloriesOut.toFixed(0)}` },
