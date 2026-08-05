@@ -1,18 +1,32 @@
 import type { LazyExoticComponent, ComponentType } from 'react';
 
 export type IconKey =
-  | 'dashboard'
+  | 'home'
   | 'heart'
   | 'wallet'
-  | 'spark'
-  | 'trend'
-  | 'bell'
-  | 'task'
-  | 'card'
-  | 'shield'
+  | 'grid'
   | 'chart'
+  | 'bell'
+  | 'user'
+  | 'pulse'
+  | 'moon'
+  | 'dumbbell'
+  | 'steps'
+  | 'clipboard'
+  | 'pill'
+  | 'doc'
+  | 'pie'
+  | 'receipt'
+  | 'cart'
+  | 'plane'
+  | 'list'
+  | 'alert'
+  | 'target'
   | 'box'
-  | 'calendar';
+  | 'card'
+  | 'checklist'
+  | 'calendar'
+  | 'exchange';
 
 export interface MenuItemConfig {
   key: string;

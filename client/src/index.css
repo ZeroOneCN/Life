@@ -15046,6 +15046,14 @@ select:focus-visible {
   background: var(--color-primary-hover);
 }
 
+.command-bar-avatar-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  object-fit: cover;
+  display: block;
+}
+
 .command-bar-avatar-text {
   line-height: 1;
 }

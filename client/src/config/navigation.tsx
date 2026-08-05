@@ -21,7 +21,6 @@ const FinanceReportPage = lazyWithProgress(() => import('../pages/finance/Financ
 const BudgetPage = lazyWithProgress(() => import('../pages/finance/Budget'));
 const BillPage = lazyWithProgress(() => import('../pages/finance/Bill'));
 const GoalPage = lazyWithProgress(() => import('../pages/finance/Goal'));
-const ExpensePage = lazyWithProgress(() => import('../pages/finance/Expense'));
 const BillManagementPage = lazyWithProgress(() => import('../pages/finance/BillManagement'));
 const PlanningPage = lazyWithProgress(() => import('../pages/finance/Planning'));
 const StoragePage = lazyWithProgress(() => import('../pages/life/Storage'));
@@ -34,20 +33,20 @@ const HKStockPage = lazyWithProgress(() => import('../pages/investment/HKStock')
 const USStockPage = lazyWithProgress(() => import('../pages/investment/USStock'));
 
 export const menuItems: MenuItemConfig[] = [
-  { key: '/dashboard', icon: 'dashboard', label: '首页', groupLabel: '概览' },
+  { key: '/dashboard', icon: 'home', label: '首页', groupLabel: '概览' },
   {
     key: 'health',
     icon: 'heart',
     label: '健康中心',
     groupLabel: '健康管理',
     children: [
-      { key: '/health/overview', icon: 'dashboard', label: '健康概览' },
-      { key: '/health/vital', icon: 'heart', label: '体征睡眠' },
-      { key: '/health/fitness', icon: 'spark', label: '运动健身' },
-      { key: '/health/step', icon: 'trend', label: '运动步数' },
-      { key: '/health/checkup', icon: 'task', label: '体检指标' },
-      { key: '/health/medication', icon: 'bell', label: '日常用药' },
-      { key: '/health/report', icon: 'chart', label: '健康报告' },
+      { key: '/health/overview', icon: 'pulse', label: '健康概览' },
+      { key: '/health/vital', icon: 'moon', label: '体征睡眠' },
+      { key: '/health/fitness', icon: 'dumbbell', label: '运动健身' },
+      { key: '/health/step', icon: 'steps', label: '运动步数' },
+      { key: '/health/checkup', icon: 'clipboard', label: '体检指标' },
+      { key: '/health/medication', icon: 'pill', label: '日常用药' },
+      { key: '/health/report', icon: 'doc', label: '健康报告' },
     ],
   },
   {
@@ -56,24 +55,23 @@ export const menuItems: MenuItemConfig[] = [
     label: '财务中心',
     groupLabel: '财务管理',
     children: [
-      { key: '/finance/overview', icon: 'dashboard', label: '财务概览' },
-      { key: '/finance/expense', icon: 'task', label: '消费记录' },
-      { key: '/finance/shopping', icon: 'box', label: '购物记录' },
-      { key: '/finance/travel', icon: 'spark', label: '旅行记账' },
-      { key: '/finance/bill-mgmt', icon: 'wallet', label: '账单管理' },
-      { key: '/finance/bill', icon: 'bell', label: '账单提醒' },
-      { key: '/finance/planning', icon: 'spark', label: '财务规划' },
+      { key: '/finance/overview', icon: 'pie', label: '财务概览' },
+      { key: '/finance/shopping', icon: 'cart', label: '购物记录' },
+      { key: '/finance/travel', icon: 'plane', label: '旅行记账' },
+      { key: '/finance/bill-mgmt', icon: 'list', label: '账单管理' },
+      { key: '/finance/bill', icon: 'alert', label: '账单提醒' },
+      { key: '/finance/planning', icon: 'target', label: '财务规划' },
     ],
   },
   {
     key: 'life',
-    icon: 'box',
+    icon: 'grid',
     label: '生活中心',
     groupLabel: '效率工具',
     children: [
       { key: '/life/storage', icon: 'box', label: '物品追踪' },
       { key: '/life/card', icon: 'card', label: '号卡中心' },
-      { key: '/life/todo', icon: 'task', label: '待办事项' },
+      { key: '/life/todo', icon: 'checklist', label: '待办事项' },
       { key: '/life/schedule', icon: 'calendar', label: '日程管理' },
     ],
   },
@@ -83,11 +81,11 @@ export const menuItems: MenuItemConfig[] = [
     label: '投资中心',
     groupLabel: '投资行情',
     children: [
-      { key: '/investment/forex', icon: 'trend', label: '外汇交易' },
+      { key: '/investment/forex', icon: 'exchange', label: '外汇交易' },
     ],
   },
   { key: '/notifications', icon: 'bell', label: '通知中心', groupLabel: '系统' },
-  { key: '/settings/profile', icon: 'shield', label: '个人中心', groupLabel: '系统' },
+  { key: '/settings/profile', icon: 'user', label: '个人中心', groupLabel: '系统' },
 ];
 
 export const routes: RouteConfig[] = [
@@ -100,7 +98,6 @@ export const routes: RouteConfig[] = [
   { path: '/health/medication', label: '日常用药', breadcrumb: ['健康中心', '日常用药'], menuKey: '/health/medication', component: MedicationPage },
   { path: '/health/report', label: '健康报告', breadcrumb: ['健康中心', '健康报告'], menuKey: '/health/report', component: HealthReportPage },
   { path: '/finance/overview', label: '财务概览', breadcrumb: ['财务中心', '财务概览'], menuKey: '/finance/overview', component: FinanceOverviewPage },
-  { path: '/finance/expense', label: '消费记录', breadcrumb: ['财务中心', '消费记录'], menuKey: '/finance/expense', component: ExpensePage },
   { path: '/finance/bill-mgmt', label: '账单管理', breadcrumb: ['财务中心', '账单管理'], menuKey: '/finance/bill-mgmt', component: BillManagementPage },
   { path: '/finance/bill', label: '账单提醒', breadcrumb: ['财务中心', '账单提醒'], menuKey: '/finance/bill', component: BillPage },
   { path: '/finance/planning', label: '财务规划', breadcrumb: ['财务中心', '财务规划'], menuKey: '/finance/planning', component: PlanningPage },

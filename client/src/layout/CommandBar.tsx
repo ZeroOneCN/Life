@@ -3,12 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useTheme } from '../hooks/useTheme';
 import { routes } from '../config/navigation';
+import { findIconByPath } from '../config/menuIcons';
 import { useWorkspaceStore } from '../stores/workspace.store';
 import { setDensity } from '../hooks/useDeviceCapabilities';
 import type { DeviceCapabilities } from '../hooks/useDeviceCapabilities';
 import { useBreadcrumbTailContext } from '../hooks/useBreadcrumbTail';
 import { logout, useAuthState } from '../services/auth';
-import type { IconKey } from '../types/navigation';
 
 type ThemeMode = 'light' | 'dark' | 'auto';
 type Density = DeviceCapabilities['density'];
@@ -136,7 +136,7 @@ export default function CommandBar() {
     togglePinByPath({
       path: location.pathname,
       title: route?.label ?? location.pathname,
-      icon: route?.menuKey ? (route.menuKey.split('/').pop() as IconKey) : 'dashboard',
+      icon: findIconByPath(location.pathname) ?? 'home',
       type: 'page',
     });
   };
@@ -340,7 +340,11 @@ export default function CommandBar() {
             aria-expanded={userMenuOpen}
             title={userDisplayName}
           >
-            <span className="command-bar-avatar-text" aria-hidden="true">{userInitial}</span>
+            {currentUser?.avatarUrl ? (
+              <img className="command-bar-avatar-img" src={currentUser.avatarUrl} alt={userDisplayName} />
+            ) : (
+              <span className="command-bar-avatar-text" aria-hidden="true">{userInitial}</span>
+            )}
           </button>
           {userMenuOpen ? (
             <div className="command-bar-menu command-bar-user-menu" role="menu">
