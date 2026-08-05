@@ -52,7 +52,7 @@ const EMPTY_SETTINGS: SubscriptionPageState['settings'] = {
   includeAutoRenewInReminders: false,
 };
 
-export default function SubscriptionPage() {
+export default function SubscriptionPage({ embedded = false }: { embedded?: boolean }) {
   const [tab, setTab] = usePageTab<SubscriptionTab>('records', TAB_OPTIONS.map((item) => item.value), 'subscriptionTab');
   useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const { toast, showToast } = useToastState();
@@ -212,16 +212,22 @@ export default function SubscriptionPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader
-        title="服务订阅"
-        subtitle="跟踪服务订阅、到期提醒与支出统计"
-        actions={(
-          <>
-            <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as SubscriptionTab)} />
-            <Tag tone="blue">{loading ? '同步中' : '后端已接入'}</Tag>
-          </>
-        )}
-      />
+      {embedded ? (
+        <div className="merged-tabs-top">
+          <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as SubscriptionTab)} />
+        </div>
+      ) : (
+        <PageHeader
+          title="服务订阅"
+          subtitle="跟踪服务订阅、到期提醒与支出统计"
+          actions={(
+            <>
+              <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as SubscriptionTab)} />
+              <Tag tone="blue">{loading ? '同步中' : '后端已接入'}</Tag>
+            </>
+          )}
+        />
+      )}
 
       <StatGrid className="subscription-top-summary" items={summaryCards} />
 

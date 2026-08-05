@@ -54,7 +54,7 @@ function hydrateSettings(
   };
 }
 
-export default function RentPage() {
+export default function RentPage({ embedded = false }: { embedded?: boolean }) {
   const [tab, setTab] = usePageTab<RentTab>('records', TAB_OPTIONS.map((item) => item.value), 'rentTab');
   useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const [records, setRecords] = useState<RentHousingRecord[]>([]);
@@ -228,13 +228,19 @@ export default function RentPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader
-        title="房租水电"
-        subtitle="管理住房记录、水电账单与统计分析"
-        actions={(
+      {embedded ? (
+        <div className="merged-tabs-top">
           <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as RentTab)} />
-        )}
-      />
+        </div>
+      ) : (
+        <PageHeader
+          title="房租水电"
+          subtitle="管理住房记录、水电账单与统计分析"
+          actions={(
+            <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as RentTab)} />
+          )}
+        />
+      )}
 
       <StatGrid
         items={[

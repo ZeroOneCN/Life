@@ -82,13 +82,6 @@ function formatUsd(value: number) { return `$${value.toFixed(2)}`; }
 function formatSignedUsd(value: number) { return `${value >= 0 ? '+' : '−'}$${Math.abs(value).toFixed(2)}`; }
 function formatPercent(value: number) { return `${(value * 100).toFixed(1)}%`; }
 
-const IconSteps = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 01-2 2H4a2 2 0 01-2-2z"/>
-    <path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 002 2h2a2 2 0 002-2z"/>
-  </svg>
-);
-
 const IconTrend = () => (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
@@ -256,13 +249,6 @@ export default function Dashboard() {
       const second = d.getSeconds().toString().padStart(2, '0');
       items.push({ time: `${year}-${month}-${day} ${hour}:${minute}:${second}`, module: '通知', moduleClass: 'is-notif', title: log.title, sortKey: d.getTime() });
     });
-    summary.agenda.slice(0, 4).forEach((item) => {
-      const sortKey = item.targetDate ? new Date(item.targetDate).getTime() : 0;
-      const raw = item.targetDate ? item.targetDate.replace('T', ' ').slice(0, 19) : '-';
-      /* 日期只有 YYYY-MM-DD 时补全为 00:00:00 */
-      const time = raw !== '-' && raw.length <= 10 ? `${raw} 00:00:00` : raw;
-      items.push({ time, module: item.module, moduleClass: 'is-agenda', title: item.title, sortKey });
-    });
     summary.aiLogs.slice(0, 6).forEach((log) => {
       const d = new Date(log.createdAt);
       const year = d.getFullYear();
@@ -347,7 +333,7 @@ export default function Dashboard() {
         ) : null}
 
         {/* ====== 1. 健康中心（大模块，可点击跳转）====== */}
-        <Link to="/health/fitness" className="dash-masonry-item dash-card dash-card-link">
+        <Link to="/health/overview" className="dash-masonry-item dash-card dash-card-link">
           <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-health"><IconHeart /></div>
             <div className="dash-card-title-area">
@@ -378,38 +364,7 @@ export default function Dashboard() {
           </div>
         </Link>
 
-        {/* ====== 2. 快捷操作入口 ====== */}
-        <div className="dash-masonry-item dash-card">
-          <div className="dash-card-hd is-tight">
-            <div className="dash-card-icon dash-bg-step"><IconSteps /></div>
-            <div className="dash-card-title-area">
-              <h3>快捷操作</h3>
-              <span>常用功能一键直达</span>
-            </div>
-          </div>
-          <div className="dash-card-bd">
-            <div className="dash-quick-grid">
-              <Link to="/health/fitness" className="dash-quick-btn">
-                <div className="qa-icon dash-bg-step"><IconSteps /></div>
-                <span className="qa-text">录入步数</span>
-              </Link>
-              <Link to="/finance/travel?travelTab=details" className="dash-quick-btn">
-                <div className="qa-icon dash-bg-finance"><IconWallet /></div>
-                <span className="qa-text">记录消费</span>
-              </Link>
-              <Link to="/life/todo?todoTab=tasks" className="dash-quick-btn">
-                <div className="qa-icon dash-bg-life"><IconTodo /></div>
-                <span className="qa-text">新建待办</span>
-              </Link>
-              <Link to="/finance/shopping?shoppingTab=records" className="dash-quick-btn">
-                <div className="qa-icon dash-bg-invest"><IconChart /></div>
-                <span className="qa-text">购物记录</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* ====== 3. 投资中心（可点击跳转）====== */}
+        {/* ====== 2. 投资中心（可点击跳转）====== */}
         <Link to="/investment/forex?forexTab=trades" className="dash-masonry-item dash-card dash-card-link">
           <div className="dash-card-hd is-tight">
             <div className="dash-card-icon dash-bg-invest"><IconTrend /></div>

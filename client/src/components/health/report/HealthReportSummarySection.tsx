@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import type { ReactNode } from 'react';
 
 import { EmptyState, SectionCard, StatGrid } from '../../page';
 import { Tag, TrendArrow } from '../../ui';
@@ -17,6 +18,8 @@ interface HealthReportSummarySectionProps {
     weight: HealthReportChange;
   } | null;
   loading: boolean;
+  /** 报告周期操作栏（日期选择 / 刷新 / 导出），嵌入数据汇总卡片右上角 */
+  toolbar?: ReactNode;
 }
 
 /**
@@ -65,6 +68,7 @@ export function HealthReportSummarySection({
   previous,
   changes,
   loading,
+  toolbar,
 }: HealthReportSummarySectionProps) {
   if (loading) {
     return (
@@ -140,11 +144,14 @@ export function HealthReportSummarySection({
       title="数据汇总"
       description={`${current.label}（${formatDateShort(current.start)} - ${formatDateShort(current.end)}）`}
       action={
-        previous ? (
-          <span className="health-report-previous-tag">
-            对比：{previous.label}
-          </span>
-        ) : null
+        <div className="section-card-toolbar">
+          {previous ? (
+            <span className="health-report-previous-tag">
+              对比：{previous.label}
+            </span>
+          ) : null}
+          {toolbar}
+        </div>
       }
     >
       <StatGrid items={items} className="health-report-stat-grid" />

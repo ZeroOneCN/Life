@@ -43,6 +43,8 @@ interface ShoppingRecordsSectionProps {
   currencyMode: ShoppingCurrencyMode;
   usdtRate: number;
   onImportExcel: () => void;
+  onActiveLedgerIdChange: (value: string) => void;
+  onCurrencyModeChange: (value: ShoppingCurrencyMode) => void;
   onFilterLedgerIdChange: (value: string) => void;
   onChangeRecords: (updater: (records: ShoppingRecord[]) => ShoppingRecord[]) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
@@ -126,6 +128,8 @@ export function ShoppingRecordsSection({
   currencyMode,
   usdtRate,
   onImportExcel,
+  onActiveLedgerIdChange,
+  onCurrencyModeChange,
   onFilterLedgerIdChange,
   onChangeRecords,
   showToast,
@@ -309,8 +313,27 @@ export function ShoppingRecordsSection({
       title="购物记录"
       description="按用户和账本维护网购记录，保留平台、规格、订单号和备注，供后续统计和导入去重复用。"
       action={(
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Tag tone="blue">{currencyMode === 'USDT' ? 'USDT 视图' : '人民币视图'}</Tag>
+        <div className="section-card-toolbar">
+          <SelectField
+            label="当前账本"
+            value={activeLedgerId}
+            onChange={(event) => onActiveLedgerIdChange(event.target.value)}
+            style={{ minWidth: 150 }}
+          >
+            {ledgers.map((ledger) => (
+              <option key={ledger.id} value={ledger.id}>{ledger.name}</option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="货币模式"
+            value={currencyMode}
+            onChange={(event) => onCurrencyModeChange(event.target.value as ShoppingCurrencyMode)}
+            style={{ minWidth: 110 }}
+          >
+            <option value="CNY">人民币</option>
+            <option value="USDT">USDT</option>
+          </SelectField>
+          <Tag tone="green">{currencyMode === 'USDT' ? `1 USDT = ¥${(usdtRate ?? 7).toFixed(2)}` : '人民币主视图'}</Tag>
           <Btn tone="secondary" onClick={onImportExcel}>导入 Excel</Btn>
         </div>
       )}

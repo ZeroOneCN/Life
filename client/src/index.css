@@ -16437,6 +16437,34 @@ button:active {
   transition-property: background, border-color, color, box-shadow, opacity;
 }
 
+/* 购物累计消费额：数值 + 本地货币切换按钮 */
+.shopping-total-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.shopping-total-toggle-btn {
+  min-width: 44px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  border-radius: 6px;
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface-2);
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.shopping-total-toggle-btn:hover {
+  background: var(--color-surface-3);
+  color: var(--color-ink-primary);
+  border-color: var(--color-hairline-strong);
+}
+
 .finance-report-top-list {
   list-style: decimal;
   padding-left: 22px;

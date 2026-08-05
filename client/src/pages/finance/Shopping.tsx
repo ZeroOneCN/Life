@@ -5,7 +5,7 @@ import { ShoppingLedgersSection } from '../../components/finance/ShoppingLedgers
 import { ShoppingPlatformsSection } from '../../components/finance/ShoppingPlatformsSection';
 import { ShoppingRecordsSection } from '../../components/finance/ShoppingRecordsSection';
 import { PageHeader, StatGrid } from '../../components/page';
-import { Btn, Modal, PillTabs, SelectField, Tag, Toast, useToastState } from '../../components/ui';
+import { Btn, Modal, PillTabs, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
@@ -58,6 +58,8 @@ export default forwardRef<{ openImportModal: () => void }, { hideHeader?: boolea
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ShoppingImportResult | null>(null);
   const [formResetKey, setFormResetKey] = useState(0);
+  /* 累计消费额的本地货币切换（仅作用于该统计项，不改变全局货币模式） */
+  const [totalInUsdt, setTotalInUsdt] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);
@@ -178,46 +180,24 @@ export default forwardRef<{ openImportModal: () => void }, { hideHeader?: boolea
           { label: '当前账本', value: activeLedger?.name ?? '未选择' },
           { label: '本月订单数', value: `${overview.currentMonthOrders}` },
           { label: '本月消费额', value: `¥${overview.currentMonthAmount.toFixed(2)}` },
-          { label: '累计消费额', value: `¥${overview.totalAmount.toFixed(2)}` },
+          {
+            label: '累计消费额',
+            value: (
+              <span className="shopping-total-toggle">
+                <span>{totalInUsdt ? `$${(overview.totalAmount / (settings.usdtRate || 7)).toFixed(2)}` : `¥${overview.totalAmount.toFixed(2)}`}</span>
+                <button
+                  type="button"
+                  className="shopping-total-toggle-btn"
+                  onClick={() => setTotalInUsdt((current) => !current)}
+                  title={totalInUsdt ? '切换为人民币显示' : '切换为 USDT 显示'}
+                >
+                  {totalInUsdt ? 'USDT' : 'CNY'}
+                </button>
+              </span>
+            ),
+          },
         ]}
       />
-
-      {tab !== 'ledgers' ? (
-        <div className="context-bar">
-          <SelectField
-            label="当前账本"
-            value={activeLedger?.id ?? ''}
-            onChange={(event) => {
-              void updateSettings({ activeLedgerId: event.target.value });
-            }}
-          >
-            {ledgers.map((ledger) => (
-              <option key={ledger.id} value={ledger.id}>{ledger.name}</option>
-            ))}
-          </SelectField>
-          <SelectField
-            label="货币模式"
-            value={settings.currencyMode}
-            onChange={(event) => {
-              void updateSettings({ currencyMode: event.target.value as ShoppingCurrencyMode });
-            }}
-          >
-            <option value="CNY">人民币</option>
-            <option value="USDT">USDT</option>
-          </SelectField>
-          <Tag tone="green">{settings.currencyMode === 'USDT' ? `1 USDT = ¥${(settings.usdtRate ?? 7).toFixed(2)}` : '人民币主视图'}</Tag>
-          <Btn
-            tone="secondary"
-            onClick={() => {
-              const next = settings.currencyMode === 'CNY' ? 'USDT' : 'CNY';
-              void updateSettings({ currencyMode: next as ShoppingCurrencyMode });
-              showToast(`已切换到 ${next === 'CNY' ? '人民币' : 'USDT'} 视图`);
-            }}
-          >
-            切换到 {settings.currencyMode === 'CNY' ? 'USDT' : '人民币'}
-          </Btn>
-        </div>
-      ) : null}
 
       {tab === 'records' ? (
         <ShoppingRecordsSection
@@ -230,6 +210,12 @@ export default forwardRef<{ openImportModal: () => void }, { hideHeader?: boolea
           currencyMode={settings.currencyMode}
           usdtRate={settings.usdtRate}
           onImportExcel={() => setImportOpen(true)}
+          onActiveLedgerIdChange={(value) => {
+            void updateSettings({ activeLedgerId: value });
+          }}
+          onCurrencyModeChange={(value) => {
+            void updateSettings({ currencyMode: value as ShoppingCurrencyMode });
+          }}
           onFilterLedgerIdChange={(value) => {
             void updateSettings({ recordsLedgerId: value });
           }}

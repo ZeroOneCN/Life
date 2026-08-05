@@ -145,38 +145,39 @@ export default function HealthReportPage() {
         )}
       />
 
-      <div className="health-report-actions-bar">
-        <input
-          className="health-report-date-input"
-          type={dateInputProps.type}
-          value={dateInputProps.value}
-          min={period === 'year' ? 2000 : undefined}
-          max={period === 'year' ? dayjs().year() : undefined}
-          onChange={(event) => {
-            const value = event.target.value;
-            if (period === 'week') handleDateChange(value);
-            else if (period === 'month') handleDateChange(`${value}-01`);
-            else handleDateChange(`${value}-01-01`);
-          }}
-          aria-label="选择周期日期"
-        />
-        <Btn type="button" tone="secondary" onClick={handleRefresh} disabled={summaryLoading}>
-          {summaryLoading ? '加载中…' : '刷新报告'}
-        </Btn>
-        <div className="health-report-actions-spacer" />
-        <HealthReportExportButton
-          targetRef={reportRef}
-          fileName={exportFileName}
-          disabled={!canExport}
-          showToast={showToast}
-        />
-      </div>
       <div ref={reportRef} className="page-stack">
         <HealthReportSummarySection
           current={summary?.current ?? null}
           previous={summary?.previous ?? null}
           changes={summary?.changes ?? null}
           loading={summaryLoading}
+          toolbar={(
+            <>
+              <input
+                className="health-report-date-input"
+                type={dateInputProps.type}
+                value={dateInputProps.value}
+                min={period === 'year' ? 2000 : undefined}
+                max={period === 'year' ? dayjs().year() : undefined}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  if (period === 'week') handleDateChange(value);
+                  else if (period === 'month') handleDateChange(`${value}-01`);
+                  else handleDateChange(`${value}-01-01`);
+                }}
+                aria-label="选择周期日期"
+              />
+              <Btn type="button" tone="secondary" onClick={handleRefresh} disabled={summaryLoading}>
+                {summaryLoading ? '加载中…' : '刷新报告'}
+              </Btn>
+              <HealthReportExportButton
+                targetRef={reportRef}
+                fileName={exportFileName}
+                disabled={!canExport}
+                showToast={showToast}
+              />
+            </>
+          )}
         />
 
         <HealthReportTrendSection

@@ -167,7 +167,7 @@ function buildAgendaItems(input: {
         summary: task.description_markdown || '待处理任务',
         severity,
         targetDate,
-        href: '/life/todo?todoTab=tasks',
+        href: `/life/todo?todoTab=tasks&todoKeyword=${encodeURIComponent(task.title)}`,
       });
     });
 

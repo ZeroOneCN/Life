@@ -63,6 +63,11 @@ interface ForexDashboardSectionProps {
   capitalFlows: ForexCapitalFlow[];
   startDate: string;
   endDate: string;
+  /** 看板日期选择器的原始值（未归一化），用于输入框回显 */
+  pickerStartDate: string;
+  pickerEndDate: string;
+  onPickerStartDateChange: (value: string) => void;
+  onPickerEndDateChange: (value: string) => void;
   summary?: ForexDashboardSummary;
 }
 
@@ -541,6 +546,10 @@ export function ForexDashboardSection({
   capitalFlows,
   startDate,
   endDate,
+  pickerStartDate,
+  pickerEndDate,
+  onPickerStartDateChange,
+  onPickerEndDateChange,
   summary: externalSummary,
 }: ForexDashboardSectionProps) {
   const summary = externalSummary ?? useMemo(
@@ -669,7 +678,23 @@ export function ForexDashboardSection({
     <SectionCard
       title="统计看板"
       description="围绕单账户的交易、出入金和收益结构做本地复盘，时间范围只影响这块看板和规则分析。"
-      action={<Tag tone="blue">{`${startDate} 至 ${endDate}`}</Tag>}
+      action={(
+        <div className="section-card-toolbar">
+          <DatePickerField
+            label="开始日期"
+            value={pickerStartDate}
+            onChange={onPickerStartDateChange}
+            placeholder="选择开始日期"
+          />
+          <DatePickerField
+            label="结束日期"
+            value={pickerEndDate}
+            onChange={onPickerEndDateChange}
+            placeholder="选择结束日期"
+          />
+          <Tag tone="blue">{`${startDate} 至 ${endDate}`}</Tag>
+        </div>
+      )}
     >
       <div className="page-stack">
         <StatGrid

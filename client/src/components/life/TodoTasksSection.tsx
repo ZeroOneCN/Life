@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
@@ -216,8 +217,11 @@ export function TodoTasksSection({
   showToast,
   onChanged,
 }: TodoTasksSectionProps) {
+  const [searchParams] = useSearchParams();
+  /* 从首页待处理事项跳转时，URL 携带 todoKeyword 定位到具体任务 */
+  const initialKeyword = useMemo(() => searchParams.get('todoKeyword') ?? '', [searchParams]);
   const [form, setForm] = useState<TaskFormState>(createDefaultTaskFormState);
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState(initialKeyword);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [priorityFilter, setPriorityFilter] = useState<'all' | TodoPriority>('all');
   const [tagFilter, setTagFilter] = useState('all');

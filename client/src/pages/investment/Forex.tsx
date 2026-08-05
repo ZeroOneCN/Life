@@ -4,9 +4,8 @@ import { ForexCalculatorSection } from '../../components/investment/ForexCalcula
 import { ForexCapitalSection } from '../../components/investment/ForexCapitalSection';
 import { ForexDashboardSection } from '../../components/investment/ForexDashboardSection';
 import { ForexTradesSection } from '../../components/investment/ForexTradesSection';
-import { DatePickerField } from '../../components/date';
-import { ContextBar, PageHeader } from '../../components/page';
-import { PillTabs, Tag, Toast, useToastState } from '../../components/ui';
+import { PageHeader } from '../../components/page';
+import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
@@ -265,33 +264,19 @@ export default function ForexPage() {
       />
 
       {tab === 'dashboard' ? (
-        <ContextBar label="看板范围">
-          <DatePickerField
-            label="开始日期"
-            value={settings.dashboardStartDate}
-            onChange={(value) => {
-              void updateSettings({ dashboardStartDate: value });
-            }}
-            placeholder="选择开始日期"
-          />
-          <DatePickerField
-            label="结束日期"
-            value={settings.dashboardEndDate}
-            onChange={(value) => {
-              void updateSettings({ dashboardEndDate: value });
-            }}
-            placeholder="选择结束日期"
-          />
-          <Tag tone="blue">{`${effectiveDashboardRange.startDate} 至 ${effectiveDashboardRange.endDate}`}</Tag>
-        </ContextBar>
-      ) : null}
-
-      {tab === 'dashboard' ? (
         <ForexDashboardSection
           trades={trades}
           capitalFlows={capitalFlows}
           startDate={effectiveDashboardRange.startDate}
           endDate={effectiveDashboardRange.endDate}
+          pickerStartDate={settings.dashboardStartDate}
+          pickerEndDate={settings.dashboardEndDate}
+          onPickerStartDateChange={(value) => {
+            void updateSettings({ dashboardStartDate: value });
+          }}
+          onPickerEndDateChange={(value) => {
+            void updateSettings({ dashboardEndDate: value });
+          }}
           summary={frontendSummary}
         />
       ) : null}

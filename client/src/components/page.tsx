@@ -51,7 +51,7 @@ export function StatGrid({
   items,
   className = '',
 }: {
-  items: Array<{ label: string; value: string; accent?: string; helper?: string }>;
+  items: Array<{ label: string; value: string | ReactNode; accent?: string; helper?: string }>;
   className?: string;
 }) {
   return (

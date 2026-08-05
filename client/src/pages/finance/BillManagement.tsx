@@ -1,6 +1,7 @@
 import { usePageTab } from '../../hooks/usePageTab';
 import { PageHeader } from '../../components/page';
 import { PillTabs } from '../../components/ui';
+import { useSearchParams } from 'react-router-dom';
 import LoanPage from './Loan';
 import SubscriptionPage from './Subscription';
 import RentPage from './Rent';
@@ -14,7 +15,21 @@ const TAB_OPTIONS: Array<{ value: BillMgmtTab; label: string }> = [
 ];
 
 export default function BillManagementPage() {
-  const [activeTab, setActiveTab] = usePageTab<BillMgmtTab>('loan', ['loan', 'subscription', 'rent'], 'billMgmtTab');
+  const [activeTab] = usePageTab<BillMgmtTab>('loan', ['loan', 'subscription', 'rent'], 'billMgmtTab');
+  const [, setSearchParams] = useSearchParams();
+
+  /**
+   * 切换主 Tab 时清空各子页面的嵌套 Tab 参数（loanTab/rentTab/subscriptionTab），
+   * 保证点击主 Tab 即可返回对应子页面默认视图。
+   */
+  const handleTabChange = (value: string) => {
+    const nextParams = new URLSearchParams(window.location.search);
+    nextParams.delete('loanTab');
+    nextParams.delete('rentTab');
+    nextParams.delete('subscriptionTab');
+    nextParams.set('billMgmtTab', value);
+    setSearchParams(nextParams, { replace: true });
+  };
 
   return (
     <div className="page-stack finance-merged-page">
@@ -25,15 +40,15 @@ export default function BillManagementPage() {
           <PillTabs
             options={TAB_OPTIONS}
             value={activeTab}
-            onChange={(v) => setActiveTab(v as BillMgmtTab)}
+            onChange={handleTabChange}
           />
         )}
       />
 
       <div className="merged-content">
-        {activeTab === 'loan' ? <LoanPage /> : null}
-        {activeTab === 'subscription' ? <SubscriptionPage /> : null}
-        {activeTab === 'rent' ? <RentPage /> : null}
+        {activeTab === 'loan' ? <LoanPage embedded /> : null}
+        {activeTab === 'subscription' ? <SubscriptionPage embedded /> : null}
+        {activeTab === 'rent' ? <RentPage embedded /> : null}
       </div>
     </div>
   );
