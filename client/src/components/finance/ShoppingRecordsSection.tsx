@@ -42,6 +42,7 @@ interface ShoppingRecordsSectionProps {
   platforms: ShoppingPlatform[];
   currencyMode: ShoppingCurrencyMode;
   usdtRate: number;
+  onImportExcel: () => void;
   onFilterLedgerIdChange: (value: string) => void;
   onChangeRecords: (updater: (records: ShoppingRecord[]) => ShoppingRecord[]) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
@@ -124,6 +125,7 @@ export function ShoppingRecordsSection({
   platforms,
   currencyMode,
   usdtRate,
+  onImportExcel,
   onFilterLedgerIdChange,
   onChangeRecords,
   showToast,
@@ -306,12 +308,17 @@ export function ShoppingRecordsSection({
     <SectionCard
       title="购物记录"
       description="按用户和账本维护网购记录，保留平台、规格、订单号和备注，供后续统计和导入去重复用。"
-      action={<Tag tone="blue">{currencyMode === 'USDT' ? 'USDT 视图' : '人民币视图'}</Tag>}
+      action={(
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Tag tone="blue">{currencyMode === 'USDT' ? 'USDT 视图' : '人民币视图'}</Tag>
+          <Btn tone="secondary" onClick={onImportExcel}>导入 Excel</Btn>
+        </div>
+      )}
     >
       <div className="page-stack">
         <div className="callout callout-info">
           当前默认账本为 <strong>{ledgerNameMap[activeLedgerId] ?? '未选择账本'}</strong>。
-          如需导入 Excel，请使用页面右上角的导入入口。
+          如需导入 Excel，请使用本卡片右上角的导入按钮。
         </div>
 
         <form className="shopping-entry-grid shopping-entry-grid-records" onSubmit={(e) => { e.preventDefault(); handleCreate(); }}>

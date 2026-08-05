@@ -7,7 +7,7 @@ import { TravelReportSection } from '../../components/finance/TravelReportSectio
 import { TravelStatsSection } from '../../components/finance/TravelStatsSection';
 import { CurrencyConverter } from '../../components/finance/CurrencyConverter';
 import { PageHeader, StatGrid } from '../../components/page';
-import { PillTabs, SelectField, Toast, useToastState } from '../../components/ui';
+import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
@@ -307,18 +307,6 @@ export default function TravelPage() {
           <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as TravelTab)} />
         )}
       />
-
-      <div className="context-bar">
-        <SelectField
-          label="当前行程账本"
-          value={activeBook?.id ?? ''}
-          onChange={(event) => handleActiveBookChange(event.target.value)}
-        >
-          {books.map((book) => (
-            <option key={book.id} value={book.id}>{book.name}</option>
-          ))}
-        </SelectField>
-      </div>
 
       <StatGrid
         items={[

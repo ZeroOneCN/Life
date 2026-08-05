@@ -418,7 +418,17 @@ export function TravelBooksSection({
       title="行程账本"
       description="统一维护当前用户下的旅行账本，承接导入、账本切换、账本摘要与后续明细录入。"
       action={(
-        <div className="inline-row">
+        <div className="section-card-toolbar">
+          <SelectField
+            label="当前账本"
+            value={activeBookId}
+            onChange={(event) => onActiveBookChange(event.target.value)}
+            style={{ minWidth: 160 }}
+          >
+            {books.map((book) => (
+              <option key={book.id} value={book.id}>{book.name}</option>
+            ))}
+          </SelectField>
           <Btn tone="secondary" onClick={() => void handleDownloadTemplate()}>下载模板</Btn>
           <Btn tone="secondary" onClick={() => setImportOpen(true)}>导入 Excel</Btn>
         </div>

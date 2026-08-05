@@ -310,42 +310,41 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
 
   return (
     <div className="page-stack">
-      {embedded ? (
-        <div className="merged-toolbar">
+      <PageHeader
+        title="储蓄目标"
+        subtitle="设定储蓄目标，跟踪达成进度与建议"
+        actions={
           <Btn tone="primary" onClick={handleCreateGoal}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <PlusIcon size={16} />
               新建目标
             </span>
           </Btn>
-        </div>
-      ) : (
-        <PageHeader
-          title="储蓄目标"
-          subtitle="设定储蓄目标，跟踪达成进度与建议"
-          actions={
-            <Btn tone="primary" onClick={handleCreateGoal}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <PlusIcon size={16} />
-                新建目标
-              </span>
-            </Btn>
-          }
-        />
-      )}
+        }
+      />
 
       <StatGrid items={statItems} />
 
       <SectionCard
         title="我的目标"
         description={`共 ${goals.length} 个目标`}
-        action={
-          <PillTabs
-            options={TAB_OPTIONS}
-            value={activeTab}
-            onChange={(v) => setActiveTab(v as TabKey)}
-          />
-        }
+        action={(
+          <div className="section-card-toolbar">
+            <PillTabs
+              options={TAB_OPTIONS}
+              value={activeTab}
+              onChange={(v) => setActiveTab(v as TabKey)}
+            />
+            {embedded ? (
+              <Btn tone="primary" onClick={handleCreateGoal}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <PlusIcon size={16} />
+                  新建目标
+                </span>
+              </Btn>
+            ) : null}
+          </div>
+        )}
       >
         {goalsLoading ? (
           <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--color-ink-mute)' }}>

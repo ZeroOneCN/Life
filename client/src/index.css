@@ -2816,10 +2816,16 @@ textarea {
   gap: 8px;
 }
 
-.health-report-export-bar {
+.health-report-actions-bar {
   display: flex;
-  justify-content: flex-end;
-  padding: 8px 0;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 4px 0 0;
+}
+
+.health-report-actions-spacer {
+  flex: 1;
 }
 
 .health-report-header-row {
@@ -16390,6 +16396,45 @@ select:focus-visible {
 
 .finance-report-module-meta .subtle-text {
   color: var(--color-ink-tertiary);
+}
+
+/* ============================================================
+   D9 全局按钮点击防抖动（最终覆盖层）
+   统一消除按钮 hover/active 的位移与缩放，避免点击时页面抖动；
+   交互反馈保留为背景色/文字色变化。
+   ============================================================ */
+.btn:hover,
+.btn:active,
+.btn-icon:hover,
+.btn-icon:active,
+.icon-btn:hover,
+.icon-btn:active,
+.icon-button:hover,
+.icon-button:active,
+.command-bar-icon-btn:hover,
+.command-bar-icon-btn:active,
+.bottom-nav-item:hover,
+.bottom-nav-item:active,
+.step-sort-button:hover,
+.step-sort-button:active,
+.empty-state-enhanced .empty-state-action:hover,
+.empty-state-enhanced .empty-state-action:active,
+.pill-tab:hover,
+.pill-tab:active,
+button:hover,
+button:active {
+  transform: none !important;
+}
+
+/* 通用按钮过渡中不再包含 transform，避免过渡期间产生位移动画 */
+.btn,
+.btn-icon,
+.icon-btn,
+.icon-button,
+.command-bar-icon-btn,
+.bottom-nav-item,
+.step-sort-button {
+  transition-property: background, border-color, color, box-shadow, opacity;
 }
 
 .finance-report-top-list {

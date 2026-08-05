@@ -6,7 +6,7 @@ import { FitnessExerciseSection } from '../../components/health/FitnessExerciseS
 import { FitnessShoppingSection } from '../../components/health/FitnessShoppingSection';
 import { FitnessWeightSection } from '../../components/health/FitnessWeightSection';
 import { PageHeader, StatGrid } from '../../components/page';
-import { Btn, Modal, PillTabs, Toast, useToastState } from '../../components/ui';
+import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
 import { buildApiErrorMessage } from '../../lib/api';
@@ -15,7 +15,6 @@ import { fitnessApi } from '../../services/fitnessApi';
 import type {
   DietRecord,
   ExerciseRecord,
-  FitnessInsight,
   FitnessOverviewSummary,
   FitnessPageState,
   FitnessShoppingRecord,
@@ -55,21 +54,18 @@ export default function FitnessPage() {
   const [weightRecords, setWeightRecords] = useState<WeightRecord[]>([]);
   const [settings, setSettings] = useState<FitnessPageState['settings']>(EMPTY_SETTINGS);
   const [overview, setOverview] = useState<FitnessOverviewSummary>(EMPTY_OVERVIEW);
-  const [insights, setInsights] = useState<FitnessInsight[]>([]);
-  const [insightsOpen, setInsightsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
 
   const reload = useCallback(async () => {
-    const [nextDiet, nextExercise, nextShopping, nextWeight, nextSummary, nextInsights, nextSettings] = await Promise.all([
+    const [nextDiet, nextExercise, nextShopping, nextWeight, nextSummary, nextSettings] = await Promise.all([
       fitnessApi.listDietRecords({ page: 1, page_size: 100 }),
       fitnessApi.listExerciseRecords({ page: 1, page_size: 100 }),
       fitnessApi.listShoppingRecords({ page: 1, page_size: 100 }),
       fitnessApi.listWeightRecords({ page: 1, page_size: 100 }),
       fitnessApi.getSummary(),
-      fitnessApi.getInsights(),
       fitnessApi.getSettings(),
     ]);
 
@@ -78,7 +74,6 @@ export default function FitnessPage() {
     setShoppingRecords(nextShopping.items);
     setWeightRecords(nextWeight.items);
     setOverview(nextSummary);
-    setInsights(nextInsights);
     setSettings({
       ...EMPTY_SETTINGS,
       ...nextSettings,
@@ -138,12 +133,7 @@ export default function FitnessPage() {
         title="运动健身"
         subtitle="记录饮食、运动与体重数据，追踪健康进展"
         actions={(
-          <>
-            <PillTabs options={TAB_OPTIONS} value={innerTab} onChange={(value) => setInnerTab(value as FitnessTab)} />
-            <div className="fitness-page-actions">
-              <Btn tone="secondary" onClick={() => setInsightsOpen(true)}>查看健康建议</Btn>
-            </div>
-          </>
+          <PillTabs options={TAB_OPTIONS} value={innerTab} onChange={(value) => setInnerTab(value as FitnessTab)} />
         )}
       />
 
@@ -242,25 +232,6 @@ export default function FitnessPage() {
           weightRecords={weightRecords}
         />
       ) : null}
-
-      <Modal
-        open={insightsOpen}
-        onClose={() => setInsightsOpen(false)}
-        title="健康建议"
-        width={720}
-        footer={<Btn tone="secondary" onClick={() => setInsightsOpen(false)}>关闭</Btn>}
-      >
-        <div className="page-stack">
-          {insights.map((insight) => (
-            <article key={insight.id} className="fitness-insight-card">
-              <div className="fitness-insight-head">
-                <strong>{insight.title}</strong>
-              </div>
-              <p>{insight.description}</p>
-            </article>
-          ))}
-        </div>
-      </Modal>
 
       <Toast toast={toast} />
     </div>

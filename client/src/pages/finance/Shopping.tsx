@@ -168,20 +168,7 @@ export default forwardRef<{ openImportModal: () => void }, { hideHeader?: boolea
           title="网上购物"
           subtitle="记录购物订单与消费，支持多账本多币种"
           actions={(
-            <>
-              <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as ShoppingTab)} />
-              <Btn tone="secondary" onClick={() => setImportOpen(true)}>导入 Excel</Btn>
-              <Btn
-                tone="secondary"
-                onClick={() => {
-                  const next = settings.currencyMode === 'CNY' ? 'USDT' : 'CNY';
-                  void updateSettings({ currencyMode: next as ShoppingCurrencyMode });
-                  showToast(`已切换到 ${next === 'CNY' ? '人民币' : 'USDT'} 视图`);
-                }}
-              >
-                切换到 {settings.currencyMode === 'CNY' ? 'USDT' : '人民币'}
-              </Btn>
-            </>
+            <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as ShoppingTab)} />
           )}
         />
       )}
@@ -219,6 +206,16 @@ export default forwardRef<{ openImportModal: () => void }, { hideHeader?: boolea
             <option value="USDT">USDT</option>
           </SelectField>
           <Tag tone="green">{settings.currencyMode === 'USDT' ? `1 USDT = ¥${(settings.usdtRate ?? 7).toFixed(2)}` : '人民币主视图'}</Tag>
+          <Btn
+            tone="secondary"
+            onClick={() => {
+              const next = settings.currencyMode === 'CNY' ? 'USDT' : 'CNY';
+              void updateSettings({ currencyMode: next as ShoppingCurrencyMode });
+              showToast(`已切换到 ${next === 'CNY' ? '人民币' : 'USDT'} 视图`);
+            }}
+          >
+            切换到 {settings.currencyMode === 'CNY' ? 'USDT' : '人民币'}
+          </Btn>
         </div>
       ) : null}
 
@@ -232,6 +229,7 @@ export default forwardRef<{ openImportModal: () => void }, { hideHeader?: boolea
           platforms={platforms}
           currencyMode={settings.currencyMode}
           usdtRate={settings.usdtRate}
+          onImportExcel={() => setImportOpen(true)}
           onFilterLedgerIdChange={(value) => {
             void updateSettings({ recordsLedgerId: value });
           }}

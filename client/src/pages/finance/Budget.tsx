@@ -279,14 +279,12 @@ export default function BudgetPage({ embedded = false }: { embedded?: boolean })
   return (
     <div className="page-stack">
       {embedded ? (
-        <div className="merged-toolbar">
+        <div className="merged-tabs-top">
           <PillTabs
             options={TAB_OPTIONS}
             value={activeTab}
             onChange={(value) => setActiveTab(value as TabKey)}
           />
-          <Btn tone="secondary" onClick={handleTriggerAlerts}>检查预警</Btn>
-          <Btn tone="primary" onClick={handleAddBudget}>新增预算</Btn>
         </div>
       ) : (
         <PageHeader
@@ -310,31 +308,14 @@ export default function BudgetPage({ embedded = false }: { embedded?: boolean })
         <StatGrid items={overviewCards} />
       )}
 
-      {(activeTab === 'overview' || activeTab === 'budgets') ? (
-        <div className="context-bar">
-          <Field
-            type="month"
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            style={{ width: 'auto' }}
-          />
-        </div>
-      ) : activeTab === 'comparison' ? (
-        <div className="context-bar">
-          <SelectField
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            style={{ width: 'auto' }}
-          >
-            {Array.from({ length: 5 }, (_, i) => dayjs().year() - 2 + i).map((y) => (
-              <option key={y} value={y}>{y} 年</option>
-            ))}
-          </SelectField>
-        </div>
-      ) : null}
-
       {activeTab === 'overview' && progressOverview && (
-        <BudgetOverviewSection overview={progressOverview} loading={overviewLoading} />
+        <BudgetOverviewSection
+          overview={progressOverview}
+          loading={overviewLoading}
+          month={selectedMonth}
+          onMonthChange={setSelectedMonth}
+          onTriggerAlerts={embedded ? () => void handleTriggerAlerts() : undefined}
+        />
       )}
 
       {activeTab === 'budgets' && (
@@ -356,11 +337,17 @@ export default function BudgetPage({ embedded = false }: { embedded?: boolean })
           onEdit={handleEditBudget}
           onDelete={handleDeleteBudget}
           onManageCategories={() => setCategoryModalOpen(true)}
+          onAddBudget={embedded ? handleAddBudget : undefined}
         />
       )}
 
       {activeTab === 'comparison' && yearlyComparison && (
-        <BudgetComparisonSection comparison={yearlyComparison} loading={comparisonLoading} />
+        <BudgetComparisonSection
+          comparison={yearlyComparison}
+          loading={comparisonLoading}
+          year={selectedYear}
+          onYearChange={setSelectedYear}
+        />
       )}
 
       {activeTab === 'history' && (
@@ -413,7 +400,19 @@ export default function BudgetPage({ embedded = false }: { embedded?: boolean })
 
 // ===== 预算看板 =====
 
-function BudgetOverviewSection({ overview, loading }: { overview: BudgetProgressOverview; loading: boolean }) {
+function BudgetOverviewSection({
+  overview,
+  loading,
+  month,
+  onMonthChange,
+  onTriggerAlerts,
+}: {
+  overview: BudgetProgressOverview;
+  loading: boolean;
+  month: string;
+  onMonthChange: (value: string) => void;
+  onTriggerAlerts?: () => void;
+}) {
   const statusTags = [
     { label: '正常', count: overview.onTrackCount, tone: 'green' as const },
     { label: '预警', count: overview.warningCount, tone: 'orange' as const },
@@ -424,13 +423,24 @@ function BudgetOverviewSection({ overview, loading }: { overview: BudgetProgress
     <SectionCard
       title="各分类预算执行"
       description={`${overview.month ?? ''} 预算执行明细，进度条按实际支出占比填充。`}
-      action={
-        <div style={{ display: 'flex', gap: 8 }}>
-          {statusTags.map((tag) => (
-            <Tag key={tag.label} tone={tag.tone}>{tag.label} {tag.count}</Tag>
-          ))}
+      action={(
+        <div className="section-card-toolbar">
+          <Field
+            type="month"
+            value={month}
+            onChange={(e) => onMonthChange(e.target.value)}
+            style={{ width: 'auto' }}
+          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            {statusTags.map((tag) => (
+              <Tag key={tag.label} tone={tag.tone}>{tag.label} {tag.count}</Tag>
+            ))}
+          </div>
+          {onTriggerAlerts ? (
+            <Btn tone="secondary" onClick={onTriggerAlerts}>检查预警</Btn>
+          ) : null}
         </div>
-      }
+      )}
     >
       {loading ? (
         <div className="empty-state">正在加载预算执行数据...</div>
@@ -493,12 +503,13 @@ function BudgetListSection(props: {
   onEdit: (budget: Budget) => void;
   onDelete: (budget: Budget) => void;
   onManageCategories: () => void;
+  onAddBudget?: () => void;
 }) {
   const {
     budgets, total, loading, page,
     filterType, filterPeriod, filterActive, keyword, categories,
     onPageChange, onFilterTypeChange, onFilterPeriodChange, onFilterActiveChange, onKeywordChange,
-    onEdit, onDelete, onManageCategories,
+    onEdit, onDelete, onManageCategories, onAddBudget,
   } = props;
 
   const totalPages = Math.max(1, Math.ceil(total / BUDGET_PAGE_SIZE));
@@ -551,7 +562,14 @@ function BudgetListSection(props: {
       <SectionCard
         title="预算列表"
         description="管理所有预算项，支持按类型、周期、状态筛选。"
-        action={<Btn tone="ghost" onClick={onManageCategories}>管理分类</Btn>}
+        action={(
+          <div className="section-card-toolbar">
+            <Btn tone="ghost" onClick={onManageCategories}>管理分类</Btn>
+            {onAddBudget ? (
+              <Btn tone="primary" onClick={onAddBudget}>新增预算</Btn>
+            ) : null}
+          </div>
+        )}
       >
         <div className="page-stack">
           <div className="filter-grid">
@@ -601,7 +619,17 @@ function BudgetListSection(props: {
 
 // ===== 对比分析 =====
 
-function BudgetComparisonSection({ comparison, loading }: { comparison: BudgetYearlyComparison; loading: boolean }) {
+function BudgetComparisonSection({
+  comparison,
+  loading,
+  year,
+  onYearChange,
+}: {
+  comparison: BudgetYearlyComparison;
+  loading: boolean;
+  year: number;
+  onYearChange: (value: number) => void;
+}) {
   const summaryCards = [
     { label: '年度预算', value: `¥${comparison.totalBudgeted.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}` },
     { label: '实际支出', value: `¥${comparison.totalActual.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}` },
@@ -625,6 +653,17 @@ function BudgetComparisonSection({ comparison, loading }: { comparison: BudgetYe
       <SectionCard
         title="月度预算 vs 实际支出"
         description={`${comparison.year} 年逐月对比，蓝色为预算，绿色/红色为实际支出。`}
+        action={(
+          <SelectField
+            value={year}
+            onChange={(e) => onYearChange(Number(e.target.value))}
+            style={{ width: 'auto' }}
+          >
+            {Array.from({ length: 5 }, (_, i) => dayjs().year() - 2 + i).map((y) => (
+              <option key={y} value={y}>{y} 年</option>
+            ))}
+          </SelectField>
+        )}
       >
         {loading ? (
           <div className="empty-state">正在加载对比数据...</div>
