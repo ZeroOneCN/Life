@@ -278,9 +278,6 @@ export default function CardPage() {
     { label: '低余额数', value: `${overview.lowBalanceCount} 张` },
     { label: '总余额', value: `¥${overview.totalBalance.toFixed(2)}` },
     { label: '运营商数', value: `${overview.carrierCount}` },
-  ]), [overview]);
-
-  const billingCards = useMemo(() => ([
     { label: '月租合计', value: `¥${overview.monthlyFeeTotal.toFixed(2)}` },
     { label: '本月账单数', value: `${overview.currentMonthBillCount}` },
     { label: '本月账单金额', value: `¥${overview.currentMonthBillAmount.toFixed(2)}` },
@@ -301,7 +298,6 @@ export default function CardPage() {
       />
 
       <StatGrid className="card-overview-grid" items={overviewCards} />
-      <StatGrid className="card-overview-grid" items={billingCards} />
 
       <SectionCard
         title="业务视图"
