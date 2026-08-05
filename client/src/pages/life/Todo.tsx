@@ -4,7 +4,7 @@ import { TodoLogsSection } from '../../components/life/TodoLogsSection';
 import { TodoSettingsSection } from '../../components/life/TodoSettingsSection';
 import { TodoTasksSection } from '../../components/life/TodoTasksSection';
 import { TodoTrashSection } from '../../components/life/TodoTrashSection';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { PageHeader, StatGrid } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -93,16 +93,17 @@ export default function TodoPage() {
   }, [refreshToken]);
 
   const subtitle = useMemo(() => (
-    loading
-      ? '正在从后端加载任务、提醒规则和通知日志。'
-      : '管理日常待办事项，追踪任务完成进度。'
-  ), [loading]);
+    '管理日常待办事项，追踪任务完成进度'
+  ), []);
 
   return (
     <div className="page-stack">
       <PageHeader
         title="待办中心"
         subtitle={subtitle}
+        actions={(
+          <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as TodoTab)} />
+        )}
       />
 
       <StatGrid
@@ -115,13 +116,6 @@ export default function TodoPage() {
           { label: '今日到期', value: `${overview.dueTodayCount}`, helper: `高${overview.highPriorityCount} / 中${overview.mediumPriorityCount} / 低${overview.lowPriorityCount}` },
         ]}
       />
-
-      <SectionCard
-        title="业务视图"
-        description="任务列表、提醒设置、通知日志和回收站全部以后端数据为准，tab 仅负责界面切换。"
-      >
-        <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as TodoTab)} />
-      </SectionCard>
 
       {tab === 'tasks' ? (
         <TodoTasksSection

@@ -280,15 +280,25 @@ export default function BudgetPage({ embedded = false }: { embedded?: boolean })
     <div className="page-stack">
       {embedded ? (
         <div className="merged-toolbar">
+          <PillTabs
+            options={TAB_OPTIONS}
+            value={activeTab}
+            onChange={(value) => setActiveTab(value as TabKey)}
+          />
           <Btn tone="secondary" onClick={handleTriggerAlerts}>检查预警</Btn>
           <Btn tone="primary" onClick={handleAddBudget}>新增预算</Btn>
         </div>
       ) : (
         <PageHeader
           title="预算管理"
-          subtitle="预算管理"
+          subtitle="设定月度预算，跟踪支出对比与调整记录"
           actions={
             <>
+              <PillTabs
+                options={TAB_OPTIONS}
+                value={activeTab}
+                onChange={(value) => setActiveTab(value as TabKey)}
+              />
               <Btn tone="secondary" onClick={handleTriggerAlerts}>检查预警</Btn>
               <Btn tone="primary" onClick={handleAddBudget}>新增预算</Btn>
             </>
@@ -300,36 +310,28 @@ export default function BudgetPage({ embedded = false }: { embedded?: boolean })
         <StatGrid items={overviewCards} />
       )}
 
-      <SectionCard
-        title="业务视图"
-        description="预算看板、预算管理、对比分析与调整历史共用同一套后端数据模型，支持按月/按年切换。"
-        action={
-          (activeTab === 'overview' || activeTab === 'budgets') ? (
-            <Field
-              type="month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              style={{ width: 'auto' }}
-            />
-          ) : activeTab === 'comparison' ? (
-            <SelectField
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              style={{ width: 'auto' }}
-            >
-              {Array.from({ length: 5 }, (_, i) => dayjs().year() - 2 + i).map((y) => (
-                <option key={y} value={y}>{y} 年</option>
-              ))}
-            </SelectField>
-          ) : undefined
-        }
-      >
-        <PillTabs
-          options={TAB_OPTIONS}
-          value={activeTab}
-          onChange={(value) => setActiveTab(value as TabKey)}
-        />
-      </SectionCard>
+      {(activeTab === 'overview' || activeTab === 'budgets') ? (
+        <div className="context-bar">
+          <Field
+            type="month"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            style={{ width: 'auto' }}
+          />
+        </div>
+      ) : activeTab === 'comparison' ? (
+        <div className="context-bar">
+          <SelectField
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            style={{ width: 'auto' }}
+          >
+            {Array.from({ length: 5 }, (_, i) => dayjs().year() - 2 + i).map((y) => (
+              <option key={y} value={y}>{y} 年</option>
+            ))}
+          </SelectField>
+        </div>
+      ) : null}
 
       {activeTab === 'overview' && progressOverview && (
         <BudgetOverviewSection overview={progressOverview} loading={overviewLoading} />

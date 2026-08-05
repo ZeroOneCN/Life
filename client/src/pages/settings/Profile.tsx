@@ -159,8 +159,17 @@ export default function ProfileSettingsPage() {
     <div className="page-stack">
       <PageHeader
         title="个人中心"
-        subtitle="账户与偏好设置"
-        actions={<Tag tone="blue">认证会话已接入</Tag>}
+        subtitle="管理账户安全、集成与偏好设置"
+        actions={(
+          <>
+            <PillTabs
+              options={TAB_OPTIONS}
+              value={tab}
+              onChange={(value) => setTab(value as ProfileTab)}
+            />
+            <Tag tone="blue">认证会话已接入</Tag>
+          </>
+        )}
       />
 
       <SectionCard
@@ -181,17 +190,6 @@ export default function ProfileSettingsPage() {
             <span>{user?.timezone ?? 'Asia/Shanghai'}</span>
           </div>
         </div>
-      </SectionCard>
-
-      <SectionCard
-        title="设置分区"
-        description="个人资料与账户安全分开保存，互不影响。"
-      >
-        <PillTabs
-          options={TAB_OPTIONS}
-          value={tab}
-          onChange={(value) => setTab(value as ProfileTab)}
-        />
       </SectionCard>
 
       {tab === 'profile' ? (

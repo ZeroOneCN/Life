@@ -322,7 +322,7 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
       ) : (
         <PageHeader
           title="储蓄目标"
-          subtitle="储蓄目标"
+          subtitle="设定储蓄目标，跟踪达成进度与建议"
           actions={
             <Btn tone="primary" onClick={handleCreateGoal}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>

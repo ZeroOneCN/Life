@@ -5,7 +5,7 @@ import { ScheduleEventsSection } from '../../components/life/ScheduleEventsSecti
 import { ScheduleLogsSection } from '../../components/life/ScheduleLogsSection';
 import { ScheduleSettingsSection } from '../../components/life/ScheduleSettingsSection';
 import { ScheduleTrashSection } from '../../components/life/ScheduleTrashSection';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { PageHeader, StatGrid } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -105,16 +105,17 @@ export default function SchedulePage() {
   }, [refreshToken]);
 
   const subtitle = useMemo(() => (
-    loading
-      ? '正在从后端加载日程、提醒规则和通知日志。'
-      : '管理日常日程，追踪事件完成进度，支持重复事件和提醒。'
-  ), [loading]);
+    '管理日常日程，支持重复事件与到期提醒'
+  ), []);
 
   return (
     <div className="page-stack">
       <PageHeader
         title="日程管理"
         subtitle={subtitle}
+        actions={(
+          <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as ScheduleTab)} />
+        )}
       />
 
       <StatGrid
@@ -127,13 +128,6 @@ export default function SchedulePage() {
           { label: '今日到期', value: `${overview.dueTodayCount}`, helper: `本周 ${overview.dueThisWeekCount} / 逾期 ${overview.overdueCount}` },
         ]}
       />
-
-      <SectionCard
-        title="业务视图"
-        description="日历视图、事件列表、提醒设置、通知日志和回收站全部以后端数据为准，tab 仅负责界面切换。"
-      >
-        <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as ScheduleTab)} />
-      </SectionCard>
 
       {tab === 'events' ? (
         <>

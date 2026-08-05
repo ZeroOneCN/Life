@@ -5,7 +5,7 @@ import { MedicationAnalysisSection } from '../../components/health/MedicationAna
 import { MedicationPurchasesSection } from '../../components/health/MedicationPurchasesSection';
 import { MedicationRecordsSection } from '../../components/health/MedicationRecordsSection';
 import { MedicationSummarySection } from '../../components/health/MedicationSummarySection';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { PageHeader, StatGrid } from '../../components/page';
 import { Btn, PillTabs, StatGridSkeleton, Tag, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -199,7 +199,11 @@ export default function MedicationPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader title="用药" subtitle="药品库存、用药记录与每日总结" />
+      <PageHeader
+        title="用药管理"
+        subtitle="药品库存、用药记录与每日总结"
+        actions={(<PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as MedicationTab)} />)}
+      />
       {loading ? (
         <StatGridSkeleton cols={4} />
       ) : (
@@ -212,13 +216,6 @@ export default function MedicationPage() {
         ]}
       />
       )}
-
-      <SectionCard
-        title="业务视图"
-        description="记录、购药、分析和提醒都直接基于后端响应工作。"
-      >
-        <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as MedicationTab)} />
-      </SectionCard>
 
       {tab === 'records' ? (
         <MedicationRecordsSection

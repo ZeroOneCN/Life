@@ -137,17 +137,18 @@ export default function NotificationCenterPage() {
     <div className="page-stack">
       <PageHeader
         title="通知中心"
-        subtitle="通知配置管理"
-        actions={<Tag tone="blue">{loading ? '同步中' : '后端已接入'}</Tag>}
+        subtitle="管理通知渠道、场景绑定与推送日志"
+        actions={(
+          <>
+            <PillTabs
+              options={tabOptions.map((item) => ({ value: item.value, label: item.label }))}
+              value={tab}
+              onChange={(value) => setTab(value as (typeof tabOptions)[number]['value'])}
+            />
+            <Tag tone="blue">{loading ? '同步中' : '后端已接入'}</Tag>
+          </>
+        )}
       />
-
-      <div className="merged-tabs-top">
-        <PillTabs
-          options={tabOptions.map((item) => ({ value: item.value, label: item.label }))}
-          value={tab}
-          onChange={(value) => setTab(value as (typeof tabOptions)[number]['value'])}
-        />
-      </div>
 
       {tab === 'overview' ? (
         <>

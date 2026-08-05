@@ -6,7 +6,7 @@ import { LoanPlatformsSection } from '../../components/finance/LoanPlatformsSect
 import { LoanRepaymentsSection } from '../../components/finance/LoanRepaymentsSection';
 import { LoanSettingsSection } from '../../components/finance/LoanSettingsSection';
 import { LoanStatisticsSection } from '../../components/finance/LoanStatisticsSection';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { PageHeader, StatGrid } from '../../components/page';
 import { Btn, DeleteModal, PillTabs, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -199,37 +199,29 @@ export default function LoanPage() {
     <div className="page-stack">
       <PageHeader
         title="借贷还款"
-        subtitle={
-          loading
-            ? '正在从后端加载贷款平台、账单、还款和提醒设置。'
-            : '管理借贷合同、还款计划和逾期提醒。'
-        }
+        subtitle="管理借贷平台、账单还款与逾期提醒。"
         actions={(
-          <Btn
-            tone="ghost"
-            onClick={() => setTab('settings')}
-          >
-            {tab === 'settings' ? '← 返回业务' : (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                </svg>
-                设置
-              </span>
-            )}
-          </Btn>
+          <>
+            <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as LoanTab)} />
+            <Btn
+              tone="ghost"
+              onClick={() => setTab('settings')}
+            >
+              {tab === 'settings' ? '← 返回业务' : (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
+                  设置
+                </span>
+              )}
+            </Btn>
+          </>
         )}
       />
 
       <StatGrid items={summaryCards} />
-
-      <SectionCard
-        title="业务视图"
-        description="总览、平台、账单、还款、统计和设置全部直接读取后端数据。"
-      >
-        <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as LoanTab)} />
-      </SectionCard>
 
       {tab === 'dashboard' ? (
         <LoanDashboardSection

@@ -801,6 +801,16 @@ textarea {
     z-index: 5;
   }
 
+  /* 功能切换 tab 并入 PageHeader 后，移动端不再吸底（仅操作按钮吸底） */
+  .page-actions:has(.tab-bar) {
+    position: static;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border-top: none;
+    z-index: auto;
+  }
+
   .section-card {
     border-radius: 12px;
   }
@@ -3466,14 +3476,14 @@ textarea {
   gap: 4px;
   width: fit-content;
   padding: 4px;
-  border-radius: 999px;
-  background: var(--color-surface-3);
+  border-radius: 8px;
+  background: var(--color-surface-2);
 }
 
 .tab {
-  min-height: 34px;
+  min-height: 32px;
   padding: 0 16px;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 0;
   background: transparent;
   color: var(--color-ink-secondary);
@@ -3489,8 +3499,7 @@ textarea {
 
 .tab.active {
   color: var(--color-primary);
-  background: var(--color-canvas);
-  box-shadow: 0 1px 3px rgba(0,55,112,0.06);
+  background: var(--color-surface-1);
 }
 
 /* ========== 列表项入场动画 ========== */

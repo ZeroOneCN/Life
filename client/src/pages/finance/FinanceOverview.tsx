@@ -99,15 +99,17 @@ export default function FinanceOverviewPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader title="财务概览" subtitle="财务数据概览" />
-
-      <div className="merged-tabs-top">
-        <PillTabs
-          options={TAB_OPTIONS}
-          value={activeTab}
-          onChange={(v) => setActiveTab(v as OverviewTab)}
-        />
-      </div>
+      <PageHeader
+        title="财务概览"
+        subtitle="汇总各财务模块数据，查看概览与周期报告"
+        actions={(
+          <PillTabs
+            options={TAB_OPTIONS}
+            value={activeTab}
+            onChange={(v) => setActiveTab(v as OverviewTab)}
+          />
+        )}
+      />
 
       {activeTab === 'overview' ? (
         <>

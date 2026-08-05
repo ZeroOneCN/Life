@@ -6,7 +6,7 @@ import { TravelLeaderboardSection } from '../../components/finance/TravelLeaderb
 import { TravelReportSection } from '../../components/finance/TravelReportSection';
 import { TravelStatsSection } from '../../components/finance/TravelStatsSection';
 import { CurrencyConverter } from '../../components/finance/CurrencyConverter';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { PageHeader, StatGrid } from '../../components/page';
 import { PillTabs, SelectField, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -302,8 +302,23 @@ export default function TravelPage() {
     <div className="page-stack">
       <PageHeader
         title="旅行游玩"
-        subtitle={loading ? '正在加载旅行数据...' : '旅行支出'}
+        subtitle="记录行程账本与消费明细，支持多币种统计"
+        actions={(
+          <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as TravelTab)} />
+        )}
       />
+
+      <div className="context-bar">
+        <SelectField
+          label="当前行程账本"
+          value={activeBook?.id ?? ''}
+          onChange={(event) => handleActiveBookChange(event.target.value)}
+        >
+          {books.map((book) => (
+            <option key={book.id} value={book.id}>{book.name}</option>
+          ))}
+        </SelectField>
+      </div>
 
       <StatGrid
         items={[
@@ -331,26 +346,6 @@ export default function TravelPage() {
           },
         ]}
       />
-
-      <SectionCard
-        title="业务视图"
-        description="账本、明细、统计、排行与报告共用同一套远程数据，不再保留页面级本地业务状态。"
-        action={(
-          <div className="section-card-toolbar">
-            <SelectField
-              label="当前行程账本"
-              value={activeBook?.id ?? ''}
-              onChange={(event) => handleActiveBookChange(event.target.value)}
-            >
-              {books.map((book) => (
-                <option key={book.id} value={book.id}>{book.name}</option>
-              ))}
-            </SelectField>
-          </div>
-        )}
-      >
-        <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as TravelTab)} />
-      </SectionCard>
 
       {tab === 'books' ? (
         <TravelBooksSection

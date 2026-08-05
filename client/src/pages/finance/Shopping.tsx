@@ -4,7 +4,7 @@ import { ShoppingDashboardSection } from '../../components/finance/ShoppingDashb
 import { ShoppingLedgersSection } from '../../components/finance/ShoppingLedgersSection';
 import { ShoppingPlatformsSection } from '../../components/finance/ShoppingPlatformsSection';
 import { ShoppingRecordsSection } from '../../components/finance/ShoppingRecordsSection';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { PageHeader, StatGrid } from '../../components/page';
 import { Btn, Modal, PillTabs, SelectField, Tag, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -166,9 +166,10 @@ export default forwardRef<{ openImportModal: () => void }, { hideHeader?: boolea
       {!hideHeader && (
         <PageHeader
           title="网上购物"
-          subtitle={loading ? '正在加载购物数据...' : '购物消费'}
+          subtitle="记录购物订单与消费，支持多账本多币种"
           actions={(
-            <div className="inline-row">
+            <>
+              <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as ShoppingTab)} />
               <Btn tone="secondary" onClick={() => setImportOpen(true)}>导入 Excel</Btn>
               <Btn
                 tone="secondary"
@@ -180,7 +181,7 @@ export default forwardRef<{ openImportModal: () => void }, { hideHeader?: boolea
               >
                 切换到 {settings.currencyMode === 'CNY' ? 'USDT' : '人民币'}
               </Btn>
-            </div>
+            </>
           )}
         />
       )}
@@ -194,38 +195,32 @@ export default forwardRef<{ openImportModal: () => void }, { hideHeader?: boolea
         ]}
       />
 
-      <SectionCard
-        title="业务视图"
-        description="购物记录、看板、账本和平台都直接基于后端返回工作。"
-        action={(
-          <div className="section-card-toolbar">
-            <SelectField
-              label="当前账本"
-              value={activeLedger?.id ?? ''}
-              onChange={(event) => {
-                void updateSettings({ activeLedgerId: event.target.value });
-              }}
-            >
-              {ledgers.map((ledger) => (
-                <option key={ledger.id} value={ledger.id}>{ledger.name}</option>
-              ))}
-            </SelectField>
-            <SelectField
-              label="货币模式"
-              value={settings.currencyMode}
-              onChange={(event) => {
-                void updateSettings({ currencyMode: event.target.value as ShoppingCurrencyMode });
-              }}
-            >
-              <option value="CNY">人民币</option>
-              <option value="USDT">USDT</option>
-            </SelectField>
-            <Tag tone="green">{settings.currencyMode === 'USDT' ? `1 USDT = ¥${(settings.usdtRate ?? 7).toFixed(2)}` : '人民币主视图'}</Tag>
-          </div>
-        )}
-      >
-        <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as ShoppingTab)} />
-      </SectionCard>
+      {tab !== 'ledgers' ? (
+        <div className="context-bar">
+          <SelectField
+            label="当前账本"
+            value={activeLedger?.id ?? ''}
+            onChange={(event) => {
+              void updateSettings({ activeLedgerId: event.target.value });
+            }}
+          >
+            {ledgers.map((ledger) => (
+              <option key={ledger.id} value={ledger.id}>{ledger.name}</option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="货币模式"
+            value={settings.currencyMode}
+            onChange={(event) => {
+              void updateSettings({ currencyMode: event.target.value as ShoppingCurrencyMode });
+            }}
+          >
+            <option value="CNY">人民币</option>
+            <option value="USDT">USDT</option>
+          </SelectField>
+          <Tag tone="green">{settings.currencyMode === 'USDT' ? `1 USDT = ¥${(settings.usdtRate ?? 7).toFixed(2)}` : '人民币主视图'}</Tag>
+        </div>
+      ) : null}
 
       {tab === 'records' ? (
         <ShoppingRecordsSection

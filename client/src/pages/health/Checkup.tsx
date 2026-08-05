@@ -4,7 +4,7 @@ import { CheckupBatchEntrySection } from '../../components/health/CheckupBatchEn
 import { CheckupInsightsSection } from '../../components/health/CheckupInsightsSection';
 import { CheckupRecordsSection } from '../../components/health/CheckupRecordsSection';
 import { CheckupTemplatesSection } from '../../components/health/CheckupTemplatesSection';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { PageHeader, StatGrid } from '../../components/page';
 import { Btn, PillTabs, Tag, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -127,8 +127,8 @@ export default function CheckupPage() {
     <div className="page-stack">
       <PageHeader
         title="体检用药"
-        subtitle="体检与用药"
-        actions={null}
+        subtitle="管理体检指标、批量录入与用药模板"
+        actions={(<PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as CheckupTab)} />)}
       />
 
       <StatGrid
@@ -139,13 +139,6 @@ export default function CheckupPage() {
               { label: '最近检查', value: overview.recentTestDate ?? '-', helper: '最近一次检查日期' },
             ]}
           />
-
-          <SectionCard
-            title="业务视图"
-            description="指标记录、批量录入、模板和提醒都直接以数据库与通知中心为准。"
-          >
-            <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as CheckupTab)} />
-          </SectionCard>
 
           {tab === 'records' ? (
             <CheckupRecordsSection

@@ -5,7 +5,7 @@ import { RentEntrySection } from '../../components/finance/RentEntrySection';
 import { RentRecordsSection } from '../../components/finance/RentRecordsSection';
 import { RentStatisticsSection } from '../../components/finance/RentStatisticsSection';
 import { RentUtilityBillsSection } from '../../components/finance/RentUtilityBillsSection';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { PageHeader, StatGrid } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -230,7 +230,10 @@ export default function RentPage() {
     <div className="page-stack">
       <PageHeader
         title="房租水电"
-        subtitle={loading ? '正在加载住房记录...' : '租房管理'}
+        subtitle="管理住房记录、水电账单与统计分析"
+        actions={(
+          <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as RentTab)} />
+        )}
       />
 
       <StatGrid
@@ -242,13 +245,6 @@ export default function RentPage() {
           { label: '平均月租', value: formatRentAmount(overview.avgMonthlyCost) },
         ]}
       />
-
-      <SectionCard
-        title="业务视图"
-        description="住房记录、录入编辑、统计分析和渠道管理统一基于后端数据工作。"
-      >
-        <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as RentTab)} />
-      </SectionCard>
 
       {tab === 'records' ? (
         <RentRecordsSection

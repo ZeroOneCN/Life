@@ -18,16 +18,19 @@ export default function BillManagementPage() {
 
   return (
     <div className="page-stack finance-merged-page">
-      <PageHeader title="账单管理" subtitle="周期性账单" />
-
-      <div className="merged-content">
-        <div className="merged-tabs-top">
+      <PageHeader
+        title="账单管理"
+        subtitle="统一管理贷款、订阅与房租账单"
+        actions={(
           <PillTabs
             options={TAB_OPTIONS}
             value={activeTab}
             onChange={(v) => setActiveTab(v as BillMgmtTab)}
           />
-        </div>
+        )}
+      />
+
+      <div className="merged-content">
         {activeTab === 'loan' ? <LoanPage /> : null}
         {activeTab === 'subscription' ? <SubscriptionPage /> : null}
         {activeTab === 'rent' ? <RentPage /> : null}

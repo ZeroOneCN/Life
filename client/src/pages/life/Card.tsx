@@ -5,7 +5,7 @@ import { CardCardsSection } from '../../components/life/CardCardsSection';
 import { CardCarriersSection } from '../../components/life/CardCarriersSection';
 import { CardSettingsSection } from '../../components/life/CardSettingsSection';
 import { CardStatisticsSection } from '../../components/life/CardStatisticsSection';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { PageHeader, StatGrid } from '../../components/page';
 import { PillTabs, Tag, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -288,23 +288,19 @@ export default function CardPage() {
     <div className="page-stack">
       <PageHeader
         title="号卡中心"
-        subtitle={loading ? '正在加载号卡数据...' : '号卡管理'}
+        subtitle="统一管理号卡、账单、统计与运营商"
         actions={(
-          <div className="inline-row">
-            <Tag tone="blue">低余额 {overview.lowBalanceCount} 张</Tag>
-            <Tag tone="default">本月账单 {overview.currentMonthBillCount} 张</Tag>
-          </div>
+          <>
+            <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as CardTab)} />
+            <div className="inline-row">
+              <Tag tone="blue">低余额 {overview.lowBalanceCount} 张</Tag>
+              <Tag tone="default">本月账单 {overview.currentMonthBillCount} 张</Tag>
+            </div>
+          </>
         )}
       />
 
       <StatGrid className="card-overview-grid" items={overviewCards} />
-
-      <SectionCard
-        title="业务视图"
-        description="号卡列表、账单、统计、运营商和提醒设置共用同一套后端数据模型，并与通知中心联动。"
-      >
-        <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as CardTab)} />
-      </SectionCard>
 
       {tab === 'cards' ? (
         <CardCardsSection

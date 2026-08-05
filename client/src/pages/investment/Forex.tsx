@@ -5,7 +5,7 @@ import { ForexCapitalSection } from '../../components/investment/ForexCapitalSec
 import { ForexDashboardSection } from '../../components/investment/ForexDashboardSection';
 import { ForexTradesSection } from '../../components/investment/ForexTradesSection';
 import { DatePickerField } from '../../components/date';
-import { ContextBar, PageHeader, SectionCard } from '../../components/page';
+import { ContextBar, PageHeader } from '../../components/page';
 import { PillTabs, Tag, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -254,19 +254,15 @@ export default function ForexPage() {
     <div className="page-stack">
       <PageHeader
         title="外汇市场"
-        subtitle={loading ? '正在加载交易数据...' : '交易与资金'}
+        subtitle="记录外汇交易、查看统计与资金流水"
+        actions={(
+          <PillTabs
+            options={TAB_OPTIONS}
+            value={tab}
+            onChange={(value) => setTab(value as ForexTab)}
+          />
+        )}
       />
-
-      <SectionCard
-        title="业务视图"
-        description="统计、交易、计算器和出入金都直接以数据库与接口响应为准。"
-      >
-        <PillTabs
-          options={TAB_OPTIONS}
-          value={tab}
-          onChange={(value) => setTab(value as ForexTab)}
-        />
-      </SectionCard>
 
       {tab === 'dashboard' ? (
         <ContextBar label="看板范围">

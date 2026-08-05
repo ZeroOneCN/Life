@@ -94,7 +94,7 @@ export default function HealthDashboardPage() {
     <div className="page-stack">
       <PageHeader
         title="健康概览"
-        subtitle="健康数据概览"
+        subtitle="综合展示健康指标、趋势与提醒"
         actions={null}
       />
 

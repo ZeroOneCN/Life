@@ -195,8 +195,8 @@ export default function FinanceReportPage({ embedded = false }: { embedded?: boo
     <div className="page-stack">
       {!embedded && (
         <PageHeader
-          title="财务月报 / 年报"
-          subtitle="财务分析报告"
+          title="财务报告"
+          subtitle="生成月度与年度财务分析报告"
           actions={(
             <>
               <Tag tone="blue">月度自动推送</Tag>

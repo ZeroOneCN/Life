@@ -292,7 +292,7 @@ export default function Dashboard() {
   if (!summary) {
     return (
       <div className="page-stack dashboard-page">
-        <PageHeader title="LifeOS 控制台" subtitle={loadingError || '正在加载数据...'} />
+        <PageHeader title="控制中心" subtitle="汇总各模块数据与待办事项，掌握系统全貌" />
         <div className="section-card dash-skeleton-pad">
           <Skeleton lines={4} />
         </div>
@@ -309,8 +309,8 @@ export default function Dashboard() {
   return (
     <div className="page-stack dashboard-page">
       <PageHeader
-        title="LifeOS 控制台"
-        subtitle="全局概览"
+        title="控制中心"
+        subtitle="汇总各模块数据与待办事项，掌握系统全貌"
         actions={(
           <div className="dashboard-header-tags">
             <Tag tone={hasAgenda ? 'orange' : 'green'}>{hasAgenda ? `${summary.agenda.length} 项待处理` : '全部正常'}</Tag>

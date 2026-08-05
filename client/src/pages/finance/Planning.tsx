@@ -16,16 +16,19 @@ export default function PlanningPage() {
 
   return (
     <div className="page-stack finance-merged-page">
-      <PageHeader title="财务规划" subtitle="预算管理与储蓄目标，规划你的财务未来" />
-
-      <div className="merged-content">
-        <div className="merged-tabs-top">
+      <PageHeader
+        title="财务规划"
+        subtitle="预算管理与储蓄目标，规划你的财务未来"
+        actions={(
           <PillTabs
             options={TAB_OPTIONS}
             value={activeTab}
             onChange={(v) => setActiveTab(v as PlanningTab)}
           />
-        </div>
+        )}
+      />
+
+      <div className="merged-content">
         {activeTab === 'budget' ? <BudgetPage embedded /> : null}
         {activeTab === 'goal' ? <GoalPage embedded /> : null}
       </div>

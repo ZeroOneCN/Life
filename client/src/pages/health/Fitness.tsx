@@ -5,7 +5,7 @@ import { FitnessDietSection } from '../../components/health/FitnessDietSection';
 import { FitnessExerciseSection } from '../../components/health/FitnessExerciseSection';
 import { FitnessShoppingSection } from '../../components/health/FitnessShoppingSection';
 import { FitnessWeightSection } from '../../components/health/FitnessWeightSection';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { PageHeader, StatGrid } from '../../components/page';
 import { Btn, Modal, PillTabs, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -136,22 +136,18 @@ export default function FitnessPage() {
     <div className="page-stack">
       <PageHeader
         title="运动健身"
-        subtitle="运动与减脂"
+        subtitle="记录饮食、运动与体重数据，追踪健康进展"
         actions={(
-          <div className="fitness-page-actions">
-            <Btn tone="secondary" onClick={() => setInsightsOpen(true)}>查看健康建议</Btn>
-          </div>
+          <>
+            <PillTabs options={TAB_OPTIONS} value={innerTab} onChange={(value) => setInnerTab(value as FitnessTab)} />
+            <div className="fitness-page-actions">
+              <Btn tone="secondary" onClick={() => setInsightsOpen(true)}>查看健康建议</Btn>
+            </div>
+          </>
         )}
       />
 
       <StatGrid className="fitness-overview-grid" items={topSummary} />
-
-      <SectionCard
-        title="业务视图"
-        description="饮食、运动、采购、体重和看板都直接基于后端记录工作。"
-      >
-        <PillTabs options={TAB_OPTIONS} value={innerTab} onChange={(value) => setInnerTab(value as FitnessTab)} />
-      </SectionCard>
 
       {innerTab === 'diet' ? (
         <FitnessDietSection

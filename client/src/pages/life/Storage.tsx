@@ -4,7 +4,7 @@ import { StorageArchiveSection } from '../../components/life/StorageArchiveSecti
 import { StorageDashboardSection } from '../../components/life/StorageDashboardSection';
 import { StorageItemsSection } from '../../components/life/StorageItemsSection';
 import { StorageSettingsSection } from '../../components/life/StorageSettingsSection';
-import { PageHeader, SectionCard } from '../../components/page';
+import { PageHeader } from '../../components/page';
 import { PillTabs, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -87,24 +87,18 @@ export default function StoragePage() {
   }, [refreshToken]);
 
   const subtitle = useMemo(() => (
-    loading
-      ? '正在从后端加载物品、看板和设置。'
-      : '追踪个人物品位置、状态和关联信息。'
-  ), [loading]);
+    '追踪个人物品位置、状态与关联信息'
+  ), []);
 
   return (
     <div className="page-stack">
       <PageHeader
         title="物品追踪"
         subtitle={subtitle}
+        actions={(
+          <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as StorageTab)} />
+        )}
       />
-
-      <SectionCard
-        title="业务视图"
-        description="物品列表、成本看板、停用记录和页面设置都以后端数据为准，tab 仅负责界面切换。"
-      >
-        <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as StorageTab)} />
-      </SectionCard>
 
       {tab === 'items' ? (
         <StorageItemsSection

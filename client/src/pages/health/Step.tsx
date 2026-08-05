@@ -237,7 +237,7 @@ export default function StepPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader title="步数" subtitle="按小时记录每日步数与公里数" />
+      <PageHeader title="运动步数" subtitle="按小时记录每日步数与公里数" />
       {loading ? (
         <StatGridSkeleton cols={3} />
       ) : (

@@ -4,7 +4,7 @@ import { SubscriptionCategoriesSection } from '../../components/finance/Subscrip
 import { SubscriptionDashboardSection } from '../../components/finance/SubscriptionDashboardSection';
 import { SubscriptionRecordsSection } from '../../components/finance/SubscriptionRecordsSection';
 import { SubscriptionSettingsSection } from '../../components/finance/SubscriptionSettingsSection';
-import { PageHeader, SectionCard, StatGrid } from '../../components/page';
+import { PageHeader, StatGrid } from '../../components/page';
 import { PillTabs, Tag, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -213,19 +213,17 @@ export default function SubscriptionPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        title="服务订阅中心"
-        subtitle={loading ? '正在加载订阅数据...' : '订阅服务管理'}
-        actions={<Tag tone="blue">{loading ? '同步中' : '后端已接入'}</Tag>}
+        title="服务订阅"
+        subtitle="跟踪服务订阅、到期提醒与支出统计"
+        actions={(
+          <>
+            <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as SubscriptionTab)} />
+            <Tag tone="blue">{loading ? '同步中' : '后端已接入'}</Tag>
+          </>
+        )}
       />
 
       <StatGrid className="subscription-top-summary" items={summaryCards} />
-
-      <SectionCard
-        title="业务视图"
-        description="订阅记录、看板、分类与提醒设置共用同一套后端数据模型，并统一联动通知中心。"
-      >
-        <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as SubscriptionTab)} />
-      </SectionCard>
 
       {tab === 'records' ? (
         <SubscriptionRecordsSection

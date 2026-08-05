@@ -135,7 +135,7 @@ export default function HealthReportPage() {
     <div className="page-stack">
       <PageHeader
         title="健康报告"
-        subtitle={`当前周期：${describeRange(period, date)}`}
+        subtitle="汇总周期健康数据，生成可视化报告"
         actions={(
           <>
             <PillTabs

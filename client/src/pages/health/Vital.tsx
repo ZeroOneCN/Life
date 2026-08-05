@@ -384,15 +384,15 @@ export default function VitalPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader title="健康记录" subtitle="体征与睡眠" />
-
-      <div className="merged-tabs-top">
-        <PillTabs
+      <PageHeader
+        title="健康记录"
+        subtitle="记录日常体征与睡眠数据，支持趋势分析"
+        actions={(<PillTabs
           options={TAB_OPTIONS.map((t) => ({ value: t.value, label: t.label }))}
           value={activeTab}
           onChange={(v) => setActiveTab(v as TabKey)}
-        />
-      </div>
+        />)}
+      />
 
       {activeTab === 'vital' ? (
         <>
