@@ -1,210 +1,261 @@
-# LifeOS — 你的数字生活管家
+<div align="center">
 
-> 把健康、财务、生活、投资的数据都收进一个地方，用起来简单，看起来舒服，还能让 AI 帮你管。
+# 🏡 LifeOS 2 — 你的数字生活管家
 
-LifeOS 是一个前后端分离的全栈 Web 应用。前端用 **React 18 + TypeScript + Vite**，后端用 **Express + TypeScript + TypeORM**，数据库是 **MySQL 8**。整套系统围绕「全生命周期」的理念，把你生活里散落的数据归拢到一起，统一管理和分析。
+> **一个把健康 · 财务 · 生活 · 投资全部收齐的全栈 Web 操作系统**
+>
+> React 18 · TypeScript 5.7 · Vite 6 · Express · MySQL 8 · Linear Design
 
-## 它能做什么
+[⭐ 四大业务中心](#四大业务中心)
+&nbsp;·&nbsp;
+[🤖 AI 智能助理](#ai-智能助理)
+&nbsp;·&nbsp;
+[🎨 Linear 设计系统](#🎨-设计系统--v3-布局架构)
+&nbsp;·&nbsp;
+[🚀 快速开始](#快速开始)
 
-- **四大业务中心**：健康（概览 / 体征睡眠 / 健身 / 步数 / 体检 / 用药 / 报告）、财务（概览 / 消费 / 购物 / 旅行 / 账单 / 贷款 / 订阅 / 房租 / 规划 / 报告 / 汇率）、生活（物品 / 号卡 / 待办 / 日程）、投资（外汇）
-- **统一通知中心**：邮件、企业微信、钉钉、飞书、Telegram、Webhook 都能接，每个场景可以单独配 HTML 模板，发送记录都能查
-- **AI 智能助理**：右下角浮动按钮一键唤起，支持自然语言提问（比如「这个月购物花了多少」），背后是 DeepSeek 的 function calling，12 个工具（4 查询 + 8 写入）覆盖全模块
-- **DeepSeek Token 看板**：个人中心里实时显示官方账户余额和本站消耗，每 30 秒自动刷新
-- **Telegram 快速录入**：在 Telegram 里发个「步 8234」「重 72.4」就能录数据，不用开浏览器；绑定码 10 分钟内有效
-- **Stripe 风格设计**：Indigo 主色调 + Outfit 字体，支持亮色 / 暗色切换
-- **响应式布局**：桌面端有侧边栏，手机端自动切单列
-- **懒加载 + 进度条**：页面按需加载，顶部有进度条提示
-- **Excel / CSV 导入导出**：购物、旅行、健身、卡片账单等场景都支持
+</div>
 
-## 技术栈
+---
 
-| 层级 | 技术 | 版本 | 用途 |
-|------|------|------|------|
-| 前端框架 | React + TypeScript | 18 / 5.7 | 函数组件 + Hooks |
-| 构建工具 | Vite | 6 | 热更新 + 生产构建 |
-| 样式 | Tailwind CSS 4 + CSS 变量 | 4.3 | Stripe 设计体系，7 级字体 |
-| 图表 | Recharts + ECharts | 3.8 / 6.1 | 折线 / 柱状 / 饼图 + 复杂可视化 |
-| 路由 | React Router | 6.28 | 懒加载 + 路由守卫 |
-| HTTP | Axios | 1.16 | 统一封装 |
-| 工具库 | dayjs / lodash / papaparse / xlsx / jspdf / html2canvas | - | 日期 / 数据 / 导出 / 截图 |
-| 后端 | Express + TypeScript | 4.21 / 5.7 | RESTful API |
-| ORM | TypeORM | 0.3 | 自动建表 + 迁移 |
-| 数据库 | MySQL + mysql2 | 8 / 3.22 | 主存储 |
-| 认证 | Passport + JWT | 0.7 / 9 | 无状态 Token 鉴权 |
-| 参数校验 | Zod | 3.24 | 请求体验证 + 类型推断 |
-| 通知 | Nodemailer / Fetch | 8 / - | 邮件 / 机器人 / Webhook |
-| 日志 | Winston | 3.19 | 结构化日志 |
-| 加密 | bcrypt | 6 | 密码哈希 |
-| 安全 | Helmet / CORS / Compression | - | HTTP 头 / CORS / 压缩 |
-| AI | DeepSeek | - | `chat/completions` + `user/balance` |
-| TG Bot | Grammy | - | Telegram 快速录入（长轮询） |
+## ✨ 核心亮点
 
-## 业务模块一览
+| 🌐 四大业务中心 | 🤖 AI 智能助理 | 📱 Telegram 快速录入 | 🔔 统一通知中心 |
+|---|---|---|---|
+| 健康 / 财务 / 生活 / 投资<br>跨模块聚合仪表盘 | 右下角浮动按钮一键唤起<br>12 个 Function Calling 工具 | 发一条消息就录入数据<br>步/重/早/午/晚/药/买/+/- | 邮件·企微·钉钉·飞书<br>TG·Webhook 全覆盖 |
 
-### 健康中心
+| 🎨 Linear 设计系统 | 📐 v3 布局架构 | 💾 本地优先 · 成本可控 | ⚙️ 工程化 & 响应式 |
+|---|---|---|---|
+| 深色画布 · Lavender 蓝<br>Surface Ladder · 无阴影 | AppShell + NavRail<br>CommandBar ⌘K · Workspace | OCR / 计算 / 分析全本地<br>不上传第三方 | 桌面侧边栏 · 移动端吸底<br>懒加载 · NProgress |
 
-- **健康概览** (`/health/overview`)：跨模块聚合 — 体重趋势、累计步数、活跃药品、待办体检
-- **体征睡眠** (`/health/vital`)：体征指标 + 睡眠记录
-- **运动健身** (`/health/fitness`)：饮食、运动、体重、购物四个维度一起记；体重体脂精确到 2 位小数；支持 Excel 导入导出
-- **运动步数** (`/health/step`)：按时段（08/12/16/20/23 点）或全天录入；支持按日 / 月 / 年 / 时段看趋势
-- **体检指标** (`/health/checkup`)：自定义模板（指标 + 阈值），批量录入，异常项自动分析
-- **日常用药** (`/health/medication`)：用药记录 + 购药记录 + 库存估算；双指针库存算法；盒 / 瓶单位智能识别；支持服药提醒
-- **健康报告** (`/health/report`)：AI 生成个性化健康分析报告
+---
 
-### 财务中心
+## 🌐 四大业务中心
 
-- **财务概览** (`/finance/overview`)：跨模块聚合 — 待还贷款、订阅数、累计购物、活跃旅行、净资产
-- **消费记录** (`/finance/expense`)：日常消费流水记录
-- **网上购物** (`/finance/shopping`)：商品记录 + 平台管理 + 分类账本；Excel 导入导出
-- **旅行记账** (`/finance/travel`)：行程 + 费用 + 排行榜 + 报表；多币种 + 状态机（计划 / 进行 / 完成 / 归档）+ 30 天后自动提醒归档 + 汇率换算
-- **账单管理** (`/finance/bill-mgmt`)：贷款账单追踪 + 部分还款（利息优先本金在后）
-- **账单提醒** (`/finance/bill`)：订阅 / 账单到期提醒；提前 3 天 / 当天 / 逾期三档自动提醒
-- **财务规划** (`/finance/planning`)：预算管理 + 财务目标追踪
-- **贷款还款** (`/finance/loan`)：平台 + 还款计划 + 账单追踪 + 统计
-- **服务订阅** (`/finance/subscription`)：分类 + 记录 + 周期管理
-- **房租水电** (`/finance/rent`)：渠道 + 缴费记录 + 月度 / 年度统计；水电煤气按月单独记录金额
-- **财务报告** (`/finance/report`)：跨 5 模块聚合（购物 / 旅行 / 贷款 / 订阅 / 房租），自动算收入支出、分类占比、同比环比；每月 1 号自动推送到通知中心
-- **汇率换算** (`/finance/exchange-rate`)：Exchange Rate API v6 实时拉取，1 小时缓存，USD 桥梁折算，离线兜底
+### 🏥 健康中心
+| 路由 | 模块 | 核心能力 |
+|---|---|---|
+| `/health/overview` | 健康概览 | 体重趋势 · 累计步数 · 活跃药品 · 待办体检（跨模块聚合） |
+| `/health/vital` | 体征睡眠 | 体征指标 + 睡眠记录 |
+| `/health/fitness` | 运动健身 | 饮食 / 运动 / 体重 / 购物 四维录入；Excel 导入导出 |
+| `/health/step` | 运动步数 | 时段录入（08/12/16/20/23）；日 / 月 / 年 / 时段趋势 |
+| `/health/checkup` | 体检指标 | 自定义模板（指标+阈值）；批量录入；异常项自动分析 |
+| `/health/medication` | 日常用药 | 用药 / 购药 / 库存估算；双指针库存算法；服药提醒 |
+| `/health/report` | 健康报告 | 个性化健康分析报告 + 一键 PDF 导出 |
 
-### 生活中心
+### 💰 财务中心
+| 路由 | 模块 | 核心能力 |
+|---|---|---|
+| `/finance/overview` | 财务概览 | 待还贷款 · 订阅数 · 累计购物 · 活跃旅行 · 净资产 |
+| `/finance/expense` | 消费记录 | 日常消费流水 |
+| `/finance/shopping` | 网上购物 | 商品 · 平台 · 分类账本；Excel 导入导出；USDT 切换 |
+| `/finance/travel` | 旅行记账 | 行程 + 费用 + 排行榜 + 报表；多币种；状态机；30 天归档提醒 |
+| `/finance/bill-mgmt` | 账单管理 | 贷款 / 房租 / 订阅 三主 Tab；子 Tab 内嵌壳页；部分还款 |
+| `/finance/loan` | 贷款还款 | 平台 · 还款计划 · 账单追踪 · 统计；欠款=本金+利息合计口径 |
+| `/finance/rent` | 房租水电 | 渠道 · 缴费记录 · 月/年度统计；水电煤气**按月单独记录** |
+| `/finance/subscription` | 服务订阅 | 分类 · 记录 · 周期管理；7 天内到期看板 |
+| `/finance/bill` | 账单提醒 | 订阅 / 账单到期；提前 3 天 / 当天 / 逾期三档 |
+| `/finance/planning` | 财务规划 | 预算管理 + 财务目标追踪；Tab 嵌入壳页 |
+| `/finance/report` | 财务报告 | 购物·旅行·贷款·订阅·房租 5 模块聚合；同比环比；每月 1 号自动推送 |
+| `/finance/exchange-rate` | 汇率换算 | Exchange Rate API v6 实时拉取；1 小时缓存；USD 桥梁；离线兜底 |
 
-- **物品追踪** (`/life/storage`)：物品归档 + 存放位置；支持从购物账单一键导入；删除物品时联动删除关联购物记录
-- **号卡中心** (`/life/card`)：号卡管理 + 充值 + 账单导入；运营商分类
-- **待办事项** (`/life/todo`)：任务 + 日志 + 回收站；软删除可恢复；支持每日 / 每周 / 每月重复任务；自动提醒（逾期 / 即将到期 / 每日任务）
-- **日程管理** (`/life/schedule`)：日历事件 + 重复日程 + 提前提醒
+### 📋 生活中心
+| 路由 | 模块 | 核心能力 |
+|---|---|---|
+| `/life/storage` | 物品追踪 | 物品归档 · 存放位置；购物账单一键导入；联动删除 |
+| `/life/card` | 号卡中心 | 号卡管理 · 充值 · 账单导入；运营商分类 |
+| `/life/todo` | 待办事项 | 任务 + 日志 + 回收站；软删除；每日/每周/每月重复；自动提醒 |
+| `/life/schedule` | 日程管理 | 日历事件 · 重复日程 · 提前提醒 |
 
-### 投资中心
+### 📈 投资中心
+| 路由 | 模块 | 核心能力 |
+|---|---|---|
+| `/investment/forex` | 外汇交易 | 交易记录 · 资金流水 · 汇率计算器；多仓位爆仓计算；隔夜费计入净收益 |
+| `/investment/crypto` | 加密市场 | （菜单已移除，路由保留待实装） |
+| `/investment/hk-stock` | 港股市场 | （菜单已移除，路由保留待实装） |
+| `/investment/us-stock` | 美股市场 | （菜单已移除，路由保留待实装） |
 
-- **外汇交易** (`/investment/forex`)：交易记录 + 资金流水 + 汇率计算器；多仓位爆仓计算（账户级 + 仓位级）；隔夜费计入净收益
-- ~~加密市场~~ (`/investment/crypto`)：前端 localStorage 版本，**菜单已移除**，路由保留待未来实装
-- ~~港股市场~~ (`/investment/hk-stock`)：前端 localStorage 版本，**菜单已移除**，路由保留待未来实装
-- ~~美股市场~~ (`/investment/us-stock`)：前端 localStorage 版本，**菜单已移除**，路由保留待未来实装
+> 💡 仪表盘投资卡片 **绿盈红亏**；财务金额统一 2 位小数 `tabular-nums`。
 
-仪表盘首页的投资卡片用绿色（盈利）/ 红色（亏损）区分；财务卡片的金额统一 2 位小数显示。
+---
 
-### 通知中心
+## 🧩 三大支撑模块
 
-路由 `/notifications`，统一管理所有提醒：
-
-- **多渠道**：邮件、企业微信、钉钉、飞书、Telegram、自定义 Webhook
-- **场景绑定**：每个业务场景可以单独选要发哪些渠道
-- **HTML 模板**：每个场景可以配纯文本或 HTML 模板，支持 `{{title}}` `{{message}}` `{{date}}` `{{userId}}` `{{meta.xxx}}` 占位符
-- **自动补齐**：升级后新加的场景和模板会自动补到存量用户数据里，不用重置数据库
-- **发送日志**：所有记录都能查，跳过的会写明原因（场景没开 / 渠道没配 / 渠道停用）
-
-### AI 智能助理
-
-基于 DeepSeek 的自然语言助理：
-
+### 🤖 AI 智能助理
 - **入口**：右下角浮动按钮，任何页面一键唤起
-- **能力**：12 个 function calling tool — 4 查询（财务/健康/投资/生活）+ 8 写入（购物/订阅/步数/体重/用药/待办/日程/饮食）
-- **调用链路**：`POST /assistant/chat` → DeepSeek 自动判断是否调 tool → 最多 4 轮 → 返回自然语言回复
-- **典型问题**：「这个月购物花了多少？」「最近 7 天步数趋势如何？」「盈亏比最高的交易是什么？」
-- **Token 记录**：每次调用都记到 `system_assistant_usage_logs` 表，支持回退到原生 SQL 写入
-- **官方余额**：`GET /assistant/usage` 同时返回 DeepSeek 官方余额 + 本站累计 / 今日消耗
+- **能力**：12 个 Function Calling Tool
+  - 🔍 **4 查询**：财务 · 健康 · 投资 · 生活
+  - ✏️ **8 写入**：购物 · 订阅 · 步数 · 体重 · 用药 · 待办 · 日程 · 饮食
+- **链路**：`POST /api/assistant/chat` → DeepSeek 自动判工具 → 最多 4 轮 → 自然语言回复
+- **示例问题**：「这个月购物花了多少？」「最近 7 天步数趋势？」「盈亏比最高的交易？」
+- **Token 看板**（个人中心）：DeepSeek 官方余额 + 本站累计 / 今日消耗，每 30 秒自动刷新
+- **调用记录**：`system_assistant_usage_logs` 持久化；三层兜底（Repository → 原生 SQL → 自动建表）
 
-### Telegram 快速录入
+### 🔔 统一通知中心（`/notifications`）
+- **6 种渠道**：邮件 · 企业微信 · 钉钉 · 飞书 · Telegram · 自定义 Webhook
+- **场景绑定**：每个业务场景独立配渠道
+- **HTML 模板**：每场景纯文本 / HTML 模板；支持 `{{title}}` `{{message}}` `{{date}}` `{{userId}}` `{{meta.xxx}}`
+- **自动补齐**：升级后新增场景 / 模板自动补到存量用户
+- **发送日志**：全量可查；跳过原因明确标记（场景未开 / 渠道未配 / 渠道停用）
 
-用 Telegram Bot 随时随地录数据：
+### 📱 Telegram 快速录入
+- **绑定**：网页生成 6 位码（10 分钟有效）→ TG 发 `/bind <码>`
+- **快捷指令**
 
-- **绑定**：网页端生成 6 位码（10 分钟有效）→ Telegram 里发 `/bind <码>` 完成关联
-- **快捷指令**：
-  - `步 8234` — 记步数；`步 12000 全天` — 全天步数
-  - `重 72.4` — 记体重
-  - `早 燕麦杯` / `午 牛肉饭 450g` / `晚 沙拉` — 饮食
-  - `跑 30min 高强度` — 运动
-  - `药 维C 每日1粒` — 用药
-  - `买 牛奶 28元` / `花 299 显示器支架` — 购物
-  - `+ 提交报告 明天` / `- 买菜` — 待办增删
-- **AI 兜底**：快捷指令没命中时自动调 DeepSeek 解析自然语言（如「今天跑了5公里大概35分钟」）
-- **安全**：只响应私聊、只做新增 / 更新、没配 Token 时优雅跳过
+| 指令 | 示例 | 说明 |
+|---|---|---|
+| 步数 | `步 8234` · `步 12000 全天` | 按小时 / 全天录入 |
+| 体重 | `重 72.4` | - |
+| 饮食 | `早 燕麦杯` · `午 牛肉饭 450g` · `晚 沙拉` | 早/午/晚三餐 |
+| 运动 | `跑 30min 高强度` | - |
+| 用药 | `药 维C 每日1粒` | - |
+| 购物/支出 | `买 牛奶 28元` · `花 299 显示器支架` | - |
+| 待办增删 | `+ 提交报告 明天` · `- 买菜` | - |
+| 自然语言 | `今天跑了5公里大概35分钟` | AI 兜底解析 |
 
-### 仪表盘首页 (`/dashboard`)
+> 🔒 只响应私聊；只做新增 / 更新；没配 Token 时优雅跳过。
 
-跨模块的全局概览：
+---
 
-- 顶部 PageHeader + 待办速览
-- 健康卡片：体重、累计步数、活跃药品、待办体检
-- 财务卡片：待还贷款、订阅数、累计购物、活跃旅行
-- 即将到期订阅：7 天内按剩余天数排序
-- 投资卡片：净资金、净收益（绿盈红亏）、胜率、持仓
-- 生活卡片：储物数、待办数、号卡数
-- 通知卡片：已启用渠道、最近日志数
+### 🎯 仪表盘首页 (`/dashboard`)
+- PageHeader + 待办速览（点击跳转定位具体待办）
+- 健康卡 / 财务卡 / 投资卡 / 生活卡 / 通知卡 · 跨模块聚合
+- 7 天内到期订阅（按剩余天数排序）
 - 趋势图：步数 / 体重 + 投资资金流水
-- 30 秒内存缓存，降低数据库压力
+- **30 秒内存缓存**，降低 DB 压力
+- 最近动态：通知日志 + AI 调用日志（时间倒序，不显示未来提醒）
 
-## DeepSeek Token 看板
+---
 
-在 `/settings/profile?tab=profile` 的「DeepSeek Token 消耗」卡片：
+## 🛠️ 技术栈
 
-**官方账户余额**（来自 DeepSeek `/user/balance`）
-- 大额余额数字 + 币种 / 刷新时间
-- 赠送余额、充值余额、可调用次数（按 2k token / 次估算）
+### 前端 `client/`
+| 类别 | 选型 | 版本 | 用途 |
+|---|---|---|---|
+| 框架 | React + TypeScript | 18 / 5.7 | 函数组件 + Hooks |
+| 构建 | Vite | 6 | HMR · 生产构建 |
+| 路由 | React Router | 6.28 | 懒加载 · 路由守卫 |
+| 状态 | Zustand + Context + Hooks | 4.x | workspace.store · auth · theme |
+| 样式 | Tailwind CSS 4 + CSS Variables | 4.3 | Linear Design 设计体系 |
+| 图表 | Recharts + ECharts | 3.8 / 6.1 | 折线 / 柱状 / 饼图 + 复杂可视化 |
+| HTTP | Axios | 1.16 | 统一封装 · Refresh Token 自动续期 |
+| 图标 | Lucide React | - | SVG 图标 |
+| Markdown | react-markdown + remark-gfm | - | AI 消息渲染（安全、无 `dangerouslySetInnerHTML`） |
+| 进度条 | nprogress | - | 路由懒加载 |
+| 导出 | xlsx · papaparse · jspdf · html2canvas | - | Excel / CSV / PDF / 截图 |
 
-**本站 AI 助理消耗**（按当前登录用户累计）
-- 累计 Token + 累计请求 / 最后调用
-- 今日 Token、估算花费（约 0.001 元 / 1k tokens）、平均每次
+### 后端 `server/`
+| 类别 | 选型 | 版本 | 用途 |
+|---|---|---|---|
+| 运行时 | Node.js + TypeScript | 18+ / 5.7 | - |
+| 框架 | Express | 4.21 | RESTful API |
+| ORM | TypeORM | 0.3 | 自动建表 · 迁移 |
+| 数据库 | MySQL + mysql2 | 8 / 3.22 | 主存储 |
+| 鉴权 | Passport + JWT (jsonwebtoken) | 0.7 / 9 | 无状态 Token · Access 2h · Refresh 30d |
+| 密码哈希 | Argon2id | 0.44 | 行业首选（替代 bcrypt） |
+| 参数校验 | Zod | 3.24 | DTO · 类型推断一体 |
+| 安全 | Helmet · CORS · Compression | - | HTTP 头 · 跨域 · 压缩 |
+| 日志 | Winston | 3.19 | 结构化日志 |
+| 通知 | Nodemailer · Fetch | 8 · - | 邮件 · 机器人 · Webhook |
+| AI | DeepSeek API | - | Chat · JSON Mode · Function Calling 三模式 |
+| TG Bot | Grammy | 1.43 | 快速录入 · 长轮询 |
+| Excel | ExcelJS | 4.4 | 后端 Excel 导入导出 |
+| 上传 | Multer | 2.1 | 文件上传 |
 
-**容错**：`recordAssistantUsage` 三层兜底（Repository → 原生 SQL → 自动建表），`getAssistantUsageStats` 出错返回空统计，不会因为缺表导致 500。
+### 工具链
+- 包管理：**npm**
+- 类型检查：`tsc --noEmit`（前端 `typecheck` · 后端 `check`）
+- 开发：Vite dev（3000）+ tsx watch（3100）
+- 迁移：TypeORM CLI
 
-## 项目结构
+---
 
+## 🎨 设计系统 & v3 布局架构
+
+### Linear Design Tokens
+- **画布**：深色底 `#0f1115` / 浅色阶梯（surface-0 → surface-4）
+- **主题色**：Lavender 蓝 `#5e6ad2`（Primary）
+- **视觉**：无阴影、hairline 描边、`8px` 圆角胶囊 / 直角 Tab
+- **字体**：Inter（数字 `tabular-nums`）
+- **组件库**：SectionCard · StatGrid · EmptyState · Btn · Modal · PillTabs · ContextBar
+
+### v3 Workspace 布局架构
 ```
-LifeOS/
-├── client/                         # 前端（React + Vite）
+┌──────────────────────────────────────────────────────────────┐
+│ StatusBar（全局状态栏）                                       │
+├──────┬───────────────────────────────────────────────────────┤
+│      │ CommandBar（⌘K 全局搜索占位 + 面包屑 + 用户菜单）      │
+│      ├───────────────────────────────────────────────────────┤
+│ Nav  │                                                       │
+│ Rail │                  Outlet 主内容区                       │
+│ 64px │                                                       │
+│ /    │                                                       │
+│ 240px│                                                       │
+│      │                                                       │
+└──────┴───────────────────────────────────────────────────────┘
+```
+| 组件 | 说明 |
+|---|---|
+| **AppShell** | 根布局壳；桌面 NavRail 侧栏、移动端自动切底部导航 |
+| **NavRail** | 64 / 240px 双模式；一级菜单 + 二级 Popover；`useDeviceCapabilities` |
+| **StatusBar** | 顶部全局信息条 |
+| **CommandBar** | 面包屑 + ⌘K Command Palette 占位 + 用户动作 |
+| **workspace.store** | Zustand + LRU + 持久化；Workspace 上下文 |
+| **兼容回退**：URL 加 `?layout=classic` 切回经典布局 |
+
+---
+
+## 📂 项目结构
+```
+LifeOS2/
+├── client/                                 # 前端（React + Vite + Tailwind 4）
 │   ├── src/
-│   │   ├── components/             # UI 组件
-│   │   │   ├── ui.tsx             # 基础组件（Btn / Field / Tag / Modal 等）
-│   │   │   ├── page.tsx           # 页面容器（PageHeader / SectionCard）
-│   │   │   ├── shared/            # AI 助理浮动按钮等
-│   │   │   ├── finance/           # 财务子组件
-│   │   │   ├── health/            # 健康子组件
-│   │   │   ├── investment/        # 投资子组件
-│   │   │   ├── life/              # 生活子组件
-│   │   │   └── notifications/     # 通知模板编辑器等
-│   │   ├── config/                # 导航 + 路由
-│   │   ├── hooks/                 # 自定义 Hooks
-│   │   ├── layout/                # 主布局
-│   │   ├── lib/                   # Axios 封装
-│   │   ├── pages/                 # 页面主组件
-│   │   ├── services/              # API 调用 + 业务逻辑
-│   │   ├── types/                 # TypeScript 类型
-│   │   └── index.css              # 全局样式
+│   │   ├── App.tsx                         # 路由入口（含 ?layout=classic）
+│   │   ├── main.tsx                        # ReactDOM mount
+│   │   ├── index.css                       # ★ 全局样式 + Tailwind + Linear Tokens
+│   │   ├── layout/                         # ★ v3 AppShell / NavRail / StatusBar / CommandBar
+│   │   ├── pages/                          # 页面（health/finance/life/investment/...）
+│   │   ├── components/
+│   │   │   ├── ui.tsx                      # ★ 基础原子组件（Btn/Modal/Field/Tag...）
+│   │   │   ├── page.tsx                    # ★ 页面容器（PageHeader/SectionCard/StatGrid）
+│   │   │   ├── shared/                     # 共享业务组件（NotificationLogsSection 等）
+│   │   │   ├── finance/ health/ investment/ life/ notifications/
+│   │   ├── config/                         # navigation.tsx 菜单 + 路由
+│   │   ├── hooks/                          # useDeviceCapabilities / usePageTab 等
+│   │   ├── store/                          # workspace.store 等 Zustand Store
+│   │   ├── lib/                            # Axios 封装
+│   │   ├── services/                       # 各模块 API
+│   │   └── types/                          # TypeScript 类型
 │   ├── vite.config.ts
 │   └── package.json
 │
-├── server/                         # 后端（Express + TypeORM）
+├── server/                                 # 后端（Express + TypeORM）
 │   ├── src/
-│   │   ├── config/                # 环境变量
-│   │   ├── db/                    # 数据源 + 种子 + 迁移
-│   │   ├── modules/               # 业务模块
-│   │   │   ├── health/            # 步数 / 健身 / 用药 / 体检
-│   │   │   ├── finance/           # 贷款 / 房租 / 购物 / 订阅 / 旅行 / 汇率 / 报告
-│   │   │   ├── investment/        # 外汇
-│   │   │   ├── life/              # 号卡 / 储物 / 待办
-│   │   │   ├── notifications/     # 通知中心
-│   │   │   ├── system/            # 认证 / 仪表盘 / AI 助理
-│   │   │   └── telegram/          # TG Bot
-│   │   ├── routes/                # 路由注册
-│   │   └── shared/                # 共享基础设施
+│   │   ├── config/                         # 环境变量
+│   │   ├── db/                             # 数据源 + 种子 + 迁移
+│   │   ├── modules/                        # 业务模块
+│   │   │   ├── health/ finance/ investment/ life/
+│   │   │   ├── notifications/ system/ telegram/
+│   │   ├── routes/                         # 路由注册
+│   │   └── shared/                         # 工具函数 / AI 客户端 / 共享服务
 │   ├── .env.example
 │   └── package.json
 │
-├── DESIGN.md                       # UI 设计规范
-├── DEVELOPMENT.md                  # 开发规范
-└── README.md                       # 本文件
+├── DESIGN.md                               # UI 设计规范
+├── DEVELOPMENT.md                          # 开发规范
+└── README.md                               # 本文件
 ```
 
-## 快速开始
+---
+
+## 🚀 快速开始
 
 ### 环境要求
-
-- **Node.js** >= 18（推荐 20 LTS）
-- **MySQL** >= 8.0
+- **Node.js** ≥ 18（推荐 20 LTS）
+- **MySQL** ≥ 8.0
 - **npm** 或 **pnpm**
 
-### 安装与启动
-
+### 三步启动
 ```bash
 # 1. 克隆
 git clone https://github.com/ZeroOneCN/Life.git
@@ -214,305 +265,186 @@ cd Life
 cd client && npm install
 cd ../server && npm install
 
-# 3. 配环境变量
-cp server/.env.example server/.env
-# 编辑 server/.env，至少配 JWT_SECRET 和 DB_* 字段
+# 3. 配置 + 建库
+cp server/.env.example server/.env   # 填 JWT_SECRET / DB_HOST / DB_*
+mysql -u root -p -e \
+  "CREATE DATABASE IF NOT EXISTS lifeos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
-# 4. 建数据库
-mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS lifeos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-
-# 5. 启动
-# 终端 A：后端（端口 3100）
+# 4. 启动（两个终端）
+# 终端 A — 后端（:3100）
 cd server && npm run dev
-
-# 终端 B：前端（端口 3000，代理 /api → 3100）
+# 终端 B — 前端（:3000，代理 /api → :3100）
 cd client && npm run dev
 ```
 
-打开 [http://localhost:3000](http://localhost:3000)。**首次访问**：系统检测到没有用户时自动开放注册，创建第一个账号后注册入口关闭。
+🌐 打开 [http://localhost:3000](http://localhost:3000)
+> 首次访问：检测到无用户时自动开放注册；创建第一个账号后注册入口关闭。
 
-### 环境变量
-
-`server/.env` 配置（参考 `server/.env.example`）：
-
+### 核心环境变量（`server/.env`）
 | 变量 | 必填 | 默认 | 说明 |
-|------|------|------|------|
-| `PORT` | 否 | 3100 | 后端端口 |
-| `NODE_ENV` | 否 | development | 运行环境 |
-| `JWT_SECRET` | **是** | - | JWT 签名密钥（生产环境务必换成随机字符串） |
-| `JWT_EXPIRES_IN` | 否 | 7d | Access Token 过期 |
-| `REFRESH_TOKEN_EXPIRES_IN` | 否 | 30d | Refresh Token 过期 |
-| `DB_HOST` | **是** | 127.0.0.1 | 数据库地址 |
-| `DB_PORT` | 否 | 3307 | 数据库端口 |
-| `DB_USERNAME` | **是** | - | 数据库用户 |
-| `DB_PASSWORD` | **是** | - | 数据库密码 |
-| `DB_DATABASE` | **是** | lifeos | 数据库名 |
-| `DB_SYNCHRONIZE` | 否 | false | 自动同步表结构（生产环境设 false，用 migration） |
-| `SMTP_HOST` | 否 | - | 邮件 SMTP |
-| `SMTP_PORT` | 否 | 465 | SMTP 端口 |
-| `SMTP_USER` | 否 | - | SMTP 用户名 |
-| `SMTP_PASS` | 否 | - | SMTP 密码 |
-| `SMTP_FROM` | 否 | - | 发件人 |
-| `DEEPSEEK_API_KEY` | 否 | - | DeepSeek 密钥（AI 助理 + Token 看板） |
-| `DEEPSEEK_BASE_URL` | 否 | https://api.deepseek.com | DeepSeek 基础 URL |
-| `EXCHANGE_RATE_API_KEY` | 否 | - | 汇率 API 密钥，没配时用离线兜底 |
-| `TELEGRAM_BOT_TOKEN` | 否 | - | TG Bot Token，没配则跳过 Bot 启动 |
+|---|---|---|---|
+| `JWT_SECRET` | ✅ | - | JWT 签名密钥（生产换随机长串） |
+| `DB_HOST` `DB_USERNAME` `DB_PASSWORD` `DB_DATABASE` | ✅ | 127.0.0.1 / lifeos / 3307 | MySQL 连接 |
+| `DB_SYNCHRONIZE` | - | false | 生产关闭，用 migration |
+| `DEEPSEEK_API_KEY` | - | - | AI 助理 + Token 看板 |
+| `EXCHANGE_RATE_API_KEY` | - | - | 汇率实时拉取，未配走离线兜底 |
+| `TELEGRAM_BOT_TOKEN` | - | - | TG Bot，未配跳过 |
+| `SMTP_*` | - | - | 邮件通知渠道 |
 
-### 生产构建
-
+### 生产部署
 ```bash
-# 前端
-cd client && npm run build    # 产物在 client/dist
-
-# 后端
-cd server && npm run build    # 产物在 server/dist
-
-# 迁移
+cd client && npm run build       # 产物 → client/dist（Nginx 托管）
+cd server && npm run build       # 产物 → server/dist
 cd server && npm run migration:run
-
-# 启动
-cd server && npm start
+cd server && npm start           # 或 PM2 / systemd 守护
 ```
 
-部署建议：
-- 前端 `client/dist` 交给 Nginx 托管，`/api` 反代到 Node 服务
-- 后端用 PM2 或 systemd 守护
-- MySQL 单独部署，定期备份
-- 生产环境关闭 `DB_SYNCHRONIZE`，用 migration 管理表结构
-
-## 架构总览
-
-```
-┌─────────────────────────────────────────────────────────┐
-│              浏览器（Vite dev / Nginx prod）              │
-│   React 18 + TypeScript + React Router + Tailwind 4     │
-└─────────────────────────────────────────────────────────┘
-                          │  HTTP / Axios
-                          │  Authorization: Bearer <JWT>
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│         Express 4 + TypeScript + Zod + Passport-JWT     │
-│   auth-mw → router → service → entity → 统一返回         │
-└─────────────────────────────────────────────────────────┘
-                          │  TypeORM / mysql2
-                          ▼
-                      MySQL 8
-```
-
-**前端数据流**：页面 → 子组件 → `services/xxxApi.ts` → `lib/api.ts`（Axios）→ `/api/*`
-
-**后端数据流**：请求 → JWT 鉴权 → Zod 校验 → router → service → entity → `successResponse()` 统一返回
-
-## API 速查
-
-> 所有鉴权接口需要 `Authorization: Bearer <accessToken>`。返回统一格式：`{ code: 0, data, message }`（成功）或 `{ code: 非0, data: null, message }`（失败）。
-
-**认证**（无需鉴权）
-- `POST /api/auth/login` — 登录
-- `POST /api/auth/register` — 注册（仅无用户时开放）
-- `POST /api/auth/refresh` — 刷新 Token
-- `POST /api/auth/logout` — 登出
-- `GET /api/auth/me` — 当前用户
-
-**仪表盘**
-- `GET /api/dashboard/summary` — 跨模块聚合摘要
-
-**AI 助理**
-- `POST /api/assistant/chat` — DeepSeek 多轮 tool 调用
-- `GET /api/assistant/usage` — 官方余额 + 本站消耗
-
-**财务**
-- 贷款 / 房租 / 购物 / 订阅 / 旅行：各有 CRUD + 设置
-- 购物、旅行支持 Excel 导入导出
-- 旅行状态机：`POST .../books/:id/complete` / `archive` / `GET .../archive/suggestions`
-- 汇率：`GET /api/finance/exchange-rate/latest` / `convert`
-- 报告：`GET /api/finance/report/monthly` / `yearly` / `POST notify`
-
-**投资**
-- `GET/POST/PATCH/DELETE /api/investment/forex/trades`
-- `GET/POST /api/investment/forex/capital-flows`
-- `GET/PUT /api/investment/forex/settings`
-
-**通知中心**
-- 渠道：`GET/POST/PATCH/DELETE /api/notifications/channels` + `POST .../test`
-- 场景：`GET/POST/PATCH/DELETE /api/notifications/scenes`（GET 自动补齐 seed）
-- 模板：`GET/POST/PATCH/DELETE /api/notifications/templates`（GET 自动补齐 seed）
-- 日志：`GET /api/notifications/logs` + `DELETE` 清空
-
-**系统**
-- `GET /api/system/health` — 健康探针（无需鉴权）
-- `POST /api/analysis/*` — AI 智能分析
-
-**Telegram**
-- `POST /api/telegram/bind-code` — 生成绑定码
-- `GET /api/telegram/status` — 查询绑定状态
-
-## Telegram Bot 配置
-
-### 1. 创建 Bot
-
-1. Telegram 里找 **@BotFather**，发 `/newbot`
-2. 按提示输入名称和用户名
-3. 拿到 **Bot Token**（格式：`123456789:ABCdefGHIjklMNOpqrsTUVwxyz`）
-
-> Token 等同于 Bot 的密码，别泄露。
-
-### 2. 配置环境变量
-
-```bash
-# server/.env
-TELEGRAM_BOT_TOKEN=你的Token
-```
-
-不配的话后端正常启动，只是跳过 Bot。
-
-### 3. 重启后端
-
-```bash
-cd server && npm run dev
-```
-
-看到 `[Telegram] Bot started successfully.` 就 OK。
-
-### 4. 绑定账号
-
-1. 网页端 → 设置 → 个人中心 → 个人资料 Tab
-2. 底部找「Telegram 快速录入」卡片
-3. 点「生成绑定码」，拿到 6 位数字（10 分钟有效）
-4. Telegram 里找你的 Bot，发 `/bind <绑定码>`
-5. Bot 回复 `✅ 绑定成功`，网页端点「刷新状态」确认
-
-### 5. 开始用
-
-| 指令 | 示例 | 说明 |
-|------|------|------|
-| 步数 | `步 8234` | 记当前小时步数 |
-| 全天步数 | `步 12000 全天` | 记全天步数 |
-| 体重 | `重 72.4` | 记体重 |
-| 早餐 | `早 燕麦酸奶杯 320g` | 记早餐 |
-| 午餐 | `午 牛肉饭 450g` | 记午餐 |
-| 晚餐 | `晚 三文鱼` | 记晚餐 |
-| 运动 | `跑 35min 高强度` | 记运动 |
-| 用药 | `药 维C 早1晚1` | 记用药 |
-| 购物 | `买 牛奶 28元` | 记购物 |
-| 支出 | `花 299 显示器支架` | 记消费 |
-| 新增待办 | `+ 提交报告 明天` | 新建待办 |
-| 完成待办 | `- 买菜` | 完成待办 |
-| 自然语言 | `今天跑了5公里大概35分钟` | AI 自动解析 |
-
-其他命令：`/start`（欢迎）、`/help`（帮助）、`/status`（绑定状态）、`/bind <码>`（绑定）。
-
-## 开发指南
-
-### 常用命令
-
-| 命令 | 说明 |
-|------|------|
-| `cd client && npm run dev` | 前端开发（端口 3000） |
-| `cd client && npm run typecheck` | 前端类型检查 |
-| `cd client && npm run build` | 前端构建 |
-| `cd server && npm run dev` | 后端开发（端口 3100） |
-| `cd server && npm run check` | 后端类型检查 |
-| `cd server && npm run build` | 后端编译 |
-| `cd server && npm run seed` | 种子数据 |
-| `cd server && npm start` | 生产启动 |
-| `cd server && npm run migration:run` | 执行迁移 |
-
-### 新增业务模块
-
-**后端**：
-1. `server/src/modules/<领域>/` 下建目录
-2. 创建实体（`.entity.ts`）继承 `TimestampedEntity` / `UserScopedEntity` 等基类
-3. 创建路由（`.router.ts`），用 `asyncHandler` + `validateBody(Zod)` + `successResponse()` 模式
-4. 在 `server/src/routes/index.ts` 注册路由
-
-**前端**：
-1. `client/src/types/` 加类型
-2. `client/src/services/` 加 API 调用
-3. `client/src/components/<领域>/` 加子组件
-4. `client/src/pages/<领域>/` 加页面主组件
-5. `client/src/config/navigation.tsx` 注册菜单和路由
-
-### 代码规范
-
-- 函数必须写 JSDoc 注释（功能 + 参数 + 返回值）
-- API 参数用 Zod 校验，返回用 `successResponse()`
-- 错误用 `AppError` 类
-- 前端用 `apiGet/apiPost/apiPatch/apiDelete` 统一封装
-- 分页用 `parsePagination()`
-- 表单标签 14px（`var(--fs-label)`）
-- Commit message 用中文
-- 提交前 `npm run build` 验证编译
-
-### 数据契约
-
-- **金额**：后端 `decimal(10,2)`，返回前 `Number()` 转换，前端 `toFixed(2)` 显示
-- **体重**：同上
-- **百分比**：`toFixed(1)` 显示
-- **可选 number**：`null` 时显示 `-`
-- **盈亏判定**：基于后端原始数值（`netPnlRaw >= 0`），不用格式化字符串
-
-## 数据库表
-
-共约 50 张表，按模块分组：
-
-| 模块 | 主要表 |
-|------|--------|
-| 系统 | `system_user_account` / `system_user_profile` / `system_auth_session` / `system_assistant_usage_logs` |
-| 健康步数 | `health_step_record` / `health_step_setting` |
-| 健康健身 | `health_fitness_weight_record` / `health_fitness_diet_record` / `health_fitness_exercise_record` / `health_fitness_shopping_record` / `health_fitness_setting` / `health_exercise_calorie_cache` / `health_food_nutrition_cache` |
-| 健康体征 | `health_vital_record` |
-| 健康睡眠 | `health_sleep_record` |
-| 健康用药 | `health_medication_record` / `health_medication_purchase` / `health_medication_threshold` / `health_medication_summary` / `health_medication_setting` |
-| 健康体检 | `health_checkup_template` / `health_checkup_template_item` / `health_checkup_record` / `health_checkup_setting` |
-| 财务贷款 | `finance_loan_platform` / `finance_loan_repayment` / `finance_loan_bill` / `finance_loan_setting` |
-| 财务房租 | `finance_rent_channel` / `finance_rent_record` / `finance_rent_setting` / `finance_rent_utility_bill` |
-| 财务购物 | `finance_shopping_platform` / `finance_shopping_ledger` / `finance_shopping_record` / `finance_shopping_import_batch` / `finance_shopping_setting` |
-| 财务订阅 | `finance_subscription_category` / `finance_subscription_record` / `finance_subscription_setting` |
-| 财务旅行 | `finance_travel_book` / `finance_travel_expense_record` / `finance_travel_pay_channel` / `finance_travel_import_batch` / `finance_travel_setting` |
-| 财务预算 | `finance_budget` / `finance_budget_category` / `finance_budget_history` |
-| 财务目标 | `finance_goal` / `finance_goal_contribution` |
-| 财务账单 | `finance_bill_reminder_setting` |
-| 投资外汇 | `investment_forex_trade_record` / `investment_forex_capital_flow` / `investment_forex_import_batch` / `investment_forex_setting` |
-| 生活待办 | `life_todo_task` / `life_todo_setting` |
-| 生活日程 | `life_schedule_event` / `life_schedule_setting` |
-| 生活储物 | `life_storage_item` / `life_storage_setting` |
-| 生活号卡 | `life_card_record` / `life_card_carrier` / `life_card_recharge_record` / `life_card_bill_record` / `life_card_bill_import_batch` / `life_card_setting` |
-| 通知 | `notification_center_channel` / `notification_center_scene` / `notification_center_scene_channel` / `notification_center_template` / `notification_center_log` |
-| Telegram | `telegram_binding` |
-
-## 已知限制与 Roadmap
-
-- **投资中心**：外汇已完成后端 API；加密 / 港股 / 美股已移除菜单（保留路由和组件待未来实装），暂无后端 API 实装计划
-- **DeepSeek Key**：目前所有用户共享一个 key，未来要支持用户级配置
-- **Token 估算**：按 1 字符 ≈ 0.6 token 粗估，没用分词器
-- **测试**：还没配测试框架（计划用 Vitest / Jest + Supertest）
-- **国际化**：界面是中文，没接 i18n
-- **CI/CD**：没自动化流水线（计划加 GitHub Actions）
-- **汇率源**：只接了 Exchange Rate API v6，没配时用离线兜底表
-
-## 故障排查
-
-| 现象 | 原因 | 解决 |
-|------|------|------|
-| 前端 `Network Error` | 后端没启动 / 端口不对 | 确认 3100 端口在跑；检查 vite 代理配置 |
-| 登录 401 | JWT 过期 / 密钥变了 | 重新登录；确认 `JWT_SECRET` 稳定 |
-| 注册入口没了 | 已经有用户了 | 用现有账号登录；要重置就清空 `system_user_account` 表 |
-| `.toFixed is not a function` | 后端返回了 string | 后端 `Number()` 转换；前端 `Number(x).toFixed(n)` 兜底 |
-| 构建报类型错误 | 前后端类型不同步 | `npm run typecheck` 定位 → 同步类型 |
-| 数据库连不上 | 端口 / 凭据错误 | 默认端口 3307（不是 3306）；检查 `.env` |
-| DeepSeek Token 组件不显示 | 后端没重启 / Key 没配 | 重启后端让 TypeORM 建表；配置 `DEEPSEEK_API_KEY` |
-| 投资净收益颜色错 | 老版本用字符串前缀判定 | 已修复，基于 `netPnlRaw` 数值 |
-| TG Bot 启动失败 | Token 无效 / 网络不通 | 检查 Token；确认能访问 `api.telegram.org` |
-| 绑定码无效 | 过期或已用 | 重新生成 |
-| TG 发指令没反应 | 没绑定账号 | 先发 `/bind <码>` |
-
-## 相关文档
-
-- [DESIGN.md](./DESIGN.md) — UI 设计规范（Stripe 体系、配色、字体、组件样式）
-- [DEVELOPMENT.md](./DEVELOPMENT.md) — 开发规范与约定
+> 💡 建议：Nginx 托管前端 + `/api` 反代 Node；MySQL 独立部署并定期备份；关闭 `DB_SYNCHRONIZE`。
 
 ---
 
+## 🏗️ 架构总览
+```
+┌─────────────────────────────────────────────────────────────┐
+│              浏览器（Vite dev / Nginx prod）                 │
+│   React 18 + TS + React Router + Tailwind 4 + AppShell v3   │
+└─────────────────────────────────────────────────────────────┘
+                          │  HTTP / Axios
+                          │  Authorization: Bearer <JWT>
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│      Express 4 + TS + Zod + Passport-JWT + Argon2id         │
+│  auth-mw → router → service → entity → 统一返回              │
+└─────────────────────────────────────────────────────────────┘
+                          │  TypeORM / mysql2
+                          ▼
+                       MySQL 8 (utf8mb4)
+```
+
+**数据流**
+- 前端：页面 → 子组件 → `services/xxxApi.ts` → `lib/api.ts` (Axios) → `/api/*`
+- 后端：请求 → JWT → Zod 校验 → router → service → entity → `successResponse()`
+
+---
+
+## 🔌 API 速查
+> 统一返回 `{ code: 0, data, message }` / `{ code: 非0, message }`；鉴权接口需 `Authorization: Bearer <token>`。
+
+### 认证（免鉴权）
+| Method | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/auth/login` | 登录 |
+| POST | `/api/auth/register` | 注册（仅无用户时开放） |
+| POST | `/api/auth/refresh` | 刷新 Token |
+| POST | `/api/auth/logout` | 登出（带 token 单撤销，否则全撤） |
+| GET | `/api/auth/me` | 当前用户 |
+
+### 业务
+| 模块 | 代表端点 |
+|---|---|
+| 仪表盘 | `GET /api/dashboard/summary`（30 秒缓存） |
+| AI 助理 | `POST /api/assistant/chat` · `GET /api/assistant/usage` |
+| 财务 | 贷款 / 房租 / 购物 / 订阅 / 旅行：完整 CRUD；购物/旅行 Excel 导入；报告月/年 |
+| 投资 | `GET/POST/PATCH/DELETE /api/investment/forex/trades` · `/capital-flows` · `/settings` |
+| 通知 | `/notifications/channels|scenes|templates|logs`（GET scenes/templates 自动补齐种子） |
+| Telegram | `POST /api/telegram/bind-code` · `GET /api/telegram/status` |
+| 健康探针 | `GET /api/system/health`（免鉴权） |
+
+---
+
+## 👨‍💻 开发指南
+
+### 常用命令
+| 命令 | 说明 |
+|---|---|
+| `cd client && npm run dev` | 前端（:3000） |
+| `cd client && npm run typecheck` | 前端类型检查 |
+| `cd client && npm run build` | 前端构建 |
+| `cd server && npm run dev` | 后端（:3100） |
+| `cd server && npm run check` | 后端类型检查 |
+| `cd server && npm run build` | 后端编译 |
+| `cd server && npm run seed` | 种子数据 |
+| `cd server && npm run migration:run / migration:generate` | 迁移执行 / 生成 |
+
+### 新增业务模块（标准模式）
+**后端**
+1. `server/src/modules/<领域>/` 建子目录
+2. 实体继承 `TimestampedEntity` / `UserScopedEntity`
+3. Router 模式：`asyncHandler` + `validateBody(Zod schema)` + `successResponse()`
+4. `server/src/routes/index.ts` 注册
+
+**前端**
+1. `types/` 加类型 → `services/` 加 API → `components/<领域>/` 子组件
+2. `pages/<领域>/` 页面主组件（**PageHeader + SectionCard + StatGrid** 三件套）
+3. `config/navigation.tsx` 注册菜单 & 路由
+
+### 代码规范
+- 函数级 **JSDoc**（功能 + 参数 + 返回值）
+- Zod 参数校验；错误用 `AppError`；分页 `parsePagination()`
+- 前端 `apiGet/apiPost/apiPatch/apiDelete` 统一封装
+- 提交前 `npm run build` 验证编译
+
+### 数据契约
+| 类型 | 存储 | 返回 | 展示 |
+|---|---|---|---|
+| 金额 | `decimal(10,2)` | 后端 `Number()` | 前端 `toFixed(2)` · `tabular-nums` |
+| 体重 / 体脂 | `decimal(10,2)` | 同上 | 2 位小数 |
+| 百分比 | - | - | `toFixed(1)` |
+| 可选 number | - | - | `null` → `-` |
+| 盈亏判定 | - | 原始数值 | `netPnlRaw >= 0` 判色（非格式化字符串） |
+
+---
+
+## 🗄️ 数据库表概览（约 50 张）
+| 模块 | 主要表 |
+|---|---|
+| 系统 | `system_user_account` / `system_user_profile` / `system_auth_session` / `system_assistant_usage_logs` |
+| 健康 | `health_step_*` / `health_fitness_*` / `health_vital_*` / `health_sleep_*` / `health_medication_*` / `health_checkup_*` |
+| 财务 | `finance_loan_*` / `finance_rent_*` / `finance_shopping_*` / `finance_subscription_*` / `finance_travel_*` / `finance_budget*` / `finance_goal*` / `finance_bill_reminder_setting` |
+| 投资 | `investment_forex_*` |
+| 生活 | `life_todo_*` / `life_schedule_*` / `life_storage_*` / `life_card_*` |
+| 通知 | `notification_center_channel / scene / scene_channel / template / log` |
+| Telegram | `telegram_binding` |
+
+---
+
+## 🛣️ Roadmap
+| 项 | 现状 | 计划 |
+|---|---|---|
+| 投资中心（加密/港股/美股） | 路由保留、菜单移除 | 后端 API 规划中 |
+| 用户级 DeepSeek Key | 全局单 Key | 支持用户自配 |
+| 自动化测试 | 未配置 | Vitest + Supertest |
+| 国际化 | 中文界面 | i18n 接入 |
+| CI/CD | 手动 | GitHub Actions |
+| 汇率源 | Exchange Rate API v6（+ 离线兜底） | 多源冗余 |
+
+---
+
+## ❓ 故障排查速查
+| 现象 | 根因 | 解决 |
+|---|---|---|
+| 前端 `Network Error` | 后端未起 / 端口不对 | 确认 :3100 运行；查 Vite 代理 |
+| 登录 401 | JWT 过期 / 密钥变更 | 重新登录；保持 `JWT_SECRET` 稳定 |
+| 注册入口消失 | 已存在用户 | 登录；或清空 `system_user_account` |
+| `.toFixed is not a function` | 后端返回 string | 后端加 `Number()`；前端 `Number(x).toFixed(n)` |
+| 构建类型错误 | 前后端类型不同步 | `npm run typecheck` 定位 → 同步 |
+| 数据库连不上 | 端口 / 凭据错 | 默认端口 `3307`（非 3306）；查 `.env` |
+| Token 看板不显示 | 后端未重启 / Key 未配 | 重启让 TypeORM 建表；配 `DEEPSEEK_API_KEY` |
+| 净收益颜色错 | 旧版按字符串判色 | 统一按 `netPnlRaw` 原始数值判定 |
+| TG Bot 启动失败 | Token 无效 / 网络不通 | 检查 Token；可通 `api.telegram.org` |
+| TG 指令无反应 | 未绑定账号 | 先发 `/bind <码>`；查 10 分钟过期 |
+
+---
+
+## 📖 相关文档
+- [DESIGN.md](./DESIGN.md) — **Linear Design 设计规范**（Token / 配色 / 组件样式 / 栅格）
+- [DEVELOPMENT.md](./DEVELOPMENT.md) — **开发规范与约定**（组件模式 / 数据流 / 调试技巧）
+
+---
+
+<div align="right">
+
 **License**：Private
-**Repo**：<https://github.com/ZeroOneCN/Life>
+**仓库**：[github.com/ZeroOneCN/Life](https://github.com/ZeroOneCN/Life)
+
+</div>
