@@ -207,6 +207,7 @@ export function StepTrendSection({
                 step="0.01"
                 value={strideDraft}
                 onChange={(event) => setStrideDraft(event.target.value)}
+                onWheel={(event) => event.currentTarget.blur()}
               />
               <Btn
                 tone="secondary"

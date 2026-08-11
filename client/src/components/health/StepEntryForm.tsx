@@ -75,6 +75,7 @@ export function StepEntryForm({
               placeholder="输入本次步数"
               value={stepsInput}
               onChange={(event) => onStepsInputChange(event.target.value)}
+              onWheel={(event) => event.currentTarget.blur()}
             />
           </label>
 
