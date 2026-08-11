@@ -161,4 +161,11 @@ export const cardApi = {
   triggerReminders(title?: string) {
     return apiPost('/life/card/actions/trigger-reminders', title ? { title } : {});
   },
+
+  triggerAutoDeduct() {
+    return apiPost<{ count: number; details: Array<{ phoneNumber: string; month: string; monthlyFee: number }> }>(
+      '/life/card/actions/auto-deduct',
+      {},
+    );
+  },
 };

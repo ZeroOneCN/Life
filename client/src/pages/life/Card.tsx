@@ -313,6 +313,7 @@ export default function CardPage() {
           onRecharge={(updater) => {
             void handleRechargeChange(updater);
           }}
+          onTriggerAutoDeduct={() => reload()}
           showToast={showToast}
         />
       ) : null}

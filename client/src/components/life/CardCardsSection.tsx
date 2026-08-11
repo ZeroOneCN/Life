@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard, StatGrid } from '../page';
-import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, TextArea } from '../ui';
+import { Btn, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
 import {
   CARD_ALL_CARRIERS,
   CARD_PAGE_SIZE,
@@ -14,6 +14,7 @@ import {
   formatLifeCardMoney,
   updateLifeCard,
 } from '../../services/card';
+import { cardApi } from '../../services/cardApi';
 import type {
   LifeCardCarrier,
   LifeCardDraft,
@@ -32,6 +33,7 @@ interface CardCardsSectionProps {
       current: { cards: LifeCardRecord[]; recharges: LifeCardPageState['recharges'] },
     ) => { cards: LifeCardRecord[]; recharges: LifeCardPageState['recharges'] },
   ) => void;
+  onTriggerAutoDeduct?: () => void | Promise<void>;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
@@ -141,6 +143,7 @@ export function CardCardsSection({
   settings,
   onChangeCards,
   onRecharge,
+  onTriggerAutoDeduct,
   showToast,
 }: CardCardsSectionProps) {
   const [form, setForm] = useState<CardFormState>(() => createDefaultCardForm(carriers));
@@ -253,6 +256,39 @@ export function CardCardsSection({
     showToast('号卡记录已删除。');
   };
 
+  /** 渲染本月扣账状态 */
+  const renderAutoDeductionStatus = (row: LifeCardRecord) => {
+    const thisMonth = dayjs().format('YYYY-MM');
+    const expectedMarker = `${thisMonth}:auto-deducted`;
+    const todayDate = dayjs().date();
+    const arrived = row.billingDay <= todayDate;
+
+    if (row.lastAutoDeductionMarker === expectedMarker) {
+      return <Tag tone="green">已扣账</Tag>;
+    }
+    if (arrived) {
+      return <Tag tone="orange">扣账日已到，待扣账</Tag>;
+    }
+    return <Tag tone="default">距扣账 {Math.max(row.billingDay - todayDate, 0)} 天</Tag>;
+  };
+
+  /** 手动触发扣账（单张卡） */
+  const handleManualDeduct = async () => {
+    try {
+      const result = await cardApi.triggerAutoDeduct();
+      if (onTriggerAutoDeduct) {
+        await onTriggerAutoDeduct();
+      }
+      if (result.count === 0) {
+        showToast('本月所有号卡均已完成自动扣账。');
+      } else {
+        showToast(`已补扣 ${result.count} 张号卡的本月账单。`);
+      }
+    } catch (error) {
+      showToast('手动扣账失败，请稍后重试。', 'error');
+    }
+  };
+
   return (
     <SectionCard
       title="号卡列表"
@@ -268,6 +304,9 @@ export function CardCardsSection({
       <div className="page-stack">
         <div className="callout callout-info">
           低余额阈值当前为 {formatLifeCardMoney(settings.balanceThreshold)}，账单日前提醒窗口为 {settings.notificationDaysBefore} 天。
+          <Btn tone="primary" onClick={handleManualDeduct} style={{ marginLeft: 12 }}>
+            手动触发本月扣账
+          </Btn>
         </div>
 
         <form className="card-entry-grid-compact" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
@@ -465,6 +504,12 @@ export function CardCardsSection({
                   },
                 },
                 { key: 'notes', title: '备注', render: (_, row) => row.notes || '-', width: 140 },
+                {
+                  key: 'deductionStatus',
+                  title: '本月扣账',
+                  width: 140,
+                  render: (_, row) => renderAutoDeductionStatus(row),
+                },
                 {
                   key: 'actions',
                   title: '操作',

@@ -45,4 +45,8 @@ export class LifeCardRecordEntity extends UserScopedEntity {
 
   @Column({ type: 'varchar', length: 128, nullable: true })
   last_billing_reminder_marker!: string | null;
+
+  /** 本月自动扣账 marker：格式 YYYY-MM，用于每月扣账一次的幂等控制 */
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  last_auto_deduction_marker!: string | null;
 }

@@ -20,10 +20,15 @@ import { BaseUserSettingService } from '../../shared/db/base-user-setting.servic
 import { normalizeDate, normalizeMonth } from '../../shared/utils/date';
 import { AppError } from '../../shared/errors/app-error';
 import {
+  ensureNotificationScenesForUser,
   sendNotificationSceneLogs,
   syncNotificationScenesEnabled,
 } from '../../shared/domain/notification';
 import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
+import {
+  startCardDeductionScheduler,
+  triggerCardDeduction,
+} from './card-deduction.scheduler';
 
 const cardSchema = z.object({
   phoneNumber: z.string().trim().min(1).max(32),
@@ -179,6 +184,7 @@ function mapCard(entity: LifeCardRecordEntity) {
     notes: entity.notes,
     lastBalanceReminderMarker: entity.last_balance_reminder_marker ?? '',
     lastBillingReminderMarker: entity.last_billing_reminder_marker ?? '',
+    lastAutoDeductionMarker: entity.last_auto_deduction_marker ?? '',
     createdAt: entity.created_at.toISOString(),
     updatedAt: entity.updated_at.toISOString(),
   };
@@ -946,6 +952,15 @@ export function createCardRouter() {
 
     response.json(successResponse(logs, 'trigger_life_card_reminders_success'));
   }));
+
+  /** 手动触发号卡自动扣账（补扣本月账单） */
+  router.post('/actions/auto-deduct', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const result = await triggerCardDeduction(userId);
+    response.json(successResponse(result, 'trigger_life_card_auto_deduct_success'));
+  }));
+
+  startCardDeductionScheduler();
 
   return router;
 }

@@ -18,6 +18,7 @@ export interface LifeCardRecord {
   notes: string;
   lastBalanceReminderMarker?: string;
   lastBillingReminderMarker?: string;
+  lastAutoDeductionMarker?: string;
   createdAt: string;
   updatedAt: string;
 }
