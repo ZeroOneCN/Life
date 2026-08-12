@@ -272,18 +272,24 @@ export function CardCardsSection({
     return <Tag tone="default">距扣账 {Math.max(row.billingDay - todayDate, 0)} 天</Tag>;
   };
 
-  /** 手动触发扣账（单张卡） */
+  /** 手动触发扣账（立即扣，无论 billing_day 是否已到） */
   const handleManualDeduct = async () => {
     try {
       const result = await cardApi.triggerAutoDeduct();
       if (onTriggerAutoDeduct) {
         await onTriggerAutoDeduct();
       }
-      if (result.count === 0) {
-        showToast('本月所有号卡均已完成自动扣账。');
-      } else {
-        showToast(`已补扣 ${result.count} 张号卡的本月账单。`);
+
+      const parts: string[] = [];
+      if (result.deducted.count > 0) {
+        parts.push(`已扣账 ${result.deducted.count} 张（合计 ${result.deducted.details.reduce((s, d) => s + Number(d.monthlyFee || 0), 0).toFixed(2)} 元）`);
       }
+      if (result.skipped.alreadyCount > 0) parts.push(`${result.skipped.alreadyCount} 张本月已扣账`);
+      if (result.skipped.billExistsCount > 0) parts.push(`${result.skipped.billExistsCount} 张已有本月账单`);
+      if (result.skipped.failedCount > 0) parts.push(`${result.skipped.failedCount} 张扣账失败，请查看错误详情`);
+
+      const message = `共 ${result.totalCards} 张号卡：${parts.join('；') || '无需处理'}。`;
+      showToast(message, result.skipped.failedCount > 0 ? 'error' : 'success');
     } catch (error) {
       showToast('手动扣账失败，请稍后重试。', 'error');
     }

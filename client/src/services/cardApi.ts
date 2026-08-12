@@ -163,7 +163,20 @@ export const cardApi = {
   },
 
   triggerAutoDeduct() {
-    return apiPost<{ count: number; details: Array<{ phoneNumber: string; month: string; monthlyFee: number }> }>(
+    return apiPost<{
+      totalCards: number;
+      deducted: {
+        count: number;
+        details: Array<{ phoneNumber: string; month: string; monthlyFee: number }>;
+      };
+      skipped: {
+        alreadyCount: number;
+        billExistsCount: number;
+        notArrivedCount: number;
+        failedCount: number;
+        failedDetails: Array<{ phoneNumber: string; reason: string }>;
+      };
+    }>(
       '/life/card/actions/auto-deduct',
       {},
     );

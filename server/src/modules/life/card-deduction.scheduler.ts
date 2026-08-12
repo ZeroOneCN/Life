@@ -34,8 +34,17 @@ function setupScheduler() {
 }
 
 /**
+ * 生成本月自动扣账幂等 marker（YYYYMM，如 202608）。
+ * 避免过长字符串挤占 varchar 空间（历史曾遇到 marker 长度 > varchar 声明导致事务回滚）。
+ */
+function buildDeductionMarker(month: string): string {
+  // month = YYYY-MM → YYYYMM
+  return month.replace('-', '');
+}
+
+/**
  * 处理单张号卡的自动扣账：
- * 1. 生成 YYYY-MM 幂等 marker，若本月已扣账则跳过
+ * 1. 生成 YYYYMM 幂等 marker，若本月已扣账则跳过（status=ALREADY）
  * 2. 在账单记录表中创建本月账单记录（monthly_fee=actual_fee）
  * 3. 扣减卡片 balance
  * 4. 创建一条负向充值记录（备注"自动扣账"）
@@ -43,16 +52,16 @@ function setupScheduler() {
  * @param userId 用户 ID
  * @param card  号卡记录
  * @param month 账单月份（YYYY-MM）
- * @returns 本次是否执行了扣账
+ * @returns 执行结果与状态
  */
 async function deductForCard(
   userId: string,
   card: LifeCardRecordEntity,
   month: string,
-): Promise<boolean> {
-  const marker = `${month}:auto-deducted`;
+): Promise<{ ok: boolean; status: 'ALREADY' | 'BILL_EXISTS' | 'DEDUCTED' }> {
+  const marker = buildDeductionMarker(month);
   if (card.last_auto_deduction_marker === marker) {
-    return false;
+    return { ok: false, status: 'ALREADY' };
   }
 
   const today = dayjs().format('YYYY-MM-DD');
@@ -74,14 +83,14 @@ async function deductForCard(
       },
     });
     if (existing) {
-      // 账单已存在但 marker 没更新，修正 marker 即可
+      // 账单已存在但 marker 没更新，修正 marker 即可（避免后续重复进入事务）
       card.last_auto_deduction_marker = marker;
       await cardRepo.save(card);
       await queryRunner.commitTransaction();
-      return false;
+      return { ok: false, status: 'BILL_EXISTS' };
     }
 
-    const monthlyFee = round2(card.monthly_fee);
+    const monthlyFee = round2(toNumber(card.monthly_fee));
 
     // 2. 创建本月账单记录
     const bill = billRepo.create({
@@ -96,13 +105,13 @@ async function deductForCard(
       total_fee: monthlyFee,
       note: `系统自动扣账（账单日 ${card.billing_day} 日）`,
     });
-    const savedBill = await billRepo.save(bill);
+    await billRepo.save(bill);
 
     // 3. 扣减卡片余额（若余额不足仍扣账，但发出通知提示）
     const newBalance = round2(toNumber(card.balance) - monthlyFee);
     card.balance = newBalance;
     card.last_auto_deduction_marker = marker;
-    const updatedCard = await cardRepo.save(card);
+    await cardRepo.save(card);
 
     // 4. 创建一条充值记录（负值，表示扣减）
     const recharge = rechargeRepo.create({
@@ -134,7 +143,7 @@ async function deductForCard(
       });
     }
 
-    return true;
+    return { ok: true, status: 'DEDUCTED' };
   } catch (error) {
     await queryRunner.rollbackTransaction();
     throw error;
@@ -144,11 +153,9 @@ async function deductForCard(
 }
 
 /**
- * 对单个用户执行号卡自动扣账检查。
+ * 对单个用户执行号卡自动扣账检查（每小时调度器走这条）。
  *
- * 检查逻辑：
- * 1. 所有 billing_day <= 今日日期 的卡，检查本月是否已自动扣账
- * 2. 若 billing_day 已过去但本月未扣账（可能因系统停机遗漏），进行追补扣账（但不跨月追补上月）
+ * 检查逻辑：仅对 billing_day <= 今日日期的卡尝试扣账（避免提前扣）。
  * @param userId 用户 ID
  */
 async function runDeductionForUser(userId: string) {
@@ -162,12 +169,12 @@ async function runDeductionForUser(userId: string) {
   const thisMonth = today.format('YYYY-MM');
 
   for (const card of cards) {
-    const marker = `${thisMonth}:auto-deducted`;
+    const marker = buildDeductionMarker(thisMonth);
     if (card.last_auto_deduction_marker === marker) {
       continue;
     }
 
-    // 扣账日已到达（billing_day <= 今天）
+    // 调度器：扣账日已到达（billing_day <= 今天）才扣
     if (card.billing_day <= todayDate) {
       try {
         await deductForCard(userId, card, thisMonth);
@@ -214,36 +221,82 @@ async function runDeductionTick() {
   }
 }
 
+export interface TriggerCardDeductionDetailItem {
+  phoneNumber: string;
+  monthlyFee: number;
+  month: string;
+}
+
+export interface TriggerCardDeductionResult {
+  totalCards: number;
+  deducted: {
+    count: number;
+    details: TriggerCardDeductionDetailItem[];
+  };
+  skipped: {
+    alreadyCount: number;
+    billExistsCount: number;
+    /** 调度器外手动触发时不会进入这里，但保留字段 */
+    notArrivedCount: number;
+    failedCount: number;
+    failedDetails: Array<{ phoneNumber: string; reason: string }>;
+  };
+}
+
 /**
  * 手动触发号卡自动扣账（调试/补扣用途）。
+ *
+ * 与调度器的关键差别：手动触发时 **无论 billing_day 是否已到，只要本月未扣就立即扣账**，
+ * 允许用户提前处理本月账单。
+ *
  * @param userId 用户 ID
- * @returns 本次扣账成功的卡片数
  */
-export async function triggerCardDeduction(userId: string): Promise<{ count: number; details: Array<{ phoneNumber: string; month: string; monthlyFee: number }> }> {
+export async function triggerCardDeduction(userId: string): Promise<TriggerCardDeductionResult> {
   await ensureNotificationScenesForUser(userId);
 
   const cardRepo = appDataSource.getRepository(LifeCardRecordEntity);
   const cards = await cardRepo.find({ where: { user_id: userId } });
   const thisMonth = dayjs().format('YYYY-MM');
-  const details: Array<{ phoneNumber: string; month: string; monthlyFee: number }> = [];
+
+  const result: TriggerCardDeductionResult = {
+    totalCards: cards.length,
+    deducted: { count: 0, details: [] },
+    skipped: {
+      alreadyCount: 0,
+      billExistsCount: 0,
+      notArrivedCount: 0,
+      failedCount: 0,
+      failedDetails: [],
+    },
+  };
 
   for (const card of cards) {
     try {
-      const ok = await deductForCard(userId, card, thisMonth);
-      if (ok) {
-        details.push({
+      const status = await deductForCard(userId, card, thisMonth);
+      if (status.ok && status.status === 'DEDUCTED') {
+        result.deducted.count += 1;
+        result.deducted.details.push({
           phoneNumber: card.phone_number,
           month: thisMonth,
-          monthlyFee: round2(card.monthly_fee),
+          monthlyFee: round2(toNumber(card.monthly_fee)),
         });
+      } else if (status.status === 'ALREADY') {
+        result.skipped.alreadyCount += 1;
+      } else if (status.status === 'BILL_EXISTS') {
+        result.skipped.billExistsCount += 1;
       }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.warn(`[card-deduction] manual trigger card ${card.phone_number} failed:`, error);
+      result.skipped.failedCount += 1;
+      result.skipped.failedDetails.push({
+        phoneNumber: card.phone_number,
+        reason: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
-  return { count: details.length, details };
+  return result;
 }
 
 /**
