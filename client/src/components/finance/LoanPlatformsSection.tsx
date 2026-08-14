@@ -218,7 +218,7 @@ export function LoanPlatformsSection({
                     </div>
                     <div className="fitness-row-actions">
                       <Btn
-                        tone="secondary"
+                        tone="ghost"
                         onClick={() => {
                           setEditingPlatform(platform);
                           setEditingForm(buildFormState(platform));

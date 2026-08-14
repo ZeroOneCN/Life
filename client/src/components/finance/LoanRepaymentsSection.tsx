@@ -165,7 +165,7 @@ export function LoanRepaymentsSection({
       render: (_value: unknown, row: LoanRepayment) => (
         <div className="fitness-row-actions">
           <Btn
-            tone="secondary"
+            tone="ghost"
             onClick={() => {
               setEditingRepayment(row);
               setEditingForm(buildFormState(row));

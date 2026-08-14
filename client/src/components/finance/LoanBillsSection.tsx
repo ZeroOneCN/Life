@@ -97,6 +97,12 @@ export function LoanBillsSection({
   const [partialRepayBill, setPartialRepayBill] = useState<LoanBill | null>(null);
   const [partialRepayAmount, setPartialRepayAmount] = useState('');
   const [partialRepayDate, setPartialRepayDate] = useState(dayjs().format('YYYY-MM-DD'));
+  // 提前还款弹窗状态：支持从所有未结清账单中选择目标（含未来月份）
+  const [prepayModalOpen, setPrepayModalOpen] = useState(false);
+  const [prepayPlatformFilter, setPrepayPlatformFilter] = useState<string>(LOAN_ALL_PLATFORMS);
+  const [prepayBillId, setPrepayBillId] = useState<string>('');
+  const [prepayAmount, setPrepayAmount] = useState('');
+  const [prepayDate, setPrepayDate] = useState(dayjs().format('YYYY-MM-DD'));
 
   useEffect(() => {
     setForm((previous) => previous.platformId ? previous : createDefaultFormState(platforms));
@@ -125,6 +131,22 @@ export function LoanBillsSection({
     const startIndex = (page - 1) * LOAN_BILL_PAGE_SIZE;
     return filteredBills.slice(startIndex, startIndex + LOAN_BILL_PAGE_SIZE);
   }, [filteredBills, page]);
+
+  /**
+   * 提前还款候选账单：所有未结清账单（含未到期月份），按平台筛选后按到期日升序排列。
+   * 用于提前还款弹窗中的账单选择下拉。
+   */
+  const prepayCandidateBills = useMemo(() => {
+    return bills
+      .filter((bill) => !bill.isPaid)
+      .filter((bill) => prepayPlatformFilter === LOAN_ALL_PLATFORMS || bill.platformId === prepayPlatformFilter)
+      .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  }, [bills, prepayPlatformFilter]);
+
+  /** 提前还款弹窗中当前选中的账单对象 */
+  const prepaySelectedBill = useMemo(() => {
+    return prepayBillId ? prepayCandidateBills.find((bill) => bill.id === prepayBillId) ?? null : null;
+  }, [prepayBillId, prepayCandidateBills]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -174,7 +196,7 @@ export function LoanBillsSection({
       render: (_value: unknown, row: LoanBill) => (
         <div className="fitness-row-actions">
           <Btn
-            tone="secondary"
+            tone="ghost"
             disabled={row.isPaid}
             onClick={() => {
               setPartialRepayBill(row);
@@ -184,7 +206,7 @@ export function LoanBillsSection({
           >
             部分还款
           </Btn>
-          <Btn tone="secondary" disabled={row.isPaid} onClick={() => onMarkPaid(row.id)}>一次结清</Btn>
+          <Btn tone="ghost" disabled={row.isPaid} onClick={() => onMarkPaid(row.id)}>一次结清</Btn>
           <Btn
             tone="ghost"
             onClick={() => {
@@ -294,6 +316,55 @@ export function LoanBillsSection({
     }
   };
 
+  /**
+   * 提交提前还款。
+   *
+   * 用户在提前还款弹窗中选择目标账单（可为未到期月份）并输入金额，
+   * 校验后调用 onPartialRepay（复用部分还款后端接口）。
+   */
+  const handlePrepay = async () => {
+    if (!prepaySelectedBill) {
+      showToast('请选择要提前还款的账单。', 'error');
+      return;
+    }
+
+    const amount = Number(prepayAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      showToast('请输入有效的还款金额。', 'error');
+      return;
+    }
+
+    const totalRemaining = prepaySelectedBill.remainingAmount;
+    if (amount > totalRemaining + 0.01) {
+      showToast(`还款金额不能超过剩余待还金额 ${formatLoanAmount(totalRemaining)}。`, 'error');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await onPartialRepay(prepaySelectedBill.id, amount, {
+        repaymentDate: prepayDate,
+      });
+      setPrepayModalOpen(false);
+      setPrepayBillId('');
+      setPrepayAmount('');
+      showToast('提前还款成功。');
+    } catch {
+      // The page container already surfaces API errors.
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /** 打开提前还款弹窗时重置状态 */
+  const openPrepayModal = () => {
+    setPrepayModalOpen(true);
+    setPrepayPlatformFilter(LOAN_ALL_PLATFORMS);
+    setPrepayBillId('');
+    setPrepayAmount('');
+    setPrepayDate(dayjs().format('YYYY-MM-DD'));
+  };
+
   return (
     <SectionCard
       title="账单"
@@ -395,6 +466,9 @@ export function LoanBillsSection({
           <span className="subtle-text">共 {filteredBills.length} 笔账单</span>
           <span className="subtle-text">未还 {filteredBills.filter((bill) => !bill.isPaid).length} 笔</span>
           <span className="subtle-text">逾期 {filteredBills.filter((bill) => getLoanBillStatus(bill) === 'overdue').length} 笔</span>
+          <Btn tone="primary" onClick={openPrepayModal} disabled={bills.every((bill) => bill.isPaid)}>
+            提前还款
+          </Btn>
         </div>
 
         {filteredBills.length ? (
@@ -605,6 +679,133 @@ export function LoanBillsSection({
             </div>
           </div>
         ) : null}
+      </Modal>
+
+      <Modal
+        open={prepayModalOpen}
+        onClose={() => {
+          setPrepayModalOpen(false);
+          setPrepayBillId('');
+          setPrepayAmount('');
+        }}
+        title="提前还款"
+        width={620}
+        footer={(
+          <>
+            <Btn
+              tone="ghost"
+              onClick={() => {
+                setPrepayModalOpen(false);
+                setPrepayBillId('');
+                setPrepayAmount('');
+              }}
+            >
+              取消
+            </Btn>
+            <Btn tone="primary" onClick={() => void handlePrepay()} disabled={saving || !prepaySelectedBill}>
+              确认还款
+            </Btn>
+          </>
+        )}
+      >
+        <div className="page-stack">
+          <SelectField
+            label="筛选平台"
+            value={prepayPlatformFilter}
+            onChange={(event) => {
+              setPrepayPlatformFilter(event.target.value);
+              setPrepayBillId('');
+              setPrepayAmount('');
+            }}
+          >
+            <option value={LOAN_ALL_PLATFORMS}>全部平台</option>
+            {platforms.map((platform) => (
+              <option key={platform.id} value={platform.id}>{platform.name}</option>
+            ))}
+          </SelectField>
+
+          <SelectField
+            label="选择账单（含未到期月份）"
+            value={prepayBillId}
+            onChange={(event) => {
+              setPrepayBillId(event.target.value);
+              setPrepayAmount('');
+            }}
+          >
+            <option value="">请选择要提前还款的账单</option>
+            {prepayCandidateBills.map((bill) => (
+              <option key={bill.id} value={bill.id}>
+                {bill.platformName} - {bill.billingMonth} - 到期 {bill.dueDate} - 剩余 {formatLoanAmount(bill.remainingAmount)}
+              </option>
+            ))}
+          </SelectField>
+
+          {prepaySelectedBill ? (
+            <>
+              <div className="loan-partial-repay-summary">
+                <div className="loan-partial-repay-summary-row">
+                  <span>欠款总额</span>
+                  <strong>{formatLoanAmount(prepaySelectedBill.amount)}</strong>
+                </div>
+                <div className="loan-partial-repay-summary-row">
+                  <span>已还金额</span>
+                  <span>{formatLoanAmount(prepaySelectedBill.paidAmount)}</span>
+                </div>
+                <div className="loan-partial-repay-summary-row loan-partial-repay-summary-highlight">
+                  <span>剩余待还</span>
+                  <strong>{formatLoanAmount(prepaySelectedBill.remainingAmount)}</strong>
+                </div>
+                <div className="loan-partial-repay-summary-hint">
+                  {prepaySelectedBill.interest > 0
+                    ? `欠款已含利息 ¥${prepaySelectedBill.interest.toFixed(2)}，只需偿还欠款本身，无需再额外支付利息。`
+                    : '本次还款金额直接抵扣欠款，无需额外支付利息。'}
+                </div>
+              </div>
+              <Field
+                label="本次还款金额"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={prepayAmount}
+                onChange={(event) => setPrepayAmount(event.target.value)}
+                placeholder={`最多 ${formatLoanAmount(prepaySelectedBill.remainingAmount)}`}
+              />
+              <div className="loan-partial-repay-quick">
+                <span className="field-label">快捷填入</span>
+                <Btn
+                  tone="ghost"
+                  onClick={() => setPrepayAmount((prepaySelectedBill.remainingAmount / 4).toFixed(2))}
+                >
+                  1/4
+                </Btn>
+                <Btn
+                  tone="ghost"
+                  onClick={() => setPrepayAmount((prepaySelectedBill.remainingAmount / 2).toFixed(2))}
+                >
+                  1/2
+                </Btn>
+                <Btn
+                  tone="ghost"
+                  onClick={() => setPrepayAmount(prepaySelectedBill.remainingAmount.toFixed(2))}
+                >
+                  全部结清
+                </Btn>
+              </div>
+              <div className="loan-modal-date-slot">
+                <DatePickerField
+                  label="还款日期"
+                  value={prepayDate}
+                  onChange={setPrepayDate}
+                  clearable={false}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="loan-partial-repay-summary-hint">
+              请先选择要提前还款的账单，可选择未到期月份的账单进行提前还款。
+            </div>
+          )}
+        </div>
       </Modal>
     </SectionCard>
   );
