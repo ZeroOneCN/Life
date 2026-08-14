@@ -18,6 +18,10 @@ export const NOTIFICATION_SCENE_IDS = {
   LOAN_REPAYMENT_UPCOMING: 'loan.repayment_upcoming',
   /** 贷款逾期提醒 */
   LOAN_REPAYMENT_OVERDUE: 'loan.repayment_overdue',
+  /** 贷款还款成功通知 */
+  LOAN_REPAYMENT_SUCCESS: 'loan.repayment_success',
+  /** 贷款提前还款建议 */
+  LOAN_PREPAY_SUGGESTION: 'loan.prepay_suggestion',
   /** 体检复查提醒 */
   CHECKUP_FOLLOWUP_REMINDER: 'checkup.followup_reminder',
   /** 体检异常提醒 */

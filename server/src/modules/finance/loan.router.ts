@@ -19,8 +19,10 @@ import { AppError } from '../../shared/errors/app-error';
 import {
   sendNotificationSceneLogs,
   syncNotificationScenesEnabled,
+  ensureNotificationScenesForUser,
 } from '../../shared/domain/notification';
 import { NOTIFICATION_SCENE_IDS } from '../notifications/notification-scenes';
+import { startLoanPrepaySuggestionScheduler } from './loan-prepay-suggestion.scheduler';
 
 const platformSchema = z.object({
   name: z.string().trim().min(1).max(128),
@@ -258,6 +260,9 @@ async function triggerLoanReminderLogs(
 
 export function createLoanRouter() {
   const router = Router();
+
+  // 启动提前还款建议定时任务
+  startLoanPrepaySuggestionScheduler();
 
   router.get('/platforms', asyncHandler(async (request: AuthenticatedRequest, response) => {
     const userId = requireAuthUser(request);
@@ -667,6 +672,24 @@ export function createLoanRouter() {
       }
     }
 
+    // 推送还款成功通知（一次结清）
+    await ensureNotificationScenesForUser(userId, [NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_SUCCESS]);
+    await sendNotificationSceneLogs({
+      userId,
+      sceneId: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_SUCCESS,
+      title: `还款成功：${current.platform_name} 账单已结清`,
+      message: `${current.platform_name} ${current.billing_month} 账单已一次结清，本次还款 ¥${remainingAmount.toFixed(2)}，账单已全部还清。`,
+      meta: {
+        scenario: 'full_settle',
+        billId: current.id,
+        platformName: current.platform_name,
+        billingMonth: current.billing_month,
+        repayAmount: Number(remainingAmount.toFixed(2)),
+        fullyPaid: true,
+        today: current.paid_at,
+      },
+    });
+
     response.json(successResponse({
       bill: mapBill(current),
       createdRepayment,
@@ -742,13 +765,37 @@ export function createLoanRouter() {
       notes: payload.notes || `部分还款：本金 ¥${applyToAmount.toFixed(2)}`,
     }));
 
+    // 推送还款成功通知（部分还款 / 提前还款）
+    const newRemaining = Math.max(0, totalAmount - newPaidAmount);
+    await ensureNotificationScenesForUser(userId, [NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_SUCCESS]);
+    await sendNotificationSceneLogs({
+      userId,
+      sceneId: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_SUCCESS,
+      title: fullyPaid
+        ? `还款成功：${current.platform_name} 账单已结清`
+        : `部分还款成功：${current.platform_name}`,
+      message: fullyPaid
+        ? `${current.platform_name} ${current.billing_month} 账单已全部还清，本次还款 ¥${applyToAmount.toFixed(2)}。`
+        : `${current.platform_name} ${current.billing_month} 账单部分还款成功，本次还款 ¥${applyToAmount.toFixed(2)}，剩余待还 ¥${newRemaining.toFixed(2)}。`,
+      meta: {
+        scenario: fullyPaid ? 'partial_full' : 'partial',
+        billId: current.id,
+        platformName: current.platform_name,
+        billingMonth: current.billing_month,
+        repayAmount: Number(applyToAmount.toFixed(2)),
+        remainingAmount: Number(newRemaining.toFixed(2)),
+        fullyPaid,
+        today: repaymentDate,
+      },
+    });
+
     response.json(successResponse({
       bill: mapBill(current),
       repayment: mapRepayment(repayment),
       breakdown: {
         applyToAmount: Number(applyToAmount.toFixed(2)),
         applyToInterest: 0,
-        remainingAmount: Number(Math.max(0, totalAmount - newPaidAmount).toFixed(2)),
+        remainingAmount: Number(newRemaining.toFixed(2)),
         remainingInterest: 0,
         fullyPaid,
       },

@@ -132,16 +132,24 @@ async function runRemindersForUser(userId: string, today: string) {
   // scene 的启用由 PUT /api/finance/bill/setting 接口在 reminder_enabled=true 时联动开启。
   await ensureNotificationScenesForUser(userId, [NOTIFICATION_SCENE_IDS.FINANCE_BILL_UPCOMING, NOTIFICATION_SCENE_IDS.FINANCE_BILL_OVERDUE]);
 
-  // 场景一：已逾期
+  // 场景一：已逾期（按逾期天数分档推送升级提醒）
   if (overdueBills.length > 0) {
     const overdueAmount = overdueBills.reduce((sum, b) => sum + toNumber(b.amount), 0);
+    // 找出最高逾期天数，用于确定升级等级
+    const maxOverdueDays = Math.max(
+      ...overdueBills.map((b) => dayjs(today).diff(dayjs(b.due_date), 'day')),
+    );
+    const escalationLevel = getOverdueEscalationLevel(maxOverdueDays);
+
     await sendNotificationSceneLogs({
       userId,
       sceneId: NOTIFICATION_SCENE_IDS.FINANCE_BILL_OVERDUE,
-      title: `账单逾期提醒：${overdueBills.length} 笔账单已逾期`,
-      message: buildOverdueMessage(overdueBills, overdueAmount),
+      title: escalationLevel.title(overdueBills.length),
+      message: buildOverdueMessage(overdueBills, overdueAmount, escalationLevel.level),
       meta: {
         scenario: 'overdue',
+        escalationLevel: escalationLevel.level,
+        maxOverdueDays,
         billCount: overdueBills.length,
         overdueAmount: round2(overdueAmount),
         today,
@@ -189,15 +197,79 @@ async function runRemindersForUser(userId: string, today: string) {
 }
 
 /**
+ * 逾期升级等级。
+ *
+ * 根据最高逾期天数分四档：
+ * - normal: 1-2 天，普通逾期提醒
+ * - level3: 3-6 天，逾期 3 天升级提醒
+ * - level7: 7-29 天，逾期 7 天严重提醒
+ * - level30: 30+ 天，逾期 30 天紧急提醒
+ */
+type OverdueEscalationLevel = 'normal' | 'level3' | 'level7' | 'level30';
+
+interface OverdueEscalation {
+  level: OverdueEscalationLevel;
+  title: (billCount: number) => string;
+  urgency: string;
+}
+
+/**
+ * 根据逾期天数获取升级等级。
+ *
+ * @param days 逾期天数
+ * @returns 升级等级信息
+ */
+function getOverdueEscalationLevel(days: number): OverdueEscalation {
+  if (days >= 30) {
+    return {
+      level: 'level30',
+      title: (n) => `紧急：${n} 笔账单逾期超 30 天`,
+      urgency: '逾期已超 30 天，请立即处理以避免影响征信！',
+    };
+  }
+  if (days >= 7) {
+    return {
+      level: 'level7',
+      title: (n) => `严重：${n} 笔账单逾期超 7 天`,
+      urgency: '逾期已超 7 天，请尽快还款避免进一步损失。',
+    };
+  }
+  if (days >= 3) {
+    return {
+      level: 'level3',
+      title: (n) => `逾期升级提醒：${n} 笔账单逾期超 3 天`,
+      urgency: '逾期已超 3 天，建议尽快处理。',
+    };
+  }
+  return {
+    level: 'normal',
+    title: (n) => `账单逾期提醒：${n} 笔账单已逾期`,
+    urgency: '',
+  };
+}
+
+/**
  * 构建逾期提醒消息文本。
  *
  * @param overdueBills 逾期账单列表
  * @param overdueAmount 逾期金额
+ * @param level 升级等级
  * @returns 消息文本
  */
-function buildOverdueMessage(overdueBills: UnifiedBill[], overdueAmount: number): string {
+function buildOverdueMessage(
+  overdueBills: UnifiedBill[],
+  overdueAmount: number,
+  level: OverdueEscalationLevel = 'normal',
+): string {
   const lines: string[] = [];
-  lines.push(`您有 ${overdueBills.length} 笔账单已逾期，逾期金额 ¥${round2(overdueAmount)}，请尽快处理。`);
+  const urgencyPrefix = level === 'level30'
+    ? '【紧急】'
+    : level === 'level7'
+      ? '【严重】'
+      : level === 'level3'
+        ? '【升级】'
+        : '';
+  lines.push(`${urgencyPrefix}您有 ${overdueBills.length} 笔账单已逾期，逾期金额 ¥${round2(overdueAmount)}，请尽快处理。`);
   lines.push('');
   lines.push('逾期账单：');
   for (const bill of overdueBills.slice(0, 5)) {

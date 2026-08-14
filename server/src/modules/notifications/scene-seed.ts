@@ -21,6 +21,8 @@ export const SCENE_SEED: ReadonlyArray<NotificationSceneSeed> = [
   { scene_id: NOTIFICATION_SCENE_IDS.CARD_BILLING_UPCOMING, label: '号卡账单日前提醒', enabled: false, summary: '', description: '' },
   { scene_id: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_UPCOMING, label: '贷款还款提醒', enabled: false, summary: '', description: '' },
   { scene_id: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_OVERDUE, label: '贷款逾期提醒', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.LOAN_REPAYMENT_SUCCESS, label: '贷款还款成功通知', enabled: false, summary: '', description: '' },
+  { scene_id: NOTIFICATION_SCENE_IDS.LOAN_PREPAY_SUGGESTION, label: '贷款提前还款建议', enabled: false, summary: '', description: '' },
   { scene_id: NOTIFICATION_SCENE_IDS.CHECKUP_FOLLOWUP_REMINDER, label: '体检复查提醒', enabled: false, summary: '', description: '' },
   { scene_id: NOTIFICATION_SCENE_IDS.CHECKUP_ABNORMAL_ALERT, label: '体检异常提醒', enabled: false, summary: '', description: '' },
   { scene_id: NOTIFICATION_SCENE_IDS.MEDICATION_DOSE_REMINDER, label: '服药提醒', enabled: false, summary: '', description: '' },
