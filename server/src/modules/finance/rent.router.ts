@@ -37,6 +37,10 @@ const recordSchema = z.object({
   serviceFee: z.number().min(0).optional().default(0),
   orientation: z.string().optional().default(''),
   notes: z.string().optional().default(''),
+  /** 支付周期：monthly（月付）/ quarterly（季付）/ yearly（年付） */
+  payCycle: z.enum(['monthly', 'quarterly', 'yearly']).optional().default('monthly'),
+  /** 实际月租金（与支付周期对应），用于在住期间正确折算月租 */
+  rentPerMonth: z.number().min(0).nullable().optional().default(null),
 });
 
 const channelSchema = z.object({
@@ -99,7 +103,26 @@ function calculateRentMetrics(entity: FinanceRentRecordEntity, utilityBills: Fin
     + Number(entity.service_fee)
   ).toFixed(2));
   const dailyCost = Number((totalCost / stayDays).toFixed(2));
-  const monthlyRent = Number(((Number(entity.rent) * 30) / stayDays).toFixed(2));
+  const occupancyStatus = entity.move_out_date ? 'ended' : 'active';
+
+  /**
+   * 计算"合同月租"（按支付周期换算，用于在住期间的折算月租展示）：
+   * - 优先取实际月租金 rentPerMonth（用户录入，最能反映真实每月支出）
+   * - 未录入时按支付周期换算：月付 = rent；季付 = rent / 3；年付 = rent / 12
+   */
+  const payCycle = entity.pay_cycle || 'monthly';
+  const contractMonthlyRent = entity.rent_per_month != null && entity.rent_per_month > 0
+    ? Number(entity.rent_per_month)
+    : (() => {
+      if (payCycle === 'yearly') return Number((Number(entity.rent) / 12).toFixed(2));
+      if (payCycle === 'quarterly') return Number((Number(entity.rent) / 3).toFixed(2));
+      return Number(entity.rent);
+    })();
+
+  // 仍在住：折算月租取合同月租（避免按已住天数折算虚高）；已退租：按实际租期天数折算。
+  const monthlyRent = occupancyStatus === 'active'
+    ? Number(contractMonthlyRent.toFixed(2))
+    : Number(((Number(entity.rent) * 30) / stayDays).toFixed(2));
   const quarterlyRent = Number((monthlyRent * 3).toFixed(2));
 
   return {
@@ -108,7 +131,9 @@ function calculateRentMetrics(entity: FinanceRentRecordEntity, utilityBills: Fin
     dailyCost,
     monthlyRent,
     quarterlyRent,
-    occupancyStatus: entity.move_out_date ? 'ended' : 'active',
+    occupancyStatus,
+    payCycle,
+    contractMonthlyRent,
   };
 }
 
@@ -157,6 +182,7 @@ function mapRecord(entity: FinanceRentRecordEntity, utilityBills: FinanceRentUti
     serviceFee: Number(entity.service_fee),
     orientation: entity.orientation ?? '',
     notes: entity.notes,
+    rentPerMonth: entity.rent_per_month != null ? Number(entity.rent_per_month) : null,
     createdAt: entity.created_at.toISOString(),
     updatedAt: entity.updated_at.toISOString(),
     ...calculateRentMetrics(entity, utilityBills),
@@ -260,6 +286,8 @@ export function createRentRouter() {
       service_fee: payload.serviceFee,
       orientation: payload.orientation,
       notes: payload.notes,
+      pay_cycle: payload.payCycle,
+      rent_per_month: payload.rentPerMonth,
     }));
 
     response.json(successResponse(mapRecord(item), 'create_rent_record_success'));
@@ -304,6 +332,8 @@ export function createRentRouter() {
       service_fee: payload.serviceFee ?? current.service_fee,
       orientation: payload.orientation ?? current.orientation,
       notes: payload.notes ?? current.notes,
+      pay_cycle: payload.payCycle ?? current.pay_cycle,
+      rent_per_month: payload.rentPerMonth !== undefined ? payload.rentPerMonth : current.rent_per_month,
     });
 
     response.json(successResponse(mapRecord(next), 'update_rent_record_success'));

@@ -6215,6 +6215,119 @@ img {
   white-space: pre-wrap;
 }
 
+.rent-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.rent-detail-section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.rent-detail-section-title em {
+  font-style: normal;
+  font-size: var(--fs-caption);
+  font-weight: 400;
+  color: var(--color-ink-mute);
+}
+
+.rent-detail-monthly-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-hairline);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-surface-1);
+}
+
+.rent-detail-monthly-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.6fr 1fr 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.rent-detail-monthly-row:last-child {
+  border-bottom: none;
+}
+
+.rent-detail-monthly-header {
+  background: linear-gradient(180deg, rgba(94,106,210,0.08), rgba(94,106,210,0.02));
+  font-size: var(--fs-caption);
+  color: var(--color-ink-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rent-detail-monthly-header strong {
+  font-weight: 600;
+}
+
+.rent-detail-monthly-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rent-detail-monthly-month strong {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.rent-detail-monthly-month em {
+  font-style: normal;
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+}
+
+.rent-detail-monthly-days {
+  font-size: var(--fs-body);
+  color: var(--color-ink);
+}
+
+.rent-detail-monthly-rent span,
+.rent-detail-monthly-total span {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-mute);
+}
+
+.rent-detail-monthly-rent strong {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.rent-detail-monthly-total strong {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.rent-detail-monthly-footer {
+  background: var(--color-surface-2);
+}
+
+.rent-detail-monthly-footer .rent-detail-monthly-month strong {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.rent-detail-monthly-footer .rent-detail-monthly-total strong {
+  font-size: 17px;
+}
+
 .rent-detail-actions {
   display: flex;
   gap: 10px;
@@ -6237,6 +6350,19 @@ img {
   .rent-detail-hero {
     flex-direction: column;
     gap: 10px;
+  }
+
+  .rent-detail-monthly-row {
+    grid-template-columns: 1.4fr 0.7fr;
+  }
+
+  .rent-detail-monthly-header {
+    display: none;
+  }
+
+  .rent-detail-monthly-rent,
+  .rent-detail-monthly-total {
+    grid-column: span 1;
   }
 }
 

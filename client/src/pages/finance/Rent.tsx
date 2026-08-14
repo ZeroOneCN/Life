@@ -166,6 +166,8 @@ export default function RentPage({ embedded = false }: { embedded?: boolean }) {
           serviceFee: item.serviceFee,
           orientation: item.orientation,
           notes: item.notes,
+          payCycle: item.payCycle,
+          rentPerMonth: item.rentPerMonth,
         })),
         ...updated.map(async (item) => rentApi.updateRecord(item.id, {
           address: item.address,
@@ -184,6 +186,8 @@ export default function RentPage({ embedded = false }: { embedded?: boolean }) {
           serviceFee: item.serviceFee,
           orientation: item.orientation,
           notes: item.notes,
+          payCycle: item.payCycle,
+          rentPerMonth: item.rentPerMonth,
         })),
         ...deletedIds.map((id) => rentApi.deleteRecord(id)),
       ]);

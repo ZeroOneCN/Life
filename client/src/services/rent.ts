@@ -9,8 +9,10 @@ import type {
   RentDerivedMetrics,
   RentHousingRecord,
   RentHousingRecordDraft,
+  RentMonthlyBreakdownItem,
   RentOverviewSummary,
   RentPageState,
+  RentPayCycle,
   RentUtilityBill,
 } from '../types/rent';
 
@@ -126,6 +128,8 @@ function normalizeRecord(
     serviceFee: toMoney(record.serviceFee, 0),
     orientation: normalizeTrimmedValue(record.orientation),
     notes: normalizeTrimmedValue(record.notes),
+    payCycle: (['monthly', 'quarterly', 'yearly'].includes(record.payCycle as string) ? record.payCycle : 'monthly') as RentPayCycle,
+    rentPerMonth: record.rentPerMonth != null && record.rentPerMonth > 0 ? Number(record.rentPerMonth) : null,
     createdAt,
     updatedAt,
   };
@@ -159,6 +163,8 @@ export function calculateRentDerivedMetrics(record: Pick<
   | 'cleaningFee'
   | 'laundryFee'
   | 'serviceFee'
+  | 'payCycle'
+  | 'rentPerMonth'
 >): RentDerivedMetrics {
   const moveIn = dayjs(record.moveInDate);
   const moveOut = record.moveOutDate ? dayjs(record.moveOutDate) : dayjs();
@@ -175,7 +181,26 @@ export function calculateRentDerivedMetrics(record: Pick<
     + record.serviceFee
   ).toFixed(2));
   const dailyCost = Number((totalCost / stayDays).toFixed(2));
-  const monthlyRent = Number(((record.rent * 30) / stayDays).toFixed(2));
+  const occupancyStatus = record.moveOutDate ? 'ended' : 'active';
+
+  /**
+   * 计算"合同月租"（按支付周期换算，用于在住期间的折算月租展示）：
+   * - 优先取实际月租金 rentPerMonth（用户录入，最能反映真实每月支出）
+   * - 未录入时按支付周期换算：月付 = rent；季付 = rent / 3；年付 = rent / 12
+   */
+  const payCycle = record.payCycle ?? 'monthly';
+  const contractMonthlyRent = record.rentPerMonth != null && record.rentPerMonth > 0
+    ? Number(record.rentPerMonth)
+    : (() => {
+      if (payCycle === 'yearly') return Number(((record.rent || 0) / 12).toFixed(2));
+      if (payCycle === 'quarterly') return Number(((record.rent || 0) / 3).toFixed(2));
+      return Number(record.rent || 0);
+    })();
+
+  // 仍在住：折算月租取合同月租（避免按已住天数折算虚高）；已退租：按实际租期天数折算。
+  const monthlyRent = occupancyStatus === 'active'
+    ? Number(contractMonthlyRent.toFixed(2))
+    : Number(((record.rent * 30) / stayDays).toFixed(2));
   const quarterlyRent = Number((monthlyRent * 3).toFixed(2));
 
   return {
@@ -184,7 +209,9 @@ export function calculateRentDerivedMetrics(record: Pick<
     dailyCost,
     monthlyRent,
     quarterlyRent,
-    occupancyStatus: record.moveOutDate ? 'ended' : 'active',
+    occupancyStatus,
+    payCycle,
+    contractMonthlyRent,
   };
 }
 
@@ -241,6 +268,8 @@ export function createRentRecord(channels: RentChannel[], records: RentHousingRe
       serviceFee: toMoney(draft.serviceFee, 0),
       orientation: draft.orientation ?? '',
       notes: draft.notes?.trim() ?? '',
+      payCycle: draft.payCycle ?? 'monthly',
+      rentPerMonth: draft.rentPerMonth != null && draft.rentPerMonth > 0 ? Number(draft.rentPerMonth) : null,
       createdAt: now,
       updatedAt: now,
     },
@@ -280,6 +309,8 @@ export function updateRentRecord(
       serviceFee: toMoney(draft.serviceFee, 0),
       orientation: draft.orientation ?? record.orientation,
       notes: draft.notes?.trim() ?? '',
+      payCycle: draft.payCycle ?? record.payCycle,
+      rentPerMonth: draft.rentPerMonth != null && draft.rentPerMonth > 0 ? Number(draft.rentPerMonth) : null,
       updatedAt: dayjs().format(DATE_TIME_FORMAT),
     };
   }));
@@ -462,6 +493,74 @@ export function buildRentRecordSnapshot(record: RentHousingRecord) {
     ...record,
     ...metrics,
   };
+}
+
+/**
+ * 按自然月拆分入住期间的房租与总成本。
+ *
+ * 适用场景：
+ * - 跨月租期（如 8-15 至 9-15），需要知道每个月分别承担多少房租，便于单独记账
+ * - 未设置退租日期的在住记录，截止日按今天计算
+ *
+ * 拆分规则：
+ * - 先算"日均房租" = 总房租 ÷ 总居住天数（以月租为周期的房租均摊到每一天）
+ * - 再算"日均总成本" =（房租+水电+燃气+服务+保洁+洗衣）÷ 总居住天数
+ *   （押金、中介费不参与月度摊销）
+ * - 按每个自然月在住天数分别累加
+ *
+ * @param record 住房记录
+ * @returns 每个自然月的拆分明细数组，按年月升序
+ */
+export function calculateRentMonthlyBreakdown(record: RentHousingRecord): RentMonthlyBreakdownItem[] {
+  const moveIn = dayjs(record.moveInDate).startOf('day');
+  const moveOut = record.moveOutDate ? dayjs(record.moveOutDate).startOf('day') : dayjs().startOf('day');
+  const safeMoveOut = moveOut.isBefore(moveIn, 'day') ? moveIn : moveOut;
+  const totalStayDays = Math.max(1, safeMoveOut.diff(moveIn, 'day') + 1);
+
+  const totalRent = Number(record.rent || 0);
+  const totalAmortized = totalRent
+    + Number(record.electricityFee || 0)
+    + Number(record.waterFee || 0)
+    + Number(record.gasFee || 0)
+    + Number(record.serviceFee || 0)
+    + Number(record.cleaningFee || 0)
+    + Number(record.laundryFee || 0);
+
+  const dailyRent = totalRent / totalStayDays;
+  const dailyTotalCost = totalAmortized / totalStayDays;
+
+  const items: RentMonthlyBreakdownItem[] = [];
+
+  // 从入住月开始，逐月遍历
+  let cursor = moveIn.startOf('month');
+  const endMonth = safeMoveOut.startOf('month');
+
+  while (cursor.isBefore(endMonth) || cursor.isSame(endMonth, 'month')) {
+    const monthStart = cursor.startOf('month');
+    const monthEnd = cursor.endOf('month');
+
+    // 本月在住区间与租期取交集
+    const overlapStart = moveIn.isAfter(monthStart) ? moveIn : monthStart;
+    const overlapEnd = safeMoveOut.isBefore(monthEnd) ? safeMoveOut : monthEnd;
+
+    if (!overlapEnd.isBefore(overlapStart, 'day')) {
+      const stayDays = overlapEnd.diff(overlapStart, 'day') + 1;
+      const rentShare = Number((dailyRent * stayDays).toFixed(2));
+      const totalCostShare = Number((dailyTotalCost * stayDays).toFixed(2));
+
+      items.push({
+        yearMonth: cursor.format('YYYY-MM'),
+        stayDays,
+        dateRangeLabel: `${overlapStart.format(DATE_FORMAT)} 至 ${overlapEnd.format(DATE_FORMAT)}`,
+        rentShare,
+        totalCostShare,
+      });
+    }
+
+    cursor = cursor.add(1, 'month').startOf('month');
+  }
+
+  return items;
 }
 
 /**

@@ -7,14 +7,23 @@ import {
   RENT_ALL_CHANNELS,
   RENT_RECORD_PAGE_SIZE,
   buildRentRecordSnapshot,
+  calculateRentMonthlyBreakdown,
   deleteRentRecord,
   filterBillsByRecordId,
   filterRentChannels,
   filterRentRecords,
   formatRentAmount,
+  formatYearMonth,
   summarizeUtilityBills,
 } from '../../services/rent';
-import type { RentChannel, RentHousingRecord, RentUtilityBill } from '../../types/rent';
+import type { RentChannel, RentHousingRecord, RentMonthlyBreakdownItem, RentUtilityBill } from '../../types/rent';
+
+/** 支付周期中文文案 */
+const PAY_CYCLE_LABEL: Record<RentHousingRecord['payCycle'], string> = {
+  monthly: '按月付',
+  quarterly: '按季付',
+  yearly: '按年付',
+};
 
 interface RentRecordsSectionProps {
   records: RentHousingRecord[];
@@ -162,6 +171,42 @@ export function RentRecordsSection({
   ], [onEditRecord]);
 
   const detailSnapshot = detailRecord ? buildRentRecordSnapshot(detailRecord) : null;
+  const monthlyBreakdown = detailRecord ? calculateRentMonthlyBreakdown(detailRecord) : [];
+  const breakdownSummary = useMemo(() => {
+    if (!monthlyBreakdown.length) return { rentSum: 0, totalSum: 0, totalDays: 0 };
+    return monthlyBreakdown.reduce(
+      (acc, item) => {
+        acc.rentSum += item.rentShare;
+        acc.totalSum += item.totalCostShare;
+        acc.totalDays += item.stayDays;
+        return acc;
+      },
+      { rentSum: 0, totalSum: 0, totalDays: 0 },
+    );
+  }, [monthlyBreakdown]);
+
+  /** 渲染单条拆分明细行 */
+  function renderBreakdownRow(item: RentMonthlyBreakdownItem) {
+    return (
+      <div key={item.yearMonth} className="rent-detail-monthly-row">
+        <div className="rent-detail-monthly-col rent-detail-monthly-month">
+          <strong>{formatYearMonth(item.yearMonth)}</strong>
+          <em>{item.dateRangeLabel}</em>
+        </div>
+        <div className="rent-detail-monthly-col rent-detail-monthly-days">
+          <span>{item.stayDays} 天</span>
+        </div>
+        <div className="rent-detail-monthly-col rent-detail-monthly-rent">
+          <span>当月房租</span>
+          <strong>{formatRentAmount(item.rentShare)}</strong>
+        </div>
+        <div className="rent-detail-monthly-col rent-detail-monthly-total">
+          <span>当月总成本</span>
+          <strong>{formatRentAmount(item.totalCostShare)}</strong>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <SectionCard
@@ -287,6 +332,18 @@ export function RentRecordsSection({
                   <span className="rent-detail-info-value">{detailRecord.moveOutDate || '仍在住'}</span>
                 </div>
                 <div className="rent-detail-info-item">
+                  <span className="rent-detail-info-label">支付周期</span>
+                  <span className="rent-detail-info-value">{PAY_CYCLE_LABEL[detailRecord.payCycle] ?? '-'}</span>
+                </div>
+                <div className="rent-detail-info-item">
+                  <span className="rent-detail-info-label">实际月租</span>
+                  <span className="rent-detail-info-value">
+                    {detailRecord.rentPerMonth != null && detailRecord.rentPerMonth > 0
+                      ? formatRentAmount(detailRecord.rentPerMonth)
+                      : '未录入'}
+                  </span>
+                </div>
+                <div className="rent-detail-info-item">
                   <span className="rent-detail-info-label">房屋朝向</span>
                   <span className="rent-detail-info-value">{detailRecord.orientation || '-'}</span>
                 </div>
@@ -377,6 +434,45 @@ export function RentRecordsSection({
               <div className="rent-detail-notes">
                 <div className="rent-detail-notes-label">备注</div>
                 <div className="rent-detail-notes-body">{detailRecord.notes}</div>
+              </div>
+            ) : null}
+
+            {/* 按月拆分成本 */}
+            {monthlyBreakdown.length > 0 ? (
+              <div className="rent-detail-section">
+                <div className="rent-detail-section-title">
+                  按月份拆分成本
+                  {monthlyBreakdown.length > 1 ? (
+                    <em>共 {monthlyBreakdown.length} 个自然月 · 按日均成本摊销，方便单独记账</em>
+                  ) : null}
+                </div>
+                <div className="rent-detail-monthly-list">
+                  <div className="rent-detail-monthly-row rent-detail-monthly-header">
+                    <div className="rent-detail-monthly-col rent-detail-monthly-month"><strong>月份 / 入住区间</strong></div>
+                    <div className="rent-detail-monthly-col rent-detail-monthly-days"><strong>天数</strong></div>
+                    <div className="rent-detail-monthly-col rent-detail-monthly-rent"><strong>当月房租</strong></div>
+                    <div className="rent-detail-monthly-col rent-detail-monthly-total"><strong>当月总成本</strong></div>
+                  </div>
+                  {monthlyBreakdown.map(renderBreakdownRow)}
+                  <div className="rent-detail-monthly-row rent-detail-monthly-footer">
+                    <div className="rent-detail-monthly-col rent-detail-monthly-month">
+                      <strong>合计</strong>
+                      <em>
+                        与总览"折算月租"为不同统计口径：
+                        此处按自然月日均摊销，更贴近每月实际记账需求。
+                      </em>
+                    </div>
+                    <div className="rent-detail-monthly-col rent-detail-monthly-days">
+                      <span>{breakdownSummary.totalDays} 天</span>
+                    </div>
+                    <div className="rent-detail-monthly-col rent-detail-monthly-rent">
+                      <strong>{formatRentAmount(breakdownSummary.rentSum)}</strong>
+                    </div>
+                    <div className="rent-detail-monthly-col rent-detail-monthly-total">
+                      <strong>{formatRentAmount(breakdownSummary.totalSum)}</strong>
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : null}
 

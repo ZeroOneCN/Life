@@ -30,6 +30,8 @@ interface RentFormState {
   moveInDate: string;
   moveOutDate: string;
   rent: string;
+  rentPerMonth: string;
+  payCycle: 'monthly' | 'quarterly' | 'yearly';
   deposit: string;
   gasFee: string;
   agencyFee: string;
@@ -55,6 +57,20 @@ const ORIENTATION_OPTIONS = [
   { value: '东西', label: '东西' },
 ];
 
+/** 租金支付周期选项 */
+const PAY_CYCLE_OPTIONS = [
+  { value: 'monthly', label: '按月付' },
+  { value: 'quarterly', label: '按季付' },
+  { value: 'yearly', label: '按年付' },
+] as const;
+
+/** 支付周期中文文案 */
+const PAY_CYCLE_LABEL: Record<RentFormState['payCycle'], string> = {
+  monthly: '按月付',
+  quarterly: '按季付',
+  yearly: '按年付',
+};
+
 function toInputNumber(value: number) {
   return value ? String(value) : '';
 }
@@ -69,6 +85,8 @@ function createDefaultFormState(channels: RentChannel[]): RentFormState {
     moveInDate: dayjs().format('YYYY-MM-DD'),
     moveOutDate: '',
     rent: '',
+    rentPerMonth: '',
+    payCycle: 'monthly',
     deposit: '',
     gasFee: '',
     agencyFee: '',
@@ -88,6 +106,8 @@ function buildFormState(record: RentHousingRecord): RentFormState {
     moveInDate: record.moveInDate,
     moveOutDate: record.moveOutDate,
     rent: toInputNumber(record.rent),
+    rentPerMonth: record.rentPerMonth ? toInputNumber(record.rentPerMonth) : '',
+    payCycle: record.payCycle ?? 'monthly',
     deposit: toInputNumber(record.deposit),
     gasFee: toInputNumber(record.gasFee),
     agencyFee: toInputNumber(record.agencyFee),
@@ -110,6 +130,7 @@ function toOptionalMoney(value: string) {
 
 function parseDraft(form: RentFormState): RentHousingRecordDraft | null {
   const rent = toOptionalMoney(form.rent);
+  const rentPerMonth = form.rentPerMonth.trim() ? toOptionalMoney(form.rentPerMonth) : null;
   const deposit = toOptionalMoney(form.deposit);
   const gasFee = toOptionalMoney(form.gasFee);
   const agencyFee = toOptionalMoney(form.agencyFee);
@@ -122,6 +143,7 @@ function parseDraft(form: RentFormState): RentHousingRecordDraft | null {
     || !form.channelId
     || !dayjs(form.moveInDate).isValid()
     || [rent, deposit, gasFee, agencyFee, cleaningFee, laundryFee, serviceFee].some((value) => Number.isNaN(value))
+    || (rentPerMonth != null && Number.isNaN(rentPerMonth))
   ) {
     return null;
   }
@@ -137,6 +159,8 @@ function parseDraft(form: RentFormState): RentHousingRecordDraft | null {
     moveInDate: form.moveInDate,
     moveOutDate: form.moveOutDate || '',
     rent,
+    rentPerMonth,
+    payCycle: form.payCycle,
     deposit,
     gasFee,
     agencyFee,
@@ -191,6 +215,8 @@ export function RentEntrySection({
     moveInDate: form.moveInDate || dayjs().format('YYYY-MM-DD'),
     moveOutDate: form.moveOutDate,
     rent: Number(form.rent || 0),
+    payCycle: form.payCycle,
+    rentPerMonth: form.rentPerMonth.trim() ? Number(form.rentPerMonth) : null,
     electricityFee: 0,
     waterFee: 0,
     gasFee: Number(form.gasFee || 0),
@@ -326,32 +352,96 @@ export function RentEntrySection({
           <div className="rent-entry-module">
             <div className="rent-entry-module-head">
               <h3>费用明细</h3>
-              <span>房租、押金和杂费；电费/水费已改为按月录入，请在「水电账单」Tab 中登记</span>
+              <span>合同总额、支付周期与杂费；电费/水费已改为按月录入，请在「水电账单」Tab 中登记</span>
+            </div>
+            <div className="callout callout-info" style={{ marginBottom: 'var(--space-4)' }}>
+              折算月租优先使用「实际月租」；留空时按支付周期换算：按月付 = 合同总金额，按季付 = 总额 ÷ 3，按年付 = 总额 ÷ 12。
             </div>
             <div className="callout callout-info" style={{ marginBottom: 'var(--space-4)' }}>
               电费、水费、燃气费已改为按月录入模式。保存住房记录后，请切换到「水电账单」Tab 进行月度登记，程序将自动汇总到总成本。
             </div>
             <div className="rent-cost-grid">
-              {[
-                ['房租', 'rent'],
-                ['押金', 'deposit'],
-                ['燃气费', 'gasFee'],
-                ['中介费', 'agencyFee'],
-                ['保洁费', 'cleaningFee'],
-                ['洗衣费', 'laundryFee'],
-                ['服务费', 'serviceFee'],
-              ].map(([label, key]) => (
-                <Field
-                  key={key}
-                  label={label}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form[key as keyof RentFormState] as string}
-                  onChange={(event) => setForm((previous) => ({ ...previous, [key]: event.target.value }))}
-                  placeholder="0"
-                />
-              ))}
+              <Field
+                label="合同总金额"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.rent}
+                onChange={(event) => setForm((previous) => ({ ...previous, rent: event.target.value }))}
+                placeholder="按合同一次性录入总额"
+              />
+              <SelectField
+                label="支付周期"
+                value={form.payCycle}
+                onChange={(event) => setForm((previous) => ({ ...previous, payCycle: event.target.value as RentFormState['payCycle'] }))}
+              >
+                {PAY_CYCLE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </SelectField>
+              <Field
+                label="实际月租"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.rentPerMonth}
+                onChange={(event) => setForm((previous) => ({ ...previous, rentPerMonth: event.target.value }))}
+                placeholder="留空按支付周期自动换算"
+              />
+              <Field
+                label="押金"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.deposit}
+                onChange={(event) => setForm((previous) => ({ ...previous, deposit: event.target.value }))}
+                placeholder="0"
+              />
+              <Field
+                label="燃气费"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.gasFee}
+                onChange={(event) => setForm((previous) => ({ ...previous, gasFee: event.target.value }))}
+                placeholder="0"
+              />
+              <Field
+                label="中介费"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.agencyFee}
+                onChange={(event) => setForm((previous) => ({ ...previous, agencyFee: event.target.value }))}
+                placeholder="0"
+              />
+              <Field
+                label="保洁费"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.cleaningFee}
+                onChange={(event) => setForm((previous) => ({ ...previous, cleaningFee: event.target.value }))}
+                placeholder="0"
+              />
+              <Field
+                label="洗衣费"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.laundryFee}
+                onChange={(event) => setForm((previous) => ({ ...previous, laundryFee: event.target.value }))}
+                placeholder="0"
+              />
+              <Field
+                label="服务费"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.serviceFee}
+                onChange={(event) => setForm((previous) => ({ ...previous, serviceFee: event.target.value }))}
+                placeholder="0"
+              />
             </div>
           </div>
 
@@ -388,8 +478,21 @@ export function RentEntrySection({
                 },
                 { label: '总成本', value: formatRentAmount(preview.totalCost), helper: '不含押金' },
                 { label: '单日成本', value: formatRentAmount(preview.dailyCost) },
-                { label: '折算月租', value: formatRentAmount(preview.monthlyRent) },
-                { label: '折算季度租金', value: formatRentAmount(preview.quarterlyRent) },
+                {
+                  label: '合同月租',
+                  value: formatRentAmount(preview.contractMonthlyRent),
+                  helper: `支付周期：${PAY_CYCLE_LABEL[preview.payCycle]}`,
+                },
+                {
+                  label: '折算月租',
+                  value: formatRentAmount(preview.monthlyRent),
+                  helper: preview.occupancyStatus === 'active' ? '在住中，按合同月租展示（不再按已住天数折算）' : '按实际租期折算',
+                },
+                {
+                  label: '折算季度租金',
+                  value: formatRentAmount(preview.quarterlyRent),
+                  helper: preview.occupancyStatus === 'active' ? '在住中，按合同月租 × 3' : '按折算月租 × 3',
+                },
                 { label: '押金展示', value: formatRentAmount(Number(form.deposit || 0)), helper: '仅展示，不参与成本统计' },
               ]}
             />
