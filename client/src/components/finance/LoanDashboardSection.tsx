@@ -50,7 +50,7 @@ export function LoanDashboardSection({
       <div className="page-stack">
         <StatGrid
           items={[
-            { label: '总负债', value: formatLoanAmount(overview.totalDebt) },
+            { label: '总贷款', value: formatLoanAmount(overview.totalDebt) },
             { label: '已还金额', value: formatLoanAmount(overview.totalPaid) },
             { label: '待还金额', value: formatLoanAmount(overview.totalUnpaid) },
             { label: '总利息', value: formatLoanAmount(overview.totalInterest) },
@@ -111,7 +111,7 @@ export function LoanDashboardSection({
 
           <div className="chart-card">
             <div className="fitness-chart-header">
-              <strong>平台负债分布</strong>
+              <strong>平台分布</strong>
               <span>快速识别待还压力最大的贷款平台。</span>
             </div>
             {topPlatforms.length ? (
@@ -136,7 +136,7 @@ export function LoanDashboardSection({
             ) : (
               <EmptyState
                 title="暂无平台分布"
-                description="先补充平台和账单后，这里会展示各平台的负债结构。"
+                description="先补充平台和账单后，这里会展示各平台的待还概况。"
               />
             )}
           </div>

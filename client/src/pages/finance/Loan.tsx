@@ -188,7 +188,7 @@ export default function LoanPage({ embedded = false }: { embedded?: boolean }) {
   }, [reload]);
 
   const summaryCards = useMemo(() => ([
-    { label: '总负债', value: formatLoanAmount(overview.totalDebt), helper: `已还 ${formatLoanAmount(overview.totalPaid)}` },
+    { label: '总贷款', value: formatLoanAmount(overview.totalDebt), helper: `已还 ${formatLoanAmount(overview.totalPaid)}` },
     // 待还金额 = 剩余欠款（amount 已含利息），不单独展示利息
     { label: '待还金额', value: formatLoanAmount(overview.totalUnpaid) },
     { label: '风险账单', value: `${overview.overdueCount} 逾期`, accent: overview.overdueCount > 0 ? 'var(--color-danger)' : undefined, helper: overview.upcomingCount > 0 ? `${overview.upcomingCount} 笔即将到期` : '无即将到期' },
