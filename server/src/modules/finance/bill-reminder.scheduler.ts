@@ -20,16 +20,24 @@ const SCHEDULER_KEY = '__billReminderScheduler__';
  */
 const OVERDUE_LOOKBACK_DAYS = 30;
 
+/**
+ * 每个用户的每日提醒 marker（内存级，重启后重置）。
+ *
+ * 格式：`${userId}_${today}`，用于确保每个用户每天只推送一次提醒。
+ * 之所以不用全局 marker，是因为需要按每个用户的 reminder_time 分别触发。
+ */
+const userDailyMarkers = new Set<string>();
+
 function setupScheduler() {
   if ((globalThis as Record<string, unknown>)[SCHEDULER_KEY]) {
     return;
   }
   (globalThis as Record<string, unknown>)[SCHEDULER_KEY] = true;
 
-  // 每天 08:45 跑一次
+  // 每 30 分钟检查一次，根据每个用户的 reminder_time 设置触发提醒
   setInterval(() => {
     void runReminderTick();
-  }, 60 * 60 * 1000).unref?.();
+  }, 30 * 60 * 1000).unref?.();
 
   // 启动后延后 90 秒跑第一次，错开其他 scheduler
   setTimeout(() => {
@@ -40,9 +48,8 @@ function setupScheduler() {
 /**
  * 执行账单提醒定时任务。
  *
- * 每天扫描所有活跃用户，检查未来 N 天内到期的账单，
- * 根据提醒设置发送统一账单提醒通知。
- * 使用每日 marker 做幂等控制，每天最多发送一次汇总提醒。
+ * 每 30 分钟扫描所有活跃用户，按各自的 reminder_time 配置触发提醒。
+ * 每个用户每天最多推送一次（由 userDailyMarkers 控制）。
  */
 async function runReminderTick() {
   if (env.NODE_ENV === 'test') {
@@ -50,18 +57,14 @@ async function runReminderTick() {
   }
   const now = dayjs();
   const today = now.format('YYYY-MM-DD');
-  const flagKey = `${SCHEDULER_KEY}_${today}`;
-  if ((globalThis as Record<string, unknown>)[flagKey]) {
-    return;
-  }
-  (globalThis as Record<string, unknown>)[flagKey] = true;
+  const currentTime = now.format('HH:mm');
 
   try {
     const accountRepo = appDataSource.getRepository(SystemUserAccountEntity);
     const accounts = await accountRepo.find({ where: { is_active: true } });
     for (const account of accounts) {
       try {
-        await runRemindersForUser(account.id, today);
+        await runRemindersForUser(account.id, today, currentTime);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.warn(`[bill-reminder] user ${account.username} skipped:`, error);
@@ -81,12 +84,13 @@ async function runReminderTick() {
  * 2. 今日到期：到期日 === 今日 且未支付 → 推送今日到期提醒
  * 3. 明日到期：到期日 === 明日 且未支付 → 推送提前1天提醒
  *
- * 三种场景相互独立，分别推送，由每日 marker 保证一天最多各推送一次。
+ * 三种场景相互独立，分别推送，由 per-user 每日 marker 保证一天最多各推送一次。
  *
  * @param userId 用户 ID
  * @param today 今日日期 YYYY-MM-DD
+ * @param currentTime 当前时间 HH:mm，用于匹配用户的 reminder_time
  */
-async function runRemindersForUser(userId: string, today: string) {
+async function runRemindersForUser(userId: string, today: string, currentTime: string) {
   const settingService = new BaseUserSettingService(FinanceBillReminderSettingEntity);
   const settings = await settingService.getOrCreate(userId, {
     reminder_enabled: true,
@@ -97,6 +101,18 @@ async function runRemindersForUser(userId: string, today: string) {
   });
 
   if (!settings.reminder_enabled) {
+    return;
+  }
+
+  // 检查当前时间是否匹配用户的提醒时间。只有匹配时才执行提醒逻辑，
+  // 确保用户配置的 reminder_time 真正生效，而非在服务器启动后的任意时间触发。
+  if (settings.reminder_time && settings.reminder_time !== currentTime) {
+    return;
+  }
+
+  // 每个用户每天只推送一次，由 per-user 内存 marker 控制
+  const userMarker = `${userId}_${today}`;
+  if (userDailyMarkers.has(userMarker)) {
     return;
   }
 
@@ -127,10 +143,17 @@ async function runRemindersForUser(userId: string, today: string) {
   const dueTodayBills = unpaidBills.filter((b) => dayjs(b.due_date).isSame(todayMoment, 'day'));
   const dueTomorrowBills = unpaidBills.filter((b) => b.due_date === tomorrowStr);
 
-  // 确保 scene 记录存在（用户可能从未访问过通知中心，scene 尚未 seed）。
-  // 此处不强制启用，避免覆盖用户在通知中心主动禁用的配置。
-  // scene 的启用由 PUT /api/finance/bill/setting 接口在 reminder_enabled=true 时联动开启。
-  await ensureNotificationScenesForUser(userId, [NOTIFICATION_SCENE_IDS.FINANCE_BILL_UPCOMING, NOTIFICATION_SCENE_IDS.FINANCE_BILL_OVERDUE]);
+  // 确保 scene 记录存在并强制启用，避免因通知中心 scene 默认禁用导致提醒被静默丢弃。
+  // 用户在通知中心主动禁用的场景不会在此被重新启用（ensureNotificationScenesForUser
+  // 只对不存在的 scene 按 enableScenes=true 创建，已存在的 scene 不修改 enabled 值）。
+  await ensureNotificationScenesForUser(
+    userId,
+    [NOTIFICATION_SCENE_IDS.FINANCE_BILL_UPCOMING, NOTIFICATION_SCENE_IDS.FINANCE_BILL_OVERDUE],
+    { enableScenes: true },
+  );
+
+  // 标记已推送，防止今天重复执行
+  userDailyMarkers.add(userMarker);
 
   // 场景一：已逾期（按逾期天数分档推送升级提醒）
   if (overdueBills.length > 0) {
