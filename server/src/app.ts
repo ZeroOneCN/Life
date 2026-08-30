@@ -4,6 +4,7 @@ import express from 'express';
 import helmet from 'helmet';
 
 import { errorHandler, notFoundHandler } from './shared/http/error-handler';
+import { initSentry } from './shared/http/sentry';
 import { createApiRouter } from './routes';
 import { appDataSource } from './db/data-source';
 import { SystemUserAccountEntity } from './modules/system/entities/system-user-account.entity';
@@ -37,6 +38,8 @@ export function createApp() {
   app.use(compression());
   app.use(express.json({ limit: '4mb' }));
   app.use(express.urlencoded({ extended: true }));
+
+  initSentry(app);
 
   app.get('/healthz', (_request, response) => {
     response.json({

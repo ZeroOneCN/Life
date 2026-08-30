@@ -28,6 +28,7 @@ const envSchema = z.object({
   EXCHANGE_RATE_API_BASE_URL: z.string().min(1).default('https://v6.exchangerate-api.com/v6'),
   TELEGRAM_BOT_TOKEN: z.string().min(0).default(''),
   TELEGRAM_API_ROOT: z.string().optional(),
+  SENTRY_DSN: z.string().min(0).default(''),
 });
 
 const parsedEnv = envSchema.parse(process.env);

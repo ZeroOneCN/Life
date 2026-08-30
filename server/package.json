@@ -17,6 +17,7 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "@sentry/node": "^10.72.0",
     "argon2": "^0.44.0",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.1",
