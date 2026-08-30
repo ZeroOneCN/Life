@@ -17,6 +17,7 @@ import { SystemUserProfileEntity } from './entities/system-user-profile.entity';
 import { SystemAuthSessionEntity } from './entities/system-auth-session.entity';
 import { getSystemHealthSnapshot } from './system-health';
 import { provisionUserDefaults } from './provision-user-defaults';
+import { logLoginAudit, logLogoutAudit } from './audit-log.service';
 
 const registerSchema = z.object({
   username: z.string().trim().min(3).max(64),
@@ -219,6 +220,9 @@ export function createAuthRouter() {
       },
     });
 
+    // 异步记录登录审计日志（不阻塞响应）
+    void logLoginAudit(request, `用户 ${account.username} 登录系统`);
+
     response.json(successResponse({
       accessToken,
       refreshToken,
@@ -286,6 +290,9 @@ export function createAuthRouter() {
         { revoked: true },
       );
     }
+
+    // 异步记录登出审计日志
+    void logLogoutAudit(request, `用户 ${request.auth?.username ?? 'unknown'} 登出系统`);
 
     response.json(successResponse({ ok: true }, 'logout_success'));
   }));

@@ -23,6 +23,8 @@ import { createHealthSleepRouter } from '../modules/health/health-sleep.router';
 import { createForexRouter } from '../modules/investment/forex.router';
 import { createAnalysisRouter } from '../modules/system/analysis.router';
 import { createAssistantRouter } from '../modules/system/assistant.router';
+import { createAuditLogRouter } from '../modules/system/audit-log.router';
+import { createAdminRouter } from '../modules/system/admin.router';
 import { createFinanceReportRouter } from '../modules/finance/finance-report.router';
 import { createExchangeRateRouter } from '../modules/finance/exchange-rate.router';
 import { createBudgetRouter } from '../modules/finance/budget.router';
@@ -66,6 +68,8 @@ export function createApiRouter() {
   router.use('/investment/forex', createForexRouter());
   router.use('/analysis', createAnalysisRouter());
   router.use('/assistant', createAssistantRouter());
+  router.use('/audit-logs', createAuditLogRouter());
+  router.use('/admin', createAdminRouter());
   router.use('/finance/report', createFinanceReportRouter());
   router.use('/finance/exchange-rate', createExchangeRateRouter());
   router.use('/finance/budget', createBudgetRouter());
