@@ -17,7 +17,7 @@ async function provisionAdminIfNeeded() {
     const accountRepo = appDataSource.getRepository(SystemUserAccountEntity);
     const adminCount = await accountRepo.count({ where: { role: 'admin' } });
     if (adminCount === 0) {
-      const firstUser = await accountRepo.findOne({ order: { created_at: 'ASC' } });
+      const firstUser = await accountRepo.findOne({ where: {}, order: { created_at: 'ASC' } });
       if (firstUser) {
         await accountRepo.update({ id: firstUser.id }, { role: 'admin' });
         console.log(`[provision] 已将首个用户 ${firstUser.username} 提升为管理员 (role=admin)`);
