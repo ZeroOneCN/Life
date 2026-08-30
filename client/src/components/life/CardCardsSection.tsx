@@ -258,8 +258,8 @@ export function CardCardsSection({
 
   /** 渲染本月扣账状态 */
   const renderAutoDeductionStatus = (row: LifeCardRecord) => {
-    const thisMonth = dayjs().format('YYYY-MM');
-    const expectedMarker = `${thisMonth}:auto-deducted`;
+    // 后端 marker 格式：YYYYMM（如 202608，由 buildDeductionMarker 生成）
+    const expectedMarker = dayjs().format('YYYYMM');
     const todayDate = dayjs().date();
     const arrived = row.billingDay <= todayDate;
 
