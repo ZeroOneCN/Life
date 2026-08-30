@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 
-export function PageHeader({
+export const PageHeader = memo(function PageHeader({
   title,
   subtitle,
   actions,
@@ -18,9 +18,9 @@ export function PageHeader({
       {actions ? <div className="page-actions">{actions}</div> : null}
     </div>
   );
-}
+});
 
-export function SectionCard({
+export const SectionCard = memo(function SectionCard({
   title,
   description,
   action,
@@ -45,9 +45,9 @@ export function SectionCard({
       {children}
     </section>
   );
-}
+});
 
-export function StatGrid({
+export const StatGrid = memo(function StatGrid({
   items,
   className = '',
 }: {
@@ -67,9 +67,9 @@ export function StatGrid({
       ))}
     </div>
   );
-}
+});
 
-export function EmptyState({
+export const EmptyState = memo(function EmptyState({
   title,
   description,
   icon,
@@ -88,7 +88,7 @@ export function EmptyState({
       {action && <div className="empty-state-action">{action}</div>}
     </div>
   );
-}
+});
 
 /**
  * 上下文栏：横向排列账本/货币/周期等上下文选择器 + 统计 Tag
@@ -99,14 +99,14 @@ export function EmptyState({
  * @param label - 可选分组前缀文案（如"当前账本"）
  * @param children - 上下文控件（SelectField、PillTabs、Tag 等）
  */
-export function ContextBar({ label, children }: { label?: string; children: ReactNode }) {
+export const ContextBar = memo(function ContextBar({ label, children }: { label?: string; children: ReactNode }) {
   return (
     <div className="context-bar">
       {label ? <span className="context-bar-label">{label}</span> : null}
       {children}
     </div>
   );
-}
+});
 
 /**
  * 统一页面模板，减少各页面重复的加载/空态/错误/分页处理逻辑。

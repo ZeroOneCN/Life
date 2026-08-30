@@ -11,6 +11,7 @@ import {
   Children,
   forwardRef,
   isValidElement,
+  memo,
   useCallback,
   useEffect,
   useId,
@@ -676,7 +677,7 @@ export function DataTable<T extends object>({
   );
 }
 
-export function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
+export const Pagination = memo(function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
   if (totalPages <= 1) {
     return null;
   }
@@ -691,7 +692,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
       hideOnSinglePage
     />
   );
-}
+});
 
 export function Switch({
   checked,

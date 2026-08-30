@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useSearchParams } from 'react-router-dom';
 import { ConfigProvider } from '@arco-design/web-react';
 
@@ -7,10 +7,10 @@ import { RouteLoadingFallback } from './components/RouteLoadingFallback';
 import { routes } from './config/navigation';
 import AppShell from './layout/AppShell';
 import MainLayout from './layout/MainLayout';
-import LoginPage from './pages/auth/Login';
 import { useAuthBootstrap } from './services/auth';
 import { useTheme } from './hooks/useTheme';
 
+const LoginPage = lazy(() => import('./pages/auth/Login'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 /**
@@ -36,7 +36,14 @@ export default function App() {
     <ConfigProvider theme={isDark ? { mode: 'dark' } : undefined}>
       <Routes>
         <Route element={<GuestRoute />}>
-          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/login"
+            element={(
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <LoginPage />
+              </Suspense>
+            )}
+          />
         </Route>
 
         <Route element={<ProtectedRoute />}>
