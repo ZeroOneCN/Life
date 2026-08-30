@@ -1,7 +1,8 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, Index } from 'typeorm';
 
 import { UserScopedEntity } from '../../../shared/persistence/user-scoped.entity';
 
+@Index(['user_id', 'revoked'])
 @Entity('system_auth_session')
 export class SystemAuthSessionEntity extends UserScopedEntity {
   @Column({ type: 'varchar', length: 128, unique: true })

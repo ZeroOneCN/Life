@@ -1,7 +1,8 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, Index } from 'typeorm';
 
 import { UserScopedEntity } from '../../../shared/persistence/user-scoped.entity';
 
+@Index(['user_id', 'record_id'])
 /** 租房月度水电燃气账单 */
 @Entity('finance_rent_utility_bill')
 export class FinanceRentUtilityBillEntity extends UserScopedEntity {

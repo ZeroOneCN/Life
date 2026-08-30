@@ -1,7 +1,8 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, Index } from 'typeorm';
 
 import { UserScopedEntity } from '../../../shared/persistence/user-scoped.entity';
 
+@Index(['user_id', 'test_date'])
 @Entity('health_checkup_record')
 export class HealthCheckupRecordEntity extends UserScopedEntity {
   @Column({ type: 'date' })

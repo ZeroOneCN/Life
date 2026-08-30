@@ -1,7 +1,9 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, Index } from 'typeorm';
 
 import { UserScopedEntity } from '../../../shared/persistence/user-scoped.entity';
 
+@Index(['user_id', 'instrument', 'order_type'])
+@Index(['user_id', 'trade_date'])
 @Entity('investment_forex_trade_record')
 export class InvestmentForexTradeRecordEntity extends UserScopedEntity {
   @Column({ type: 'int', default: 0 })

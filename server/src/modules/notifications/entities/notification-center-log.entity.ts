@@ -1,7 +1,8 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, Index } from 'typeorm';
 
 import { UserScopedEntity } from '../../../shared/persistence/user-scoped.entity';
 
+@Index(['user_id', 'created_at'])
 @Entity('notification_center_log')
 export class NotificationCenterLogEntity extends UserScopedEntity {
   @Column({ type: 'varchar', length: 32 })

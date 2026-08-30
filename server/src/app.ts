@@ -5,6 +5,7 @@ import helmet from 'helmet';
 
 import { errorHandler, notFoundHandler } from './shared/http/error-handler';
 import { initSentry } from './shared/http/sentry';
+import { setupSwagger } from './shared/http/swagger';
 import { createApiRouter } from './routes';
 import { appDataSource } from './db/data-source';
 import { SystemUserAccountEntity } from './modules/system/entities/system-user-account.entity';
@@ -52,6 +53,9 @@ export function createApp() {
   });
 
   app.use('/api', createApiRouter());
+
+  setupSwagger(app);
+
   app.use(notFoundHandler);
   app.use(errorHandler);
 

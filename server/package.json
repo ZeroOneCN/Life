@@ -18,6 +18,8 @@
   },
   "dependencies": {
     "@sentry/node": "^10.72.0",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "argon2": "^0.44.0",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.1",
@@ -36,6 +38,8 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1",
     "typeorm": "^0.3.24",
     "uuid": "^14.0.0",
     "winston": "^3.19.0",
