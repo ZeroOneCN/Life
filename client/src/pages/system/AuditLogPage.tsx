@@ -91,13 +91,13 @@ export default function AuditLogPage() {
       key: 'created_at' as const,
       title: '操作时间',
       width: 160,
-      render: (_: unknown, _row: unknown, value: string) => dayjs(value).format('YYYY-MM-DD HH:mm:ss'),
+      render: (value: string) => dayjs(value).format('YYYY-MM-DD HH:mm:ss'),
     },
     {
       key: 'action' as const,
       title: '操作类型',
       width: 100,
-      render: (_: unknown, _row: unknown, value: string) => (
+      render: (value: string) => (
         <Tag tone={actionColors[value] ?? 'default'}>{actionLabels[value] ?? value}</Tag>
       ),
     },

@@ -102,7 +102,7 @@ export default function UserManagementPage() {
       key: 'created_at' as const,
       title: '注册时间',
       width: 160,
-      render: (_: unknown, _row: unknown, value: string) => dayjs(value).format('YYYY-MM-DD HH:mm'),
+      render: (value: string) => dayjs(value).format('YYYY-MM-DD HH:mm'),
     },
     {
       key: 'actions' as const,

@@ -428,6 +428,7 @@ export const Btn = forwardRef<HTMLButtonElement, PropsWithChildren<ButtonProps>>
   children,
   loading,
   disabled,
+  type: htmlType,
   ...rest
 }, ref) {
   // 将项目的 tone 映射到 Arco Button 的 type/status
@@ -451,6 +452,7 @@ export const Btn = forwardRef<HTMLButtonElement, PropsWithChildren<ButtonProps>>
       loading={loading}
       disabled={disabled}
       className={className}
+      htmlType={htmlType}
       {...(rest as Record<string, unknown>)}
     >
       {children}
