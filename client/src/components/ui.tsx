@@ -20,7 +20,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 
-import { Button, Input, Message, Modal as ArcoModal, Pagination as ArcoPagination, Select, Switch as ArcoSwitch, Checkbox as ArcoCheckbox, Tabs, Tag as ArcoTag } from '@arco-design/web-react';
+import { Button, Input, Message, Modal as ArcoModal, Pagination as ArcoPagination, Select, Switch as ArcoSwitch, Checkbox as ArcoCheckbox, Table as ArcoTable, Tabs, Tag as ArcoTag } from '@arco-design/web-react';
 import type { TabOption, TableColumn } from '../types/ui';
 
 export function useUndo<T>(initialValue: T, maxHistory = 50) {
@@ -663,6 +663,12 @@ export function Tag({
   );
 }
 
+/** 兼容性：将 CSSProperties['textAlign'] 映射为 Arco Table 支持的 "center" | "left" | "right" */
+function mapAlign(align: CSSProperties['textAlign'] | undefined): 'center' | 'left' | 'right' | undefined {
+  if (align === 'center' || align === 'left' || align === 'right') return align;
+  return undefined;
+}
+
 export function DataTable<T extends object>({
   columns,
   data,
@@ -678,109 +684,34 @@ export function DataTable<T extends object>({
   className?: string;
   resizable?: boolean;
 }) {
-  const [columnWidths, setColumnWidths] = useState<Record<string, number | string>>(() => {
-    const widths: Record<string, number | string> = {};
-    columns.forEach((col) => {
-      if (col.width !== undefined) {
-        widths[col.key] = col.width;
-      }
-    });
-    return widths;
-  });
-
-  const resizeStateRef = useRef<{
-    columnKey: string;
-    startX: number;
-    startWidth: number;
-  } | null>(null);
-
-  const handleResizeStart = useCallback((e: React.MouseEvent, columnKey: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const currentWidth = columnWidths[columnKey];
-    const startWidth = typeof currentWidth === 'number' ? currentWidth : 120;
-    resizeStateRef.current = {
-      columnKey,
-      startX: e.clientX,
-      startWidth,
-    };
-
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (!resizeStateRef.current) return;
-      const diff = moveEvent.clientX - resizeStateRef.current.startX;
-      const newWidth = Math.max(60, resizeStateRef.current.startWidth + diff);
-      setColumnWidths((prev) => ({
-        ...prev,
-        [resizeStateRef.current!.columnKey]: newWidth,
-      }));
-    };
-
-    const handleMouseUp = () => {
-      resizeStateRef.current = null;
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }, [columnWidths]);
-
-  if (!data.length) {
-    return <div className="empty-state">{emptyText}</div>;
-  }
+  const arcoColumns = useMemo(
+    () =>
+      columns.map((col) => ({
+        title: col.title,
+        dataIndex: col.dataIndex as string,
+        key: col.key,
+        width: col.width,
+        align: mapAlign(col.align),
+        render: col.render
+          ? (value: unknown, row: T, index: number) => col.render!(value, row, index)
+          : undefined,
+      })),
+    [columns],
+  );
 
   return (
-    <div className={`table-wrap${className ? ` ${className}` : ''}${resizable ? ' is-resizable' : ''}`}>
-      <table className="data-table">
-        <thead>
-          <tr>
-            {columns.map((column) => (
-              <th
-                key={column.key}
-                style={{
-                  width: columnWidths[column.key] ?? column.width,
-                  textAlign: column.align,
-                }}
-              >
-                <span className="th-content">{column.title}</span>
-                {resizable ? (
-                  <div
-                    className="col-resize-handle"
-                    onMouseDown={(e) => handleResizeStart(e, column.key)}
-                    aria-hidden="true"
-                    title="拖拽调整列宽"
-                  />
-                ) : null}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, index) => (
-            <tr key={String(row[rowKey])}>
-              {columns.map((column) => {
-                const value = column.dataIndex ? row[column.dataIndex] : undefined;
-
-                return (
-                  <td
-                    key={column.key}
-                    style={{
-                      textAlign: column.align as CSSProperties['textAlign'],
-                      width: columnWidths[column.key] ?? column.width,
-                    }}
-                  >
-                    {column.render ? column.render(value, row, index) : String(value ?? '-')}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className={className}>
+      <ArcoTable
+        columns={arcoColumns}
+        data={data}
+        rowKey={rowKey as string}
+        noDataElement={emptyText}
+        pagination={false}
+        border={false}
+        stripe={false}
+        size="small"
+        tableLayoutFixed
+      />
     </div>
   );
 }
