@@ -194,6 +194,7 @@ export function Btn({ tone, size, loading, ...props }) {
 | 2026-08-30 | 阶段三 | 替换 Field/TextArea/Checkbox 组件底层为 Arco Input/Input.TextArea/Checkbox，适配 onChange 签名差异 | 当前会话 ✅ |
 | 2026-08-30 | 阶段四 | 替换 PillTabs/Tag/Menu 为 Arco Tabs/Tag/Menu，侧边栏菜单支持 collapse/accordion/自动主题切换，移除 MenuNode 等 200+ 行自定义菜单代码 | 当前会话 ✅ |
 | 2026-08-30 | 阶段五 | 补充B端功能：操作日志系统（后端 AuditLog 实体+中间件+查询API + 前端审计页面）、权限管理（用户角色字段+Admin 管理API + 前端用户管理页面）、登录/登出自动记录审计日志 | 当前会话 ✅ |
+| 2026-08-30 | 阶段六 | 视觉规范统一：页面过渡动画（page-fade-in）、路由加载条（route-loading-bar）、卡片悬停效果（section-card/stat-card hover）、暗色模式平滑过渡（CSS transition）、响应式侧边栏自动折叠（1280px断点）、桌面端/移动端折叠按钮显隐、清理旧菜单样式（menu-link/menu-group/menu-chevron等 120+ 行） | 当前会话 ✅ |
 
 ---
 
