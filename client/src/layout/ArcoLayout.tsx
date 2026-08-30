@@ -19,6 +19,7 @@ import {
   IconDashboard,
   IconNotification,
   IconUser,
+  IconMoon,
   IconSkin,
   IconNav,
   IconFile,
