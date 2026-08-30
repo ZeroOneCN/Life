@@ -107,3 +107,101 @@ export function ContextBar({ label, children }: { label?: string; children: Reac
     </div>
   );
 }
+
+/**
+ * 统一页面模板，减少各页面重复的加载/空态/错误/分页处理逻辑。
+ *
+ * 使用方式：将 PageHeader / FilterBar / StatGrid / DataTable 等作为 children 传入，
+ * 模板负责包裹 loading / empty / error 状态。
+ *
+ * @param loading - 是否显示加载骨架屏
+ * @param loadingTip - 加载提示文案
+ * @param empty - 是否显示空态（当 !loading && data.length === 0 时设为 true）
+ * @param emptyTitle - 空态标题
+ * @param emptyDesc - 空态描述
+ * @param emptyIcon - 空态图标
+ * @param emptyAction - 空态操作按钮
+ * @param error - 错误信息（非 null 时显示错误降级）
+ * @param onRetry - 错误重试回调
+ * @param skeleton - 自定义骨架屏（默认使用 PageLoading）
+ * @param batchBar - 批量操作栏（选中行时显示）
+ * @param children - 页面内容（DataTable 等）
+ */
+export function PageTemplate({
+  loading = false,
+  loadingTip,
+  empty = false,
+  emptyTitle = '暂无数据',
+  emptyDesc = '当前没有可显示的数据。',
+  emptyIcon,
+  emptyAction,
+  error = null,
+  onRetry,
+  skeleton,
+  batchBar,
+  children,
+}: {
+  loading?: boolean;
+  loadingTip?: string;
+  empty?: boolean;
+  emptyTitle?: string;
+  emptyDesc?: string;
+  emptyIcon?: ReactNode;
+  emptyAction?: ReactNode;
+  error?: Error | null;
+  onRetry?: () => void;
+  skeleton?: ReactNode;
+  batchBar?: ReactNode;
+  children: ReactNode;
+}) {
+  /* 错误状态优先 */
+  if (error) {
+    return (
+      <div className="page-stack">
+        <div className="error-boundary-fallback">
+          <div className="error-boundary-card">
+            <div className="error-boundary-icon" aria-hidden="true">!</div>
+            <h2 className="error-boundary-title">加载失败</h2>
+            <p className="error-boundary-desc">{error.message || '数据加载出错，请重试。'}</p>
+            {onRetry ? (
+              <div className="error-boundary-actions">
+                <button type="button" className="btn btn-primary" onClick={onRetry}>重试</button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* 加载状态 */
+  if (loading) {
+    return (
+      <div className="page-stack">
+        {skeleton ?? (
+          <div className="page-loading" role="status" aria-label={loadingTip ?? '加载中...'}>
+            <div className="page-loading-spinner" aria-hidden="true" />
+            <span className="page-loading-tip">{loadingTip ?? '加载中...'}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* 空状态 */
+  if (empty) {
+    return (
+      <div className="page-stack">
+        <EmptyState title={emptyTitle} description={emptyDesc} icon={emptyIcon} action={emptyAction} />
+      </div>
+    );
+  }
+
+  /* 批量操作栏 */
+  return (
+    <div className="page-stack">
+      {batchBar ? <div className="batch-action-bar">{batchBar}</div> : null}
+      {children}
+    </div>
+  );
+}

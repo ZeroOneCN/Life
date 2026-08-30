@@ -2283,6 +2283,20 @@ html *::after {
   color: var(--color-ink-tertiary);
 }
 
+/* ========== 批量操作栏 ========== */
+.batch-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--color-primary-subtle);
+  border: 1px solid var(--color-primary-soft);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  font-size: var(--fs-body);
+  color: var(--color-ink-secondary);
+}
+
 /* ========== 搜索框组件 ========== */
 .search-input-wrapper {
   position: relative;
