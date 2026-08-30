@@ -23,47 +23,7 @@ import { createPortal } from 'react-dom';
 import { Button, Input, Message, Modal as ArcoModal, Pagination as ArcoPagination, Select, Switch as ArcoSwitch, Checkbox as ArcoCheckbox, Table as ArcoTable, Tabs, Tag as ArcoTag } from '@arco-design/web-react';
 import type { TabOption, TableColumn } from '../types/ui';
 
-export function useUndo<T>(initialValue: T, maxHistory = 50) {
-  const [history, setHistory] = useState<T[]>([initialValue]);
-  const [historyIndex, setHistoryIndex] = useState(0);
-
-  const current = history[historyIndex];
-  const canUndo = historyIndex > 0;
-  const canRedo = historyIndex < history.length - 1;
-
-  const setValue = useCallback((nextValue: T | ((prev: T) => T)) => {
-    setHistory((prev) => {
-      const currentValue = prev[historyIndex];
-      const computed = typeof nextValue === 'function'
-        ? (nextValue as (prev: T) => T)(currentValue)
-        : nextValue;
-      if (computed === currentValue) return prev;
-      const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push(computed);
-      if (newHistory.length > maxHistory) {
-        newHistory.shift();
-        return newHistory;
-      }
-      return newHistory;
-    });
-    setHistoryIndex((prev) => Math.min(prev + 1, maxHistory - 1));
-  }, [historyIndex, maxHistory]);
-
-  const undo = useCallback(() => {
-    setHistoryIndex((prev) => Math.max(0, prev - 1));
-  }, []);
-
-  const redo = useCallback(() => {
-    setHistoryIndex((prev) => Math.min(history.length - 1, prev + 1));
-  }, [history.length]);
-
-  const reset = useCallback((value: T) => {
-    setHistory([value]);
-    setHistoryIndex(0);
-  }, []);
-
-  return { current, setValue, undo, redo, canUndo, canRedo, reset };
-}
+export { useUndo } from '../hooks/useUndo';
 
 export function useFormKeyboardSubmit(onSubmit: () => void, enabled = true) {
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {

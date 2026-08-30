@@ -74,6 +74,10 @@ export const todoApi = {
     return apiPatch<TodoReminderSettings, Partial<TodoReminderSettings>>('/life/todo/settings', body);
   },
 
+  reorderTasks(items: Array<{ id: string; sortOrder: number }>) {
+    return apiPost<{ ok: true }, { items: Array<{ id: string; sortOrder: number }> }>('/life/todo/tasks/reorder', { items });
+  },
+
   batchComplete(taskIds: string[]) {
     return apiPost<{ ok: true }, { taskIds: string[] }>('/life/todo/actions/batch-complete', { taskIds });
   },

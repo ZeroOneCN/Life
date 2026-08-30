@@ -14049,3 +14049,212 @@ button:active {
     font-size: 40px;
   }
 }
+
+/* ============================================================
+   阶段十：拖拽排序（SortableList）
+   ============================================================ */
+.sortable-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sortable-list.is-dragging {
+  cursor: grabbing;
+}
+
+.sortable-item {
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  border-radius: 8px;
+}
+
+.sortable-item:hover {
+  background: var(--color-surface-2);
+}
+
+.sortable-item-active {
+  background: var(--color-surface-3) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sortable-item-dragging {
+  opacity: 0.5;
+  z-index: 100;
+}
+
+/* 拖拽手柄 */
+.sortable-drag-handle {
+  cursor: grab;
+  touch-action: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--color-ink-tertiary);
+  border-radius: 4px;
+  transition: color 0.15s ease, background 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.sortable-drag-handle:hover {
+  color: var(--color-ink-secondary);
+  background: var(--color-surface-3);
+}
+
+.sortable-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Todo 任务拖拽行 */
+.todo-drag-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  min-height: 40px;
+}
+
+.todo-drag-row-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ============================================================
+   阶段十：高级筛选（CompoundFilterBar）
+   ============================================================ */
+.compound-filter-bar {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.compound-filter-conditions {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.compound-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.compound-filter-add-wrapper {
+  position: relative;
+}
+
+.compound-filter-add-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 100;
+  min-width: 160px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.compound-filter-add-menu-item {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 6px 10px;
+  font-size: var(--fs-body);
+  color: var(--color-ink-primary);
+  text-align: left;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.compound-filter-add-menu-item:hover {
+  background: var(--color-surface-2);
+}
+
+.compound-filter-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-condition-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-condition-field-label {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--color-ink-secondary);
+  white-space: nowrap;
+  min-width: 48px;
+}
+
+.filter-condition-remove {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--color-ink-tertiary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.filter-condition-remove:hover {
+  color: var(--color-danger);
+  background: var(--color-danger-subtle, rgba(239, 68, 68, 0.08));
+}
+
+/* ============================================================
+   阶段十：批量编辑（BatchEditModal）
+   ============================================================ */
+.batch-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.batch-edit-field-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.batch-edit-toggle {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--color-ink-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.batch-edit-empty {
+  padding: 24px 0;
+  text-align: center;
+}

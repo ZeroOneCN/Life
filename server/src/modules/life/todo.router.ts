@@ -86,6 +86,13 @@ const triggerReminderSchema = z.object({
   title: z.string().trim().min(1).max(255).optional(),
 });
 
+const reorderSchema = z.object({
+  items: z.array(z.object({
+    id: z.string().min(1),
+    sortOrder: z.number(),
+  })).min(1),
+});
+
 const toggleCompletedSchema = z.object({
   completed: z.boolean(),
 });
@@ -204,8 +211,8 @@ export function createTodoRouter() {
         trashed_at: trashed ? Not(IsNull()) : IsNull(),
       },
       order: {
+        sort_order: 'ASC',
         updated_at: 'DESC',
-        due_date: 'DESC',
       },
     });
 
@@ -354,6 +361,23 @@ export function createTodoRouter() {
     });
 
     response.json(successResponse(mapTask(next), 'update_todo_task_success'));
+  }));
+
+  router.post('/tasks/reorder', asyncHandler(async (request: AuthenticatedRequest, response) => {
+    const userId = requireAuthUser(request);
+    const payload = validateBody(reorderSchema, request.body);
+    const repository = appDataSource.getRepository(LifeTodoTaskEntity);
+
+    for (const item of payload.items) {
+      await repository.update({
+        id: item.id,
+        user_id: userId,
+      }, {
+        sort_order: item.sortOrder,
+      });
+    }
+
+    response.json(successResponse({ ok: true }, 'reorder_todo_tasks_success'));
   }));
 
   router.post('/tasks/:id/toggle-completed', asyncHandler(async (request: AuthenticatedRequest, response) => {

@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
-import { Btn, Checkbox, DataTable, DeleteModal, ExportButton, Field, FilterBar, FilterTag, Modal, Pagination, SearchInput, SelectField, Tag, TextArea } from '../ui';
+import { Btn, Checkbox, DataTable, DeleteModal, ExportButton, Field, FilterBar, FilterTag, Modal, Pagination, SearchInput, SelectField, Tag, TextArea, useUndo } from '../ui';
+import { SortableList } from '../SortableList';
+import { BatchEditModal } from '../BatchEditModal';
+import type { BatchEditField } from '../BatchEditModal';
 import { buildApiErrorMessage } from '../../lib/api';
 import {
   TODO_PRIORITY_TAG_TONES,
@@ -235,6 +238,59 @@ export function TodoTasksSection({
   const [editingForm, setEditingForm] = useState<TaskEditFormState>(createDefaultTaskEditFormState);
   const [pendingDeleteTask, setPendingDeleteTask] = useState<TodoTaskRecord | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sortMode, setSortMode] = useState(false);
+
+  const editUndo = useUndo(createDefaultTaskEditFormState());
+
+  const handleDragEnd = useCallback(async (sortedItems: TodoTaskRecord[]) => {
+    setItems(sortedItems);
+    setSortMode(false);
+    const reorderPayload = sortedItems.map((item, index) => ({
+      id: item.id,
+      sortOrder: index * 1000,
+    }));
+    try {
+      await todoApi.reorderTasks(reorderPayload);
+      showToast('排序已保存。');
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '排序保存失败。'), 'error');
+    }
+  }, [showToast]);
+
+  /* 同步 useUndo 状态到 editingForm */
+  useEffect(() => {
+    setEditingForm(editUndo.current);
+  }, [editUndo.current]);
+
+  const [batchEditOpen, setBatchEditOpen] = useState(false);
+
+  const batchEditFields: BatchEditField[] = [
+    { key: 'priority', label: '优先级', type: 'select', options: [
+      { value: 'high', label: '高优先级' },
+      { value: 'medium', label: '中优先级' },
+      { value: 'low', label: '低优先级' },
+    ]},
+    { key: 'dueDate', label: '截止日期', type: 'date' },
+    { key: 'tags', label: '标签', type: 'tag', placeholder: '逗号分隔多个标签' },
+  ];
+
+  const handleBatchEdit = async (values: Record<string, string>) => {
+    try {
+      for (const taskId of selectedTaskIds) {
+        const body: Record<string, unknown> = {};
+        if (values.priority) body.priority = values.priority;
+        if (values.dueDate) body.dueDate = values.dueDate;
+        if (values.tags) body.tags = values.tags.split(/[，,]/g).map((t: string) => t.trim()).filter(Boolean);
+        await todoApi.update(taskId, body);
+      }
+      setSelectedTaskIds([]);
+      showToast(`已批量编辑 ${selectedTaskIds.length} 项任务。`);
+      onChanged();
+      await loadTasks();
+    } catch (error) {
+      showToast(buildApiErrorMessage(error, '批量编辑失败。'), 'error');
+    }
+  };
 
   const availableTags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -446,6 +502,9 @@ export function TodoTasksSection({
               <Tag>{loading ? '加载中' : `当前 ${total} 项`}</Tag>
               {selectedTaskIds.length ? <Tag tone="blue">已选 {selectedTaskIds.length} 项</Tag> : null}
               <Btn tone="ghost" disabled={!hasActiveFilters} onClick={resetFilters}>重置筛选</Btn>
+              <Btn tone={sortMode ? 'primary' : 'ghost'} onClick={() => setSortMode((current) => !current)}>
+                {sortMode ? '完成排序' : '排序'}
+              </Btn>
               <ExportButton
                 label="导出"
                 onExport={(format) => {
@@ -539,6 +598,12 @@ export function TodoTasksSection({
             <div className="inline-row">
               <Btn
                 tone="secondary"
+                onClick={() => setBatchEditOpen(true)}
+              >
+                批量编辑
+              </Btn>
+              <Btn
+                tone="secondary"
                 onClick={async () => {
                   try {
                     await todoApi.batchComplete(selectedTaskIds);
@@ -583,100 +648,147 @@ export function TodoTasksSection({
 
         {items.length ? (
           <>
-            <DataTable
-              data={items}
-              rowKey="id"
-              columns={[
-                {
-                  key: 'selection',
-                  title: (
-                    <Checkbox checked={allPageSelected} onChange={handleTogglePageSelection}>
-                      全选
-                    </Checkbox>
-                  ),
-                  width: 52,
-                  render: (_, row) => (
-                    <Checkbox
-                      checked={selectedTaskIds.includes(row.id)}
-                      onChange={(checked) => handleToggleSelection(row.id, checked)}
-                    />
-                  ),
-                },
-                {
-                  key: 'title',
-                  title: '任务',
-                  render: (_, row) => (
-                    <div className="todo-task-title-cell">
-                      <strong className={row.completed ? 'completed-text' : ''}>{row.title}</strong>
-                      {isRecurringTodoTask(row) ? (
-                        <Tag tone="blue">{getTodoRecurrenceSummary(row)}</Tag>
-                      ) : null}
+            {sortMode ? (
+              <SortableList
+                items={items}
+                onDragEnd={handleDragEnd}
+                useDragHandle
+                renderItem={({ item, dragHandleProps }) => (
+                  <div className="todo-drag-row">
+                    <span
+                      className="sortable-drag-handle"
+                      {...dragHandleProps}
+                      title="拖拽排序"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                        <circle cx="4" cy="3" r="1.5" />
+                        <circle cx="10" cy="3" r="1.5" />
+                        <circle cx="4" cy="7" r="1.5" />
+                        <circle cx="10" cy="7" r="1.5" />
+                        <circle cx="4" cy="11" r="1.5" />
+                        <circle cx="10" cy="11" r="1.5" />
+                      </svg>
+                    </span>
+                    <div className="todo-drag-row-content">
+                      <strong className={item.completed ? 'completed-text' : ''}>{item.title}</strong>
+                      <Tag tone={TODO_PRIORITY_TAG_TONES[item.priority]}>{getTodoPriorityLabel(item.priority)}</Tag>
+                      <Tag tone={getStatusTone(item)}>{getTodoStatusLabel(item)}</Tag>
+                      {item.dueDate ? <span className="subtle-text">{item.dueDate}</span> : null}
+                      {isRecurringTodoTask(item) ? <Tag tone="blue">{getTodoRecurrenceSummary(item)}</Tag> : null}
                     </div>
-                  ),
-                },
-                {
-                  key: 'priority',
-                  title: '优先级',
-                  align: 'center' as const,
-                  render: (_, row) => <Tag tone={TODO_PRIORITY_TAG_TONES[row.priority]}>{getTodoPriorityLabel(row.priority)}</Tag>,
-                },
-                {
-                  key: 'tags',
-                  title: '标签',
-                  render: (_, row) => (
-                    <div className="todo-tag-list">
-                      {row.tags.length ? row.tags.map((tag) => <Tag key={tag}>{tag}</Tag>) : <span className="subtle-text">-</span>}
-                    </div>
-                  ),
-                },
-                {
-                  key: 'dueDate',
-                  title: '截止日期',
-                  align: 'center' as const,
-                  render: (_, row) => row.dueDate || '-',
-                },
-                {
-                  key: 'status',
-                  title: '状态',
-                  align: 'center' as const,
-                  render: (_, row) => <Tag tone={getStatusTone(row)}>{getTodoStatusLabel(row)}</Tag>,
-                },
-                {
-                  key: 'actions',
-                  title: '操作',
-                  width: 200,
-                  render: (_, row) => (
-                    <div className="todo-table-actions">
+                    <div className="todo-table-actions" style={{ flexShrink: 0 }}>
                       <Btn
                         tone="secondary"
                         onClick={() => {
-                          setEditingTask(row);
-                          setEditingForm(buildEditFormState(row));
+                          setEditingTask(item);
+                          setEditingForm(buildEditFormState(item));
+                          editUndo.reset(buildEditFormState(item));
                         }}
                       >
                         编辑
                       </Btn>
-                      <Btn
-                        tone="secondary"
-                        onClick={async () => {
-                          try {
-                            await todoApi.toggleCompleted(row.id, !row.completed);
-                            showToast(row.completed ? '任务已恢复为未完成。' : '任务已标记完成。');
-                            onChanged();
-                            await loadTasks();
-                          } catch (error) {
-                            showToast(buildApiErrorMessage(error, '切换任务状态失败。'), 'error');
-                          }
-                        }}
-                      >
-                        {row.completed ? '恢复' : '完成'}
-                      </Btn>
-                      <Btn tone="danger" onClick={() => setPendingDeleteTask(row)}>删除</Btn>
+                      <Btn tone="danger" onClick={() => setPendingDeleteTask(item)}>删除</Btn>
                     </div>
-                  ),
-                },
-              ]}
-            />
+                  </div>
+                )}
+              />
+            ) : (
+              <DataTable
+                data={items}
+                rowKey="id"
+                columns={[
+                  {
+                    key: 'selection',
+                    title: (
+                      <Checkbox checked={allPageSelected} onChange={handleTogglePageSelection}>
+                        全选
+                      </Checkbox>
+                    ),
+                    width: 52,
+                    render: (_, row) => (
+                      <Checkbox
+                        checked={selectedTaskIds.includes(row.id)}
+                        onChange={(checked) => handleToggleSelection(row.id, checked)}
+                      />
+                    ),
+                  },
+                  {
+                    key: 'title',
+                    title: '任务',
+                    render: (_, row) => (
+                      <div className="todo-task-title-cell">
+                        <strong className={row.completed ? 'completed-text' : ''}>{row.title}</strong>
+                        {isRecurringTodoTask(row) ? (
+                          <Tag tone="blue">{getTodoRecurrenceSummary(row)}</Tag>
+                        ) : null}
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'priority',
+                    title: '优先级',
+                    align: 'center' as const,
+                    render: (_, row) => <Tag tone={TODO_PRIORITY_TAG_TONES[row.priority]}>{getTodoPriorityLabel(row.priority)}</Tag>,
+                  },
+                  {
+                    key: 'tags',
+                    title: '标签',
+                    render: (_, row) => (
+                      <div className="todo-tag-list">
+                        {row.tags.length ? row.tags.map((tag) => <Tag key={tag}>{tag}</Tag>) : <span className="subtle-text">-</span>}
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'dueDate',
+                    title: '截止日期',
+                    align: 'center' as const,
+                    render: (_, row) => row.dueDate || '-',
+                  },
+                  {
+                    key: 'status',
+                    title: '状态',
+                    align: 'center' as const,
+                    render: (_, row) => <Tag tone={getStatusTone(row)}>{getTodoStatusLabel(row)}</Tag>,
+                  },
+                  {
+                    key: 'actions',
+                    title: '操作',
+                    width: 200,
+                    render: (_, row) => (
+                      <div className="todo-table-actions">
+                        <Btn
+                          tone="secondary"
+                          onClick={() => {
+                          setEditingTask(row);
+                          setEditingForm(buildEditFormState(row));
+                          editUndo.reset(buildEditFormState(row));
+                        }}
+                        >
+                          编辑
+                        </Btn>
+                        <Btn
+                          tone="secondary"
+                          onClick={async () => {
+                            try {
+                              await todoApi.toggleCompleted(row.id, !row.completed);
+                              showToast(row.completed ? '任务已恢复为未完成。' : '任务已标记完成。');
+                              onChanged();
+                              await loadTasks();
+                            } catch (error) {
+                              showToast(buildApiErrorMessage(error, '切换任务状态失败。'), 'error');
+                            }
+                          }}
+                        >
+                          {row.completed ? '恢复' : '完成'}
+                        </Btn>
+                        <Btn tone="danger" onClick={() => setPendingDeleteTask(row)}>删除</Btn>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            )}
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         ) : (
@@ -691,6 +803,34 @@ export function TodoTasksSection({
         width={980}
         footer={(
           <>
+            <div style={{ display: 'flex', gap: 4, marginRight: 'auto' }}>
+              <button
+                type="button"
+                className="btn-icon"
+                disabled={!editUndo.canUndo}
+                onClick={() => editUndo.undo()}
+                title="撤销 (Ctrl+Z)"
+                aria-label="撤销"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M4 3L1 6l3 3" />
+                  <path d="M2 6h8a3 3 0 0 1 0 6H8" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="btn-icon"
+                disabled={!editUndo.canRedo}
+                onClick={() => editUndo.redo()}
+                title="重做 (Ctrl+Shift+Z)"
+                aria-label="重做"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M10 3l3 3-3 3" />
+                  <path d="M12 6H4a3 3 0 0 0 0 6h2" />
+                </svg>
+              </button>
+            </div>
             <Btn tone="secondary" onClick={() => setEditingTask(null)}>取消</Btn>
             <Btn tone="primary" onClick={handleSaveEdit}>保存修改</Btn>
           </>
@@ -700,19 +840,19 @@ export function TodoTasksSection({
           <Field
             label="任务标题"
             value={editingForm.title}
-            onChange={(event) => setEditingForm((current) => ({ ...current, title: event.target.value }))}
+            onChange={(event) => editUndo.setValue((current) => ({ ...current, title: event.target.value }))}
           />
           <DatePickerField
             label="截止日期"
             value={editingForm.dueDate}
-            onChange={(value) => setEditingForm((current) => ({ ...current, dueDate: value }))}
+            onChange={(value) => editUndo.setValue((current) => ({ ...current, dueDate: value }))}
             clearable
             popoverStrategy="floating"
           />
           <SelectField
             label="优先级"
             value={editingForm.priority}
-            onChange={(event) => setEditingForm((current) => ({ ...current, priority: event.target.value as TodoPriority }))}
+            onChange={(event) => editUndo.setValue((current) => ({ ...current, priority: event.target.value as TodoPriority }))}
           >
             <option value="high">高优先级</option>
             <option value="medium">中优先级</option>
@@ -722,7 +862,7 @@ export function TodoTasksSection({
             value={editingForm.recurrenceType}
             weekdays={editingForm.recurrenceWeekdays}
             dayOfMonth={editingForm.recurrenceDayOfMonth}
-            onChange={({ recurrenceType, weekdays, dayOfMonth }) => setEditingForm((current) => ({
+            onChange={({ recurrenceType, weekdays, dayOfMonth }) => editUndo.setValue((current) => ({
               ...current,
               recurrenceType,
               recurrenceWeekdays: weekdays,
@@ -733,7 +873,7 @@ export function TodoTasksSection({
           <Field
             label="标签"
             value={editingForm.tagsText}
-            onChange={(event) => setEditingForm((current) => ({ ...current, tagsText: event.target.value }))}
+            onChange={(event) => editUndo.setValue((current) => ({ ...current, tagsText: event.target.value }))}
             placeholder="用逗号分隔多个标签"
           />
         </div>
@@ -742,7 +882,7 @@ export function TodoTasksSection({
           <TextArea
             label="Markdown 描述"
             value={editingForm.descriptionMarkdown}
-            onChange={(event) => setEditingForm((current) => ({ ...current, descriptionMarkdown: event.target.value }))}
+            onChange={(event) => editUndo.setValue((current) => ({ ...current, descriptionMarkdown: event.target.value }))}
             placeholder="支持标题、列表、引用、代码块和段落。"
           />
           <div className="todo-markdown-preview card">
@@ -757,6 +897,15 @@ export function TodoTasksSection({
           </div>
         </div>
       </Modal>
+
+      <BatchEditModal
+        open={batchEditOpen}
+        onClose={() => setBatchEditOpen(false)}
+        fields={batchEditFields}
+        onApply={(values) => handleBatchEdit(values)}
+        selectedCount={selectedTaskIds.length}
+        title="批量编辑任务"
+      />
 
       <DeleteModal
         open={Boolean(pendingDeleteTask)}
