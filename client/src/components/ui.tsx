@@ -20,7 +20,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 
-import { Button, Input, Message, Modal as ArcoModal, Pagination as ArcoPagination, Select, Switch as ArcoSwitch, Checkbox as ArcoCheckbox } from '@arco-design/web-react';
+import { Button, Input, Message, Modal as ArcoModal, Pagination as ArcoPagination, Select, Switch as ArcoSwitch, Checkbox as ArcoCheckbox, Tabs, Tag as ArcoTag } from '@arco-design/web-react';
 import type { TabOption, TableColumn } from '../types/ui';
 
 export function useUndo<T>(initialValue: T, maxHistory = 50) {
@@ -555,18 +555,16 @@ export function PillTabs({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="tab-bar">
+    <Tabs
+      activeTab={value}
+      onChange={onChange}
+      type="capsule"
+      size="small"
+    >
       {options.map((option) => (
-        <button
-          key={option.value}
-          className={`tab ${option.value === value ? 'active' : ''}`}
-          onClick={() => onChange(option.value)}
-          type="button"
-        >
-          {option.label}
-        </button>
+        <Tabs.TabPane key={option.value} title={option.label} />
       ))}
-    </div>
+    </Tabs>
   );
 }
 
@@ -652,7 +650,19 @@ export function Tag({
   tone = 'default',
   size = 'md',
 }: PropsWithChildren<{ tone?: 'default' | 'pink' | 'green' | 'orange' | 'blue' | 'red'; size?: 'sm' | 'md' }>) {
-  return <span className={`tag tag-${tone}${size === 'sm' ? ' tag-sm' : ''}`}>{children}</span>;
+  const colorMap: Record<string, string> = {
+    default: 'gray',
+    pink: 'magenta',
+    green: 'green',
+    orange: 'orange',
+    blue: 'arcoblue',
+    red: 'red',
+  };
+  return (
+    <ArcoTag color={colorMap[tone]} size={size === 'sm' ? 'small' : 'default'}>
+      {children}
+    </ArcoTag>
+  );
 }
 
 export function DataTable<T extends object>({

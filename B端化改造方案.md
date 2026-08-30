@@ -192,6 +192,7 @@ export function Btn({ tone, size, loading, ...props }) {
 | 2026-08-30 | 阶段二 | 替换 Modal/Switch/Pagination 组件（ui.tsx），修复 Modal width 类型错误 | 当前会话 ✅ |
 | 2026-08-30 | 阶段二 | 替换 DatePicker/MonthPicker/DateTimePicker/DateRangePicker 组件（DateFields.tsx），移除 916 行自定义日历代码 | 当前会话 ✅ |
 | 2026-08-30 | 阶段三 | 替换 Field/TextArea/Checkbox 组件底层为 Arco Input/Input.TextArea/Checkbox，适配 onChange 签名差异 | 当前会话 ✅ |
+| 2026-08-30 | 阶段四 | 替换 PillTabs/Tag/Menu 为 Arco Tabs/Tag/Menu，侧边栏菜单支持 collapse/accordion/自动主题切换，移除 MenuNode 等 200+ 行自定义菜单代码 | 当前会话 ✅ |
 
 ---
 

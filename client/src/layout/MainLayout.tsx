@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
+import { Menu } from '@arco-design/web-react';
 import { Btn, Modal } from '../components/ui';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AssistantLauncher } from '../components/shared/AssistantLauncher';
@@ -10,27 +11,6 @@ import { useTheme } from '../hooks/useTheme';
 import { BreadcrumbTailProvider, useBreadcrumbTailContext } from '../hooks/useBreadcrumbTail';
 import { logout, useAuthState } from '../services/auth';
 import type { MenuItemConfig } from '../types/navigation';
-
-function ChevronIcon({ open }: { open: boolean }) {
-  return (
-    <svg
-      className={`menu-chevron ${open ? 'is-open' : ''}`}
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M9 6l6 6-6 6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 function HamburgerIcon() {
   return (
@@ -89,10 +69,6 @@ function NotificationBellIcon() {
 function findParentKey(pathname: string) {
   const prefix = pathname.split('/')[1];
   return ['health', 'finance', 'life', 'investment'].includes(prefix) ? prefix : null;
-}
-
-function getActiveMenuKey(pathname: string) {
-  return findParentKey(pathname) ?? pathname;
 }
 
 /**
@@ -155,128 +131,55 @@ function BreadcrumbNav({ breadcrumb }: { breadcrumb: string[] }) {
   );
 }
 
-function MenuNode({
-  item,
-  pathname,
-  collapsed,
-  openGroups,
-  activeMenuKey,
-  setOpenGroups,
-  setActiveMenuKey,
-}: {
-  item: MenuItemConfig;
-  pathname: string;
-  collapsed: boolean;
-  openGroups: string[];
-  activeMenuKey: string;
-  setOpenGroups: React.Dispatch<React.SetStateAction<string[]>>;
-  setActiveMenuKey: React.Dispatch<React.SetStateAction<string>>;
-}) {
-  const isRouteActive = item.key === pathname || item.children?.some((child) => child.key === pathname);
-  const isOpen = openGroups.includes(item.key);
-  const isActive = item.children?.length ? activeMenuKey === item.key : activeMenuKey === item.key || isRouteActive;
-  const [showTooltip, setShowTooltip] = useState(false);
-  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
-  const itemRef = useRef<HTMLDivElement>(null);
-
-  const handleMouseEnter = (e: React.MouseEvent) => {
-    if (collapsed) {
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      setTooltipPos({ x: rect.right + 12, y: rect.top + rect.height / 2 - 16 });
-      setShowTooltip(true);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    setShowTooltip(false);
-  };
-
-  useEffect(() => {
-    if (!showTooltip) return undefined;
-    const handleReposition = () => setShowTooltip(false);
-    window.addEventListener('resize', handleReposition);
-    window.addEventListener('scroll', handleReposition, true);
-    return () => {
-      window.removeEventListener('resize', handleReposition);
-      window.removeEventListener('scroll', handleReposition, true);
-    };
-  }, [showTooltip]);
-
-  if (item.children?.length) {
-    return (
-      <div className="menu-group" ref={itemRef}>
-        {collapsed ? null : item.groupLabel ? (
-          <div className="menu-group-label">{item.groupLabel}</div>
-        ) : null}
-        <button
-          type="button"
-          className={`menu-link ${isActive ? 'is-active' : ''}`}
-          onClick={() => {
-            setActiveMenuKey(item.key);
-            setOpenGroups((previous) => (previous.includes(item.key) ? previous.filter((k) => k !== item.key) : [...previous, item.key]));
-          }}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          aria-expanded={isOpen}
-        >
-          <span className="menu-link-main">
-            <MenuIcon name={item.icon} />
-            {!collapsed ? <span className="menu-label">{item.label}</span> : null}
-          </span>
-          {!collapsed ? <ChevronIcon open={isOpen} /> : null}
-        </button>
-        {showTooltip && collapsed ? (
-          <div
-            className="menu-tooltip"
-            style={{ left: tooltipPos.x, top: tooltipPos.y }}
-          >
-            {item.label}
-          </div>
-        ) : null}
-        {isOpen && !collapsed ? (
-          <div className="submenu">
-            {item.children.map((child) => (
-              <Link
-                key={child.key}
-                to={child.key}
-                className={`menu-link menu-child ${pathname === child.key ? 'is-active' : ''}`}
-                onClick={() => setActiveMenuKey(item.key)}
-              >
-                <span className="menu-link-main">
-                  <MenuIcon name={child.icon} />
-                  <span className="menu-label">{child.label}</span>
-                </span>
-              </Link>
-            ))}
-          </div>
-        ) : null}
-      </div>
-    );
-  }
+/**
+ * 使用 Arco Menu 渲染菜单项（含分组和子菜单）
+ */
+function ArcoMenuItems({ items }: { items: MenuItemConfig[] }) {
+  const groups = useMemo(() => {
+    const map = new Map<string, MenuItemConfig[]>();
+    items.forEach((item) => {
+      const group = item.groupLabel || 'default';
+      if (!map.has(group)) map.set(group, []);
+      map.get(group)!.push(item);
+    });
+    return Array.from(map.entries());
+  }, [items]);
 
   return (
-    <div ref={itemRef} style={{ position: 'relative' }}>
-      <Link
-        to={item.key}
-        className={`menu-link ${isActive ? 'is-active' : ''}`}
-        onClick={() => setActiveMenuKey(item.key)}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <span className="menu-link-main">
-          <MenuIcon name={item.icon} />
-          {!collapsed ? <span className="menu-label">{item.label}</span> : null}
-        </span>
-      </Link>
-      {showTooltip && collapsed ? (
-        <div
-          className="menu-tooltip"
-          style={{ left: tooltipPos.x, top: tooltipPos.y }}
-        >
-          {item.label}
-        </div>
-      ) : null}
-    </div>
+    <>
+      {groups.map(([groupLabel, groupItems]) => (
+        <Menu.ItemGroup key={groupLabel} title={groupLabel}>
+          {groupItems.map((item) => {
+            if (item.children?.length) {
+              return (
+                <Menu.SubMenu
+                  key={item.key}
+                  title={
+                    <>
+                      <MenuIcon name={item.icon} />
+                      <span>{item.label}</span>
+                    </>
+                  }
+                >
+                  {item.children.map((child) => (
+                    <Menu.Item key={child.key}>
+                      <MenuIcon name={child.icon} />
+                      <span>{child.label}</span>
+                    </Menu.Item>
+                  ))}
+                </Menu.SubMenu>
+              );
+            }
+            return (
+              <Menu.Item key={item.key}>
+                <MenuIcon name={item.icon} />
+                <span>{item.label}</span>
+              </Menu.Item>
+            );
+          })}
+        </Menu.ItemGroup>
+      ))}
+    </>
   );
 }
 
@@ -293,7 +196,6 @@ export default function MainLayout() {
     const parent = findParentKey(location.pathname);
     return parent ? [parent] : [];
   });
-  const [activeMenuKey, setActiveMenuKey] = useState(() => getActiveMenuKey(location.pathname));
   const [showBackToTop, setShowBackToTop] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -323,7 +225,6 @@ export default function MainLayout() {
       }
       return previous;
     });
-    setActiveMenuKey(getActiveMenuKey(location.pathname));
     setUserMenuOpen(false);
     setMobileMenuOpen(false);
 
@@ -395,20 +296,23 @@ export default function MainLayout() {
             {!collapsed ? <span className="subtle-text brand-subtitle">个人生活数字化管理平台</span> : null}
           </div>
         </div>
-        <nav className="menu">
-          {menuItems.map((item) => (
-            <MenuNode
-              key={item.key}
-              item={item}
-              pathname={location.pathname}
-              collapsed={collapsed}
-              openGroups={openGroups}
-              activeMenuKey={activeMenuKey}
-              setOpenGroups={setOpenGroups}
-              setActiveMenuKey={setActiveMenuKey}
-            />
-          ))}
-        </nav>
+        <Menu
+          theme={isDark ? 'dark' : 'light'}
+          mode="vertical"
+          collapse={collapsed}
+          accordion
+          selectedKeys={[location.pathname]}
+          openKeys={openGroups}
+          onClickMenuItem={(key) => {
+            navigate(key);
+          }}
+          onClickSubMenu={(key, newOpenKeys) => {
+            setOpenGroups(newOpenKeys);
+          }}
+          style={{ border: 'none', overflow: 'auto', flex: 1 }}
+        >
+          <ArcoMenuItems items={menuItems} />
+        </Menu>
       </aside>
 
       <div className="layout-main" style={{ marginLeft: sidebarWidth }}>
@@ -547,42 +451,42 @@ export default function MainLayout() {
       <nav className="bottom-nav" aria-label="底部导航">
         <Link
           to="/dashboard"
-          className={`bottom-nav-item ${activeMenuKey === '/dashboard' ? 'is-active' : ''}`}
+          className={`bottom-nav-item ${location.pathname === '/dashboard' ? 'is-active' : ''}`}
         >
           <MenuIcon name="home" />
           <span>首页</span>
         </Link>
         <Link
           to="/health/overview"
-          className={`bottom-nav-item ${activeMenuKey.startsWith('/health') ? 'is-active' : ''}`}
+          className={`bottom-nav-item ${location.pathname.startsWith('/health') ? 'is-active' : ''}`}
         >
           <MenuIcon name="heart" />
           <span>健康</span>
         </Link>
         <Link
           to="/finance/overview"
-          className={`bottom-nav-item ${activeMenuKey.startsWith('/finance') ? 'is-active' : ''}`}
+          className={`bottom-nav-item ${location.pathname.startsWith('/finance') ? 'is-active' : ''}`}
         >
           <MenuIcon name="wallet" />
           <span>财务</span>
         </Link>
         <Link
           to="/life/todo"
-          className={`bottom-nav-item ${activeMenuKey.startsWith('/life') ? 'is-active' : ''}`}
+          className={`bottom-nav-item ${location.pathname.startsWith('/life') ? 'is-active' : ''}`}
         >
           <MenuIcon name="grid" />
           <span>生活</span>
         </Link>
         <Link
           to="/investment/forex"
-          className={`bottom-nav-item ${activeMenuKey.startsWith('/investment') ? 'is-active' : ''}`}
+          className={`bottom-nav-item ${location.pathname.startsWith('/investment') ? 'is-active' : ''}`}
         >
           <MenuIcon name="chart" />
           <span>投资</span>
         </Link>
         <Link
           to="/settings/profile"
-          className={`bottom-nav-item ${activeMenuKey.startsWith('/settings') ? 'is-active' : ''}`}
+          className={`bottom-nav-item ${location.pathname.startsWith('/settings') ? 'is-active' : ''}`}
         >
           <MenuIcon name="user" />
           <span>我的</span>
