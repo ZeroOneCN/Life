@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { DatePicker, Select } from '@arco-design/web-react';
+import { Button, DatePicker, Select } from '@arco-design/web-react';
 
 import { PageHeader, SectionCard } from '../../components/page';
-import { DataTable, Pagination, SearchInput, Tag, Toast, useToastState } from '../../components/ui';
+import { Btn, DataTable, Pagination, SearchInput, Tag, Toast, useToastState } from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { buildApiErrorMessage } from '../../lib/api';
 import {
@@ -39,6 +39,51 @@ export default function AuditLogPage() {
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
+
+  /** 导出当前筛选结果为 CSV */
+  const handleExport = useCallback(() => {
+    if (logs.length === 0) {
+      showToastRef.current('暂无数据可导出。', 'warning');
+      return;
+    }
+    const headers = ['操作时间', '操作类型', '操作模块', '操作描述', '操作人', 'IP 地址'];
+    const rows = logs.map((log) => [
+      dayjs(log.created_at).format('YYYY-MM-DD HH:mm:ss'),
+      actionLabels[log.action] ?? log.action,
+      log.entity_type,
+      `"${(log.description ?? '').replace(/"/g, '""')}"`,
+      log.username,
+      log.ip_address ?? '',
+    ]);
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `操作日志_${dayjs().format('YYYYMMDD_HHmmss')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToastRef.current('已导出 CSV 文件。', 'success');
+  }, [logs]);
+
+  /** 设置快捷日期范围 */
+  const setQuickDate = useCallback((preset: 'today' | 'week' | 'month') => {
+    const now = dayjs();
+    switch (preset) {
+      case 'today':
+        setStartDate(now.format('YYYY-MM-DD'));
+        setEndDate(now.format('YYYY-MM-DD'));
+        break;
+      case 'week':
+        setStartDate(now.startOf('week').format('YYYY-MM-DD'));
+        setEndDate(now.format('YYYY-MM-DD'));
+        break;
+      case 'month':
+        setStartDate(now.startOf('month').format('YYYY-MM-DD'));
+        setEndDate(now.format('YYYY-MM-DD'));
+        break;
+    }
+  }, []);
 
   const fetchLogs = async (currentPage: number) => {
     setLoading(true);
@@ -180,6 +225,13 @@ export default function AuditLogPage() {
             onChange={(_, dateStr) => setEndDate(typeof dateStr === 'string' ? dateStr : '')}
             style={{ width: 140 }}
           />
+          <Button size="mini" onClick={() => setQuickDate('today')}>今天</Button>
+          <Button size="mini" onClick={() => setQuickDate('week')}>本周</Button>
+          <Button size="mini" onClick={() => setQuickDate('month')}>本月</Button>
+          <div style={{ flex: 1 }} />
+          <Btn tone="primary" onClick={handleExport} loading={loading}>
+            导出 CSV
+          </Btn>
         </div>
 
         <DataTable
