@@ -1,0 +1,891 @@
+/* ==================== 日程管理 Schedule ==================== */
+
+.schedule-overview-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.schedule-surface {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  background: var(--color-surface-muted, color-mix(in srgb, var(--color-surface) 80%, var(--color-hairline)));
+  border: 1px solid var(--color-hairline);
+  border-radius: 12px;
+}
+
+.schedule-surface-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.schedule-surface-head strong {
+  display: block;
+  font-size: 14px;
+}
+
+.schedule-surface-head span {
+  display: block;
+  font-size: var(--fs-caption);
+  color: var(--color-ink-secondary);
+}
+
+.schedule-entry-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) minmax(170px, 1fr) minmax(140px, 0.8fr) minmax(140px, 0.8fr) 120px;
+  gap: 12px;
+  align-items: end;
+}
+
+.schedule-entry-action {
+  display: flex;
+  align-items: end;
+}
+
+.schedule-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) minmax(160px, 1fr);
+  gap: 12px;
+}
+
+.schedule-trash-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) minmax(160px, 1fr);
+  gap: 12px;
+}
+
+.schedule-list-meta,
+.schedule-filter-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.schedule-list-meta strong {
+  display: block;
+  font-size: 14px;
+}
+
+.schedule-list-meta span {
+  display: block;
+  font-size: var(--fs-caption);
+  color: var(--color-ink-secondary);
+}
+
+.schedule-table-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.schedule-table-title strong {
+  display: block;
+}
+
+.schedule-table-sub {
+  display: block;
+  font-size: var(--fs-caption);
+  color: var(--color-ink-secondary);
+}
+
+.schedule-table-time {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-caption);
+}
+
+.schedule-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.schedule-color-dot.color-indigo { background: #6366f1; }
+.schedule-color-dot.color-blue { background: #3b82f6; }
+.schedule-color-dot.color-green { background: #10b981; }
+.schedule-color-dot.color-orange { background: #f59e0b; }
+.schedule-color-dot.color-red { background: #ef4444; }
+.schedule-color-dot.color-pink { background: #ec4899; }
+.schedule-color-dot.color-gray { background: #6b7280; }
+
+.schedule-settings-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.schedule-settings-inline-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* ===================================================================
+   v3-D0 控件统一覆盖层（页面改造方案 v3.0 阶段 D0）
+   总原则：统一基线 → 全部控件同规则，不允许"有的有效果、有的没效果"。
+   视觉反馈用「背景 / 边框 / 圆角」表达，不依赖阴影；
+   交互反馈统一「hover 背景变化 → active scale」；
+   输入框 focus 一律无外圈光圈，仅边框变色（键盘可达性由 :focus-visible 承担）。
+   =================================================================== */
+
+/* ---------- 0.1 焦点系统：输入框无外圈光圈，仅边框变色 ---------- */
+input:focus,
+select:focus,
+textarea:focus {
+  box-shadow: none;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: none;
+}
+
+/* ---------- 0.2 输入控件统一基线（radius 8 / canvas / height 40） ---------- */
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+select {
+  height: 40px;
+  border-radius: 8px;
+}
+textarea {
+  border-radius: 8px;
+}
+
+.vital-entry-input,
+.vital-select,
+.health-report-date-input {
+  background: var(--color-canvas);
+}
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- 0.3 按钮统一（hover 背景、active scale、无位移、无硬编码阴影） ---------- */
+.btn {
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+.btn:hover {
+  transform: none;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  transform: none;
+}
+
+/* 主按钮去掉硬编码紫色阴影 */
+.btn-primary,
+.btn-primary:hover {
+  box-shadow: none;
+}
+
+/* 补齐缺失的 hover 背景（此前仅位移无背景变化） */
+.btn-ghost:hover {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+.btn-danger:hover {
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+}
+.btn-danger-fill:hover {
+  background: color-mix(in srgb, var(--color-danger) 88%, white);
+}
+
+/* 图标按钮统一一套：32×32 / radius 8 / hover surface-2 → surface-3 / active scale */
+.icon-btn,
+.btn-icon,
+.icon-button,
+.command-bar-icon-btn {
+  border-radius: 8px;
+}
+.icon-btn {
+  width: 32px;
+  height: 32px;
+}
+.icon-button {
+  min-width: 32px;
+  min-height: 32px;
+}
+.icon-button:hover,
+.btn-icon:hover {
+  transform: none;
+  background: var(--color-surface-2);
+}
+.icon-button:active,
+.icon-btn:active,
+.btn-icon:active,
+.command-bar-icon-btn:active {
+  transform: scale(0.95);
+}
+.btn-icon-secondary:hover {
+  background: var(--color-primary-soft);
+}
+.btn-icon-danger:hover {
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+}
+.command-bar-menu-item.is-danger:hover {
+  color: var(--color-danger);
+}
+
+/* ---------- 0.4 卡片统一（radius 12 / canvas / 无阴影 hover） ---------- */
+.card:hover,
+.stat-card:hover,
+.chart-card:hover {
+  transform: none;
+}
+
+.stat-card {
+  border-radius: 12px;
+}
+.stat-card:hover {
+  box-shadow: none;
+  border-color: var(--color-hairline-strong);
+}
+
+.dash-card {
+  border-radius: 12px;
+}
+.dash-card:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--color-primary) 25%, var(--color-hairline));
+}
+
+.goal-card {
+  background: var(--color-canvas);
+}
+.goal-card:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+.field-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ink-secondary);
+}
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.field-hint {
+  font-size: 12px;
+  color: var(--color-ink-tertiary);
+}
+
+/* ---------- 0.7 ContextBar 上下文栏（v3-D1 新增） ---------- */
+.context-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+}
+.context-bar-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-ink-tertiary);
+  white-space: nowrap;
+}
+
+/* 内容区顶部 Tab 行（壳页/无业务视图页统一用） */
+.merged-tabs-top {
+  display: flex;
+  margin-bottom: 16px;
+}
+
+/* ---------- 0.6 弹窗两套合一 + 浮层/菜单无阴影 ---------- */
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+.modal-panel {
+  background: var(--color-surface-1);
+  border-radius: 12px;
+  box-shadow: none;
+}
+.command-bar-modal-backdrop {
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+.command-bar-modal-btn {
+  border-radius: 9999px;
+  padding: 8px 16px;
+  font-weight: 600;
+}
+.command-bar-modal-btn.is-danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+}
+.command-bar-modal-btn.is-danger:hover {
+  background: var(--color-danger-strong);
+  border-color: var(--color-danger-strong);
+}
+.command-bar-menu,
+.nav-rail-popover,
+.command-palette,
+.assistant-panel,
+.workspace-tab-context-menu {
+  box-shadow: none;
+}
+/* 浮层圆角统一（AI 面板 16→12、Tab 右键菜单 8→10） */
+.assistant-panel {
+  border-radius: 12px;
+}
+.workspace-tab-context-menu {
+  border-radius: 10px;
+}
+
+.schedule-event-form {
+  display: grid;
+  gap: 12px;
+}
+
+.schedule-event-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.schedule-event-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.schedule-recurrence-editor {
+  display: grid;
+  gap: 10px;
+}
+
+.schedule-recurrence-weekdays {
+  display: grid;
+  gap: 6px;
+}
+
+.schedule-recurrence-weekday-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.schedule-recurrence-weekday-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface);
+  font-size: var(--fs-caption);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.schedule-recurrence-weekday-pill.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+/* ===== 日历视图 ===== */
+
+.schedule-calendar {
+  transition: opacity 0.2s ease;
+}
+
+.schedule-calendar.is-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.schedule-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: var(--color-surface-muted, color-mix(in srgb, var(--color-surface) 80%, var(--color-hairline)));
+  border: 1px solid var(--color-hairline);
+  border-radius: 10px;
+}
+
+.schedule-toolbar-nav {
+  display: flex;
+  gap: 6px;
+}
+
+.schedule-period-label {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* 月视图 */
+.schedule-month-grid {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--color-hairline);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.schedule-month-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--color-surface-muted, color-mix(in srgb, var(--color-surface) 80%, var(--color-hairline)));
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.schedule-month-header-cell {
+  padding: 8px 6px;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  text-align: center;
+  color: var(--color-ink-secondary);
+  border-right: 1px solid var(--color-hairline);
+}
+
+.schedule-month-header-cell:last-child {
+  border-right: none;
+}
+
+.schedule-month-body {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: minmax(96px, 1fr);
+}
+
+.schedule-month-cell {
+  padding: 6px;
+  border-right: 1px solid var(--color-hairline);
+  border-bottom: 1px solid var(--color-hairline);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.schedule-month-cell:hover {
+  background: var(--color-surface-muted, color-mix(in srgb, var(--color-surface) 90%, var(--color-hairline)));
+}
+
+.schedule-month-cell.is-outside {
+  background: color-mix(in srgb, var(--color-surface) 50%, transparent);
+  color: var(--color-ink-tertiary, #aaa);
+}
+
+.schedule-month-cell.is-today {
+  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+}
+
+.schedule-month-cell-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.schedule-month-day-num {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+}
+
+.schedule-month-cell.is-today .schedule-month-day-num {
+  color: var(--color-primary);
+}
+
+.schedule-month-cell-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.schedule-month-cell:hover .schedule-month-cell-actions {
+  opacity: 1;
+}
+
+.schedule-month-add-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface);
+  color: var(--color-ink-secondary);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-month-add-btn:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.schedule-month-events {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.schedule-event-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  border: none;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-ink);
+  overflow: hidden;
+}
+
+.schedule-event-chip:hover {
+  background: color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
+.schedule-event-chip.is-completed {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.schedule-event-chip-time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.schedule-event-chip-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-event-chip-repeat {
+  flex-shrink: 0;
+  font-size: 10px;
+}
+
+.schedule-event-chip.color-indigo { background: color-mix(in srgb, #6366f1 14%, transparent); border-left: 2px solid #6366f1; }
+.schedule-event-chip.color-blue { background: color-mix(in srgb, #3b82f6 14%, transparent); border-left: 2px solid #3b82f6; }
+.schedule-event-chip.color-green { background: color-mix(in srgb, #10b981 14%, transparent); border-left: 2px solid #10b981; }
+.schedule-event-chip.color-orange { background: color-mix(in srgb, #f59e0b 14%, transparent); border-left: 2px solid #f59e0b; }
+.schedule-event-chip.color-red { background: color-mix(in srgb, #ef4444 14%, transparent); border-left: 2px solid #ef4444; }
+.schedule-event-chip.color-pink { background: color-mix(in srgb, #ec4899 14%, transparent); border-left: 2px solid #ec4899; }
+.schedule-event-chip.color-gray { background: color-mix(in srgb, #6b7280 14%, transparent); border-left: 2px solid #6b7280; }
+
+.schedule-month-more {
+  font-size: 10px;
+  color: var(--color-ink-secondary);
+  padding: 0 4px;
+}
+
+/* 周视图 */
+.schedule-week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.schedule-week-col {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-hairline);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--color-surface);
+  min-height: 240px;
+}
+
+.schedule-week-col.is-today {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.schedule-week-col-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-hairline);
+  background: var(--color-surface-muted, color-mix(in srgb, var(--color-surface) 80%, var(--color-hairline)));
+}
+
+.schedule-week-day-label {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--color-ink-secondary);
+}
+
+.schedule-week-day-num {
+  font-size: 14px;
+  font-weight: 700;
+  flex: 1;
+}
+
+.schedule-week-add-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface);
+  color: var(--color-ink-secondary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.schedule-week-col:hover .schedule-week-add-btn {
+  opacity: 1;
+}
+
+.schedule-week-add-btn:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.schedule-week-events {
+  flex: 1;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.schedule-week-empty {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-tertiary, #aaa);
+  text-align: center;
+  padding: 12px 0;
+}
+
+.schedule-event-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: none;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border-left: 3px solid var(--color-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.schedule-event-block:hover {
+  background: color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
+.schedule-event-block.is-completed {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.schedule-event-block-time {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink-secondary);
+}
+
+.schedule-event-block-title {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.schedule-event-block-location {
+  font-size: 10px;
+  color: var(--color-ink-secondary);
+}
+
+.schedule-event-block-repeat {
+  font-size: 10px;
+  color: var(--color-ink-tertiary, #aaa);
+}
+
+.schedule-event-block.color-indigo { background: color-mix(in srgb, #6366f1 14%, transparent); border-left-color: #6366f1; }
+.schedule-event-block.color-blue { background: color-mix(in srgb, #3b82f6 14%, transparent); border-left-color: #3b82f6; }
+.schedule-event-block.color-green { background: color-mix(in srgb, #10b981 14%, transparent); border-left-color: #10b981; }
+.schedule-event-block.color-orange { background: color-mix(in srgb, #f59e0b 14%, transparent); border-left-color: #f59e0b; }
+.schedule-event-block.color-red { background: color-mix(in srgb, #ef4444 14%, transparent); border-left-color: #ef4444; }
+.schedule-event-block.color-pink { background: color-mix(in srgb, #ec4899 14%, transparent); border-left-color: #ec4899; }
+.schedule-event-block.color-gray { background: color-mix(in srgb, #6b7280 14%, transparent); border-left-color: #6b7280; }
+
+/* 日视图 */
+.schedule-day-view {
+  display: grid;
+  gap: 12px;
+}
+
+.schedule-day-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--color-surface-muted, color-mix(in srgb, var(--color-surface) 80%, var(--color-hairline)));
+  border: 1px solid var(--color-hairline);
+  border-radius: 10px;
+}
+
+.schedule-day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.schedule-day-empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--color-ink-tertiary, #aaa);
+  font-size: var(--fs-caption);
+}
+
+.schedule-day-event {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-hairline);
+  border-left: 4px solid var(--color-primary);
+  border-radius: 8px;
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.schedule-day-event:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.schedule-day-event.is-completed {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.schedule-day-event-time {
+  font-size: var(--fs-caption);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--color-ink-secondary);
+  min-width: 110px;
+}
+
+.schedule-day-event-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.schedule-day-event-body strong {
+  font-size: 14px;
+}
+
+.schedule-day-event-desc {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-secondary);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.schedule-day-event.color-indigo { border-left-color: #6366f1; }
+.schedule-day-event.color-blue { border-left-color: #3b82f6; }
+.schedule-day-event.color-green { border-left-color: #10b981; }
+.schedule-day-event.color-orange { border-left-color: #f59e0b; }
+.schedule-day-event.color-red { border-left-color: #ef4444; }
+.schedule-day-event.color-pink { border-left-color: #ec4899; }
+.schedule-day-event.color-gray { border-left-color: #6b7280; }
+
+.schedule-event-detail {
+  display: grid;
+  gap: 10px;
+}
+
+.schedule-event-detail-row {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.schedule-event-detail-row .field-label {
+  font-size: var(--fs-caption);
+  color: var(--color-ink-secondary);
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 1024px) {
+  .schedule-entry-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .schedule-week-grid {
+    grid-template-columns: repeat(7, minmax(120px, 1fr));
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .schedule-entry-grid,
+  .schedule-filter-grid,
+  .schedule-trash-filter-grid,
+  .schedule-settings-inline-grid,
+  .schedule-event-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-month-body {
+    grid-auto-rows: minmax(72px, 1fr);
+  }
+
+  .schedule-week-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .schedule-surface-head,
+  .schedule-list-meta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

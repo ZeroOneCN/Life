@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Tabs } from '@arco-design/web-react';
 import dayjs from 'dayjs';
 import {
   Area,
@@ -178,22 +179,14 @@ export function StepTrendSection({
       action={<Tag tone="blue">{granularity === 'daily' ? '每日趋势' : '每月趋势'}</Tag>}
     >
       <div className="page-stack">
-        <div className="tab-bar">
-          <button
-            type="button"
-            className={`tab ${granularity === 'daily' ? 'active' : ''}`}
-            onClick={() => setGranularity('daily')}
-          >
-            每天
-          </button>
-          <button
-            type="button"
-            className={`tab ${granularity === 'monthly' ? 'active' : ''}`}
-            onClick={() => setGranularity('monthly')}
-          >
-            每月
-          </button>
-        </div>
+        <Tabs
+          activeTab={granularity}
+          onChange={(key) => setGranularity(key as 'daily' | 'monthly')}
+          style={{ marginBottom: 16 }}
+        >
+          <Tabs.TabPane key="daily" title="每天" />
+          <Tabs.TabPane key="monthly" title="每月" />
+        </Tabs>
 
         <div className="step-filter-grid">
 

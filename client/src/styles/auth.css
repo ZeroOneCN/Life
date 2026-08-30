@@ -1,0 +1,356 @@
+/* ===== Login / Auth Page — Stripe Theme ===== */
+.auth-page-shell {
+  min-height: 100vh;
+  padding: 40px 28px 56px;
+  font-family: var(--font-sans);
+  position: relative;
+  /* 渐变背景：深色基底 + 淡 indigo 径向光晕，增加空间深度 */
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 40%, rgba(83, 58, 253, 0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(83, 58, 253, 0.04) 0%, transparent 60%),
+    linear-gradient(180deg, var(--color-canvas) 0%, var(--color-surface) 100%);
+}
+
+/* 登录页主题切换按钮 */
+.auth-theme-toggle {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.auth-theme-toggle:hover {
+  border-color: var(--color-primary-muted);
+  box-shadow: 0 2px 8px rgba(83, 58, 253, 0.12);
+}
+
+.auth-page-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.auth-layout-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 420px);
+  gap: 24px;
+  align-items: start;
+}
+
+/* 右侧登录/注册表单卡片 — 增强阴影包裹感 */
+.auth-layout-grid > .card {
+  box-shadow:
+    0 8px 32px rgba(83, 58, 253, 0.10),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+  border-color: var(--color-primary-muted);
+}
+
+/* 左侧品牌面板 */
+.auth-hero-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  /* 微妙渐变底色 + 左侧 indigo 强调线 + 柔和阴影，增强包裹感 */
+  background:
+    linear-gradient(135deg, rgba(83, 58, 253, 0.02) 0%, var(--color-surface) 50%);
+  border-left: 3px solid var(--color-primary);
+  box-shadow:
+    0 4px 24px rgba(83, 58, 253, 0.08),
+    0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.auth-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-eyebrow {
+  font-size: var(--fs-overline);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.auth-hero-copy h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.15;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.auth-hero-copy p,
+.auth-page-note span,
+.auth-status-card p,
+.auth-banner,
+.auth-bootstrap-card p,
+.auth-submit-note {
+  line-height: 1.6;
+  color: var(--color-ink-subtle);
+  font-size: var(--fs-body);
+}
+
+/* 状态卡片网格 */
+.auth-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.auth-status-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-canvas);
+}
+
+.auth-status-card span:first-child {
+  font-size: var(--fs-overline);
+  color: var(--color-ink-subtle);
+  font-weight: 500;
+}
+
+.auth-status-card strong {
+  font-size: var(--fs-title);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-ink);
+}
+
+.auth-status-card p {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--color-ink-subtle);
+}
+
+/* 底部提示 */
+.auth-page-note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--color-primary-muted);
+  background: var(--color-primary-subtle);
+}
+
+.auth-page-note strong {
+  color: var(--color-primary);
+  font-size: var(--fs-label);
+}
+
+/* 登录/注册 Tab 切换 */
+.auth-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--color-surface-dim);
+  width: fit-content;
+}
+
+.auth-mode-tab {
+  border: none;
+  background: transparent;
+  color: var(--color-ink-subtle);
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: var(--fs-label);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.auth-mode-tab:hover:not(:disabled) {
+  color: var(--color-ink);
+}
+
+.auth-mode-tab.is-active {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.auth-mode-tab:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 消息横幅 */
+.auth-banner {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: var(--fs-label);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-dim);
+  color: var(--color-ink-subtle);
+}
+
+.auth-banner.is-error {
+  border-color: var(--color-danger-muted);
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
+}
+
+.auth-banner.is-warning {
+  background: var(--color-warning-subtle);
+  border-color: var(--color-warning-muted);
+  color: var(--color-warning-strong);
+}
+
+.auth-banner.is-info {
+  border-color: var(--color-primary-muted);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary-dark);
+}
+
+/* 系统未就绪面板 */
+.auth-bootstrap-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-bootstrap-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--color-danger-muted);
+  background: var(--color-danger-subtle);
+}
+
+.auth-bootstrap-card p {
+  margin: 0;
+  color: var(--color-ink-subtle);
+  font-size: var(--fs-body);
+}
+
+.auth-bootstrap-card strong {
+  color: var(--color-danger);
+  font-size: var(--fs-title);
+}
+
+.auth-bootstrap-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--color-ink-subtle);
+  font-size: var(--fs-caption);
+}
+
+/* 表单区域 */
+.auth-form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.auth-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.auth-field-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-field-stack .field {
+  gap: 6px;
+}
+
+.auth-field-stack .field-label {
+  font-size: var(--fs-label);
+}
+
+.auth-field-stack input {
+  min-height: 44px;
+}
+
+.auth-field-error {
+  color: var(--color-danger);
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+}
+
+/* 提交按钮区 */
+.auth-submit-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.auth-submit-note {
+  color: var(--color-ink-subtle);
+  font-size: var(--fs-caption);
+  text-align: center;
+}
+
+@media (max-width: 1024px) {
+  .auth-page-shell {
+    padding: 24px 16px 40px;
+  }
+
+  .auth-theme-toggle {
+    top: 12px;
+    right: 14px;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .auth-layout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-hero-panel {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .auth-status-grid,
+  .auth-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-mode-switch {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .auth-mode-tab {
+    flex: 1;
+    text-align: center;
+  }
+}
