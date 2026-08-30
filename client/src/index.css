@@ -452,6 +452,25 @@ textarea {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
+/* 主题切换平滑过渡（仅颜色相关属性） */
+html {
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+html *,
+html *::before,
+html *::after {
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html *,
+  html *::before,
+  html *::after {
+    transition: none;
+  }
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -675,9 +694,58 @@ textarea {
   }
 }
 
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* === Route Loading Bar（顶部进度条，路由切换时自动出现） === */
+.route-loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 9999;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-hover));
+  animation: loading-bar-progress 1.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  transform-origin: left;
+  pointer-events: none;
+}
+
+@keyframes loading-bar-progress {
+  0% { transform: scaleX(0); }
+  50% { transform: scaleX(0.6); }
+  100% { transform: scaleX(1); }
+}
+
+/* === Card Hover Effects === */
+.section-card,
+.card {
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+}
+
+.section-card:hover,
+.card:not(.no-hover):hover {
+  transform: translateY(-1px);
+}
+
+.stat-card {
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .page-transition {
     animation: none;
+  }
+  .section-card:hover,
+  .card:not(.no-hover):hover,
+  .stat-card:hover {
+    transform: none;
   }
 }
 
@@ -889,136 +957,21 @@ textarea {
   background-color: var(--color-primary-soft);
 }
 
-.menu {
+/* 桌面端侧边栏折叠按钮布局 */
+.sidebar-toggle-desktop {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding-top: 16px;
 }
 
-.menu-group {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.sidebar-toggle-mobile {
+  display: none;
 }
 
-.menu-group-label {
-  padding: 12px 12px 4px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-ink-mute);
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.submenu {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-left: 8px;
-}
-
-.menu-link {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-  min-height: 38px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  color: var(--color-ink-secondary);
-  background: transparent;
-  border: 1px solid transparent;
-  text-align: left;
-  transition:
-    background 0.18s ease,
-    border-color 0.18s ease,
-    color 0.18s ease,
-    min-height var(--sidebar-transition-duration) var(--sidebar-transition-easing),
-    padding var(--sidebar-transition-duration) var(--sidebar-transition-easing);
-}
-
-.menu-link:hover {
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-  color: var(--color-ink);
-}
-
-.menu-link:focus-visible,
-.icon-button:focus-visible {
-  outline-offset: 2px;
-}
-
-.menu-link.is-active {
-  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  font-weight: 600;
-}
-
-.menu-link-main {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  flex: 1;
-}
-
-.menu-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transform-origin: left center;
-  transition:
-    opacity 120ms ease,
-    transform 180ms var(--sidebar-transition-easing);
-  font-size: 14px;
-}
-
-.menu-child {
-  padding-left: 12px;
-  min-height: 34px;
-}
-
-.menu-chevron {
-  flex-shrink: 0;
-  color: var(--color-ink-mute-2);
-  transition:
-    transform 0.18s ease,
-    color 0.18s ease,
-    opacity 120ms ease;
-}
-
-.menu-chevron.is-open {
-  transform: rotate(90deg);
-  color: var(--color-ink);
-}
-
-/* 折叠态 tooltip */
-.menu-tooltip {
-  position: fixed;
-  z-index: 1000;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: var(--color-ink-primary);
-  color: white;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-  pointer-events: none;
-  animation: menu-tooltip-in 0.15s ease;
-}
-
-@keyframes menu-tooltip-in {
-  from {
-    opacity: 0;
-    transform: translateX(-4px);
+@media (max-width: 768px) {
+  .sidebar-toggle-desktop {
+    display: none;
   }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+  .sidebar-toggle-mobile {
+    display: flex;
   }
 }
 

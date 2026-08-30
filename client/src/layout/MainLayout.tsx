@@ -249,6 +249,19 @@ export default function MainLayout() {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
+  // 小屏自动折叠侧边栏
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1280px)');
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => {
+      if (e.matches) {
+        setCollapsed(true);
+      }
+    };
+    handler(mq);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   useEffect(() => {
     if (!userMenuOpen) {
       return undefined;

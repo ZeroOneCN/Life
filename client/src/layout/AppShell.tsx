@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -32,6 +32,7 @@ import WorkspaceTabBar from './WorkspaceTabBar';
 export default function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [routeLoading, setRouteLoading] = useState(false);
   const commandPaletteOpen = useWorkspaceStore((s) => s.commandPaletteOpen);
   const setCommandPaletteOpen = useWorkspaceStore((s) => s.setCommandPaletteOpen);
   const tabs = useWorkspaceStore((s) => s.tabs);
@@ -75,6 +76,13 @@ export default function AppShell() {
     html.style.scrollBehavior = 'auto';
     window.scrollTo(0, 0);
     html.style.scrollBehavior = '';
+  }, [location.pathname]);
+
+  // 路由切换时显示顶部加载条
+  useEffect(() => {
+    setRouteLoading(true);
+    const timer = setTimeout(() => setRouteLoading(false), 600);
+    return () => clearTimeout(timer);
   }, [location.pathname]);
 
   // 当活跃 Tab 变化（如关闭 Tab 后切换）但路由不匹配时，自动导航
@@ -141,15 +149,18 @@ export default function AppShell() {
   return (
     <BreadcrumbTailProvider>
       <div className="app-shell" data-layout="v2">
+        {routeLoading ? <div className="route-loading-bar" /> : null}
         <CommandBar />
         <div className="app-shell-body">
           <NavRail />
           <div className="workspace-container">
             <WorkspaceTabBar />
-            <main className="workspace-area" role="main">
-              <ErrorBoundary>
-                <Outlet />
-              </ErrorBoundary>
+            <main className="workspace-area" key={location.pathname} role="main">
+              <div className="page-transition">
+                <ErrorBoundary>
+                  <Outlet />
+                </ErrorBoundary>
+              </div>
             </main>
           </div>
           <Inspector />
