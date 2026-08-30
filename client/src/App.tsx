@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { ConfigProvider } from '@arco-design/web-react';
 
 import { GuestRoute, ProtectedRoute } from './components/ProtectedRoute';
 import { RouteLoadingFallback } from './components/RouteLoadingFallback';
@@ -18,42 +19,44 @@ export default function App() {
   useAuthBootstrap();
 
   return (
-    <Routes>
-      <Route element={<GuestRoute />}>
-        <Route
-          path="/login"
-          element={
-            <Suspense fallback={<RouteLoadingFallback />}>
-              <LoginPage />
-            </Suspense>
-          }
-        />
-      </Route>
-
-      <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<ArcoLayout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          {routes.map((route) => (
-            <Route
-              key={route.path}
-              path={route.path.slice(1)}
-              element={
-                <Suspense fallback={<RouteLoadingFallback />}>
-                  <route.component />
-                </Suspense>
-              }
-            />
-          ))}
+    <ConfigProvider>
+      <Routes>
+        <Route element={<GuestRoute />}>
           <Route
-            path="*"
+            path="/login"
             element={
               <Suspense fallback={<RouteLoadingFallback />}>
-                <NotFound />
+                <LoginPage />
               </Suspense>
             }
           />
         </Route>
-      </Route>
-    </Routes>
+
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<ArcoLayout />}>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            {routes.map((route) => (
+              <Route
+                key={route.path}
+                path={route.path.slice(1)}
+                element={
+                  <Suspense fallback={<RouteLoadingFallback />}>
+                    <route.component />
+                  </Suspense>
+                }
+              />
+            ))}
+            <Route
+              path="*"
+              element={
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <NotFound />
+                </Suspense>
+              }
+            />
+          </Route>
+        </Route>
+      </Routes>
+    </ConfigProvider>
   );
 }
