@@ -20,7 +20,6 @@ import {
   IconDashboard,
   IconNotification,
   IconUser,
-  IconMoon,
   IconSkin,
   IconNav,
   IconFile,
@@ -36,22 +35,14 @@ import {
   IconList,
   IconMenuFold,
   IconMenuUnfold,
-  IconSun,
-  IconMoonFill,
   IconSearch,
   IconExport,
-  IconSettings,
   IconCommand,
-  IconPlus,
-  IconHistory,
-  IconFullscreen,
-  IconMinus,
 } from '@arco-design/web-react/icon';
 
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AssistantLauncher } from '../components/shared/AssistantLauncher';
 import { menuItems, routes } from '../config/navigation';
-import { useTheme } from '../hooks/useTheme';
 import { BreadcrumbTailProvider, useBreadcrumbTailContext } from '../hooks/useBreadcrumbTail';
 import { logout, useAuthState } from '../services/auth';
 import { useWorkspaceStore } from '../stores/workspace.store';
@@ -284,7 +275,6 @@ function PageContent() {
 export default function ArcoLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isDark, mode, setMode } = useTheme();
   const authState = useAuthState();
   const commandPaletteOpen = useWorkspaceStore((s) => s.commandPaletteOpen);
   const setCommandPaletteOpen = useWorkspaceStore((s) => s.setCommandPaletteOpen);
@@ -371,26 +361,6 @@ export default function ArcoLayout() {
     [navigate],
   );
 
-  // 主题切换：亮色 → 暗色 → 跟随系统 → 亮色
-  const handleThemeToggle = useCallback(() => {
-    const next = mode === 'light' ? 'dark' : mode === 'dark' ? 'auto' : 'light';
-    setMode(next);
-  }, [mode, setMode]);
-
-  // 主题图标
-  const themeIcon = useMemo(() => {
-    if (mode === 'auto') return <IconSun />;
-    if (mode === 'dark') return <IconMoonFill />;
-    return <IconSun />;
-  }, [mode]);
-
-  // 主题标题
-  const themeTitle = useMemo(() => {
-    if (mode === 'light') return '切换到暗色模式';
-    if (mode === 'dark') return '跟随系统主题';
-    return '切换到亮色模式';
-  }, [mode]);
-
   // 用户下拉菜单
   const userDropdownList = useMemo(
     () => (
@@ -420,7 +390,7 @@ export default function ArcoLayout() {
   // 侧边栏菜单内容（共享给 PC Sider 和移动端 Drawer）
   const sidebarMenu = (
     <Menu
-      theme={isDark ? 'dark' : 'light'}
+      theme="light"
       mode="vertical"
       collapse={collapsed && !mobileDrawerOpen}
       selectedKeys={selectedKeys}
@@ -495,16 +465,6 @@ export default function ArcoLayout() {
             </div>
 
             <div className="arco-layout-header-right">
-              {/* 主题切换 */}
-              <Button
-                className="arco-layout-header-btn"
-                type="text"
-                icon={themeIcon}
-                onClick={handleThemeToggle}
-                aria-label={themeTitle}
-                title={themeTitle}
-              />
-
               {/* 通知中心 */}
               <Button
                 className="arco-layout-header-btn"
@@ -580,7 +540,7 @@ export default function ArcoLayout() {
           <span className="arco-layout-drawer-logo-sub">个人生活数字化管理平台</span>
         </div>
         <Menu
-          theme={isDark ? 'dark' : 'light'}
+          theme="light"
           mode="vertical"
           selectedKeys={selectedKeys}
           openKeys={openKeys}

@@ -10,7 +10,6 @@ import {
   getApiFormErrors,
 } from '../../lib/api';
 import { getSystemHealth, login, register, useAuthState } from '../../services/auth';
-import { useTheme } from '../../hooks/useTheme';
 import type { SystemHealthSnapshot } from '../../types/auth';
 
 type AuthMode = 'login' | 'register';
@@ -23,9 +22,7 @@ function buildAuthTags(snapshot: SystemHealthSnapshot | null, canRegister: boole
         {snapshot?.databaseReady ? '数据库已就绪' : '数据库待初始化'}
       </Tag>
       <Tag tone="blue">JWT 认证</Tag>
-      <Tag tone={canRegister ? 'orange' : 'default'}>
-        {canRegister ? '注册开放' : '注册已关闭'}
-      </Tag>
+      <Tag tone={canRegister ? 'orange' : 'default'}>{canRegister ? '注册开放' : '注册已关闭'}</Tag>
     </div>
   );
 }
@@ -35,7 +32,6 @@ export default function LoginPage() {
   const location = useLocation();
   const authState = useAuthState();
   const { toast, showToast } = useToastState();
-  const { isDark, toggleTheme } = useTheme();
   const [mode, setMode] = useState<AuthMode>('login');
   const [submitting, setSubmitting] = useState(false);
   const [healthLoading, setHealthLoading] = useState(true);
@@ -175,16 +171,27 @@ export default function LoginPage() {
 
       if (Object.keys(nextFieldErrors).length) setFieldErrors(nextFieldErrors);
 
-      if (errorCode === 'registration_closed') { setMode('login'); void loadSystemHealth(); }
-      if (errorCode === 'bootstrap_required') { setMode('register'); void loadSystemHealth(); }
-      if (errorCode === 'database_not_ready') { void loadSystemHealth(); }
+      if (errorCode === 'registration_closed') {
+        setMode('login');
+        void loadSystemHealth();
+      }
+      if (errorCode === 'bootstrap_required') {
+        setMode('register');
+        void loadSystemHealth();
+      }
+      if (errorCode === 'database_not_ready') {
+        void loadSystemHealth();
+      }
 
-      setPageError(formErrors[0] || buildApiErrorMessage(
-        error,
-        mode === 'login'
-          ? '登录失败，请检查账号密码或稍后重试。'
-          : '注册失败，请检查表单内容或稍后重试。',
-      ));
+      setPageError(
+        formErrors[0] ||
+          buildApiErrorMessage(
+            error,
+            mode === 'login'
+              ? '登录失败，请检查账号密码或稍后重试。'
+              : '注册失败，请检查表单内容或稍后重试。',
+          ),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -192,16 +199,6 @@ export default function LoginPage() {
 
   return (
     <div className="auth-page-shell">
-      <button
-        className="auth-theme-toggle"
-        type="button"
-        aria-label={isDark ? '切换到浅色模式' : '切换到深色模式'}
-        title={isDark ? '切换到浅色模式' : '切换到深色模式'}
-        onClick={toggleTheme}
-      >
-        {isDark ? '☀️' : '🌙'}
-      </button>
-
       <div className="auth-page-main">
         <PageHeader
           title={title}
@@ -224,7 +221,13 @@ export default function LoginPage() {
               <div className="auth-status-card">
                 <span>数据库状态</span>
                 <strong>{healthSnapshot?.databaseReady ? '已就绪' : '待初始化'}</strong>
-                <p>{healthSnapshot ? (healthSnapshot.databaseReady ? '正常运行中' : '需要初始化') : '检测中…'}</p>
+                <p>
+                  {healthSnapshot
+                    ? healthSnapshot.databaseReady
+                      ? '正常运行中'
+                      : '需要初始化'
+                    : '检测中…'}
+                </p>
               </div>
               <div className="auth-status-card">
                 <span>注册策略</span>
@@ -251,12 +254,16 @@ export default function LoginPage() {
 
           {/* 右侧登录/注册表单 */}
           <SectionCard
-            title={showBootstrapBlocked ? '系统初始化' : mode === 'login' ? '账号登录' : '创建管理员'}
-            description={showBootstrapBlocked
-              ? '请等待数据库初始化完成后再进行操作。'
-              : mode === 'login'
-                ? '输入管理员账号和密码登录系统。'
-                : '创建系统管理员账号，完成后即可正常使用。'}
+            title={
+              showBootstrapBlocked ? '系统初始化' : mode === 'login' ? '账号登录' : '创建管理员'
+            }
+            description={
+              showBootstrapBlocked
+                ? '请等待数据库初始化完成后再进行操作。'
+                : mode === 'login'
+                  ? '输入管理员账号和密码登录系统。'
+                  : '创建系统管理员账号，完成后即可正常使用。'
+            }
           >
             <div className="page-stack">
               {/* 登录/注册切换 */}
@@ -271,7 +278,9 @@ export default function LoginPage() {
                 <button
                   type="button"
                   className={`auth-mode-tab ${mode === 'register' ? 'is-active' : ''}`}
-                  onClick={() => { if (canRegister) setMode('register'); }}
+                  onClick={() => {
+                    if (canRegister) setMode('register');
+                  }}
                   disabled={!canRegister}
                 >
                   注册
@@ -279,7 +288,9 @@ export default function LoginPage() {
               </div>
 
               {/* 消息提示 */}
-              {sessionMessage ? <div className="auth-banner is-warning">{sessionMessage}</div> : null}
+              {sessionMessage ? (
+                <div className="auth-banner is-warning">{sessionMessage}</div>
+              ) : null}
               {healthError ? <div className="auth-banner is-error">{healthError}</div> : null}
               {pageError ? <div className="auth-banner is-error">{pageError}</div> : null}
 
@@ -292,7 +303,11 @@ export default function LoginPage() {
                     <div className="auth-bootstrap-meta">
                       <span>原因：{healthSnapshot?.reason ?? '未知'}</span>
                     </div>
-                    <Btn tone="secondary" onClick={() => void loadSystemHealth()} disabled={healthLoading}>
+                    <Btn
+                      tone="secondary"
+                      onClick={() => void loadSystemHealth()}
+                      disabled={healthLoading}
+                    >
                       {healthLoading ? '检测中…' : '重新检测'}
                     </Btn>
                   </div>
@@ -300,7 +315,9 @@ export default function LoginPage() {
               ) : (
                 <form className="auth-form-stack" onSubmit={handleSubmit}>
                   {canRegister ? (
-                    <div className="auth-banner is-info">首次使用请先创建管理员账号，创建完成后注册入口将自动关闭。</div>
+                    <div className="auth-banner is-info">
+                      首次使用请先创建管理员账号，创建完成后注册入口将自动关闭。
+                    </div>
                   ) : null}
 
                   <div className="auth-form-grid">
@@ -310,10 +327,14 @@ export default function LoginPage() {
                         label="用户名"
                         value={form.username}
                         aria-invalid={Boolean(fieldErrors.username)}
-                        onChange={(event) => setForm((previous) => ({ ...previous, username: event.target.value }))}
+                        onChange={(event) =>
+                          setForm((previous) => ({ ...previous, username: event.target.value }))
+                        }
                         placeholder={mode === 'login' ? '请输入用户名' : '至少 3 个字符'}
                       />
-                      {fieldErrors.username ? <span className="auth-field-error">{fieldErrors.username}</span> : null}
+                      {fieldErrors.username ? (
+                        <span className="auth-field-error">{fieldErrors.username}</span>
+                      ) : null}
                     </div>
 
                     {/* 邮箱（仅注册） */}
@@ -324,10 +345,14 @@ export default function LoginPage() {
                           type="email"
                           value={form.email}
                           aria-invalid={Boolean(fieldErrors.email)}
-                          onChange={(event) => setForm((previous) => ({ ...previous, email: event.target.value }))}
+                          onChange={(event) =>
+                            setForm((previous) => ({ ...previous, email: event.target.value }))
+                          }
                           placeholder="请输入管理员邮箱"
                         />
-                        {fieldErrors.email ? <span className="auth-field-error">{fieldErrors.email}</span> : null}
+                        {fieldErrors.email ? (
+                          <span className="auth-field-error">{fieldErrors.email}</span>
+                        ) : null}
                       </div>
                     ) : null}
 
@@ -338,11 +363,15 @@ export default function LoginPage() {
                           label="昵称"
                           value={form.nickname}
                           aria-invalid={Boolean(fieldErrors.nickname)}
-                          onChange={(event) => setForm((previous) => ({ ...previous, nickname: event.target.value }))}
+                          onChange={(event) =>
+                            setForm((previous) => ({ ...previous, nickname: event.target.value }))
+                          }
                           placeholder="用于顶部用户区显示"
                           hint="不填时默认使用用户名"
                         />
-                        {fieldErrors.nickname ? <span className="auth-field-error">{fieldErrors.nickname}</span> : null}
+                        {fieldErrors.nickname ? (
+                          <span className="auth-field-error">{fieldErrors.nickname}</span>
+                        ) : null}
                       </div>
                     ) : null}
 
@@ -353,11 +382,15 @@ export default function LoginPage() {
                         type="password"
                         value={form.password}
                         aria-invalid={Boolean(fieldErrors.password)}
-                        onChange={(event) => setForm((previous) => ({ ...previous, password: event.target.value }))}
+                        onChange={(event) =>
+                          setForm((previous) => ({ ...previous, password: event.target.value }))
+                        }
                         placeholder={mode === 'login' ? '请输入密码' : '至少 8 个字符'}
                         hint={mode === 'register' ? '密码长度至少 8 位' : undefined}
                       />
-                      {fieldErrors.password ? <span className="auth-field-error">{fieldErrors.password}</span> : null}
+                      {fieldErrors.password ? (
+                        <span className="auth-field-error">{fieldErrors.password}</span>
+                      ) : null}
                     </div>
 
                     {/* 确认密码（仅注册） */}
@@ -368,10 +401,17 @@ export default function LoginPage() {
                           type="password"
                           value={form.confirmPassword}
                           aria-invalid={Boolean(fieldErrors.confirmPassword)}
-                          onChange={(event) => setForm((previous) => ({ ...previous, confirmPassword: event.target.value }))}
+                          onChange={(event) =>
+                            setForm((previous) => ({
+                              ...previous,
+                              confirmPassword: event.target.value,
+                            }))
+                          }
                           placeholder="请再次输入密码"
                         />
-                        {fieldErrors.confirmPassword ? <span className="auth-field-error">{fieldErrors.confirmPassword}</span> : null}
+                        {fieldErrors.confirmPassword ? (
+                          <span className="auth-field-error">{fieldErrors.confirmPassword}</span>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
@@ -381,13 +421,17 @@ export default function LoginPage() {
                     <Btn
                       tone="primary"
                       type="submit"
-                      disabled={submitting || healthLoading || (mode === 'login' ? !canLogin : !canRegister)}
+                      disabled={
+                        submitting || healthLoading || (mode === 'login' ? !canLogin : !canRegister)
+                      }
                     >
                       {submitting ? '提交中…' : mode === 'login' ? '登录' : '创建账号'}
                     </Btn>
                     <span className="auth-submit-note">
                       {mode === 'login'
-                        ? (canRegister ? '请先创建管理员账号后再登录。' : '登录成功后进入系统首页。')
+                        ? canRegister
+                          ? '请先创建管理员账号后再登录。'
+                          : '登录成功后进入系统首页。'
                         : '注册成功后将自动登录并进入系统。'}
                     </span>
                   </div>

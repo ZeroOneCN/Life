@@ -8,7 +8,6 @@ import { buildApiErrorMessage, getApiFieldErrors } from '../../lib/api';
 import { changePassword, updateAuthProfile, useAuthState } from '../../services/auth';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { usePageTab } from '../../hooks/usePageTab';
-import { useTheme } from '../../hooks/useTheme';
 
 type ProfileTab = 'profile' | 'security' | 'integrations' | 'preferences';
 
@@ -22,8 +21,11 @@ const TAB_OPTIONS: Array<{ value: ProfileTab; label: string }> = [
 export default function ProfileSettingsPage() {
   const authState = useAuthState();
   const { toast, showToast } = useToastState();
-  const { mode, setMode } = useTheme();
-  const [tab, setTab] = usePageTab<ProfileTab>('profile', ['profile', 'security', 'integrations', 'preferences'], 'tab');
+  const [tab, setTab] = usePageTab<ProfileTab>(
+    'profile',
+    ['profile', 'security', 'integrations', 'preferences'],
+    'tab',
+  );
   useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const [profileSaving, setProfileSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
@@ -160,7 +162,7 @@ export default function ProfileSettingsPage() {
       <PageHeader
         title="个人中心"
         subtitle="管理账户安全、集成与偏好设置"
-        actions={(
+        actions={
           <>
             <PillTabs
               options={TAB_OPTIONS}
@@ -169,13 +171,10 @@ export default function ProfileSettingsPage() {
             />
             <Tag tone="blue">认证会话已接入</Tag>
           </>
-        )}
+        }
       />
 
-      <SectionCard
-        title="账户概览"
-        description="当前页面只操作登录用户本人，不提供多用户切换。"
-      >
+      <SectionCard title="账户概览" description="当前页面只操作登录用户本人，不提供多用户切换。">
         <div className="profile-shell">
           <div className="profile-avatar-panel">
             {user?.avatarUrl ? (
@@ -203,36 +202,52 @@ export default function ProfileSettingsPage() {
                 <Field
                   label="昵称"
                   value={profileForm.nickname}
-                  onChange={(event) => setProfileForm((previous) => ({ ...previous, nickname: event.target.value }))}
+                  onChange={(event) =>
+                    setProfileForm((previous) => ({ ...previous, nickname: event.target.value }))
+                  }
                 />
-                {profileErrors.nickname ? <span className="auth-field-error">{profileErrors.nickname}</span> : null}
+                {profileErrors.nickname ? (
+                  <span className="auth-field-error">{profileErrors.nickname}</span>
+                ) : null}
               </div>
               <div className="auth-field-stack">
                 <Field
                   label="邮箱"
                   type="email"
                   value={profileForm.email}
-                  onChange={(event) => setProfileForm((previous) => ({ ...previous, email: event.target.value }))}
+                  onChange={(event) =>
+                    setProfileForm((previous) => ({ ...previous, email: event.target.value }))
+                  }
                 />
-                {profileErrors.email ? <span className="auth-field-error">{profileErrors.email}</span> : null}
+                {profileErrors.email ? (
+                  <span className="auth-field-error">{profileErrors.email}</span>
+                ) : null}
               </div>
               <div className="auth-field-stack">
                 <Field
                   label="时区"
                   value={profileForm.timezone}
-                  onChange={(event) => setProfileForm((previous) => ({ ...previous, timezone: event.target.value }))}
+                  onChange={(event) =>
+                    setProfileForm((previous) => ({ ...previous, timezone: event.target.value }))
+                  }
                   hint="例如 Asia/Shanghai、America/Los_Angeles。"
                 />
-                {profileErrors.timezone ? <span className="auth-field-error">{profileErrors.timezone}</span> : null}
+                {profileErrors.timezone ? (
+                  <span className="auth-field-error">{profileErrors.timezone}</span>
+                ) : null}
               </div>
               <div className="auth-field-stack">
                 <Field
                   label="头像 URL"
                   value={profileForm.avatarUrl}
-                  onChange={(event) => setProfileForm((previous) => ({ ...previous, avatarUrl: event.target.value }))}
+                  onChange={(event) =>
+                    setProfileForm((previous) => ({ ...previous, avatarUrl: event.target.value }))
+                  }
                   placeholder="https://example.com/avatar.png"
                 />
-                {profileErrors.avatarUrl ? <span className="auth-field-error">{profileErrors.avatarUrl}</span> : null}
+                {profileErrors.avatarUrl ? (
+                  <span className="auth-field-error">{profileErrors.avatarUrl}</span>
+                ) : null}
               </div>
             </div>
             <div className="page-actions">
@@ -241,28 +256,6 @@ export default function ProfileSettingsPage() {
               </Btn>
             </div>
           </form>
-        </SectionCard>
-      ) : null}
-
-      {tab === 'profile' ? (
-        <SectionCard
-          title="显示设置"
-          description="调整界面主题和显示偏好，设置会自动保存到本地。"
-        >
-          <div className="form-grid">
-            <div className="auth-field-stack">
-              <SelectField
-                label="主题模式"
-                value={mode}
-                onChange={(e) => setMode(e.target.value as 'light' | 'dark' | 'auto')}
-                hint="选择自动时，将跟随系统主题自动切换。"
-              >
-                <option value="auto">跟随系统</option>
-                <option value="light">浅色模式</option>
-                <option value="dark">深色模式</option>
-              </SelectField>
-            </div>
-          </div>
         </SectionCard>
       ) : null}
 
@@ -278,7 +271,9 @@ export default function ProfileSettingsPage() {
               <div className="profile-meta-panel">
                 <strong>通知中心</strong>
                 <span>点击下方按钮进入通知中心管理页面，配置渠道参数、场景开关和消息模板。</span>
-                <a href="/notifications" className="dash-link-primary">进入通知中心 →</a>
+                <a href="/notifications" className="dash-link-primary">
+                  进入通知中心 →
+                </a>
               </div>
             </div>
           </SectionCard>
@@ -286,14 +281,14 @@ export default function ProfileSettingsPage() {
       ) : null}
 
       {tab === 'preferences' ? (
-        <SectionCard
-          title="偏好设置"
-          description="界面语言、数据格式等个人偏好（后续扩展）。"
-        >
+        <SectionCard title="偏好设置" description="界面语言、数据格式等个人偏好（后续扩展）。">
           <div className="profile-shell">
             <div className="profile-meta-panel">
               <strong>暂无更多偏好项</strong>
-              <span>当前偏好仅包含主题模式（已移至个人资料 Tab）。后续将支持语言、日期格式、数字精度等偏好。</span>
+              <span>
+                当前偏好仅包含主题模式（已移至个人资料
+                Tab）。后续将支持语言、日期格式、数字精度等偏好。
+              </span>
             </div>
           </div>
         </SectionCard>
@@ -311,28 +306,49 @@ export default function ProfileSettingsPage() {
                   label="当前密码"
                   type="password"
                   value={passwordForm.currentPassword}
-                  onChange={(event) => setPasswordForm((previous) => ({ ...previous, currentPassword: event.target.value }))}
+                  onChange={(event) =>
+                    setPasswordForm((previous) => ({
+                      ...previous,
+                      currentPassword: event.target.value,
+                    }))
+                  }
                 />
-                {passwordErrors.currentPassword ? <span className="auth-field-error">{passwordErrors.currentPassword}</span> : null}
+                {passwordErrors.currentPassword ? (
+                  <span className="auth-field-error">{passwordErrors.currentPassword}</span>
+                ) : null}
               </div>
               <div className="auth-field-stack">
                 <Field
                   label="新密码"
                   type="password"
                   value={passwordForm.newPassword}
-                  onChange={(event) => setPasswordForm((previous) => ({ ...previous, newPassword: event.target.value }))}
+                  onChange={(event) =>
+                    setPasswordForm((previous) => ({
+                      ...previous,
+                      newPassword: event.target.value,
+                    }))
+                  }
                   hint="至少 8 位。"
                 />
-                {passwordErrors.newPassword ? <span className="auth-field-error">{passwordErrors.newPassword}</span> : null}
+                {passwordErrors.newPassword ? (
+                  <span className="auth-field-error">{passwordErrors.newPassword}</span>
+                ) : null}
               </div>
               <div className="auth-field-stack">
                 <Field
                   label="确认新密码"
                   type="password"
                   value={passwordForm.confirmPassword}
-                  onChange={(event) => setPasswordForm((previous) => ({ ...previous, confirmPassword: event.target.value }))}
+                  onChange={(event) =>
+                    setPasswordForm((previous) => ({
+                      ...previous,
+                      confirmPassword: event.target.value,
+                    }))
+                  }
                 />
-                {passwordErrors.confirmPassword ? <span className="auth-field-error">{passwordErrors.confirmPassword}</span> : null}
+                {passwordErrors.confirmPassword ? (
+                  <span className="auth-field-error">{passwordErrors.confirmPassword}</span>
+                ) : null}
               </div>
             </div>
             <div className="page-actions">
