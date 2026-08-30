@@ -1,5 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes, useSearchParams } from 'react-router-dom';
+import { ConfigProvider } from '@arco-design/web-react';
 
 import { GuestRoute, ProtectedRoute } from './components/ProtectedRoute';
 import { RouteLoadingFallback } from './components/RouteLoadingFallback';
@@ -8,6 +9,7 @@ import AppShell from './layout/AppShell';
 import MainLayout from './layout/MainLayout';
 import LoginPage from './pages/auth/Login';
 import { useAuthBootstrap } from './services/auth';
+import { useTheme } from './hooks/useTheme';
 
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -28,37 +30,40 @@ function useLayoutComponent() {
 export default function App() {
   useAuthBootstrap();
   const Layout = useLayoutComponent();
+  const { isDark } = useTheme();
 
   return (
-    <Routes>
-      <Route element={<GuestRoute />}>
-        <Route path="/login" element={<LoginPage />} />
-      </Route>
+    <ConfigProvider theme={isDark ? { mode: 'dark' } : undefined}>
+      <Routes>
+        <Route element={<GuestRoute />}>
+          <Route path="/login" element={<LoginPage />} />
+        </Route>
 
-      <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          {routes.map((route) => (
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            {routes.map((route) => (
+              <Route
+                key={route.path}
+                path={route.path.slice(1)}
+                element={(
+                  <Suspense fallback={<RouteLoadingFallback />}>
+                    <route.component />
+                  </Suspense>
+                )}
+              />
+            ))}
             <Route
-              key={route.path}
-              path={route.path.slice(1)}
+              path="*"
               element={(
                 <Suspense fallback={<RouteLoadingFallback />}>
-                  <route.component />
+                  <NotFound />
                 </Suspense>
               )}
             />
-          ))}
-          <Route
-            path="*"
-            element={(
-              <Suspense fallback={<RouteLoadingFallback />}>
-                <NotFound />
-              </Suspense>
-            )}
-          />
+          </Route>
         </Route>
-      </Route>
-    </Routes>
+      </Routes>
+    </ConfigProvider>
   );
 }

@@ -7,9 +7,20 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react';
-import { forwardRef, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  Children,
+  forwardRef,
+  isValidElement,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 
+import { Button, Message, Select } from '@arco-design/web-react';
 import type { TabOption, TableColumn } from '../types/ui';
 
 export function useUndo<T>(initialValue: T, maxHistory = 50) {
@@ -80,6 +91,7 @@ interface ToastState {
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   tone?: ButtonTone;
+  loading?: boolean;
 }
 
 interface ModalProps {
@@ -141,92 +153,8 @@ const TOAST_LABELS: Record<NonNullable<ToastState['type']>, string> = {
 };
 
 export function Toast({ toast }: { toast: ToastState | null }) {
-  const [showDetail, setShowDetail] = useState(false);
-  const [progress, setProgress] = useState(100);
-  const startTimeRef = useRef<number>(0);
-  const rafRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (!toast) {
-      setProgress(100);
-      setShowDetail(false);
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-      return undefined;
-    }
-
-    const duration = toast.duration ?? (toast.type === 'error' ? 4000 : 2800);
-    startTimeRef.current = Date.now();
-    setProgress(100);
-
-    const animate = () => {
-      const elapsed = Date.now() - startTimeRef.current;
-      const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
-      setProgress(remaining);
-      if (remaining > 0) {
-        rafRef.current = requestAnimationFrame(animate);
-      }
-    };
-    rafRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    };
-  }, [toast]);
-
-  if (!toast) {
-    return null;
-  }
-
-  const type = toast.type ?? 'success';
-  const typeClass = `is-${type}`;
-  const label = TOAST_LABELS[type];
-  const icon = TOAST_ICONS[type];
-
-  return (
-    <div className={`toast ${typeClass}`}>
-      <div className="toast-icon" aria-hidden="true">{icon}</div>
-      <div className="toast-content">
-        <strong className="toast-title">{label}</strong>
-        <span className="toast-message">{toast.message}</span>
-        {toast.detail ? (
-          <>
-            <button
-              type="button"
-              className="toast-detail-toggle"
-              onClick={() => setShowDetail((v) => !v)}
-            >
-              {showDetail ? '收起详情' : '查看详情'}
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                style={{ transform: showDetail ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
-              >
-                <path
-                  d="M6 9l6 6 6-6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-            {showDetail ? <span className="toast-detail">{toast.detail}</span> : null}
-          </>
-        ) : null}
-      </div>
-      <div className="toast-progress" aria-hidden="true">
-        <div className="toast-progress-bar" style={{ width: `${progress}%` }} />
-      </div>
-    </div>
-  );
+  // 已迁移至 Arco Message，保留空组件以兼容业务代码
+  return null;
 }
 
 export function Skeleton({ lines = 3, width }: { lines?: number; width?: string | number }) {
@@ -603,12 +531,35 @@ export const Btn = forwardRef<HTMLButtonElement, PropsWithChildren<ButtonProps>>
   tone = 'secondary',
   className = '',
   children,
+  loading,
+  disabled,
   ...rest
 }, ref) {
+  // 将项目的 tone 映射到 Arco Button 的 type/status
+  const typeMap: Record<string, 'primary' | 'secondary' | 'outline' | 'text' | 'default'> = {
+    primary: 'primary',
+    secondary: 'secondary',
+    ghost: 'outline',
+    danger: 'outline',
+    'danger-fill': 'primary',
+  };
+  const statusMap: Record<string, 'danger' | 'warning' | 'success' | undefined> = {
+    danger: 'danger',
+    'danger-fill': 'danger',
+  };
+
   return (
-    <button ref={ref} className={`btn btn-${tone} ${className}`.trim()} {...rest}>
+    <Button
+      ref={ref}
+      type={typeMap[tone] ?? 'secondary'}
+      status={statusMap[tone]}
+      loading={loading}
+      disabled={disabled}
+      className={className}
+      {...(rest as Record<string, unknown>)}
+    >
       {children}
-    </button>
+    </Button>
   );
 });
 
@@ -696,33 +647,52 @@ export function Field({ label, hint, error, children, className = '', ...rest }:
   );
 }
 
-export function SelectField({ label, hint, error, children, className = '', ...rest }: SelectFieldProps) {
+export function SelectField({ label, hint, error, children, className = '', value, onChange, disabled, name, required, ...rest }: SelectFieldProps) {
   const fieldClass = `field ${error ? 'is-error' : ''}`.trim();
+
+  // 将 native <option> 子元素转换为 Arco Select.Option
+  const options = useMemo(() => {
+    const opts: ReactNode[] = [];
+    Children.forEach(children, (child) => {
+      if (isValidElement(child) && child.type === 'option') {
+        const { value: optionValue, children: optionChildren, disabled: optionDisabled } = child.props;
+        opts.push(
+          <Select.Option key={String(optionValue)} value={optionValue} disabled={optionDisabled}>
+            {optionChildren}
+          </Select.Option>
+        );
+      }
+    });
+    return opts;
+  }, [children]);
 
   return (
     <label className={fieldClass}>
       {label ? <span className="field-label">{label}</span> : null}
-      <div className="field-control field-control-select">
-        <select className={`select-themed ${className}`.trim()} {...rest}>
-          {children}
-        </select>
-        <span className="field-control-icon" aria-hidden="true">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M7 10l5 5 5-5"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </span>
-      </div>
+      <Select
+        value={value as string | number | string[] | number[] | undefined}
+        disabled={disabled}
+        onChange={(val) => {
+          // 模拟原生 select 的 onChange 事件接口
+          const syntheticEvent = {
+            target: { value: val },
+            currentTarget: { value: val },
+          } as React.ChangeEvent<HTMLSelectElement>;
+          if (onChange) onChange(syntheticEvent);
+        }}
+        className={className}
+        style={{ width: '100%' }}
+      >
+        {options}
+      </Select>
       {error ? <span className="field-error">{error}</span> : null}
       {hint && !error ? <span className="field-hint">{hint}</span> : null}
     </label>
   );
 }
+
+// 重新导出 Arco Select 的 Option 子组件
+export { Select } from '@arco-design/web-react';
 
 export function Tag({
   children,
@@ -1148,29 +1118,24 @@ export function useFormValidation<T extends Record<string, any>>(
 }
 
 export function useToastState() {
-  const [toast, setToast] = useState<ToastState | null>(null);
-  const timerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
-
   const showToast = useCallback((
     message: string,
     type: ToastState['type'] = 'success',
     options?: { detail?: string; duration?: number },
   ) => {
-    if (timerRef.current) {
-      window.clearTimeout(timerRef.current);
-    }
     const duration = options?.duration ?? (type === 'error' ? 4000 : 2800);
-    setToast({ message, type, detail: options?.detail, duration });
-    timerRef.current = window.setTimeout(() => setToast(null), duration);
+    const typeMap: Record<string, 'success' | 'info' | 'warning' | 'error' | 'normal'> = {
+      success: 'success',
+      error: 'error',
+      warning: 'warning',
+      info: 'info',
+    };
+    Message[typeMap[type] ?? 'info']({ content: message, duration });
   }, []);
 
   const hideToast = useCallback(() => {
-    if (timerRef.current) {
-      window.clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    setToast(null);
+    Message.clear();
   }, []);
 
-  return { toast, showToast, hideToast };
+  return { toast: null, showToast, hideToast };
 }
