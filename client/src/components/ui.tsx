@@ -20,7 +20,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 
-import { Button, Message, Modal as ArcoModal, Pagination as ArcoPagination, Select, Switch as ArcoSwitch } from '@arco-design/web-react';
+import { Button, Input, Message, Modal as ArcoModal, Pagination as ArcoPagination, Select, Switch as ArcoSwitch, Checkbox as ArcoCheckbox } from '@arco-design/web-react';
 import type { TabOption, TableColumn } from '../types/ui';
 
 export function useUndo<T>(initialValue: T, maxHistory = 50) {
@@ -573,10 +573,27 @@ export function PillTabs({
 export function Field({ label, hint, error, children, className = '', ...rest }: FieldProps) {
   const fieldClass = `field ${error ? 'is-error' : ''} ${className}`.trim();
 
+  if (children) {
+    return (
+      <label className={fieldClass}>
+        {label ? <span className="field-label">{label}</span> : null}
+        {children}
+        {error ? <span className="field-error">{error}</span> : null}
+        {hint && !error ? <span className="field-hint">{hint}</span> : null}
+      </label>
+    );
+  }
+
+  // Arco Input 的 onChange 签名为 (value: string, e) => void，需适配原生 (e) => void
+  const { onChange: nativeOnChange, value, ...inputProps } = rest as any;
+  const handleArcoChange = nativeOnChange
+    ? (val: string) => nativeOnChange({ target: { value: val } } as React.ChangeEvent<HTMLInputElement>)
+    : undefined;
+
   return (
     <label className={fieldClass}>
       {label ? <span className="field-label">{label}</span> : null}
-      {children ?? <input {...rest} />}
+      <Input value={value} onChange={handleArcoChange} {...inputProps} />
       {error ? <span className="field-error">{error}</span> : null}
       {hint && !error ? <span className="field-hint">{hint}</span> : null}
     </label>
@@ -809,14 +826,9 @@ export function Switch({
 
 export function Checkbox({ checked, onChange, children }: CheckboxProps) {
   return (
-    <label className="checkbox">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-      />
-      <span>{children}</span>
-    </label>
+    <ArcoCheckbox checked={checked} onChange={onChange}>
+      {children}
+    </ArcoCheckbox>
   );
 }
 
@@ -833,10 +845,16 @@ export function TextArea({
 } & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   const fieldClass = `field ${error ? 'is-error' : ''} ${className}`.trim();
 
+  // Arco Input.TextArea 的 onChange 签名为 (value: string, e) => void，需适配原生 (e) => void
+  const { onChange: nativeOnChange, value, ...textAreaProps } = rest as any;
+  const handleArcoChange = nativeOnChange
+    ? (val: string) => nativeOnChange({ target: { value: val } } as React.ChangeEvent<HTMLTextAreaElement>)
+    : undefined;
+
   return (
     <label className={fieldClass}>
       {label ? <span className="field-label">{label}</span> : null}
-      <textarea {...rest} />
+      <Input.TextArea value={value} onChange={handleArcoChange} {...textAreaProps} />
       {error ? <span className="field-error">{error}</span> : null}
       {hint && !error ? <span className="field-hint">{hint}</span> : null}
     </label>
