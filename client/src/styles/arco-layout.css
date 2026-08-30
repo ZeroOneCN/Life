@@ -1,0 +1,407 @@
+/* ====================================================================
+ * ArcoLayout 完整样式
+ * 基于 Arco Design CSS 变量，兼容亮色/暗色主题
+ * ==================================================================== */
+
+/* ============ 布局容器 ============ */
+.arco-layout-wrapper {
+  transition: background-color 0.2s ease;
+}
+
+/* ============ 侧边栏 ============ */
+.arco-layout-sider {
+  position: sticky !important;
+  top: 0;
+  z-index: 100;
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--color-border, #e5e7eb);
+  transition: all var(--sidebar-transition-duration, 260ms)
+    var(--sidebar-transition-easing, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+/* 侧边栏滚动条 */
+.arco-layout-sider::-webkit-scrollbar {
+  width: 4px;
+}
+.arco-layout-sider::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 2px;
+}
+.arco-layout-sider:hover::-webkit-scrollbar-thumb {
+  background: var(--color-fill-3, #c9cdd4);
+}
+
+/* ============ 品牌 Logo ============ */
+.arco-layout-logo {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  padding: 0 12px;
+  overflow: hidden;
+}
+
+.arco-layout-logo-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.arco-layout-logo-mark {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-6, #5e6ad2),
+    var(--color-primary-4, #828fff)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============ 顶部栏 ============ */
+.arco-layout-header {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px !important;
+  padding: 0 16px !important;
+  background: var(--color-bg-2, #ffffff) !important;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  line-height: 56px !important;
+}
+
+.arco-layout-header-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.arco-layout-header-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.arco-layout-header-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  color: var(--color-text-2, #4b5563);
+  transition: all 0.15s ease;
+}
+
+.arco-layout-header-btn:hover {
+  background: var(--color-fill-2, #f5f6f8);
+  color: var(--color-text-1, #1a1b1e);
+}
+
+/* 移动端菜单按钮（默认隐藏，<768px 显示） */
+.arco-layout-header-mobile-menu {
+  display: none !important;
+}
+
+/* ============ 面包屑 ============ */
+.arco-layout-breadcrumb {
+  margin-left: 8px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.arco-layout-breadcrumb .arco-breadcrumb-item {
+  font-size: 13px;
+  color: var(--color-text-3, #6b7280);
+}
+
+.arco-layout-breadcrumb .arco-breadcrumb-item:last-child {
+  color: var(--color-text-1, #1a1b1e);
+  font-weight: 500;
+}
+
+.arco-layout-breadcrumb .arco-breadcrumb-item a {
+  color: var(--color-text-3, #6b7280);
+  text-decoration: none;
+  transition: color 0.15s ease;
+  cursor: pointer;
+}
+
+.arco-layout-breadcrumb .arco-breadcrumb-item a:hover {
+  color: var(--color-primary-6, #5e6ad2);
+}
+
+/* ============ 用户头像 ============ */
+.arco-layout-header-avatar {
+  cursor: pointer;
+  margin-left: 4px;
+  transition: opacity 0.15s ease;
+}
+
+.arco-layout-header-avatar:hover {
+  opacity: 0.8;
+}
+
+/* ============ 主内容区 ============ */
+.arco-layout-content {
+  min-height: calc(100vh - 56px - 40px);
+  background: var(--color-bg-1, #f5f6f8);
+}
+
+/* 页面容器（带过渡动画） */
+.arco-layout-page {
+  animation: arco-page-enter 0.25s ease-out;
+  min-height: calc(100vh - 56px - 40px);
+  padding: 0;
+}
+
+@keyframes arco-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============ 底部状态栏 ============ */
+.arco-layout-footer {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px !important;
+  padding: 0 16px !important;
+  background: var(--color-bg-2, #ffffff) !important;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  font-size: 12px;
+  color: var(--color-text-3, #6b7280);
+  line-height: 40px !important;
+}
+
+.arco-layout-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.arco-layout-footer-right {
+  display: flex;
+  align-items: center;
+}
+
+.arco-layout-footer-sep {
+  margin: 0 4px;
+  opacity: 0.4;
+}
+
+.arco-layout-footer-btn {
+  font-size: 12px !important;
+  color: var(--color-text-3, #6b7280) !important;
+}
+
+.arco-layout-footer-btn:hover {
+  color: var(--color-text-1, #1a1b1e) !important;
+}
+
+/* ============ 返回顶部按钮 ============ */
+.arco-layout-back-top {
+  position: fixed;
+  right: 72px;
+  bottom: 80px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-bg-2, #ffffff);
+  color: var(--color-text-2, #4b5563);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  animation: arco-back-top-enter 0.3s ease-out;
+}
+
+.arco-layout-back-top:hover {
+  background: var(--color-fill-2, #f5f6f8);
+  color: var(--color-primary-6, #5e6ad2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+@keyframes arco-back-top-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============ 移动端 Drawer 菜单 ============ */
+.arco-layout-mobile-drawer .arco-drawer-content {
+  padding: 0 !important;
+}
+
+.arco-layout-drawer-logo {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.arco-layout-drawer-logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-6, #5e6ad2),
+    var(--color-primary-4, #828fff)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.arco-layout-drawer-logo-sub {
+  font-size: 12px;
+  color: var(--color-text-3, #6b7280);
+}
+
+/* ============ 响应式适配 ============ */
+
+/* 平板：< 1280px 侧边栏默认折叠 */
+@media (max-width: 1279px) {
+  .arco-layout-sider {
+    width: 60px !important;
+    min-width: 60px !important;
+  }
+}
+
+/* 移动端：< 768px */
+@media (max-width: 767px) {
+  /* 隐藏 PC 侧边栏 */
+  .arco-layout-sider {
+    display: none !important;
+  }
+
+  /* 显示移动端菜单按钮 */
+  .arco-layout-header-mobile-menu {
+    display: inline-flex !important;
+  }
+
+  /* 顶部栏紧凑 */
+  .arco-layout-header {
+    height: 48px !important;
+    padding: 0 8px !important;
+    line-height: 48px !important;
+  }
+
+  .arco-layout-header-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* 面包屑截断 */
+  .arco-layout-breadcrumb {
+    max-width: 40vw;
+  }
+
+  /* 底部状态栏紧凑 */
+  .arco-layout-footer {
+    height: 36px !important;
+    padding: 0 8px !important;
+    line-height: 36px !important;
+    font-size: 11px;
+  }
+
+  .arco-layout-footer-right {
+    display: none;
+  }
+
+  /* 内容区 */
+  .arco-layout-content {
+    min-height: calc(100vh - 48px - 36px);
+  }
+
+  .arco-layout-page {
+    min-height: calc(100vh - 48px - 36px);
+  }
+
+  /* 返回顶部按钮位置调整 */
+  .arco-layout-back-top {
+    right: 16px;
+    bottom: 72px;
+  }
+}
+
+/* ============ 暗色模式适配 ============ */
+body[arco-theme='dark'] .arco-layout-sider {
+  border-right-color: var(--color-border, #2c2c2c);
+}
+
+body[arco-theme='dark'] .arco-layout-header {
+  border-bottom-color: var(--color-border, #2c2c2c);
+}
+
+body[arco-theme='dark'] .arco-layout-footer {
+  border-top-color: var(--color-border, #2c2c2c);
+}
+
+body[arco-theme='dark'] .arco-layout-back-top {
+  border-color: var(--color-border, #2c2c2c);
+  background: var(--color-bg-2, #232323);
+}
+
+body[arco-theme='dark'] .arco-layout-back-top:hover {
+  background: var(--color-fill-2, #2a2a2b);
+}
+
+/* ============ Arco Menu 在侧边栏中的样式兼容 ============ */
+.arco-layout-sider .arco-menu {
+  overflow: auto;
+  flex: 1;
+}
+
+.arco-layout-sider .arco-menu-item-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 16px 6px;
+  color: var(--color-text-3, #6b7280);
+  opacity: 0.7;
+}
+
+/* 折叠态隐藏分组标题 */
+.arco-layout-sider .arco-menu-collapse .arco-menu-item-group-title {
+  display: none;
+}
+
+/* ============ 页面内容区通用 padding 兼容 ============ */
+/* 各页面可自行决定是否在根容器上加 padding */
+.arco-layout-page > *:first-child {
+  /* 保留页面自身的 padding 控制 */
+}

@@ -98,9 +98,6 @@ function matchItem(item: CommandItem, query: string): boolean {
 export default function CommandPalette() {
   const navigate = useNavigate();
   const setCommandPaletteOpen = useWorkspaceStore((s) => s.setCommandPaletteOpen);
-  const toggleNavRail = useWorkspaceStore((s) => s.toggleNavRail);
-  const setInspectorMode = useWorkspaceStore((s) => s.setInspectorMode);
-  const restoreRecentlyClosed = useWorkspaceStore((s) => s.restoreRecentlyClosed);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -111,49 +108,24 @@ export default function CommandPalette() {
   const actions = useMemo<CommandItem[]>(() => {
     return [
       {
-        key: 'action-toggle-navrail',
-        title: '折叠/展开导航栏',
-        group: '视图',
-        type: 'action',
-        run: () => toggleNavRail(),
-      },
-      {
-        key: 'action-inspector-ai',
-        title: '打开 AI 副驾',
-        group: '视图',
-        type: 'action',
-        run: () => setInspectorMode('ai'),
-      },
-      {
-        key: 'action-inspector-detail',
-        title: '打开详情面板',
-        group: '视图',
-        type: 'action',
-        run: () => setInspectorMode('detail'),
-      },
-      {
-        key: 'action-inspector-close',
-        title: '关闭 Inspector 面板',
-        group: '视图',
-        type: 'action',
-        run: () => setInspectorMode(null),
-      },
-      {
-        key: 'action-restore-tab',
-        title: '恢复最近关闭的 Tab',
-        group: '工作区',
-        type: 'action',
-        run: () => restoreRecentlyClosed(),
-      },
-      {
         key: 'action-goto-dashboard',
         title: '前往仪表盘',
         group: '导航',
         type: 'action',
         run: () => navigate('/dashboard'),
       },
+      {
+        key: 'action-toggle-sidebar',
+        title: '折叠/展开侧边栏',
+        group: '视图',
+        type: 'action',
+        run: () => {
+          // 通过 dispatch 事件触发侧边栏折叠
+          window.dispatchEvent(new CustomEvent('arco-layout:toggle-sidebar'));
+        },
+      },
     ];
-  }, [toggleNavRail, setInspectorMode, restoreRecentlyClosed, navigate]);
+  }, [navigate]);
 
   // 解析查询前缀，确定过滤模式与实际查询词
   const { mode, searchQuery } = useMemo(() => {
@@ -240,13 +212,14 @@ export default function CommandPalette() {
     }
   };
 
-  const placeholder = mode === 'action'
-    ? '搜索动作...（如：切换主题、打开 AI）'
-    : mode === 'record'
-      ? '搜索记录...（阶段 C 接入后端 API）'
-      : mode === 'page'
-        ? '搜索页面...（如：仪表盘、购物记录）'
-        : '搜索页面或动作...（> 动作 / @ 记录 / / 页面）';
+  const placeholder =
+    mode === 'action'
+      ? '搜索动作...（如：切换主题、打开 AI）'
+      : mode === 'record'
+        ? '搜索记录...（阶段 C 接入后端 API）'
+        : mode === 'page'
+          ? '搜索页面...（如：仪表盘、购物记录）'
+          : '搜索页面或动作...（> 动作 / @ 记录 / / 页面）';
 
   return (
     <div
@@ -260,7 +233,12 @@ export default function CommandPalette() {
         <div className="command-palette-input-wrap">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" />
-            <path d="M21 21l-4.3-4.3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            <path
+              d="M21 21l-4.3-4.3"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
           </svg>
           <input
             ref={inputRef}
@@ -274,7 +252,9 @@ export default function CommandPalette() {
             }}
             aria-label="搜索命令"
           />
-          <span className="command-palette-kbd" aria-hidden="true">Esc 关闭</span>
+          <span className="command-palette-kbd" aria-hidden="true">
+            Esc 关闭
+          </span>
         </div>
 
         <div className="command-palette-list">
@@ -292,7 +272,10 @@ export default function CommandPalette() {
                 onMouseEnter={() => setActiveIndex(index)}
               >
                 <span className="command-palette-item-main">
-                  <span className={`command-palette-item-type type-${item.type}`} aria-hidden="true">
+                  <span
+                    className={`command-palette-item-type type-${item.type}`}
+                    aria-hidden="true"
+                  >
                     {item.type === 'page' ? 'P' : item.type === 'action' ? 'A' : 'R'}
                   </span>
                   <span className="command-palette-item-title">{item.title}</span>
@@ -304,9 +287,15 @@ export default function CommandPalette() {
         </div>
 
         <div className="command-palette-footer">
-          <span><span className="command-palette-kbd-inline">↑↓</span> 选择</span>
-          <span><span className="command-palette-kbd-inline">Enter</span> 执行</span>
-          <span><span className="command-palette-kbd-inline">Esc</span> 关闭</span>
+          <span>
+            <span className="command-palette-kbd-inline">↑↓</span> 选择
+          </span>
+          <span>
+            <span className="command-palette-kbd-inline">Enter</span> 执行
+          </span>
+          <span>
+            <span className="command-palette-kbd-inline">Esc</span> 关闭
+          </span>
           <span className="command-palette-hint">
             <span className="command-palette-kbd-inline">&gt;</span>动作
             <span className="command-palette-kbd-inline">@</span>记录

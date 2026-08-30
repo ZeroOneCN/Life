@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { Modal } from '@arco-design/web-react';
 
-import { useWorkspaceStore } from '../../stores/workspace.store';
+import { AssistantChatPanel } from './AssistantChatPanel';
 
 const POSITION_STORAGE_KEY = 'lifeos-assistant-position-v1';
 const DEFAULT_POSITION = { right: 24, bottom: 24 };
@@ -45,18 +46,14 @@ function savePosition(position: AssistantPosition): void {
 /**
  * AssistantLauncher：AI 助理入口（FAB）
  *
- * 阶段 C 起，AI 对话面板已迁入 Inspector（AI 模式）。
- * 本组件仅保留右下角悬浮按钮：
- * - 点击：打开/关闭 Inspector AI 模式
- * - 按住拖动：调整 FAB 位置（位置持久化）
- * - 移动端：作为底部入口（Inspector 移动端转全屏）
+ * 右下角悬浮按钮，点击弹出 AI 对话模态框。
+ * 按住拖动可调整 FAB 位置（位置持久化）。
  *
- * @returns FAB 按钮 JSX
+ * @returns FAB 按钮 + AI 对话 Modal JSX
  */
 export function AssistantLauncher() {
-  const inspectorMode = useWorkspaceStore((s) => s.inspectorMode);
-  const setInspectorMode = useWorkspaceStore((s) => s.setInspectorMode);
   const [position, setPosition] = useState<AssistantPosition>(() => loadPosition());
+  const [aiModalOpen, setAiModalOpen] = useState(false);
   const dragStateRef = useRef<{
     pointerId: number;
     startX: number;
@@ -67,8 +64,6 @@ export function AssistantLauncher() {
     height: number;
   } | null>(null);
   const fabDragRef = useRef<number | null>(null);
-
-  const open = inspectorMode === 'ai';
 
   useEffect(() => {
     savePosition(position);
@@ -129,32 +124,44 @@ export function AssistantLauncher() {
     };
   }, []);
 
-  const toggleInspector = () => {
-    setInspectorMode(open ? null : 'ai');
-  };
-
   return (
-    <button
-      type="button"
-      className={`assistant-fab ${open ? 'is-open' : ''}`.trim()}
-      style={{ right: `${position.right}px`, bottom: `${position.bottom}px` }}
-      aria-label={open ? '关闭 AI 助理' : '打开 AI 助理'}
-      onClick={() => {
-        if (fabDragRef.current && Date.now() - fabDragRef.current < 50) {
+    <>
+      <button
+        type="button"
+        className="assistant-fab"
+        style={{ right: `${position.right}px`, bottom: `${position.bottom}px` }}
+        aria-label="打开 AI 助理"
+        onClick={() => {
+          if (fabDragRef.current && Date.now() - fabDragRef.current < 50) {
+            fabDragRef.current = null;
+            return;
+          }
+          setAiModalOpen(true);
+        }}
+        onPointerDown={(event) => {
+          if (event.button !== 0) return;
           fabDragRef.current = null;
-          return;
-        }
-        toggleInspector();
-      }}
-      onPointerDown={(event) => {
-        if (event.button !== 0) return;
-        fabDragRef.current = null;
-        handleDragStart(event);
-      }}
-      title="按住拖动 · 点击展开 AI 副驾"
-    >
-      <span aria-hidden="true">{open ? '×' : '🤖'}</span>
-      <span className="assistant-fab-tooltip">{open ? '关闭' : 'AI 助理'}</span>
-    </button>
+          handleDragStart(event);
+        }}
+        title="按住拖动 · 点击展开 AI 副驾"
+      >
+        <span aria-hidden="true">🤖</span>
+        <span className="assistant-fab-tooltip">AI 助理</span>
+      </button>
+
+      <Modal
+        title="AI 助理"
+        visible={aiModalOpen}
+        onCancel={() => setAiModalOpen(false)}
+        className="arco-layout-ai-modal"
+        style={{ width: 560 }}
+        footer={null}
+        autoFocus={false}
+        focusLock={false}
+        mountOnEnter={false}
+      >
+        <AssistantChatPanel />
+      </Modal>
+    </>
   );
 }
