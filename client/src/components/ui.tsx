@@ -20,7 +20,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 
-import { Button, Message, Select } from '@arco-design/web-react';
+import { Button, Message, Modal as ArcoModal, Pagination as ArcoPagination, Select, Switch as ArcoSwitch } from '@arco-design/web-react';
 import type { TabOption, TableColumn } from '../types/ui';
 
 export function useUndo<T>(initialValue: T, maxHistory = 50) {
@@ -400,85 +400,21 @@ export function TrendArrow({ direction, value }: { direction: TrendDirection; va
 }
 
 export function Modal({ open, onClose, title, width = 560, footer, children }: ModalProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const titleId = useId();
-  const onCloseRef = useRef(onClose);
-
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-
-  useEffect(() => {
-    if (!open) {
-      return undefined;
-    }
-
-    overlayRef.current?.focus();
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onCloseRef.current();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    // 计算当前滚动条宽度，用于补偿 overflow:hidden 导致的布局偏移
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousBodyPaddingRight = document.body.style.paddingRight;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-    const previousHtmlPaddingRight = document.documentElement.style.paddingRight;
-
-    // 锁定滚动 + 补偿滚动条宽度防止闪屏
-    document.body.style.overflow = 'hidden';
-    document.body.style.paddingRight = `${scrollbarWidth}px`;
-    document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.paddingRight = `${scrollbarWidth}px`;
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousBodyOverflow;
-      document.body.style.paddingRight = previousBodyPaddingRight;
-      document.documentElement.style.overflow = previousHtmlOverflow;
-      document.documentElement.style.paddingRight = previousHtmlPaddingRight;
-    };
-  }, [open]);
-
-  if (!open || typeof document === 'undefined') {
-    return null;
-  }
-
-  return createPortal(
-    <div
-      ref={overlayRef}
-      className="modal-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={title ? titleId : undefined}
-      tabIndex={-1}
+  return (
+    <ArcoModal
+      visible={open}
+      onCancel={onClose}
+      title={title}
+      style={{ width }}
+      footer={footer}
+      maskClosable={false}
+      escToExit={false}
+      closable
+      autoFocus={false}
+      focusLock
     >
-      <div className="modal-panel" style={{ width }}>
-        {(title || true) && (
-          <div className="modal-header">
-            {title ? <h3 id={titleId} className="modal-title">{title}</h3> : <span />}
-            <button
-              type="button"
-              className="modal-close"
-              aria-label="关闭弹窗"
-              onClick={onClose}
-            >
-              ×
-            </button>
-          </div>
-        )}
-        <div className="modal-body">{children}</div>
-        {footer ? <div className="modal-footer">{footer}</div> : null}
-      </div>
-    </div>,
-    document.body,
+      {children}
+    </ArcoModal>
   );
 }
 
@@ -830,13 +766,14 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
   }
 
   return (
-    <div className="pagination">
-      <Btn tone="secondary" disabled={page === 1} onClick={() => onPageChange(1)}>首页</Btn>
-      <Btn tone="secondary" disabled={page === 1} onClick={() => onPageChange(page - 1)}>上一页</Btn>
-      <span className="subtle-text">第 {page} / {totalPages} 页</span>
-      <Btn tone="secondary" disabled={page === totalPages} onClick={() => onPageChange(page + 1)}>下一页</Btn>
-      <Btn tone="secondary" disabled={page === totalPages} onClick={() => onPageChange(totalPages)}>末页</Btn>
-    </div>
+    <ArcoPagination
+      current={page}
+      total={totalPages}
+      pageSize={1}
+      onChange={(current) => onPageChange(current)}
+      size="small"
+      hideOnSinglePage
+    />
   );
 }
 
@@ -849,16 +786,7 @@ export function Switch({
   statusText,
 }: SwitchProps) {
   const control = (
-    <label className={`switch ${disabled ? 'is-disabled' : ''}`}>
-      <input
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.checked)}
-      />
-      <span className="switch-track" />
-      <span className="switch-knob" />
-    </label>
+    <ArcoSwitch checked={checked} onChange={onChange} disabled={disabled} />
   );
 
   if (!label && !description && !statusText) {

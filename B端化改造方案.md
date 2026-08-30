@@ -188,8 +188,9 @@ export function Btn({ tone, size, loading, ...props }) {
 
 | 日期 | 阶段 | 完成内容 | 提交信息 |
 |------|------|---------|---------|
-| 2026-08-30 | 阶段一 | 安装 Arco Design + vite插件，配置 ConfigProvider 主题同步，替换 Btn/Toast/SelectField 三个组件 | 待提交 |
-| - | - | - | - |
+| 2026-08-30 | 阶段一 | 安装 Arco Design + vite插件，配置 ConfigProvider 主题同步，替换 Btn/Toast/SelectField 三个组件 | commit 500d1fd ✅ |
+| 2026-08-30 | 阶段二 | 替换 Modal/Switch/Pagination 组件（ui.tsx），修复 Modal width 类型错误 | 当前会话 ✅ |
+| 2026-08-30 | 阶段二 | 替换 DatePicker/MonthPicker/DateTimePicker/DateRangePicker 组件（DateFields.tsx），移除 916 行自定义日历代码 | 当前会话 ✅ |
 
 ---
 
