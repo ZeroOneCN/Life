@@ -286,6 +286,7 @@ export default function ArcoLayout() {
   const location = useLocation();
   const { isDark, mode, setMode } = useTheme();
   const authState = useAuthState();
+  const commandPaletteOpen = useWorkspaceStore((s) => s.commandPaletteOpen);
   const setCommandPaletteOpen = useWorkspaceStore((s) => s.setCommandPaletteOpen);
 
   // 侧边栏折叠状态
@@ -343,6 +344,18 @@ export default function ArcoLayout() {
     window.addEventListener('arco-layout:toggle-sidebar', handler);
     return () => window.removeEventListener('arco-layout:toggle-sidebar', handler);
   }, []);
+
+  // 全局 ⌘K 快捷键打开命令面板
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [setCommandPaletteOpen]);
 
   const handleLogout = useCallback(async () => {
     setLogoutConfirmOpen(false);
@@ -602,7 +615,7 @@ export default function ArcoLayout() {
       <AssistantLauncher />
 
       {/* ============ 命令面板 ============ */}
-      <CommandPalette />
+      {commandPaletteOpen ? <CommandPalette /> : null}
     </>
   );
 }
