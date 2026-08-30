@@ -10,11 +10,11 @@
   },
   "lint-staged": {
     "client/src/**/*.{ts,tsx}": [
-      "cd client && npx eslint --fix",
-      "cd client && npx prettier --write"
+      "npx --prefix client eslint --fix --config client/.eslintrc.cjs",
+      "npx --prefix client prettier --write"
     ],
     "client/src/**/*.{json,css,md}": [
-      "cd client && npx prettier --write"
+      "npx --prefix client prettier --write"
     ]
   }
 }

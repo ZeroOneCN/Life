@@ -4,7 +4,10 @@ import { BrowserRouter } from 'react-router-dom';
 
 import App from './App';
 import { ThemeProvider } from './hooks/useTheme';
+import { initSentry } from './lib/sentry';
 import './index.css';
+
+initSentry();
 import './styles/health.css';
 import './styles/dashboard.css';
 import './styles/auth.css';
