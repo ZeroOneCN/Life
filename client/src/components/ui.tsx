@@ -410,8 +410,6 @@ export function Modal({ open, onClose, title, width = 560, footer, children }: M
       maskClosable={false}
       escToExit={false}
       closable
-      autoFocus={false}
-      focusLock
     >
       {children}
     </ArcoModal>

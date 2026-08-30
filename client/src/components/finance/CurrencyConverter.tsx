@@ -1,3 +1,4 @@
+import { Message } from '@arco-design/web-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { EmptyState, SectionCard } from '../../components/page';
@@ -40,8 +41,7 @@ export function CurrencyConverter({
       setResult(data);
     } catch (error) {
       setResult(null);
-      // eslint-disable-next-line no-alert
-      alert(buildApiErrorMessage(error, '汇率换算失败。'));
+      Message.error(buildApiErrorMessage(error, '汇率换算失败。'));
     } finally {
       setLoading(false);
     }
