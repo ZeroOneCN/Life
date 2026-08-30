@@ -1,0 +1,20 @@
+{
+  "name": "lifeos2",
+  "private": true,
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0"
+  },
+  "lint-staged": {
+    "client/src/**/*.{ts,tsx}": [
+      "cd client && npx eslint --fix",
+      "cd client && npx prettier --write"
+    ],
+    "client/src/**/*.{json,css,md}": [
+      "cd client && npx prettier --write"
+    ]
+  }
+}
