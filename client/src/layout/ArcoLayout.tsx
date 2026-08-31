@@ -302,11 +302,11 @@ export default function ArcoLayout() {
     return ['health', 'finance', 'life', 'investment'].includes(prefix) ? [prefix] : [];
   });
 
-  // 路由变化时自动展开对应父级
+  // 路由变化时自动展开对应父级（accordion：只保留当前路由的父级）
   useEffect(() => {
     const prefix = location.pathname.split('/')[1];
     if (['health', 'finance', 'life', 'investment'].includes(prefix)) {
-      setOpenKeys((prev) => (prev.includes(prefix) ? prev : [...prev, prefix]));
+      setOpenKeys([prefix]);
     }
     // 关闭移动端抽屉
     setMobileDrawerOpen(false);
@@ -394,9 +394,12 @@ export default function ArcoLayout() {
       mode="vertical"
       collapse={collapsed && !mobileDrawerOpen}
       selectedKeys={selectedKeys}
-      openKeys={mobileDrawerOpen ? openKeys : undefined}
+      openKeys={collapsed ? undefined : openKeys}
       onClickMenuItem={handleMenuClick}
-      onClickSubMenu={(_, keys) => setOpenKeys(keys)}
+      onClickSubMenu={(key, keys) => {
+        // Accordion 行为：点击某个子菜单时，只保留该菜单展开，其他全部收起
+        setOpenKeys(keys.length > 0 ? [key] : []);
+      }}
       style={{ border: 'none', width: '100%' }}
     >
       {renderMenuItems(menuItems)}
@@ -545,7 +548,10 @@ export default function ArcoLayout() {
           selectedKeys={selectedKeys}
           openKeys={openKeys}
           onClickMenuItem={handleMenuClick}
-          onClickSubMenu={(_, keys) => setOpenKeys(keys)}
+          onClickSubMenu={(key, keys) => {
+            // Accordion 行为
+            setOpenKeys(keys.length > 0 ? [key] : []);
+          }}
           style={{ border: 'none', width: '100%' }}
         >
           {renderMenuItems(menuItems)}
