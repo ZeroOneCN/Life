@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { List } from '@arco-design/web-react';
 
 import { EmptyState, PageHeader } from '../components/page';
 import { Skeleton, Tag } from '../components/ui';
@@ -24,12 +25,23 @@ interface RawDashboardSummaryResponse {
   }>;
   health: {
     title: string;
-    stats: { todayStepCount: number; latestWeight: number | null; todayCalorieNet: number; checkupPendingCount: number; medicationLowStockCount: number };
+    stats: {
+      todayStepCount: number;
+      latestWeight: number | null;
+      todayCalorieNet: number;
+      checkupPendingCount: number;
+      medicationLowStockCount: number;
+    };
     trend: Array<{ date: string; label: string; steps: number }>;
   };
   finance: {
     title: string;
-    stats: { upcomingSubscriptionCount: number; overdueLoanCount: number; activeSubscriptionCount: number; totalUnpaidLoanAmount: number };
+    stats: {
+      upcomingSubscriptionCount: number;
+      overdueLoanCount: number;
+      activeSubscriptionCount: number;
+      totalUnpaidLoanAmount: number;
+    };
     trend: Array<{ month: string; label: string; subscriptionCount: number; loanAmount: number }>;
     upcomingSubscriptions: Array<{
       id: string;
@@ -44,7 +56,12 @@ interface RawDashboardSummaryResponse {
   };
   life: {
     title: string;
-    stats: { pendingTodoCount: number; dueTodayTodoCount: number; activeStorageCount: number; lowBalanceCardCount: number };
+    stats: {
+      pendingTodoCount: number;
+      dueTodayTodoCount: number;
+      activeStorageCount: number;
+      lowBalanceCardCount: number;
+    };
     trend: Array<{ key: string; label: string; value: number }>;
   };
   investment: {
@@ -55,7 +72,16 @@ interface RawDashboardSummaryResponse {
   notifications: {
     enabledChannelCount: number;
     enabledSceneCount: number;
-    recentLogs: Array<{ id: string; created_at: string; channel: 'email' | 'wechatWork' | 'dingTalk' | 'feishu' | 'telegram' | 'webhook'; scene_id: string | null; kind: 'test' | 'scene'; status: 'success' | 'skipped' | 'error'; title: string; message: string }>;
+    recentLogs: Array<{
+      id: string;
+      created_at: string;
+      channel: 'email' | 'wechatWork' | 'dingTalk' | 'feishu' | 'telegram' | 'webhook';
+      scene_id: string | null;
+      kind: 'test' | 'scene';
+      status: 'success' | 'skipped' | 'error';
+      title: string;
+      message: string;
+    }>;
     hottestSceneId: string;
     channelStatuses: Array<{
       type: 'email' | 'wechatWork' | 'dingTalk' | 'feishu' | 'telegram' | 'webhook';
@@ -76,60 +102,133 @@ interface RawDashboardSummaryResponse {
   }>;
 }
 
-function formatMoney(value: number) { return `¥${value.toFixed(2)}`; }
-function formatSignedMoney(value: number) { return `${value >= 0 ? '+' : '−'}¥${Math.abs(value).toFixed(2)}`; }
-function formatUsd(value: number) { return `$${value.toFixed(2)}`; }
-function formatSignedUsd(value: number) { return `${value >= 0 ? '+' : '−'}$${Math.abs(value).toFixed(2)}`; }
-function formatPercent(value: number) { return `${(value * 100).toFixed(1)}%`; }
+function formatMoney(value: number) {
+  return `¥${value.toFixed(2)}`;
+}
+function formatSignedMoney(value: number) {
+  return `${value >= 0 ? '+' : '−'}¥${Math.abs(value).toFixed(2)}`;
+}
+function formatUsd(value: number) {
+  return `$${value.toFixed(2)}`;
+}
+function formatSignedUsd(value: number) {
+  return `${value >= 0 ? '+' : '−'}$${Math.abs(value).toFixed(2)}`;
+}
+function formatPercent(value: number) {
+  return `${(value * 100).toFixed(1)}%`;
+}
 
 const IconTrend = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-    <polyline points="17 6 23 6 23 12"/>
+  <svg
+    width="28"
+    height="28"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+    <polyline points="17 6 23 6 23 12" />
   </svg>
 );
 
 const IconTodo = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-    <line x1="16" y1="2" x2="16" y2="6"/>
-    <line x1="8" y1="2" x2="8" y2="6"/>
-    <line x1="3" y1="10" x2="21" y2="10"/>
+  <svg
+    width="28"
+    height="28"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
   </svg>
 );
 
 const IconWallet = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-    <line x1="1" y1="10" x2="23" y2="10"/>
+  <svg
+    width="28"
+    height="28"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+    <line x1="1" y1="10" x2="23" y2="10" />
   </svg>
 );
 
 const IconBell = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-    <path d="M13.73 21a2 2 0 01-3.46 0"/>
+  <svg
+    width="28"
+    height="28"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 01-3.46 0" />
   </svg>
 );
 
 const IconHeart = () => (
-  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+  <svg
+    width="32"
+    height="32"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
   </svg>
 );
 
 const IconHome = () => (
-  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-    <polyline points="9 22 9 12 15 12 15 22"/>
+  <svg
+    width="32"
+    height="32"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
   </svg>
 );
 
 const IconChart = () => (
-  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="20" x2="18" y2="10"/>
-    <line x1="12" y1="20" x2="12" y2="4"/>
-    <line x1="6" y1="20" x2="6" y2="14"/>
+  <svg
+    width="32"
+    height="32"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="18" y1="20" x2="18" y2="10" />
+    <line x1="12" y1="20" x2="12" y2="4" />
+    <line x1="6" y1="20" x2="6" y2="14" />
   </svg>
 );
 
@@ -156,47 +255,115 @@ export default function Dashboard() {
         if (cancelled) return;
         if (usage) setAiUsage(usage);
 
-        const buildModule = (title: string, metrics: Array<{ label: string; value: string; helper?: string }>, chartKind: 'bar' | 'line'): DashboardModuleSnapshot => ({
-          title, subtitle: '', metrics, chartTitle: '', chartDescription: '', chartKind, chartData: [], listTitle: '', listDescription: '', listItems: [],
+        const buildModule = (
+          title: string,
+          metrics: Array<{ label: string; value: string; helper?: string }>,
+          chartKind: 'bar' | 'line',
+        ): DashboardModuleSnapshot => ({
+          title,
+          subtitle: '',
+          metrics,
+          chartTitle: '',
+          chartDescription: '',
+          chartKind,
+          chartData: [],
+          listTitle: '',
+          listDescription: '',
+          listItems: [],
         });
 
         setNetPnlRaw(raw.investment.stats.netPnl);
         setSummary({
-          overviewCards: raw.overviewCards.map((item) => ({ id: item.key, label: item.label, value: String(item.value), helper: '' })),
+          overviewCards: raw.overviewCards.map((item) => ({
+            id: item.key,
+            label: item.label,
+            value: String(item.value),
+            helper: '',
+          })),
           agenda: raw.agenda,
-          health: buildModule('健康中心', [
-            { label: '今日步数', value: `${raw.health.stats.todayStepCount}`, helper: '' },
-            { label: '体重', value: raw.health.stats.latestWeight ? `${Number(raw.health.stats.latestWeight).toFixed(2)} kg` : '-', helper: '' },
-            { label: '净热量', value: raw.health.stats.todayCalorieNet ? `${raw.health.stats.todayCalorieNet} kcal` : '-', helper: '' },
-            { label: '待体检', value: `${raw.health.stats.checkupPendingCount}项`, helper: '' },
-            { label: '药品低库存', value: `${raw.health.stats.medicationLowStockCount}种`, helper: '' },
-          ], 'line'),
-          finance: buildModule('财务中心', [
-            { label: '待还金额', value: formatMoney(raw.finance.stats.totalUnpaidLoanAmount), helper: '' },
-            { label: '逾期贷款', value: `${raw.finance.stats.overdueLoanCount}笔`, helper: '' },
-            { label: '活跃订阅', value: `${raw.finance.stats.activeSubscriptionCount}项`, helper: '' },
-          ], 'bar'),
-          life: buildModule('生活中心', [
-            { label: '待办事项', value: `${raw.life.stats.pendingTodoCount}项`, helper: '' },
-            { label: '今日到期', value: `${raw.life.stats.dueTodayTodoCount}项`, helper: '' },
-            { label: '物品追踪', value: `${raw.life.stats.activeStorageCount}件`, helper: '' },
-            { label: '低余额号卡', value: `${raw.life.stats.lowBalanceCardCount}张`, helper: '' },
-          ], 'line'),
-          investment: buildModule('投资中心', [
-            { label: '净收益', value: formatSignedUsd(raw.investment.stats.netPnl), helper: '' },
-            { label: '胜率', value: formatPercent(raw.investment.stats.winRate), helper: '' },
-            { label: '净资金', value: formatUsd(raw.investment.stats.netCapital), helper: '' },
-            { label: '活跃交易', value: `${raw.investment.stats.activeTradeCount}笔`, helper: '' },
-          ], 'line'),
+          health: buildModule(
+            '健康中心',
+            [
+              { label: '今日步数', value: `${raw.health.stats.todayStepCount}`, helper: '' },
+              {
+                label: '体重',
+                value: raw.health.stats.latestWeight
+                  ? `${Number(raw.health.stats.latestWeight).toFixed(2)} kg`
+                  : '-',
+                helper: '',
+              },
+              {
+                label: '净热量',
+                value: raw.health.stats.todayCalorieNet
+                  ? `${raw.health.stats.todayCalorieNet} kcal`
+                  : '-',
+                helper: '',
+              },
+              { label: '待体检', value: `${raw.health.stats.checkupPendingCount}项`, helper: '' },
+              {
+                label: '药品低库存',
+                value: `${raw.health.stats.medicationLowStockCount}种`,
+                helper: '',
+              },
+            ],
+            'line',
+          ),
+          finance: buildModule(
+            '财务中心',
+            [
+              {
+                label: '待还金额',
+                value: formatMoney(raw.finance.stats.totalUnpaidLoanAmount),
+                helper: '',
+              },
+              { label: '逾期贷款', value: `${raw.finance.stats.overdueLoanCount}笔`, helper: '' },
+              {
+                label: '活跃订阅',
+                value: `${raw.finance.stats.activeSubscriptionCount}项`,
+                helper: '',
+              },
+            ],
+            'bar',
+          ),
+          life: buildModule(
+            '生活中心',
+            [
+              { label: '待办事项', value: `${raw.life.stats.pendingTodoCount}项`, helper: '' },
+              { label: '今日到期', value: `${raw.life.stats.dueTodayTodoCount}项`, helper: '' },
+              { label: '物品追踪', value: `${raw.life.stats.activeStorageCount}件`, helper: '' },
+              { label: '低余额号卡', value: `${raw.life.stats.lowBalanceCardCount}张`, helper: '' },
+            ],
+            'line',
+          ),
+          investment: buildModule(
+            '投资中心',
+            [
+              { label: '净收益', value: formatSignedUsd(raw.investment.stats.netPnl), helper: '' },
+              { label: '胜率', value: formatPercent(raw.investment.stats.winRate), helper: '' },
+              { label: '净资金', value: formatUsd(raw.investment.stats.netCapital), helper: '' },
+              {
+                label: '活跃交易',
+                value: `${raw.investment.stats.activeTradeCount}笔`,
+                helper: '',
+              },
+            ],
+            'line',
+          ),
           notifications: {
             enabledChannels: raw.notifications.enabledChannelCount,
             enabledScenes: raw.notifications.enabledSceneCount,
             logCount: raw.notifications.recentLogs.length,
             mostActiveSceneLabel: raw.notifications.hottestSceneId || '-',
             recentLogs: raw.notifications.recentLogs.map((log) => ({
-              id: log.id, createdAt: log.created_at, channel: log.channel,
-              sceneId: log.scene_id as DashboardPageSummary['notifications']['recentLogs'][number]['sceneId'],
-              kind: log.kind, status: log.status, title: log.title, message: log.message,
+              id: log.id,
+              createdAt: log.created_at,
+              channel: log.channel,
+              sceneId:
+                log.scene_id as DashboardPageSummary['notifications']['recentLogs'][number]['sceneId'],
+              kind: log.kind,
+              status: log.status,
+              title: log.title,
+              message: log.message,
             })),
             channelStatuses: raw.notifications.channelStatuses ?? [],
           },
@@ -210,7 +377,9 @@ export default function Dashboard() {
             autoRenew: item.autoRenew,
             daysLeft: item.daysLeft,
           })),
-          connectedModuleCount: Number(raw.overviewCards.find((item) => item.key === 'modules')?.value ?? 0),
+          connectedModuleCount: Number(
+            raw.overviewCards.find((item) => item.key === 'modules')?.value ?? 0,
+          ),
           aiLogs: raw.aiLogs.map((log) => ({
             id: log.id,
             createdAt: log.created_at,
@@ -228,17 +397,33 @@ export default function Dashboard() {
     };
     void load();
     const intervalId = window.setInterval(() => void load(), 30000);
-    return () => { cancelled = true; window.clearInterval(intervalId); };
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
   }, []);
 
   const agendaInline = useMemo(() => {
     if (!summary) return [];
-    return summary.agenda.slice(0, 6).map((item) => ({ id: item.id, dotClass: SEVERITY_DOT_CLASS[item.severity] ?? 'dash-dot dash-dot-low', title: item.title, href: item.href }));
+    return summary.agenda
+      .slice(0, 6)
+      .map((item) => ({
+        id: item.id,
+        dotClass: SEVERITY_DOT_CLASS[item.severity] ?? 'dash-dot dash-dot-low',
+        title: item.title,
+        href: item.href,
+      }));
   }, [summary]);
 
   const timelineItems = useMemo(() => {
     if (!summary) return [];
-    const items: Array<{ time: string; module: string; moduleClass: string; title: string; sortKey: number }> = [];
+    const items: Array<{
+      time: string;
+      module: string;
+      moduleClass: string;
+      title: string;
+      sortKey: number;
+    }> = [];
     summary.notifications.recentLogs.slice(0, 6).forEach((log) => {
       const d = new Date(log.createdAt);
       const year = d.getFullYear();
@@ -247,7 +432,13 @@ export default function Dashboard() {
       const hour = d.getHours().toString().padStart(2, '0');
       const minute = d.getMinutes().toString().padStart(2, '0');
       const second = d.getSeconds().toString().padStart(2, '0');
-      items.push({ time: `${year}-${month}-${day} ${hour}:${minute}:${second}`, module: '通知', moduleClass: 'is-notif', title: log.title, sortKey: d.getTime() });
+      items.push({
+        time: `${year}-${month}-${day} ${hour}:${minute}:${second}`,
+        module: '通知',
+        moduleClass: 'is-notif',
+        title: log.title,
+        sortKey: d.getTime(),
+      });
     });
     summary.aiLogs.slice(0, 6).forEach((log) => {
       const d = new Date(log.createdAt);
@@ -287,7 +478,10 @@ export default function Dashboard() {
   }
 
   const hasAgenda = summary.agenda.length > 0;
-  const h = summary.health.metrics, f = summary.finance.metrics, l = summary.life.metrics, inv = summary.investment.metrics;
+  const h = summary.health.metrics,
+    f = summary.finance.metrics,
+    l = summary.life.metrics,
+    inv = summary.investment.metrics;
   const stepsNum = Number(h[0]?.value || 0);
   /* 净收益符号：0 视为正（不显示红色亏损） */
   const isPnlPositive = netPnlRaw >= 0;
@@ -297,37 +491,48 @@ export default function Dashboard() {
       <PageHeader
         title="控制中心"
         subtitle="汇总各模块数据与待办事项，掌握系统全貌"
-        actions={(
+        actions={
           <div className="dashboard-header-tags">
-            <Tag tone={hasAgenda ? 'orange' : 'green'}>{hasAgenda ? `${summary.agenda.length} 项待处理` : '全部正常'}</Tag>
+            <Tag tone={hasAgenda ? 'orange' : 'green'}>
+              {hasAgenda ? `${summary.agenda.length} 项待处理` : '全部正常'}
+            </Tag>
             <Tag tone="default">{summary.connectedModuleCount} 个模块已接入</Tag>
           </div>
-        )}
+        }
       />
 
       <div className="dash-masonry">
-
         {/* ====== 0. 待办事项（顶部一行，全宽横跨）====== */}
         {hasAgenda ? (
           <div className="dash-masonry-item dash-card is-full">
             <div className="dash-card-hd is-tight">
-              <div className="dash-card-icon dash-bg-life"><IconTodo /></div>
+              <div className="dash-card-icon dash-bg-life">
+                <IconTodo />
+              </div>
               <div className="dash-card-title-area">
                 <h3>待处理事项</h3>
                 <span>共 {summary.agenda.length} 项需要关注</span>
               </div>
-              <Link to="/life/todo?todoTab=tasks" className="dash-link-primary">查看全部 →</Link>
+              <Link to="/life/todo?todoTab=tasks" className="dash-link-primary">
+                查看全部 →
+              </Link>
             </div>
             <div className="dash-card-bd">
-              <div className="dash-agenda-list">
-                {agendaInline.map((item) => (
-                  <Link key={item.id} to={item.href} className="dash-agenda-item">
+              <List
+                dataSource={agendaInline}
+                render={(item, index) => (
+                  <Link
+                    key={item.id}
+                    to={item.href}
+                    className="dash-agenda-item"
+                    style={{ animationDelay: `${(index + 1) * 0.05}s` }}
+                  >
                     <span className={item.dotClass} aria-hidden="true" />
                     <span className="dash-agenda-title">{item.title}</span>
                     <span className="dash-agenda-arrow">→</span>
                   </Link>
-                ))}
-              </div>
+                )}
+              />
             </div>
           </div>
         ) : null}
@@ -335,7 +540,9 @@ export default function Dashboard() {
         {/* ====== 1. 健康中心（大模块，可点击跳转）====== */}
         <Link to="/health/overview" className="dash-masonry-item dash-card dash-card-link">
           <div className="dash-card-hd is-tight">
-            <div className="dash-card-icon dash-bg-health"><IconHeart /></div>
+            <div className="dash-card-icon dash-bg-health">
+              <IconHeart />
+            </div>
             <div className="dash-card-title-area">
               <h3>健康中心</h3>
               <span>今日数据快照</span>
@@ -345,9 +552,7 @@ export default function Dashboard() {
           <div className="dash-card-bd">
             <div className="dash-step-block">
               <div className="dash-step-label">今日步数</div>
-              <div className="dash-step-value">
-                {h[0]?.value?.toLocaleString() || '0'}
-              </div>
+              <div className="dash-step-value">{h[0]?.value?.toLocaleString() || '0'}</div>
               <div className="dash-step-meta">
                 <span className="dash-step-meta-label">今日已录入</span>
                 <span className="dash-step-meta-value">{stepsNum.toLocaleString()} 步</span>
@@ -365,9 +570,14 @@ export default function Dashboard() {
         </Link>
 
         {/* ====== 2. 投资中心（可点击跳转）====== */}
-        <Link to="/investment/forex?forexTab=trades" className="dash-masonry-item dash-card dash-card-link">
+        <Link
+          to="/investment/forex?forexTab=trades"
+          className="dash-masonry-item dash-card dash-card-link"
+        >
           <div className="dash-card-hd is-tight">
-            <div className="dash-card-icon dash-bg-invest"><IconTrend /></div>
+            <div className="dash-card-icon dash-bg-invest">
+              <IconTrend />
+            </div>
             <div className="dash-card-title-area">
               <h3>投资中心</h3>
               <span>本月累计数据</span>
@@ -388,7 +598,9 @@ export default function Dashboard() {
               </div>
             ))}
             <div className="dash-trend-cta">
-              <span className={`dash-trend-cta-pill ${isPnlPositive ? 'is-positive' : 'is-negative'}`}>
+              <span
+                className={`dash-trend-cta-pill ${isPnlPositive ? 'is-positive' : 'is-negative'}`}
+              >
                 {isPnlPositive ? '盈利中' : '亏损中'} · 查看详情 →
               </span>
             </div>
@@ -398,7 +610,9 @@ export default function Dashboard() {
         {/* ====== 4. 财务中心（可点击跳转）====== */}
         <Link to="/finance/overview" className="dash-masonry-item dash-card dash-card-link">
           <div className="dash-card-hd is-tight">
-            <div className="dash-card-icon dash-bg-finance"><IconWallet /></div>
+            <div className="dash-card-icon dash-bg-finance">
+              <IconWallet />
+            </div>
             <div className="dash-card-title-area">
               <h3>财务中心</h3>
               <span>资金与订阅概览</span>
@@ -409,7 +623,11 @@ export default function Dashboard() {
             {f.map((m, i) => (
               <div key={i} className="dash-metric-row is-loose">
                 <span className="dash-metric-label">{m.label}</span>
-                <span className={`dash-metric-value is-strong ${i === 0 ? 'is-danger-accent' : ''}`}>{m.value}</span>
+                <span
+                  className={`dash-metric-value is-strong ${i === 0 ? 'is-danger-accent' : ''}`}
+                >
+                  {m.value}
+                </span>
               </div>
             ))}
             <div className="dash-trend-cta">
@@ -420,9 +638,14 @@ export default function Dashboard() {
 
         {/* ====== 4.5 即将到期订阅（7 天内）====== */}
         {summary.upcomingSubscriptions.length > 0 ? (
-          <Link to="/finance/subscription?subscriptionTab=records" className="dash-masonry-item dash-card dash-card-link">
+          <Link
+            to="/finance/subscription?subscriptionTab=records"
+            className="dash-masonry-item dash-card dash-card-link"
+          >
             <div className="dash-card-hd is-tight">
-              <div className="dash-card-icon dash-bg-finance"><IconBell /></div>
+              <div className="dash-card-icon dash-bg-finance">
+                <IconBell />
+              </div>
               <div className="dash-card-title-area">
                 <h3>即将到期订阅</h3>
                 <span>{summary.upcomingSubscriptions.length} 项订阅 7 天内到期</span>
@@ -435,11 +658,20 @@ export default function Dashboard() {
                   <div key={sub.id} className="dash-upcoming-sub-item">
                     <div className="dash-upcoming-sub-main">
                       <strong>{sub.serviceName}</strong>
-                      <span className="subtle-text">{sub.planName || '默认套餐'}{sub.autoRenew ? ' · 自动续费' : ' · 手动续费'}</span>
+                      <span className="subtle-text">
+                        {sub.planName || '默认套餐'}
+                        {sub.autoRenew ? ' · 自动续费' : ' · 手动续费'}
+                      </span>
                     </div>
                     <div className="dash-upcoming-sub-meta">
-                      <span className={`dash-upcoming-sub-days ${sub.daysLeft <= 0 ? 'is-expired' : sub.daysLeft <= 3 ? 'is-warn' : ''}`}>
-                        {sub.daysLeft < 0 ? `逾期 ${Math.abs(sub.daysLeft)} 天` : sub.daysLeft === 0 ? '今日到期' : `${sub.daysLeft} 天后`}
+                      <span
+                        className={`dash-upcoming-sub-days ${sub.daysLeft <= 0 ? 'is-expired' : sub.daysLeft <= 3 ? 'is-warn' : ''}`}
+                      >
+                        {sub.daysLeft < 0
+                          ? `逾期 ${Math.abs(sub.daysLeft)} 天`
+                          : sub.daysLeft === 0
+                            ? '今日到期'
+                            : `${sub.daysLeft} 天后`}
                       </span>
                       <span className="subtle-text">{sub.endDate}</span>
                       <span className="dash-upcoming-sub-price">¥{sub.cyclePrice.toFixed(2)}</span>
@@ -454,7 +686,9 @@ export default function Dashboard() {
         {/* ====== 5. 生活中心（可点击跳转）====== */}
         <Link to="/life/todo?todoTab=tasks" className="dash-masonry-item dash-card dash-card-link">
           <div className="dash-card-hd is-tight">
-            <div className="dash-card-icon dash-bg-life"><IconHome /></div>
+            <div className="dash-card-icon dash-bg-life">
+              <IconHome />
+            </div>
             <div className="dash-card-title-area">
               <h3>生活中心</h3>
               <span>待办与物品追踪</span>
@@ -477,7 +711,9 @@ export default function Dashboard() {
         {/* ====== 6. 最近动态（表格）====== */}
         <div className="dash-masonry-item dash-card">
           <div className="dash-card-hd is-tight">
-            <div className="dash-card-icon dash-bg-notif"><IconBell /></div>
+            <div className="dash-card-icon dash-bg-notif">
+              <IconBell />
+            </div>
             <div className="dash-card-title-area">
               <h3>最近动态</h3>
               <span>实时活动记录</span>
@@ -494,7 +730,9 @@ export default function Dashboard() {
                 {timelineItems.map((item, i) => (
                   <div key={i} className="dash-timeline-grid dash-timeline-row">
                     <span className="dash-timeline-cell-time">{item.time}</span>
-                    <span className={`dash-timeline-cell-module ${item.moduleClass}`}>{item.module}</span>
+                    <span className={`dash-timeline-cell-module ${item.moduleClass}`}>
+                      {item.module}
+                    </span>
                     <span className="dash-timeline-cell-title">{item.title}</span>
                   </div>
                 ))}
@@ -508,7 +746,9 @@ export default function Dashboard() {
         {/* ====== 7. 通知渠道状态 ====== */}
         <div className="dash-masonry-item dash-card">
           <div className="dash-card-hd is-tight">
-            <div className="dash-card-icon dash-bg-notif"><IconBell /></div>
+            <div className="dash-card-icon dash-bg-notif">
+              <IconBell />
+            </div>
             <div className="dash-card-title-area">
               <h3>通知中心</h3>
               <span>渠道与日志状态</span>
@@ -517,7 +757,9 @@ export default function Dashboard() {
           <div className="dash-card-bd">
             <div className="dash-notif-stats">
               <div className="dash-notif-stat">
-                <div className="dash-notif-stat-value is-primary">{summary.notifications.enabledChannels}</div>
+                <div className="dash-notif-stat-value is-primary">
+                  {summary.notifications.enabledChannels}
+                </div>
                 <div className="dash-notif-stat-label">已启用渠道</div>
               </div>
               <div className="dash-notif-stat">
@@ -526,17 +768,29 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="dash-notif-channel-list">
-              {channelStatuses.length > 0 ? channelStatuses.map((ch) => (
-                <div className="dash-notif-channel-row" key={ch.type}>
-                  <span className="dash-notif-channel-row-label">
-                    <span aria-hidden="true" style={{ marginRight: 6 }}>{ch.icon}</span>
-                    {ch.label}
-                  </span>
-                  <Tag tone={ch.enabled ? (ch.status === 'ready' ? 'green' : 'orange') : 'default'}>
-                    {!ch.enabled ? '未启用' : ch.status === 'ready' ? (ch.hasRecentLog ? '活跃' : '就绪') : '未配置'}
-                  </Tag>
-                </div>
-              )) : (
+              {channelStatuses.length > 0 ? (
+                channelStatuses.map((ch) => (
+                  <div className="dash-notif-channel-row" key={ch.type}>
+                    <span className="dash-notif-channel-row-label">
+                      <span aria-hidden="true" style={{ marginRight: 6 }}>
+                        {ch.icon}
+                      </span>
+                      {ch.label}
+                    </span>
+                    <Tag
+                      tone={ch.enabled ? (ch.status === 'ready' ? 'green' : 'orange') : 'default'}
+                    >
+                      {!ch.enabled
+                        ? '未启用'
+                        : ch.status === 'ready'
+                          ? ch.hasRecentLog
+                            ? '活跃'
+                            : '就绪'
+                          : '未配置'}
+                    </Tag>
+                  </div>
+                ))
+              ) : (
                 <div className="dash-notif-channel-row">
                   <span className="dash-notif-channel-row-label">通知渠道加载中</span>
                 </div>
@@ -548,31 +802,43 @@ export default function Dashboard() {
         {/* ====== 8. AI 助理调用记录 ====== */}
         <div className="dash-masonry-item dash-card">
           <div className="dash-card-hd is-tight">
-            <div className="dash-card-icon dash-bg-invest"><IconChart /></div>
+            <div className="dash-card-icon dash-bg-invest">
+              <IconChart />
+            </div>
             <div className="dash-card-title-area">
               <h3>AI 助理</h3>
               <span>调用次数与 Token 消耗</span>
             </div>
-            <Link to="/settings/profile" className="dash-link-primary">详情 →</Link>
+            <Link to="/settings/profile" className="dash-link-primary">
+              详情 →
+            </Link>
           </div>
           <div className="dash-card-bd">
             {aiUsage ? (
               <>
                 <div className="dash-notif-stats">
                   <div className="dash-notif-stat">
-                    <div className="dash-notif-stat-value is-primary">{aiUsage.local.todayCalls}</div>
+                    <div className="dash-notif-stat-value is-primary">
+                      {aiUsage.local.todayCalls}
+                    </div>
                     <div className="dash-notif-stat-label">今日调用</div>
                   </div>
                   <div className="dash-notif-stat">
-                    <div className="dash-notif-stat-value">{aiUsage.local.todayTokens.toLocaleString()}</div>
+                    <div className="dash-notif-stat-value">
+                      {aiUsage.local.todayTokens.toLocaleString()}
+                    </div>
                     <div className="dash-notif-stat-label">今日 Token</div>
                   </div>
                   <div className="dash-notif-stat">
-                    <div className="dash-notif-stat-value">{aiUsage.local.totalCalls.toLocaleString()}</div>
+                    <div className="dash-notif-stat-value">
+                      {aiUsage.local.totalCalls.toLocaleString()}
+                    </div>
                     <div className="dash-notif-stat-label">累计调用</div>
                   </div>
                   <div className="dash-notif-stat">
-                    <div className="dash-notif-stat-value">{aiUsage.local.totalTokens.toLocaleString()}</div>
+                    <div className="dash-notif-stat-value">
+                      {aiUsage.local.totalTokens.toLocaleString()}
+                    </div>
                     <div className="dash-notif-stat-label">累计 Token</div>
                   </div>
                 </div>
@@ -585,8 +851,12 @@ export default function Dashboard() {
                           <span className="subtle-text">{scene.totalCalls} 次调用</span>
                         </div>
                         <div className="dash-upcoming-sub-meta">
-                          <span className="subtle-text">{scene.totalTokens.toLocaleString()} tokens</span>
-                          <span className="dash-upcoming-sub-price">¥{scene.estimatedCost.toFixed(4)}</span>
+                          <span className="subtle-text">
+                            {scene.totalTokens.toLocaleString()} tokens
+                          </span>
+                          <span className="dash-upcoming-sub-price">
+                            ¥{scene.estimatedCost.toFixed(4)}
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -598,7 +868,6 @@ export default function Dashboard() {
             )}
           </div>
         </div>
-
       </div>
     </div>
   );
