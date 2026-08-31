@@ -143,10 +143,6 @@
 }
 
 @media (max-width: 768px) {
-  .health-stat-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .health-radar-dimensions {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -217,22 +213,6 @@
   background: var(--color-surface-2);
   font-size: var(--fs-caption);
   color: var(--color-ink-mute);
-}
-
-.health-report-stat-grid {
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.health-report-stat-grid .stat-card {
-  padding: 14px 16px;
-}
-
-.health-report-stat-grid .stat-helper {
-  font-size: var(--fs-caption);
-  color: var(--color-ink-mute);
-  line-height: 1.5;
-  margin-top: 4px;
 }
 
 .health-report-changes {
@@ -414,20 +394,12 @@
 }
 
 @media (max-width: 1024px) {
-  .health-report-stat-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .health-report-changes {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 768px) {
-  .health-report-stat-grid {
-    grid-template-columns: 1fr;
-  }
-
   .health-report-changes {
     grid-template-columns: 1fr;
   }
@@ -535,10 +507,7 @@
   gap: 10px;
 }
 
-.vital-overview-grid {
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
+/* 体征指标网格 — 由 Arco Grid 处理 */
 
 .vital-trend-controls {
   display: flex;
@@ -660,10 +629,6 @@
     grid-template-columns: 1fr;
   }
 
-  .vital-overview-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .vital-trend-stats {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -755,11 +720,15 @@
 .btn-primary {
   background: var(--color-primary);
   color: #fff;
-  box-shadow: 0 1px 3px rgba(83,58,253,0.3), 0 4px 12px rgba(83,58,253,0.15);
+  box-shadow:
+    0 1px 3px rgba(83, 58, 253, 0.3),
+    0 4px 12px rgba(83, 58, 253, 0.15);
 }
 .btn-primary:hover {
   background: var(--color-primary-hover);
-  box-shadow: 0 2px 6px rgba(83,58,253,0.35), 0 6px 16px rgba(83,58,253,0.2);
+  box-shadow:
+    0 2px 6px rgba(83, 58, 253, 0.35),
+    0 6px 16px rgba(83, 58, 253, 0.2);
 }
 .btn-primary:active {
   background: var(--color-primary-press);

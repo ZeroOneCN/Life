@@ -1,12 +1,12 @@
+import { Card, Grid, Typography } from '@arco-design/web-react';
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
 import { EmptyState, SectionCard, StatGrid } from '../../page';
 import { Tag, TrendArrow } from '../../ui';
-import type {
-  HealthReportChange,
-  HealthReportRangeSummary,
-} from '../../../types/healthReport';
+import type { HealthReportChange, HealthReportRangeSummary } from '../../../types/healthReport';
+
+const TypographyText = Typography.Text;
 
 interface HealthReportSummarySectionProps {
   current: HealthReportRangeSummary | null;
@@ -73,14 +73,21 @@ export function HealthReportSummarySection({
   if (loading) {
     return (
       <SectionCard title="数据汇总" description="正在加载当前周期健康指标…">
-        <div className="stat-grid health-report-stat-grid">
+        <Grid.Row gutter={[12, 12]}>
           {Array.from({ length: 6 }).map((_, index) => (
-            <div className="stat-card" key={index}>
-              <span className="stat-label">加载中</span>
-              <strong className="stat-value skeleton-text">—</strong>
-            </div>
+            <Grid.Col key={index} xs={12} sm={8} md={6} lg={4} xl={4}>
+              <Card bordered={false} bodyStyle={{ padding: '16px 20px' }}>
+                <TypographyText
+                  type="secondary"
+                  style={{ fontSize: 13, display: 'block', marginBottom: 4 }}
+                >
+                  加载中
+                </TypographyText>
+                <div style={{ fontSize: 24, fontWeight: 600, color: 'var(--color-text-3)' }}>—</div>
+              </Card>
+            </Grid.Col>
           ))}
-        </div>
+        </Grid.Row>
       </SectionCard>
     );
   }
@@ -104,7 +111,8 @@ export function HealthReportSummarySection({
     },
     {
       label: '体重（最新）',
-      value: current.weight.latestWeight !== null ? `${current.weight.latestWeight.toFixed(1)} kg` : '-',
+      value:
+        current.weight.latestWeight !== null ? `${current.weight.latestWeight.toFixed(1)} kg` : '-',
       helper:
         current.weight.weightChange !== null
           ? `周期变化 ${current.weight.weightChange > 0 ? '+' : ''}${current.weight.weightChange.toFixed(1)} kg · 共 ${current.weight.recordCount} 条记录`
@@ -121,8 +129,7 @@ export function HealthReportSummarySection({
       label: '饮食摄入',
       value: `${current.diet.intakeCalories.toLocaleString()} kcal`,
       helper: `净热量 ${current.diet.netCalories.toLocaleString()} kcal · 日均净 ${current.diet.avgNetCalories.toLocaleString()} kcal · ${current.diet.recordCount} 条记录`,
-      accent:
-        Math.abs(current.diet.avgNetCalories) > 500 ? '#e5484d' : '#27a644',
+      accent: Math.abs(current.diet.avgNetCalories) > 500 ? '#e5484d' : '#27a644',
     },
     {
       label: '用药记录',
@@ -134,8 +141,7 @@ export function HealthReportSummarySection({
       label: '体检指标',
       value: `${current.checkup.totalRecords} 项`,
       helper: `异常 ${current.checkup.abnormalCount} 项 · 关注 ${current.checkup.attentionCount} 项`,
-      accent:
-        current.checkup.abnormalCount > 0 ? '#e5484d' : '#27a644',
+      accent: current.checkup.abnormalCount > 0 ? '#e5484d' : '#27a644',
     },
   ];
 
@@ -144,17 +150,15 @@ export function HealthReportSummarySection({
       title="数据汇总"
       description={`${current.label}（${formatDateShort(current.start)} - ${formatDateShort(current.end)}）`}
       action={
-        <div className="section-card-toolbar">
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
           {previous ? (
-            <span className="health-report-previous-tag">
-              对比：{previous.label}
-            </span>
+            <span className="health-report-previous-tag">对比：{previous.label}</span>
           ) : null}
           {toolbar}
         </div>
       }
     >
-      <StatGrid items={items} className="health-report-stat-grid" />
+      <StatGrid items={items} />
 
       {changes ? (
         <div className="health-report-changes">
@@ -164,15 +168,21 @@ export function HealthReportSummarySection({
               <TrendArrow direction={changes.step.trend === 'none' ? 'flat' : changes.step.trend} />
               <strong>{formatPercent(changes.step.percent)}</strong>
             </div>
-            {weightTag && changes.step.percent === null ? <span className="muted">上一周期无数据</span> : null}
+            {weightTag && changes.step.percent === null ? (
+              <span className="muted">上一周期无数据</span>
+            ) : null}
           </div>
           <div className="health-report-change-card">
             <span className="health-report-change-label">运动同比</span>
             <div className="health-report-change-value">
-              <TrendArrow direction={changes.exercise.trend === 'none' ? 'flat' : changes.exercise.trend} />
+              <TrendArrow
+                direction={changes.exercise.trend === 'none' ? 'flat' : changes.exercise.trend}
+              />
               <strong>{formatPercent(changes.exercise.percent)}</strong>
             </div>
-            {changes.exercise.percent === null ? <span className="muted">上一周期无数据</span> : null}
+            {changes.exercise.percent === null ? (
+              <span className="muted">上一周期无数据</span>
+            ) : null}
           </div>
           <div className="health-report-change-card">
             <span className="health-report-change-label">净热量同比</span>
@@ -185,7 +195,11 @@ export function HealthReportSummarySection({
           <div className="health-report-change-card">
             <span className="health-report-change-label">体重变化</span>
             <div className="health-report-change-value">
-              {weightTag ? <Tag tone={weightTag.tone} size="sm">{weightTag.text}</Tag> : null}
+              {weightTag ? (
+                <Tag tone={weightTag.tone} size="sm">
+                  {weightTag.text}
+                </Tag>
+              ) : null}
               <strong>
                 {current.weight.weightChange !== null
                   ? `${current.weight.weightChange > 0 ? '+' : ''}${current.weight.weightChange.toFixed(1)} kg`

@@ -30,7 +30,12 @@ import {
   formatForexPercent,
   getForexInstrumentLabel,
 } from '../../services/forex';
-import type { ForexCapitalFlow, ForexDashboardSummary, ForexEquityPoint, ForexTradeRecord } from '../../types/forex';
+import type {
+  ForexCapitalFlow,
+  ForexDashboardSummary,
+  ForexEquityPoint,
+  ForexTradeRecord,
+} from '../../types/forex';
 
 const AI_STORAGE_KEY = 'forex_ai_analysis';
 
@@ -55,7 +60,9 @@ function loadAiCache(): AICache | null {
       return null;
     }
     return data;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 interface ForexDashboardSectionProps {
@@ -151,9 +158,7 @@ function EquityTooltip({
 
 /** 收益曲线图表：0 基线对称布局，使用两个 Area 叠加实现正区域绿色、负区域红色 */
 function EquityCurveChart({ data }: { data: ForexEquityPoint[] }) {
-  const maxAbs = data.length > 0
-    ? Math.max(...data.map((d) => Math.abs(d.equity)), 1)
-    : 1;
+  const maxAbs = data.length > 0 ? Math.max(...data.map((d) => Math.abs(d.equity)), 1) : 1;
   const yDomain: [number, number] = [-maxAbs, maxAbs];
 
   /** 生成对称 Y 轴刻度，确保包含 0 */
@@ -246,9 +251,7 @@ function EquityCurveChart({ data }: { data: ForexEquityPoint[] }) {
 /** 每日盈亏图表：柱状图，盈利绿色亏损红色 */
 function DailyPnlChart({ data }: { data: { date: string; netPnl: number; tradeCount: number }[] }) {
   /** 计算对称 Y 轴域，使 0 居中 */
-  const maxAbs = data.length > 0
-    ? Math.max(...data.map((d) => Math.abs(d.netPnl)), 1)
-    : 1;
+  const maxAbs = data.length > 0 ? Math.max(...data.map((d) => Math.abs(d.netPnl)), 1) : 1;
   const yDomain: [number, number] = [-maxAbs, maxAbs];
 
   /** 生成对称 Y 轴刻度，确保包含 0 */
@@ -287,25 +290,23 @@ function DailyPnlChart({ data }: { data: { date: string; netPnl: number; tradeCo
         <ReferenceLine y={0} stroke="var(--color-hairline-strong)" strokeWidth={1.5} />
         <Tooltip
           contentStyle={tooltipStyle}
-          formatter={((value: number, _name: string, entry: { payload?: { date: string; netPnl: number; tradeCount: number } }) => {
-            const p = entry?.payload;
-            const pnlStr = `${value >= 0 ? '+' : ''}$${Number(value ?? 0).toFixed(2)}`;
-            const countStr = p ? `  |  ${p.tradeCount} 笔` : '';
-            return [pnlStr + countStr, '净盈亏'];
-          }) as never}
+          formatter={
+            ((
+              value: number,
+              _name: string,
+              entry: { payload?: { date: string; netPnl: number; tradeCount: number } },
+            ) => {
+              const p = entry?.payload;
+              const pnlStr = `${value >= 0 ? '+' : ''}$${Number(value ?? 0).toFixed(2)}`;
+              const countStr = p ? `  |  ${p.tradeCount} 笔` : '';
+              return [pnlStr + countStr, '净盈亏'];
+            }) as never
+          }
           labelFormatter={((label: unknown) => `日期 ${String(label ?? '')}`) as never}
         />
-        <Bar
-          dataKey="netPnl"
-          radius={[3, 3, 0, 0]}
-          isAnimationActive
-          animationDuration={800}
-        >
+        <Bar dataKey="netPnl" radius={[3, 3, 0, 0]} isAnimationActive animationDuration={800}>
           {data.map((entry) => (
-            <Cell
-              key={entry.date}
-              fill={entry.netPnl >= 0 ? CHART_PNL.up : CHART_PNL.down}
-            />
+            <Cell key={entry.date} fill={entry.netPnl >= 0 ? CHART_PNL.up : CHART_PNL.down} />
           ))}
         </Bar>
       </BarChart>
@@ -316,18 +317,38 @@ function DailyPnlChart({ data }: { data: { date: string; netPnl: number; tradeCo
 function renderMarkdown(text: string) {
   if (!text) return '';
   let html = text
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
     .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--color-ink)">$1</strong>')
-    .replace(/`(.+?)`/g, '<code style="background:var(--color-surface-3);padding:2px 6px;border-radius:4px;font-size: var(--fs-caption)">$1</code>')
-    .replace(/^### (.+)$/gm, '<h4 style="font-size: var(--fs-body);font-weight:600;margin:14px 0 6px;color:var(--color-ink)">$1</h4>')
-    .replace(/^## (.+)$/gm, '<h3 style="font-size: var(--fs-subtitle);font-weight:600;margin:16px 0 8px;color:var(--color-ink)">$1</h3>')
-    .replace(/^# (.+)$/gm, '<h2 style="font-size: var(--fs-title);font-weight:600;margin:18px 0 10px;color:var(--color-ink)">$1</h2>')
+    .replace(
+      /`(.+?)`/g,
+      '<code style="background:var(--color-surface-3);padding:2px 6px;border-radius:4px;font-size: var(--fs-caption)">$1</code>',
+    )
+    .replace(
+      /^### (.+)$/gm,
+      '<h4 style="font-size: var(--fs-body);font-weight:600;margin:14px 0 6px;color:var(--color-ink)">$1</h4>',
+    )
+    .replace(
+      /^## (.+)$/gm,
+      '<h3 style="font-size: var(--fs-subtitle);font-weight:600;margin:16px 0 8px;color:var(--color-ink)">$1</h3>',
+    )
+    .replace(
+      /^# (.+)$/gm,
+      '<h2 style="font-size: var(--fs-title);font-weight:600;margin:18px 0 10px;color:var(--color-ink)">$1</h2>',
+    )
     .replace(/^- (.+)$/gm, '<li style="margin-left:16px;color:var(--color-ink-muted)">$1</li>')
     .replace(/^\d+\. (.+)$/gm, '<li style="margin-left:16px;color:var(--color-ink-muted)">$1</li>')
-    .replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid var(--color-hairline);margin:12px 0">')
+    .replace(
+      /^---+$/gm,
+      '<hr style="border:none;border-top:1px solid var(--color-hairline);margin:12px 0">',
+    )
     .replace(/\n\n/g, '</p><p style="margin:8px 0">')
     .replace(/\n/g, '<br>');
-  html = html.replace(/((?:<li[^>]*>.*?<\/li><br>)+)/g, '<ul style="list-style:none;padding:4px 0;margin:4px 0">$1</ul>');
+  html = html.replace(
+    /((?:<li[^>]*>.*?<\/li><br>)+)/g,
+    '<ul style="list-style:none;padding:4px 0;margin:4px 0">$1</ul>',
+  );
   html = html.replace(/<\/li><br><li/g, '</li><li');
   html = html.replace(/<\/li><br><\/ul>/g, '</li></ul>');
   html = html.replace(/<ul[^>]*><br>/g, '<ul>');
@@ -408,7 +429,10 @@ function PnlCalendar({
     const monthEnd = viewMonth.endOf('month').format('YYYY-MM-DD');
     // 体验金入金不计入；体验金失效（bonus_expired）在 MT5 中转为真实余额，计入入金
     const monthDeposit = capitalFlows
-      .filter((flow) => (flow.flowType === 'deposit' && !flow.isBonus) || flow.flowType === 'bonus_expired')
+      .filter(
+        (flow) =>
+          (flow.flowType === 'deposit' && !flow.isBonus) || flow.flowType === 'bonus_expired',
+      )
       .filter((flow) => flow.flowDate >= monthStart && flow.flowDate <= monthEnd)
       .reduce((sum, flow) => sum + flow.amount, 0);
 
@@ -444,7 +468,9 @@ function PnlCalendar({
             onChange={(event) => setViewMonth((m) => m.year(Number(event.target.value)))}
           >
             {yearOptions.map((y) => (
-              <option key={y} value={y}>{y} 年</option>
+              <option key={y} value={y}>
+                {y} 年
+              </option>
             ))}
           </select>
           <select
@@ -453,7 +479,9 @@ function PnlCalendar({
             onChange={(event) => setViewMonth((m) => m.month(Number(event.target.value) - 1))}
           >
             {monthOptions.map((m) => (
-              <option key={m} value={m}>{m} 月</option>
+              <option key={m} value={m}>
+                {m} 月
+              </option>
             ))}
           </select>
           <button
@@ -477,7 +505,12 @@ function PnlCalendar({
         {/* 当月摘要 */}
         <div className="pnl-calendar-summary">
           <div className="pnl-summary-row">
-            <span>月盈亏 <em className={monthStats.totalPnl >= 0 ? 'pnl-text-profit' : 'pnl-text-loss'}>{formatForexAmount(monthStats.totalPnl)}</em></span>
+            <span>
+              月盈亏{' '}
+              <em className={monthStats.totalPnl >= 0 ? 'pnl-text-profit' : 'pnl-text-loss'}>
+                {formatForexAmount(monthStats.totalPnl)}
+              </em>
+            </span>
             <span className="pnl-summary-sep">·</span>
             <span>{monthStats.tradeDays} 交易日</span>
             <span className="pnl-summary-sep">·</span>
@@ -488,7 +521,9 @@ function PnlCalendar({
           <div className="pnl-summary-row">
             <span>月收益率</span>
             <em className={monthStats.totalPnl >= 0 ? 'pnl-text-profit' : 'pnl-text-loss'}>
-              {monthStats.monthDeposit > 0 ? formatForexPercent(monthStats.totalPnl / monthStats.monthDeposit) : '-'}
+              {monthStats.monthDeposit > 0
+                ? formatForexPercent(monthStats.totalPnl / monthStats.monthDeposit)
+                : '-'}
             </em>
           </div>
         </div>
@@ -497,7 +532,9 @@ function PnlCalendar({
       {/* 日历网格 */}
       <div className="pnl-calendar-grid">
         {weekHeaders.map((w) => (
-          <div key={w} className="pnl-cell pnl-cell-header">{w}</div>
+          <div key={w} className="pnl-cell pnl-cell-header">
+            {w}
+          </div>
         ))}
         {calendarDays.map((day, idx) => {
           if (!day) return <div key={`e-${idx}`} className="pnl-cell pnl-cell-blank" />;
@@ -507,19 +544,23 @@ function PnlCalendar({
             <div
               key={day.date}
               className={`pnl-cell ${colorClass}${!content ? ' pnl-cell-no-data' : ''}`}
-              title={content ? `${day.date} | ${day.tradeCount}笔 | ${formatForexAmount(day.netPnl)}` : day.date}
+              title={
+                content
+                  ? `${day.date} | ${day.tradeCount}笔 | ${formatForexAmount(day.netPnl)}`
+                  : day.date
+              }
             >
               <span className="pnl-cell-date">{parseInt(day.date.slice(8), 10)}</span>
               {content && (
                 <div className="pnl-cell-detail">
                   {day.netPnl !== 0 && (
-                    <span className={`pnl-cell-pnl ${day.netPnl > 0 ? 'pnl-text-profit' : 'pnl-text-loss'}`}>
+                    <span
+                      className={`pnl-cell-pnl ${day.netPnl > 0 ? 'pnl-text-profit' : 'pnl-text-loss'}`}
+                    >
                       {formatForexAmount(day.netPnl)}
                     </span>
                   )}
-                  {day.tradeCount > 0 && (
-                    <span className="pnl-cell-count">{day.tradeCount}笔</span>
-                  )}
+                  {day.tradeCount > 0 && <span className="pnl-cell-count">{day.tradeCount}笔</span>}
                 </div>
               )}
             </div>
@@ -552,10 +593,12 @@ export function ForexDashboardSection({
   onPickerEndDateChange,
   summary: externalSummary,
 }: ForexDashboardSectionProps) {
-  const summary = externalSummary ?? useMemo(
-    () => buildForexDashboardSummary(trades, capitalFlows, startDate, endDate),
-    [capitalFlows, endDate, startDate, trades],
-  );
+  const summary =
+    externalSummary ??
+    useMemo(
+      () => buildForexDashboardSummary(trades, capitalFlows, startDate, endDate),
+      [capitalFlows, endDate, startDate, trades],
+    );
   const trend = useMemo(
     () => buildForexDailyPnlTrend(trades, startDate, endDate),
     [endDate, startDate, trades],
@@ -593,12 +636,15 @@ export function ForexDashboardSection({
       );
       setAiResult(result);
       try {
-        localStorage.setItem(AI_STORAGE_KEY, JSON.stringify({
-          startDate: aiStartDate,
-          endDate: aiEndDate,
-          result,
-          timestamp: Date.now(),
-        }));
+        localStorage.setItem(
+          AI_STORAGE_KEY,
+          JSON.stringify({
+            startDate: aiStartDate,
+            endDate: aiEndDate,
+            result,
+            timestamp: Date.now(),
+          }),
+        );
       } catch {
         // localStorage 不可访问时静默失败
       }
@@ -625,7 +671,8 @@ export function ForexDashboardSection({
     const days = trend.filter((d) => d.tradeCount > 0);
     if (days.length === 0) return null;
     // 最佳单日盈利 / 最差单日亏损
-    let bestDay = days[0], worstDay = days[0];
+    let bestDay = days[0],
+      worstDay = days[0];
     let totalPnl = 0;
     for (const d of days) {
       totalPnl += d.netPnl;
@@ -633,12 +680,21 @@ export function ForexDashboardSection({
       if (d.netPnl < worstDay.netPnl) worstDay = d;
     }
     // 连续盈/亏最长 streak（按交易日）
-    let maxWinStreak = 0, maxLossStreak = 0;
-    let curWinStreak = 0, curLossStreak = 0;
+    let maxWinStreak = 0,
+      maxLossStreak = 0;
+    let curWinStreak = 0,
+      curLossStreak = 0;
     for (const d of trend) {
       if (d.tradeCount === 0) continue;
-      if (d.netPnl >= 0) { curWinStreak++; curLossStreak = 0; maxWinStreak = Math.max(maxWinStreak, curWinStreak); }
-      else { curLossStreak++; curWinStreak = 0; maxLossStreak = Math.max(maxLossStreak, curLossStreak); }
+      if (d.netPnl >= 0) {
+        curWinStreak++;
+        curLossStreak = 0;
+        maxWinStreak = Math.max(maxWinStreak, curWinStreak);
+      } else {
+        curLossStreak++;
+        curWinStreak = 0;
+        maxLossStreak = Math.max(maxLossStreak, curLossStreak);
+      }
     }
     // 最佳单笔 / 最差单笔（含手续费和隔夜费）+ 逐笔胜率
     const scopedTrades = trades.filter((t) => {
@@ -651,17 +707,19 @@ export function ForexDashboardSection({
     let tradeWinCount = 0;
     for (const t of scopedTrades) {
       const netPnl = t.pnl + t.commission + t.overnightFee;
-      if (!bestTrade || netPnl > (bestTrade.pnl + bestTrade.commission + bestTrade.overnightFee)) {
+      if (!bestTrade || netPnl > bestTrade.pnl + bestTrade.commission + bestTrade.overnightFee) {
         bestTrade = t;
       }
-      if (!worstTrade || netPnl < (worstTrade.pnl + worstTrade.commission + worstTrade.overnightFee)) {
+      if (
+        !worstTrade ||
+        netPnl < worstTrade.pnl + worstTrade.commission + worstTrade.overnightFee
+      ) {
         worstTrade = t;
       }
       if (t.pnl > 0) tradeWinCount++;
     }
-    const tradeWinRate = scopedTrades.length > 0
-      ? ((tradeWinCount / scopedTrades.length) * 100).toFixed(1)
-      : '0.0';
+    const tradeWinRate =
+      scopedTrades.length > 0 ? ((tradeWinCount / scopedTrades.length) * 100).toFixed(1) : '0.0';
     return {
       avgDaily: totalPnl / days.length,
       bestDay,
@@ -678,8 +736,8 @@ export function ForexDashboardSection({
     <SectionCard
       title="统计看板"
       description="围绕单账户的交易、出入金和收益结构做本地复盘，时间范围只影响这块看板和规则分析。"
-      action={(
-        <div className="section-card-toolbar">
+      action={
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
           <DatePickerField
             label="开始日期"
             value={pickerStartDate}
@@ -694,17 +752,38 @@ export function ForexDashboardSection({
           />
           <Tag tone="blue">{`${startDate} 至 ${endDate}`}</Tag>
         </div>
-      )}
+      }
     >
       <div className="page-stack">
         <StatGrid
-          className="forex-dashboard-stat-grid"
           items={[
-            { label: '净收益', value: formatForexAmount(summary.realizedNetPnl), accent: summary.realizedNetPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)', helper: `总交易 ${summary.tradeCount} 笔 · 做多 ${summary.longCount} / 做空 ${summary.shortCount}` },
-            { label: '胜率', value: formatForexPercent(summary.winRate), helper: `盈亏比 ${summary.profitLossRatio.toFixed(2)}` },
-            { label: '手续费', value: formatForexMoney(summary.totalCommission), accent: 'var(--color-danger)', helper: `${summary.tradeCount} 笔交易累计` },
-            { label: '净入金', value: formatForexMoney(summary.netCapital), helper: `入金 ${formatForexMoney(summary.totalDeposit)} / 出金 ${formatForexMoney(summary.totalWithdrawal)}` },
-            { label: '账户净值', value: formatForexMoney(summary.equity), helper: `全部净入金 + 全部净收益` },
+            {
+              label: '净收益',
+              value: formatForexAmount(summary.realizedNetPnl),
+              accent: summary.realizedNetPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)',
+              helper: `总交易 ${summary.tradeCount} 笔 · 做多 ${summary.longCount} / 做空 ${summary.shortCount}`,
+            },
+            {
+              label: '胜率',
+              value: formatForexPercent(summary.winRate),
+              helper: `盈亏比 ${summary.profitLossRatio.toFixed(2)}`,
+            },
+            {
+              label: '手续费',
+              value: formatForexMoney(summary.totalCommission),
+              accent: 'var(--color-danger)',
+              helper: `${summary.tradeCount} 笔交易累计`,
+            },
+            {
+              label: '净入金',
+              value: formatForexMoney(summary.netCapital),
+              helper: `入金 ${formatForexMoney(summary.totalDeposit)} / 出金 ${formatForexMoney(summary.totalWithdrawal)}`,
+            },
+            {
+              label: '账户净值',
+              value: formatForexMoney(summary.equity),
+              helper: `全部净入金 + 全部净收益`,
+            },
             { label: 'ROI', value: formatForexPercent(summary.roi), helper: `当前余额 / 区间入金` },
           ]}
         />
@@ -741,29 +820,61 @@ export function ForexDashboardSection({
                         <Cell key={index} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      contentStyle={tooltipStyle}
-                      formatter={(value) => [value, '笔数']}
-                    />
+                    <Tooltip contentStyle={tooltipStyle} formatter={(value) => [value, '笔数']} />
                   </PieChart>
                 </ResponsiveContainer>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap', marginTop: 12 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: 24,
+                    flexWrap: 'wrap',
+                    marginTop: 12,
+                  }}
+                >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: 'var(--color-success)' }} />
-                    <span style={{ fontSize: 'var(--fs-label)', color: 'var(--color-ink-muted)' }}>盈利 {winCount} 笔</span>
+                    <div
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--color-success)',
+                      }}
+                    />
+                    <span style={{ fontSize: 'var(--fs-label)', color: 'var(--color-ink-muted)' }}>
+                      盈利 {winCount} 笔
+                    </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: 'var(--color-danger)' }} />
-                    <span style={{ fontSize: 'var(--fs-label)', color: 'var(--color-ink-muted)' }}>亏损 {lossCount} 笔</span>
+                    <div
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--color-danger)',
+                      }}
+                    />
+                    <span style={{ fontSize: 'var(--fs-label)', color: 'var(--color-ink-muted)' }}>
+                      亏损 {lossCount} 笔
+                    </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: 'var(--fs-caption)', color: 'var(--color-ink-subtle)' }}>盈亏比</span>
-                    <span style={{
-                      fontSize: 'var(--fs-label)',
-                      fontWeight: 600,
-                      fontFamily: 'var(--font-mono)',
-                      color: summary.profitLossRatio >= 1 ? 'var(--color-success)' : 'var(--color-danger)',
-                    }}>
+                    <span
+                      style={{ fontSize: 'var(--fs-caption)', color: 'var(--color-ink-subtle)' }}
+                    >
+                      盈亏比
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 'var(--fs-label)',
+                        fontWeight: 600,
+                        fontFamily: 'var(--font-mono)',
+                        color:
+                          summary.profitLossRatio >= 1
+                            ? 'var(--color-success)'
+                            : 'var(--color-danger)',
+                      }}
+                    >
                       {summary.profitLossRatio > 0 ? summary.profitLossRatio.toFixed(2) : '--'}
                     </span>
                   </div>
@@ -792,9 +903,16 @@ export function ForexDashboardSection({
                         <div className="pnl-stat-item">
                           <span className="pnl-stat-label">最佳单笔</span>
                           <strong className="pnl-stat-value pnl-stat-profit">
-                            +{formatForexMoney(pnlStats.bestTrade.pnl + pnlStats.bestTrade.commission + pnlStats.bestTrade.overnightFee)}
+                            +
+                            {formatForexMoney(
+                              pnlStats.bestTrade.pnl +
+                                pnlStats.bestTrade.commission +
+                                pnlStats.bestTrade.overnightFee,
+                            )}
                           </strong>
-                          <span className="pnl-stat-sub">{pnlStats.bestTrade.tradeDate.slice(5)}</span>
+                          <span className="pnl-stat-sub">
+                            {pnlStats.bestTrade.tradeDate.slice(5)}
+                          </span>
                         </div>
                         <div className="pnl-stat-divider" />
                       </>
@@ -804,23 +922,39 @@ export function ForexDashboardSection({
                         <div className="pnl-stat-item">
                           <span className="pnl-stat-label">最差单笔</span>
                           <strong className="pnl-stat-value pnl-stat-loss">
-                            {formatForexMoney(pnlStats.worstTrade.pnl + pnlStats.worstTrade.commission + pnlStats.worstTrade.overnightFee)}
+                            {formatForexMoney(
+                              pnlStats.worstTrade.pnl +
+                                pnlStats.worstTrade.commission +
+                                pnlStats.worstTrade.overnightFee,
+                            )}
                           </strong>
-                          <span className="pnl-stat-sub">{pnlStats.worstTrade.tradeDate.slice(5)}</span>
+                          <span className="pnl-stat-sub">
+                            {pnlStats.worstTrade.tradeDate.slice(5)}
+                          </span>
                         </div>
                         <div className="pnl-stat-divider" />
                       </>
                     )}
                     <div className="pnl-stat-item">
                       <span className="pnl-stat-label">日均盈亏</span>
-                      <strong className={`pnl-stat-value ${pnlStats.avgDaily >= 0 ? 'pnl-stat-profit' : 'pnl-stat-loss'}`}>
+                      <strong
+                        className={`pnl-stat-value ${pnlStats.avgDaily >= 0 ? 'pnl-stat-profit' : 'pnl-stat-loss'}`}
+                      >
                         {formatForexMoney(pnlStats.avgDaily)}
                       </strong>
                     </div>
                     <div className="pnl-stat-divider" />
                     <div className="pnl-stat-item">
                       <span className="pnl-stat-label">胜率</span>
-                      <strong className="pnl-stat-value" style={{ color: Number(pnlStats.winRate) >= 50 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                      <strong
+                        className="pnl-stat-value"
+                        style={{
+                          color:
+                            Number(pnlStats.winRate) >= 50
+                              ? 'var(--color-success)'
+                              : 'var(--color-danger)',
+                        }}
+                      >
                         {pnlStats.winRate}%
                       </strong>
                     </div>
@@ -844,7 +978,11 @@ export function ForexDashboardSection({
             ) : (
               <EmptyState
                 title={isDataReady ? '暂无盈亏分布' : '正在加载数据...'}
-                description={isDataReady ? '当前区间形成有效盈亏样本后，这里会自动拆分结构。' : '正在从后端获取交易数据，请稍候。'}
+                description={
+                  isDataReady
+                    ? '当前区间形成有效盈亏样本后，这里会自动拆分结构。'
+                    : '正在从后端获取交易数据，请稍候。'
+                }
               />
             )}
           </div>
@@ -866,7 +1004,11 @@ export function ForexDashboardSection({
         {/* 收益曲线 / 每日盈亏 - 独占整行，双标签切换 */}
         <ChartCard
           title={activeChart === 'equity' ? '收益曲线' : '每日盈亏'}
-          description={activeChart === 'equity' ? '累计交易盈亏变化趋势（不含出入金）。' : '按交易日观察净盈亏变化趋势。'}
+          description={
+            activeChart === 'equity'
+              ? '累计交易盈亏变化趋势（不含出入金）。'
+              : '按交易日观察净盈亏变化趋势。'
+          }
         >
           {isDataReady && hasTrendData ? (
             <div className="forex-chart-shell">
@@ -897,50 +1039,124 @@ export function ForexDashboardSection({
           ) : (
             <EmptyState
               title={isDataReady ? '暂无盈亏曲线' : '正在加载数据...'}
-              description={isDataReady ? '先录入几笔交易记录，趋势线才会形成。' : '正在从后端获取交易数据，请稍候。'}
+              description={
+                isDataReady
+                  ? '先录入几笔交易记录，趋势线才会形成。'
+                  : '正在从后端获取交易数据，请稍候。'
+              }
             />
           )}
         </ChartCard>
 
-        <ChartCard
-          title="品种分析"
-          description="按交易品种拆分笔数、盈亏、均盈和胜率。"
-        >
+        <ChartCard title="品种分析" description="按交易品种拆分笔数、盈亏、均盈和胜率。">
           {hasInstrumentData ? (
             <div className="forex-instrument-cards">
               {instrumentSummary.map((item) => (
                 <div key={item.instrument} className="forex-instrument-summary-card">
                   <div className="forex-instrument-summary-card-head">
                     <strong>{getForexInstrumentLabel(item.instrument)}</strong>
-                    <span style={{ color: item.netPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)', fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 'var(--fs-label)' }}>
+                    <span
+                      style={{
+                        color: item.netPnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)',
+                        fontFamily: 'var(--font-mono)',
+                        fontWeight: 600,
+                        fontSize: 'var(--fs-label)',
+                      }}
+                    >
                       {formatForexAmount(item.netPnl)}
                     </span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 10 }}>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(4, 1fr)',
+                      gap: 12,
+                      marginTop: 10,
+                    }}
+                  >
                     <div>
-                      <span style={{ display: 'block', fontSize: 'var(--fs-meta)', color: 'var(--color-ink-subtle)' }}>笔数</span>
-                      <span style={{ fontSize: 'var(--fs-label)', fontWeight: 500, color: 'var(--color-ink)' }}>{item.tradeCount}</span>
-                    </div>
-                    <div>
-                      <span style={{ display: 'block', fontSize: 'var(--fs-meta)', color: 'var(--color-ink-subtle)' }}>均盈</span>
-                      <span style={{ fontSize: 'var(--fs-label)', fontFamily: 'var(--font-mono)', color: 'var(--color-ink-muted)' }}>
-                        {item.tradeCount > 0 ? formatForexMoney(item.grossPnl / item.tradeCount) : '--'}
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: 'var(--fs-meta)',
+                          color: 'var(--color-ink-subtle)',
+                        }}
+                      >
+                        笔数
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 'var(--fs-label)',
+                          fontWeight: 500,
+                          color: 'var(--color-ink)',
+                        }}
+                      >
+                        {item.tradeCount}
                       </span>
                     </div>
                     <div>
-                      <span style={{ display: 'block', fontSize: 'var(--fs-meta)', color: 'var(--color-ink-subtle)' }}>胜率</span>
-                      <span style={{ fontSize: 'var(--fs-label)', color: 'var(--color-ink-muted)' }}>{formatForexPercent(item.winRate)}</span>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: 'var(--fs-meta)',
+                          color: 'var(--color-ink-subtle)',
+                        }}
+                      >
+                        均盈
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 'var(--fs-label)',
+                          fontFamily: 'var(--font-mono)',
+                          color: 'var(--color-ink-muted)',
+                        }}
+                      >
+                        {item.tradeCount > 0
+                          ? formatForexMoney(item.grossPnl / item.tradeCount)
+                          : '--'}
+                      </span>
                     </div>
                     <div>
-                      <span style={{ display: 'block', fontSize: 'var(--fs-meta)', color: 'var(--color-ink-subtle)' }}>方向</span>
-                      <span style={{ fontSize: 'var(--fs-label)', color: 'var(--color-ink-muted)' }}>{item.longCount}多 / {item.shortCount}空</span>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: 'var(--fs-meta)',
+                          color: 'var(--color-ink-subtle)',
+                        }}
+                      >
+                        胜率
+                      </span>
+                      <span
+                        style={{ fontSize: 'var(--fs-label)', color: 'var(--color-ink-muted)' }}
+                      >
+                        {formatForexPercent(item.winRate)}
+                      </span>
+                    </div>
+                    <div>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: 'var(--fs-meta)',
+                          color: 'var(--color-ink-subtle)',
+                        }}
+                      >
+                        方向
+                      </span>
+                      <span
+                        style={{ fontSize: 'var(--fs-label)', color: 'var(--color-ink-muted)' }}
+                      >
+                        {item.longCount}多 / {item.shortCount}空
+                      </span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <EmptyState title="暂无品种分析" description="先录入交易记录后，这里会按品种形成对比。" />
+            <EmptyState
+              title="暂无品种分析"
+              description="先录入交易记录后，这里会按品种形成对比。"
+            />
           )}
         </ChartCard>
 
@@ -968,22 +1184,39 @@ export function ForexDashboardSection({
             </div>
           </div>
 
-          {aiError && (
-            <div className="forex-ai-error">
-              {aiError}
-            </div>
-          )}
+          {aiError && <div className="forex-ai-error">{aiError}</div>}
 
           {aiResult && (
             <div className="forex-ai-result">
               {aiResult.stats && (
                 <StatGrid
-                  className="forex-ai-stat-grid"
                   items={[
                     { label: '分析笔数', value: String(aiResult.stats.total_trades ?? '--') },
-                    { label: '总盈亏', value: aiResult.stats.total_pnl != null ? formatForexAmount(Number(aiResult.stats.total_pnl)) : '--', accent: Number(aiResult.stats.total_pnl) >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
-                    { label: '胜率', value: aiResult.stats.win_rate != null ? formatForexPercent(Number(aiResult.stats.win_rate)) : '--' },
-                    { label: '盈亏比', value: aiResult.stats.profit_loss_ratio != null ? String(aiResult.stats.profit_loss_ratio) : '--' },
+                    {
+                      label: '总盈亏',
+                      value:
+                        aiResult.stats.total_pnl != null
+                          ? formatForexAmount(Number(aiResult.stats.total_pnl))
+                          : '--',
+                      accent:
+                        Number(aiResult.stats.total_pnl) >= 0
+                          ? 'var(--color-success)'
+                          : 'var(--color-danger)',
+                    },
+                    {
+                      label: '胜率',
+                      value:
+                        aiResult.stats.win_rate != null
+                          ? formatForexPercent(Number(aiResult.stats.win_rate))
+                          : '--',
+                    },
+                    {
+                      label: '盈亏比',
+                      value:
+                        aiResult.stats.profit_loss_ratio != null
+                          ? String(aiResult.stats.profit_loss_ratio)
+                          : '--',
+                    },
                   ]}
                 />
               )}

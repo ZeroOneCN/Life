@@ -21,22 +21,44 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 
-import { Button, Input, Message, Modal as ArcoModal, Pagination as ArcoPagination, Select, Switch as ArcoSwitch, Checkbox as ArcoCheckbox, Table as ArcoTable, Tabs, Tag as ArcoTag } from '@arco-design/web-react';
+import {
+  Button,
+  Dropdown,
+  Input,
+  Message,
+  Modal as ArcoModal,
+  Pagination as ArcoPagination,
+  Select,
+  Skeleton as ArcoSkeleton,
+  Space,
+  Switch as ArcoSwitch,
+  Checkbox as ArcoCheckbox,
+  Table as ArcoTable,
+  Tabs,
+  Tag as ArcoTag,
+  Typography,
+} from '@arco-design/web-react';
+import { IconEdit, IconDelete, IconEye, IconSearch, IconExport } from '@arco-design/web-react/icon';
 import type { TabOption, TableColumn } from '../types/ui';
+
+const { Text } = Typography;
 
 export { useUndo } from '../hooks/useUndo';
 
 export function useFormKeyboardSubmit(onSubmit: () => void, enabled = true) {
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!enabled) return;
-    if (e.key === 'Enter' && !e.shiftKey && !e.isDefaultPrevented()) {
-      const target = e.target as HTMLElement;
-      const tagName = target.tagName.toLowerCase();
-      if (tagName === 'textarea') return;
-      e.preventDefault();
-      onSubmit();
-    }
-  }, [onSubmit, enabled]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!enabled) return;
+      if (e.key === 'Enter' && !e.shiftKey && !e.isDefaultPrevented()) {
+        const target = e.target as HTMLElement;
+        const tagName = target.tagName.toLowerCase();
+        if (tagName === 'textarea') return;
+        e.preventDefault();
+        onSubmit();
+      }
+    },
+    [onSubmit, enabled],
+  );
 
   return { handleKeyDown };
 }
@@ -99,85 +121,58 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
 }
 
-const TOAST_ICONS: Record<NonNullable<ToastState['type']>, string> = {
-  success: '✓',
-  error: '✕',
-  warning: '!',
-  info: 'i',
-};
-
-const TOAST_LABELS: Record<NonNullable<ToastState['type']>, string> = {
-  success: '操作成功',
-  error: '操作失败',
-  warning: '温馨提示',
-  info: '提示信息',
-};
-
 export function Toast({ toast }: { toast: ToastState | null }) {
   // 已迁移至 Arco Message，保留空组件以兼容业务代码
   return null;
 }
 
+/** Arco Skeleton 骨架屏 */
 export function Skeleton({ lines = 3, width }: { lines?: number; width?: string | number }) {
   return (
-    <div className="skeleton-block" style={width ? { width: typeof width === 'number' ? `${width}px` : width } : undefined}>
-      {Array.from({ length: lines }).map((_, i) => (
-        <div key={i} className="skeleton-line" style={{ width: i === lines - 1 ? '60%' : '100%' }} />
-      ))}
+    <div style={{ width: typeof width === 'number' ? `${width}px` : (width ?? '100%') }}>
+      <ArcoSkeleton text={{ rows: lines }} />
     </div>
   );
 }
 
+/** 统计指标骨架屏 */
 export function StatGridSkeleton({ cols = 4 }: { cols?: number }) {
   return (
-    <div className="stat-grid">
+    <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
       {Array.from({ length: cols }).map((_, i) => (
-        <div key={i} className="stat-card skeleton-card">
-          <div className="skeleton-line" style={{ width: '40%', height: 14, marginBottom: 10 }} />
-          <div className="skeleton-line" style={{ width: '70%', height: 26, marginBottom: 8 }} />
-          <div className="skeleton-line" style={{ width: '50%', height: 12 }} />
+        <div
+          key={i}
+          style={{ flex: 1, padding: 16, background: 'var(--color-fill-2)', borderRadius: 8 }}
+        >
+          <ArcoSkeleton text={{ rows: 2 }} />
         </div>
       ))}
     </div>
   );
 }
 
+/** 表格骨架屏 */
 export function TableSkeleton({ rows = 5, cols = 5 }: { rows?: number; cols?: number }) {
   return (
     <div className="table-wrap">
-      <table className="data-table">
-        <thead>
-          <tr>
-            {Array.from({ length: cols }).map((_, i) => (
-              <th key={i}><div className="skeleton-line" style={{ width: '60%', height: 14, margin: '0 auto' }} /></th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from({ length: rows }).map((_, ri) => (
-            <tr key={ri}>
-              {Array.from({ length: cols }).map((_, ci) => (
-                <td key={ci}><div className="skeleton-line" style={{ width: ci === 0 ? '70%' : '50%', height: 14, margin: '0 auto' }} /></td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <ArcoSkeleton text={{ rows: rows + 1 }} />
     </div>
   );
 }
 
+/** 卡片骨架屏 */
 export function CardSkeleton({ height = 180 }: { height?: number }) {
   return (
-    <div className="section-card" style={{ height }}>
-      <div className="skeleton-line" style={{ width: '30%', height: 16, marginBottom: 16 }} />
-      <div className="skeleton-line" style={{ width: '100%', height: 14, marginBottom: 10 }} />
-      <div className="skeleton-line" style={{ width: '80%', height: 14, marginBottom: 10 }} />
-      <div className="skeleton-line" style={{ width: '60%', height: 14 }} />
+    <div style={{ height, padding: 20, background: 'var(--color-fill-2)', borderRadius: 8 }}>
+      <ArcoSkeleton text={{ rows: 4 }} />
     </div>
   );
 }
 
+/**
+ * 页面加载状态 — 使用 Arco Spin。
+ * 统一放置于页面加载时展示。
+ */
 export function PageLoading({ tip = '加载中...' }: { tip?: string }) {
   return (
     <div className="page-loading" role="status" aria-label={tip}>
@@ -187,6 +182,9 @@ export function PageLoading({ tip = '加载中...' }: { tip?: string }) {
   );
 }
 
+/**
+ * 搜索输入框 — 使用 Arco Input.Search。
+ */
 export function SearchInput({
   value,
   onChange,
@@ -200,43 +198,26 @@ export function SearchInput({
   onClear?: () => void;
   disabled?: boolean;
 }) {
-  const inputId = useId();
-
-  const handleClear = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onClear) {
-      onClear();
-    } else {
-      onChange('');
-    }
-  };
-
   return (
-    <div className={`search-input-wrapper ${disabled ? 'is-disabled' : ''}`}>
-      <span className="search-input-icon" aria-hidden="true">🔍</span>
-      <input
-        id={inputId}
-        type="text"
-        className="search-input"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        disabled={disabled}
-      />
-      {value && !disabled ? (
-        <button
-          type="button"
-          className="search-input-clear"
-          onClick={handleClear}
-          aria-label="清除搜索"
-        >
-          ×
-        </button>
-      ) : null}
-    </div>
+    <Input.Search
+      value={value}
+      onChange={(val) => onChange(val)}
+      onClear={() => {
+        if (onClear) onClear();
+        else onChange('');
+      }}
+      placeholder={placeholder}
+      disabled={disabled}
+      allowClear
+      style={{ width: '100%' }}
+    />
   );
 }
 
+/**
+ * 筛选栏 — 使用 Arco Space。
+ * 横向排列筛选控件，右侧可选操作按钮。
+ */
 export function FilterBar({
   children,
   rightSlot,
@@ -245,13 +226,22 @@ export function FilterBar({
   rightSlot?: React.ReactNode;
 }) {
   return (
-    <div className="filter-bar">
-      <div className="filter-bar-left">{children}</div>
-      {rightSlot ? <div className="filter-bar-right">{rightSlot}</div> : null}
+    <div
+      className="filter-bar"
+      style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}
+    >
+      <Space size="small" wrap style={{ flex: 1 }}>
+        {children}
+      </Space>
+      {rightSlot ? <div>{rightSlot}</div> : null}
     </div>
   );
 }
 
+/**
+ * 筛选标签 — 使用 Arco Tag。
+ * 可点击的筛选标签，支持激活态和计数。
+ */
 export function FilterTag({
   label,
   active = false,
@@ -264,17 +254,20 @@ export function FilterTag({
   count?: number;
 }) {
   return (
-    <button
-      type="button"
-      className={`filter-tag ${active ? 'is-active' : ''}`}
+    <ArcoTag
+      color={active ? 'arcoblue' : undefined}
+      style={{ cursor: 'pointer' }}
       onClick={onClick}
     >
-      <span>{label}</span>
-      {count !== undefined ? <span className="filter-tag-count">{count}</span> : null}
-    </button>
+      {label}
+      {count !== undefined ? <span style={{ marginLeft: 4, opacity: 0.7 }}>{count}</span> : null}
+    </ArcoTag>
   );
 }
 
+/**
+ * 导出按钮 — 使用 Arco Dropdown + Button。
+ */
 export function ExportButton({
   onExport,
   label = '导出',
@@ -286,77 +279,67 @@ export function ExportButton({
   disabled?: boolean;
   options?: Array<{ value: 'csv' | 'excel' | 'json'; label: string }>;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
   const defaultOptions = options ?? [
     { value: 'csv', label: '导出 CSV' },
     { value: 'excel', label: '导出 Excel' },
     { value: 'json', label: '导出 JSON' },
   ];
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
-
-  const handleExport = (format: 'csv' | 'excel' | 'json') => {
-    onExport(format);
-    setIsOpen(false);
-  };
+  const dropList = (
+    <div
+      style={{
+        background: 'var(--color-bg-1)',
+        borderRadius: 4,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      }}
+    >
+      {defaultOptions.map((option) => (
+        <div
+          key={option.value}
+          onClick={() => onExport(option.value)}
+          style={{ padding: '8px 16px', cursor: 'pointer', fontSize: 13 }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.background = 'var(--color-fill-2)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.background = 'transparent';
+          }}
+        >
+          {option.label}
+        </div>
+      ))}
+    </div>
+  );
 
   return (
-    <div className="export-button-wrapper" ref={containerRef}>
-      <button
-        type="button"
-        className="btn btn-secondary export-button"
-        onClick={() => setIsOpen(!isOpen)}
-        disabled={disabled}
-      >
-        <span aria-hidden="true">📤</span>
+    <Dropdown droplist={dropList} disabled={disabled} position="br">
+      <Button type="secondary" disabled={disabled}>
+        <IconExport style={{ marginRight: 4 }} />
         {label}
-        <span className="export-button-arrow" aria-hidden="true">▾</span>
-      </button>
-      {isOpen && !disabled ? (
-        <div className="export-dropdown">
-          {defaultOptions.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className="export-dropdown-item"
-              onClick={() => handleExport(option.value)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
+      </Button>
+    </Dropdown>
   );
 }
 
 type TrendDirection = 'up' | 'down' | 'flat';
 
+/** 趋势箭头 — 使用 Arco Tag。 */
 export function TrendArrow({ direction, value }: { direction: TrendDirection; value?: string }) {
-  const map: Record<TrendDirection, { symbol: string; className: string }> = {
-    up: { symbol: '↑', className: 'trend-up' },
-    down: { symbol: '↓', className: 'trend-down' },
-    flat: { symbol: '→', className: 'trend-flat' },
+  const colorMap: Record<TrendDirection, 'red' | 'green' | 'default'> = {
+    up: 'red',
+    down: 'green',
+    flat: 'default',
   };
-  const { symbol, className } = map[direction];
-
+  const symbolMap: Record<TrendDirection, string> = {
+    up: '↑',
+    down: '↓',
+    flat: '→',
+  };
   return (
-    <span className={`trend-arrow ${className}`}>
-      {symbol}
-      {value ? <span className="trend-value">{value}</span> : null}
-    </span>
+    <ArcoTag color={colorMap[direction]} size="small">
+      {symbolMap[direction]}
+      {value ? <span style={{ marginLeft: 2 }}>{value}</span> : null}
+    </ArcoTag>
   );
 }
 
@@ -410,27 +393,26 @@ export function DeleteModal({
       onClose={onClose}
       title={title}
       width={460}
-      footer={(
+      footer={
         <>
-          <Btn tone="secondary" onClick={onClose}>取消</Btn>
-          <Btn ref={confirmRef} tone={confirmTone} onClick={onConfirm}>{confirmLabel}</Btn>
+          <Btn tone="secondary" onClick={onClose}>
+            取消
+          </Btn>
+          <Btn ref={confirmRef} tone={confirmTone} onClick={onConfirm}>
+            {confirmLabel}
+          </Btn>
         </>
-      )}
+      }
     >
       <p className="subtle-text">{children ?? '这个操作不可恢复，请确认是否继续。'}</p>
     </Modal>
   );
 }
 
-export const Btn = forwardRef<HTMLButtonElement, PropsWithChildren<ButtonProps>>(function Btn({
-  tone = 'secondary',
-  className = '',
-  children,
-  loading,
-  disabled,
-  type: htmlType,
-  ...rest
-}, ref) {
+export const Btn = forwardRef<HTMLButtonElement, PropsWithChildren<ButtonProps>>(function Btn(
+  { tone = 'secondary', className = '', children, loading, disabled, type: htmlType, ...rest },
+  ref,
+) {
   // 将项目的 tone 映射到 Arco Button 的 type/status
   const typeMap: Record<string, 'primary' | 'secondary' | 'outline' | 'text' | 'default'> = {
     primary: 'primary',
@@ -460,49 +442,54 @@ export const Btn = forwardRef<HTMLButtonElement, PropsWithChildren<ButtonProps>>
   );
 });
 
-const ICON_SIZE = 16;
-
-export const EditIcon = ({ size = ICON_SIZE }: { size?: number }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 20h9" />
-    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-  </svg>
+/** 编辑图标 — 使用 Arco IconEdit */
+export const EditIcon = ({ size = 16 }: { size?: number }) => (
+  <IconEdit style={{ fontSize: size }} />
 );
 
-export const DeleteIcon = ({ size = ICON_SIZE }: { size?: number }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
-    <path d="M10 11v6" />
-    <path d="M14 11v6" />
-    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-  </svg>
+/** 删除图标 — 使用 Arco IconDelete */
+export const DeleteIcon = ({ size = 16 }: { size?: number }) => (
+  <IconDelete style={{ fontSize: size }} />
 );
 
-export const EyeIcon = ({ size = ICON_SIZE }: { size?: number }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8 1-12 1-12z" />
-    <circle cx="11" cy="12" r="3" />
-  </svg>
-);
+/** 查看图标 — 使用 Arco IconEye */
+export const EyeIcon = ({ size = 16 }: { size?: number }) => <IconEye style={{ fontSize: size }} />;
 
+/**
+ * 图标按钮 — 使用 Arco Button。
+ * 统一用于列表行操作（编辑/删除/查看），支持 tooltip 提示。
+ */
 export function IconBtn({
   tone = 'secondary',
   className = '',
   icon,
   title,
-  size = ICON_SIZE,
+  size = 16,
   ...rest
 }: ButtonProps & { icon: React.ReactNode; title: string; size?: number }) {
+  const typeMap: Record<string, 'primary' | 'secondary' | 'outline' | 'text' | 'default'> = {
+    primary: 'primary',
+    secondary: 'secondary',
+    ghost: 'outline',
+    danger: 'outline',
+    'danger-fill': 'primary',
+  };
+  const statusMap: Record<string, 'danger' | 'warning' | 'success' | undefined> = {
+    danger: 'danger',
+    'danger-fill': 'danger',
+  };
+
   return (
-    <button
-      className={`btn-icon btn-icon-${tone} ${className}`.trim()}
+    <Button
+      type={typeMap[tone] ?? 'secondary'}
+      status={statusMap[tone]}
+      className={className}
+      icon={icon}
       title={title}
       aria-label={title}
-      {...rest}
-    >
-      {typeof icon === 'string' ? null : icon}
-    </button>
+      size="small"
+      {...(rest as Record<string, unknown>)}
+    />
   );
 }
 
@@ -516,12 +503,7 @@ export function PillTabs({
   onChange: (value: string) => void;
 }) {
   return (
-    <Tabs
-      activeTab={value}
-      onChange={onChange}
-      type="capsule"
-      size="small"
-    >
+    <Tabs activeTab={value} onChange={onChange} type="capsule" size="small">
       {options.map((option) => (
         <Tabs.TabPane key={option.value} title={option.label} />
       ))}
@@ -529,49 +511,101 @@ export function PillTabs({
   );
 }
 
+/**
+ * 表单字段 — 使用 Arco Form.Item 风格的布局。
+ * 保持现有 API 兼容，内部使用 Arco 样式 token。
+ */
 export function Field({ label, hint, error, children, className = '', ...rest }: FieldProps) {
   const fieldClass = `field ${error ? 'is-error' : ''} ${className}`.trim();
 
   if (children) {
     return (
-      <label className={fieldClass}>
-        {label ? <span className="field-label">{label}</span> : null}
+      <div className={fieldClass} style={{ marginBottom: 16 }}>
+        {label ? (
+          <Text
+            style={{
+              display: 'block',
+              marginBottom: 4,
+              fontSize: 13,
+              color: 'var(--color-text-2)',
+            }}
+          >
+            {label}
+          </Text>
+        ) : null}
         {children}
-        {error ? <span className="field-error">{error}</span> : null}
-        {hint && !error ? <span className="field-hint">{hint}</span> : null}
-      </label>
+        {error ? (
+          <Text type="error" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+            {error}
+          </Text>
+        ) : null}
+        {hint && !error ? (
+          <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+            {hint}
+          </Text>
+        ) : null}
+      </div>
     );
   }
 
   // Arco Input 的 onChange 签名为 (value: string, e) => void，需适配原生 (e) => void
   const { onChange: nativeOnChange, value, ...inputProps } = rest as any;
   const handleArcoChange = nativeOnChange
-    ? (val: string) => nativeOnChange({ target: { value: val } } as React.ChangeEvent<HTMLInputElement>)
+    ? (val: string) =>
+        nativeOnChange({ target: { value: val } } as React.ChangeEvent<HTMLInputElement>)
     : undefined;
 
   return (
-    <label className={fieldClass}>
-      {label ? <span className="field-label">{label}</span> : null}
-      <Input value={value} onChange={handleArcoChange} {...inputProps} />
-      {error ? <span className="field-error">{error}</span> : null}
-      {hint && !error ? <span className="field-hint">{hint}</span> : null}
-    </label>
+    <div className={fieldClass} style={{ marginBottom: 16 }}>
+      {label ? (
+        <Text
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, color: 'var(--color-text-2)' }}
+        >
+          {label}
+        </Text>
+      ) : null}
+      <Input value={value} onChange={handleArcoChange} {...inputProps} style={{ width: '100%' }} />
+      {error ? (
+        <Text type="error" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+          {error}
+        </Text>
+      ) : null}
+      {hint && !error ? (
+        <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+          {hint}
+        </Text>
+      ) : null}
+    </div>
   );
 }
 
-export function SelectField({ label, hint, error, children, className = '', value, onChange, disabled, name, required, ...rest }: SelectFieldProps) {
-  const fieldClass = `field ${error ? 'is-error' : ''}`.trim();
-
+export function SelectField({
+  label,
+  hint,
+  error,
+  children,
+  className = '',
+  value,
+  onChange,
+  disabled,
+  name,
+  required,
+  ...rest
+}: SelectFieldProps) {
   // 将 native <option> 子元素转换为 Arco Select.Option
   const options = useMemo(() => {
     const opts: ReactNode[] = [];
     Children.forEach(children, (child) => {
       if (isValidElement(child) && child.type === 'option') {
-        const { value: optionValue, children: optionChildren, disabled: optionDisabled } = child.props;
+        const {
+          value: optionValue,
+          children: optionChildren,
+          disabled: optionDisabled,
+        } = child.props;
         opts.push(
           <Select.Option key={String(optionValue)} value={optionValue} disabled={optionDisabled}>
             {optionChildren}
-          </Select.Option>
+          </Select.Option>,
         );
       }
     });
@@ -579,8 +613,14 @@ export function SelectField({ label, hint, error, children, className = '', valu
   }, [children]);
 
   return (
-    <label className={fieldClass}>
-      {label ? <span className="field-label">{label}</span> : null}
+    <div className={className} style={{ marginBottom: 16 }}>
+      {label ? (
+        <Text
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, color: 'var(--color-text-2)' }}
+        >
+          {label}
+        </Text>
+      ) : null}
       <Select
         value={value as string | number | string[] | number[] | undefined}
         disabled={disabled}
@@ -592,14 +632,21 @@ export function SelectField({ label, hint, error, children, className = '', valu
           } as React.ChangeEvent<HTMLSelectElement>;
           if (onChange) onChange(syntheticEvent);
         }}
-        className={className}
         style={{ width: '100%' }}
       >
         {options}
       </Select>
-      {error ? <span className="field-error">{error}</span> : null}
-      {hint && !error ? <span className="field-hint">{hint}</span> : null}
-    </label>
+      {error ? (
+        <Text type="error" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+          {error}
+        </Text>
+      ) : null}
+      {hint && !error ? (
+        <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+          {hint}
+        </Text>
+      ) : null}
+    </div>
   );
 }
 
@@ -610,7 +657,10 @@ export function Tag({
   children,
   tone = 'default',
   size = 'md',
-}: PropsWithChildren<{ tone?: 'default' | 'pink' | 'green' | 'orange' | 'blue' | 'red'; size?: 'sm' | 'md' }>) {
+}: PropsWithChildren<{
+  tone?: 'default' | 'pink' | 'green' | 'orange' | 'blue' | 'red';
+  size?: 'sm' | 'md';
+}>) {
   const colorMap: Record<string, string> = {
     default: 'gray',
     pink: 'magenta',
@@ -627,7 +677,9 @@ export function Tag({
 }
 
 /** 兼容性：将 CSSProperties['textAlign'] 映射为 Arco Table 支持的 "center" | "left" | "right" */
-function mapAlign(align: CSSProperties['textAlign'] | undefined): 'center' | 'left' | 'right' | undefined {
+function mapAlign(
+  align: CSSProperties['textAlign'] | undefined,
+): 'center' | 'left' | 'right' | undefined {
   if (align === 'center' || align === 'left' || align === 'right') return align;
   return undefined;
 }
@@ -679,7 +731,11 @@ export function DataTable<T extends object>({
   );
 }
 
-export const Pagination = memo(function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
+export const Pagination = memo(function Pagination({
+  page,
+  totalPages,
+  onPageChange,
+}: PaginationProps) {
   if (totalPages <= 1) {
     return null;
   }
@@ -704,22 +760,38 @@ export function Switch({
   description,
   statusText,
 }: SwitchProps) {
-  const control = (
-    <ArcoSwitch checked={checked} onChange={onChange} disabled={disabled} />
-  );
+  const control = <ArcoSwitch checked={checked} onChange={onChange} disabled={disabled} />;
 
   if (!label && !description && !statusText) {
     return control;
   }
 
   return (
-    <div className="switch-row">
+    <div
+      className="switch-row"
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
+    >
       <div>
-        {label ? <div className="switch-label">{label}</div> : null}
-        {description ? <div className="switch-description">{description}</div> : null}
+        {label ? (
+          <div className="switch-label" style={{ fontWeight: 500 }}>
+            {label}
+          </div>
+        ) : null}
+        {description ? (
+          <div
+            className="switch-description"
+            style={{ fontSize: 13, color: 'var(--color-text-3)' }}
+          >
+            {description}
+          </div>
+        ) : null}
       </div>
-      <div className="switch-side">
-        {statusText ? <span className="subtle-text">{statusText}</span> : null}
+      <div className="switch-side" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {statusText ? (
+          <span className="subtle-text" style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
+            {statusText}
+          </span>
+        ) : null}
         {control}
       </div>
     </div>
@@ -745,106 +817,142 @@ export function TextArea({
   hint?: string;
   error?: string;
 } & TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  const fieldClass = `field ${error ? 'is-error' : ''} ${className}`.trim();
-
   // Arco Input.TextArea 的 onChange 签名为 (value: string, e) => void，需适配原生 (e) => void
   const { onChange: nativeOnChange, value, ...textAreaProps } = rest as any;
   const handleArcoChange = nativeOnChange
-    ? (val: string) => nativeOnChange({ target: { value: val } } as React.ChangeEvent<HTMLTextAreaElement>)
+    ? (val: string) =>
+        nativeOnChange({ target: { value: val } } as React.ChangeEvent<HTMLTextAreaElement>)
     : undefined;
 
   return (
-    <label className={fieldClass}>
-      {label ? <span className="field-label">{label}</span> : null}
-      <Input.TextArea value={value} onChange={handleArcoChange} {...textAreaProps} />
-      {error ? <span className="field-error">{error}</span> : null}
-      {hint && !error ? <span className="field-hint">{hint}</span> : null}
-    </label>
+    <div className={className} style={{ marginBottom: 16 }}>
+      {label ? (
+        <Text
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, color: 'var(--color-text-2)' }}
+        >
+          {label}
+        </Text>
+      ) : null}
+      <Input.TextArea
+        value={value}
+        onChange={handleArcoChange}
+        {...textAreaProps}
+        style={{ width: '100%' }}
+      />
+      {error ? (
+        <Text type="error" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+          {error}
+        </Text>
+      ) : null}
+      {hint && !error ? (
+        <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+          {hint}
+        </Text>
+      ) : null}
+    </div>
   );
 }
 
 export const validators = {
-  required: (message = '此项为必填') => (value: any): string | null => {
-    if (value === null || value === undefined || value === '') {
-      return message;
-    }
-    if (typeof value === 'string' && value.trim() === '') {
-      return message;
-    }
-    return null;
-  },
+  required:
+    (message = '此项为必填') =>
+    (value: any): string | null => {
+      if (value === null || value === undefined || value === '') {
+        return message;
+      }
+      if (typeof value === 'string' && value.trim() === '') {
+        return message;
+      }
+      return null;
+    },
 
-  minLength: (min: number, message?: string) => (value: any): string | null => {
-    if (!value && value !== 0) return null;
-    const str = String(value);
-    if (str.length < min) {
-      return message || `最少需要 ${min} 个字符`;
-    }
-    return null;
-  },
+  minLength:
+    (min: number, message?: string) =>
+    (value: any): string | null => {
+      if (!value && value !== 0) return null;
+      const str = String(value);
+      if (str.length < min) {
+        return message || `最少需要 ${min} 个字符`;
+      }
+      return null;
+    },
 
-  maxLength: (max: number, message?: string) => (value: any): string | null => {
-    if (!value && value !== 0) return null;
-    const str = String(value);
-    if (str.length > max) {
-      return message || `最多允许 ${max} 个字符`;
-    }
-    return null;
-  },
+  maxLength:
+    (max: number, message?: string) =>
+    (value: any): string | null => {
+      if (!value && value !== 0) return null;
+      const str = String(value);
+      if (str.length > max) {
+        return message || `最多允许 ${max} 个字符`;
+      }
+      return null;
+    },
 
-  min: (minValue: number, message?: string) => (value: any): string | null => {
-    if (value === null || value === undefined || value === '') return null;
-    const num = Number(value);
-    if (isNaN(num)) return null;
-    if (num < minValue) {
-      return message || `不能小于 ${minValue}`;
-    }
-    return null;
-  },
+  min:
+    (minValue: number, message?: string) =>
+    (value: any): string | null => {
+      if (value === null || value === undefined || value === '') return null;
+      const num = Number(value);
+      if (isNaN(num)) return null;
+      if (num < minValue) {
+        return message || `不能小于 ${minValue}`;
+      }
+      return null;
+    },
 
-  max: (maxValue: number, message?: string) => (value: any): string | null => {
-    if (value === null || value === undefined || value === '') return null;
-    const num = Number(value);
-    if (isNaN(num)) return null;
-    if (num > maxValue) {
-      return message || `不能大于 ${maxValue}`;
-    }
-    return null;
-  },
+  max:
+    (maxValue: number, message?: string) =>
+    (value: any): string | null => {
+      if (value === null || value === undefined || value === '') return null;
+      const num = Number(value);
+      if (isNaN(num)) return null;
+      if (num > maxValue) {
+        return message || `不能大于 ${maxValue}`;
+      }
+      return null;
+    },
 
-  email: (message = '请输入有效的邮箱地址') => (value: any): string | null => {
-    if (!value) return null;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(String(value))) {
-      return message;
-    }
-    return null;
-  },
+  email:
+    (message = '请输入有效的邮箱地址') =>
+    (value: any): string | null => {
+      if (!value) return null;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(String(value))) {
+        return message;
+      }
+      return null;
+    },
 
-  pattern: (regex: RegExp, message = '格式不正确') => (value: any): string | null => {
-    if (!value) return null;
-    if (!regex.test(String(value))) {
-      return message;
-    }
-    return null;
-  },
+  pattern:
+    (regex: RegExp, message = '格式不正确') =>
+    (value: any): string | null => {
+      if (!value) return null;
+      if (!regex.test(String(value))) {
+        return message;
+      }
+      return null;
+    },
 
-  number: (message = '请输入有效的数字') => (value: any): string | null => {
-    if (value === null || value === undefined || value === '') return null;
-    if (isNaN(Number(value))) {
-      return message;
-    }
-    return null;
-  },
+  number:
+    (message = '请输入有效的数字') =>
+    (value: any): string | null => {
+      if (value === null || value === undefined || value === '') return null;
+      if (isNaN(Number(value))) {
+        return message;
+      }
+      return null;
+    },
 
-  positiveNumber: (message = '请输入正数') => (value: any): string | null => {
-    if (value === null || value === undefined || value === '') return null;
-    const num = Number(value);
-    if (isNaN(num) || num <= 0) {
-      return message;
-    }
-    return null;
-  },
+  positiveNumber:
+    (message = '请输入正数') =>
+    (value: any): string | null => {
+      if (value === null || value === undefined || value === '') return null;
+      const num = Number(value);
+      if (isNaN(num) || num <= 0) {
+        return message;
+      }
+      return null;
+    },
 };
 
 type Validator = (value: any) => string | null;
@@ -888,25 +996,29 @@ export function useFormValidation<T extends Record<string, any>>(
 
     setErrors(newErrors);
     setTouched(
-      Object.keys(rules).reduce((acc, key) => {
-        acc[key as keyof T] = true;
-        return acc;
-      }, {} as Partial<Record<keyof T, boolean>>),
+      Object.keys(rules).reduce(
+        (acc, key) => {
+          acc[key as keyof T] = true;
+          return acc;
+        },
+        {} as Partial<Record<keyof T, boolean>>,
+      ),
     );
 
     return isValid;
   }, [rules, values, validateField]);
 
   const handleChange = useCallback(
-    (name: keyof T) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-      const value = e.target.value;
-      setValues((prev) => ({ ...prev, [name]: value } as T));
+    (name: keyof T) =>
+      (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const value = e.target.value;
+        setValues((prev) => ({ ...prev, [name]: value }) as T);
 
-      if (touched[name]) {
-        const error = validateField(name, value);
-        setErrors((prev) => ({ ...prev, [name]: error ?? undefined }));
-      }
-    },
+        if (touched[name]) {
+          const error = validateField(name, value);
+          setErrors((prev) => ({ ...prev, [name]: error ?? undefined }));
+        }
+      },
     [touched, validateField],
   );
 
@@ -921,7 +1033,7 @@ export function useFormValidation<T extends Record<string, any>>(
 
   const setFieldValue = useCallback(
     (name: keyof T, value: any) => {
-      setValues((prev) => ({ ...prev, [name]: value } as T));
+      setValues((prev) => ({ ...prev, [name]: value }) as T);
       if (touched[name]) {
         const error = validateField(name, value);
         setErrors((prev) => ({ ...prev, [name]: error ?? undefined }));
@@ -966,20 +1078,23 @@ export function useFormValidation<T extends Record<string, any>>(
 }
 
 export function useToastState() {
-  const showToast = useCallback((
-    message: string,
-    type: ToastState['type'] = 'success',
-    options?: { detail?: string; duration?: number },
-  ) => {
-    const duration = options?.duration ?? (type === 'error' ? 4000 : 2800);
-    const typeMap: Record<string, 'success' | 'info' | 'warning' | 'error' | 'normal'> = {
-      success: 'success',
-      error: 'error',
-      warning: 'warning',
-      info: 'info',
-    };
-    Message[typeMap[type] ?? 'info']({ content: message, duration });
-  }, []);
+  const showToast = useCallback(
+    (
+      message: string,
+      type: ToastState['type'] = 'success',
+      options?: { detail?: string; duration?: number },
+    ) => {
+      const duration = options?.duration ?? (type === 'error' ? 4000 : 2800);
+      const typeMap: Record<string, 'success' | 'info' | 'warning' | 'error' | 'normal'> = {
+        success: 'success',
+        error: 'error',
+        warning: 'warning',
+        info: 'info',
+      };
+      Message[typeMap[type] ?? 'info']({ content: message, duration });
+    },
+    [],
+  );
 
   const hideToast = useCallback(() => {
     Message.clear();

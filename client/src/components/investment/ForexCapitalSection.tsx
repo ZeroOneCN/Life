@@ -3,7 +3,18 @@ import dayjs from 'dayjs';
 
 import { DatePickerField, DateRangePicker } from '../date';
 import { EmptyState, SectionCard, StatGrid } from '../page';
-import { Btn, Checkbox, DataTable, DeleteModal, Field, Modal, Pagination, SelectField, Tag, TextArea } from '../ui';
+import {
+  Btn,
+  Checkbox,
+  DataTable,
+  DeleteModal,
+  Field,
+  Modal,
+  Pagination,
+  SelectField,
+  Tag,
+  TextArea,
+} from '../ui';
 import {
   FOREX_CAPITAL_PAGE_SIZE,
   FOREX_CAPITAL_TYPE_OPTIONS,
@@ -14,7 +25,11 @@ import {
   getForexCapitalTypeLabel,
   updateForexCapitalFlow,
 } from '../../services/forex';
-import type { ForexCapitalFlow, ForexCapitalFlowDraft, ForexCapitalFlowType } from '../../types/forex';
+import type {
+  ForexCapitalFlow,
+  ForexCapitalFlowDraft,
+  ForexCapitalFlowType,
+} from '../../types/forex';
 
 interface ForexCapitalSectionProps {
   capitalFlows: ForexCapitalFlow[];
@@ -95,12 +110,13 @@ export function ForexCapitalSection({
   const [page, setPage] = useState(1);
 
   const filteredFlows = useMemo(
-    () => filterForexCapitalFlows(capitalFlows, {
-      flowType: flowTypeFilter,
-      startDate: startDateFilter,
-      endDate: endDateFilter,
-      keyword,
-    }),
+    () =>
+      filterForexCapitalFlows(capitalFlows, {
+        flowType: flowTypeFilter,
+        startDate: startDateFilter,
+        endDate: endDateFilter,
+        keyword,
+      }),
     [capitalFlows, startDateFilter, endDateFilter, flowTypeFilter, keyword],
   );
 
@@ -150,78 +166,85 @@ export function ForexCapitalSection({
     };
   }, [filteredFlows]);
 
-  const columns = useMemo(() => [
-    { key: 'flowDate', title: '日期', dataIndex: 'flowDate' as const },
-    {
-      key: 'flowType',
-      title: '类型',
-      render: (_value: unknown, row: ForexCapitalFlow) => (
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <Tag tone={getFlowTypeTone(row.flowType)}>
-            {getForexCapitalTypeLabel(row.flowType)}
-          </Tag>
-          {row.flowType === 'deposit' && row.isBonus && <Tag tone="blue">体验金</Tag>}
-        </div>
-      ),
-    },
-    {
-      key: 'amount',
-      title: '金额',
-      render: (_value: unknown, row: ForexCapitalFlow) => {
-        if (row.flowType === 'bonus_expired') {
-          return <strong style={{ color: 'var(--color-ink-subtle)' }}>{formatForexMoney(row.amount)}</strong>;
-        }
-        const isDeposit = row.flowType === 'deposit';
-        return (
-          <strong style={{ color: isDeposit ? 'var(--color-success)' : 'var(--color-danger)' }}>
-            {`${isDeposit ? '+' : '-'}${formatForexMoney(row.amount)}`}
-          </strong>
-        );
+  const columns = useMemo(
+    () => [
+      { key: 'flowDate', title: '日期', dataIndex: 'flowDate' as const },
+      {
+        key: 'flowType',
+        title: '类型',
+        render: (_value: unknown, row: ForexCapitalFlow) => (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Tag tone={getFlowTypeTone(row.flowType)}>{getForexCapitalTypeLabel(row.flowType)}</Tag>
+            {row.flowType === 'deposit' && row.isBonus && <Tag tone="blue">体验金</Tag>}
+          </div>
+        ),
       },
-    },
-    {
-      key: 'remark',
-      title: '备注',
-      width: 160,
-      render: (_value: unknown, row: ForexCapitalFlow) => {
-        if (!row.remark) return '-';
-        return (
-          <span
-            title={row.remark}
-            style={{
-              display: 'inline-block',
-              maxWidth: 140,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              verticalAlign: 'middle',
-              cursor: 'default',
-            }}
-          >
-            {row.remark}
-          </span>
-        );
+      {
+        key: 'amount',
+        title: '金额',
+        render: (_value: unknown, row: ForexCapitalFlow) => {
+          if (row.flowType === 'bonus_expired') {
+            return (
+              <strong style={{ color: 'var(--color-ink-subtle)' }}>
+                {formatForexMoney(row.amount)}
+              </strong>
+            );
+          }
+          const isDeposit = row.flowType === 'deposit';
+          return (
+            <strong style={{ color: isDeposit ? 'var(--color-success)' : 'var(--color-danger)' }}>
+              {`${isDeposit ? '+' : '-'}${formatForexMoney(row.amount)}`}
+            </strong>
+          );
+        },
       },
-    },
-    {
-      key: 'actions',
-      title: '操作',
-      render: (_value: unknown, row: ForexCapitalFlow) => (
-        <div className="fitness-row-actions">
-          <Btn
-            tone="secondary"
-            onClick={() => {
-              setEditingRecord(row);
-              setEditingForm(buildFormState(row));
-            }}
-          >
-            编辑
-          </Btn>
-          <Btn tone="danger" onClick={() => setPendingDeleteId(row.id)}>删除</Btn>
-        </div>
-      ),
-    },
-  ], []);
+      {
+        key: 'remark',
+        title: '备注',
+        width: 160,
+        render: (_value: unknown, row: ForexCapitalFlow) => {
+          if (!row.remark) return '-';
+          return (
+            <span
+              title={row.remark}
+              style={{
+                display: 'inline-block',
+                maxWidth: 140,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                verticalAlign: 'middle',
+                cursor: 'default',
+              }}
+            >
+              {row.remark}
+            </span>
+          );
+        },
+      },
+      {
+        key: 'actions',
+        title: '操作',
+        render: (_value: unknown, row: ForexCapitalFlow) => (
+          <div className="fitness-row-actions">
+            <Btn
+              tone="secondary"
+              onClick={() => {
+                setEditingRecord(row);
+                setEditingForm(buildFormState(row));
+              }}
+            >
+              编辑
+            </Btn>
+            <Btn tone="danger" onClick={() => setPendingDeleteId(row.id)}>
+              删除
+            </Btn>
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
 
   const handleCreate = () => {
     const draft = parseDraft(form);
@@ -255,13 +278,16 @@ export function ForexCapitalSection({
   };
 
   return (
-    <SectionCard
-      title="出入金"
-      description="管理账户资本流，支持日期范围筛选与统计。"
-    >
+    <SectionCard title="出入金" description="管理账户资本流，支持日期范围筛选与统计。">
       <div className="page-stack">
         {/* 表单区 */}
-        <form className="forex-capital-form" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
+        <form
+          className="forex-capital-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleCreate();
+          }}
+        >
           <div className="forex-capital-form-grid">
             <DatePickerField
               label="日期"
@@ -272,26 +298,34 @@ export function ForexCapitalSection({
             <SelectField
               label="类型"
               value={form.flowType}
-              onChange={(event) => setForm((current) => ({
-                ...current,
-                flowType: event.target.value as ForexCapitalFlowType,
-                isBonus: event.target.value === 'deposit' ? current.isBonus : false,
-              }))}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  flowType: event.target.value as ForexCapitalFlowType,
+                  isBonus: event.target.value === 'deposit' ? current.isBonus : false,
+                }))
+              }
             >
               {FOREX_CAPITAL_TYPE_OPTIONS.map((flowType) => (
-                <option key={flowType} value={flowType}>{getForexCapitalTypeLabel(flowType)}</option>
+                <option key={flowType} value={flowType}>
+                  {getForexCapitalTypeLabel(flowType)}
+                </option>
               ))}
             </SelectField>
             <Field
               label="金额"
               value={form.amount}
-              onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, amount: event.target.value }))
+              }
               placeholder="5000"
             />
             <Field
               label="备注"
               value={form.remark}
-              onChange={(event) => setForm((current) => ({ ...current, remark: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, remark: event.target.value }))
+              }
               placeholder="例如：初始入金"
             />
           </div>
@@ -304,7 +338,9 @@ export function ForexCapitalSection({
                 体验金
               </Checkbox>
             ) : null}
-            <Btn tone="primary" type="submit">保存</Btn>
+            <Btn tone="primary" type="submit">
+              保存
+            </Btn>
           </div>
         </form>
 
@@ -312,13 +348,32 @@ export function ForexCapitalSection({
         <StatGrid
           items={[
             { label: '记录数', value: `${summary.count} 条` },
-            { label: '累计入金', value: formatForexMoney(summary.totalDeposit), accent: 'var(--color-success)' },
-            { label: '累计出金', value: formatForexMoney(summary.totalWithdrawal), accent: 'var(--color-danger)' },
-            { label: '净入金', value: formatForexMoney(summary.netCapital), accent: summary.netCapital >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
-            { label: '体验金入金', value: formatForexMoney(summary.totalBonusDeposit), accent: '#3b82f6' },
-            { label: '剩余体验金', value: formatForexMoney(summary.remainingBonus), accent: '#8b5cf6' },
+            {
+              label: '累计入金',
+              value: formatForexMoney(summary.totalDeposit),
+              accent: 'var(--color-success)',
+            },
+            {
+              label: '累计出金',
+              value: formatForexMoney(summary.totalWithdrawal),
+              accent: 'var(--color-danger)',
+            },
+            {
+              label: '净入金',
+              value: formatForexMoney(summary.netCapital),
+              accent: summary.netCapital >= 0 ? 'var(--color-success)' : 'var(--color-danger)',
+            },
+            {
+              label: '体验金入金',
+              value: formatForexMoney(summary.totalBonusDeposit),
+              accent: '#3b82f6',
+            },
+            {
+              label: '剩余体验金',
+              value: formatForexMoney(summary.remainingBonus),
+              accent: '#8b5cf6',
+            },
           ]}
-          className="forex-capital-stat-grid"
         />
 
         {/* 筛选区 - 日期范围 + 类型 + 关键词 */}
@@ -339,7 +394,9 @@ export function ForexCapitalSection({
           >
             <option value="">全部类型</option>
             {FOREX_CAPITAL_TYPE_OPTIONS.map((flowType) => (
-              <option key={flowType} value={flowType}>{getForexCapitalTypeLabel(flowType)}</option>
+              <option key={flowType} value={flowType}>
+                {getForexCapitalTypeLabel(flowType)}
+              </option>
             ))}
           </SelectField>
           <Field
@@ -353,11 +410,19 @@ export function ForexCapitalSection({
         {/* 数据表格 */}
         {pageRecords.length ? (
           <>
-            <DataTable columns={columns} data={pageRecords} rowKey="id" className="forex-capital-table" />
+            <DataTable
+              columns={columns}
+              data={pageRecords}
+              rowKey="id"
+              className="forex-capital-table"
+            />
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         ) : (
-          <EmptyState title="暂无出入金记录" description="保存一条入金或出金记录，这里会开始形成账户资本流。" />
+          <EmptyState
+            title="暂无出入金记录"
+            description="保存一条入金或出金记录，这里会开始形成账户资本流。"
+          />
         )}
 
         {/* 编辑弹窗 */}
@@ -366,12 +431,16 @@ export function ForexCapitalSection({
           onClose={() => setEditingRecord(null)}
           title="编辑出入金记录"
           width={760}
-          footer={(
+          footer={
             <>
-              <Btn tone="secondary" onClick={() => setEditingRecord(null)}>取消</Btn>
-              <Btn tone="primary" onClick={handleUpdate}>保存修改</Btn>
+              <Btn tone="secondary" onClick={() => setEditingRecord(null)}>
+                取消
+              </Btn>
+              <Btn tone="primary" onClick={handleUpdate}>
+                保存修改
+              </Btn>
             </>
-          )}
+          }
         >
           <div className="forex-modal-grid forex-modal-grid-capital">
             <DatePickerField
@@ -383,25 +452,33 @@ export function ForexCapitalSection({
             <SelectField
               label="类型"
               value={editingForm.flowType}
-              onChange={(event) => setEditingForm((current) => ({
-                ...current,
-                flowType: event.target.value as ForexCapitalFlowType,
-                isBonus: event.target.value === 'deposit' ? current.isBonus : false,
-              }))}
+              onChange={(event) =>
+                setEditingForm((current) => ({
+                  ...current,
+                  flowType: event.target.value as ForexCapitalFlowType,
+                  isBonus: event.target.value === 'deposit' ? current.isBonus : false,
+                }))
+              }
             >
               {FOREX_CAPITAL_TYPE_OPTIONS.map((flowType) => (
-                <option key={flowType} value={flowType}>{getForexCapitalTypeLabel(flowType)}</option>
+                <option key={flowType} value={flowType}>
+                  {getForexCapitalTypeLabel(flowType)}
+                </option>
               ))}
             </SelectField>
             <Field
               label="金额"
               value={editingForm.amount}
-              onChange={(event) => setEditingForm((current) => ({ ...current, amount: event.target.value }))}
+              onChange={(event) =>
+                setEditingForm((current) => ({ ...current, amount: event.target.value }))
+              }
             />
             <TextArea
               label="备注"
               value={editingForm.remark}
-              onChange={(event) => setEditingForm((current) => ({ ...current, remark: event.target.value }))}
+              onChange={(event) =>
+                setEditingForm((current) => ({ ...current, remark: event.target.value }))
+              }
               rows={4}
               placeholder="记录这笔出入金的上下文"
             />
@@ -409,7 +486,9 @@ export function ForexCapitalSection({
               <div className="forex-capital-modal-bonus">
                 <Checkbox
                   checked={editingForm.isBonus}
-                  onChange={(checked) => setEditingForm((current) => ({ ...current, isBonus: checked }))}
+                  onChange={(checked) =>
+                    setEditingForm((current) => ({ ...current, isBonus: checked }))
+                  }
                 >
                   体验金
                 </Checkbox>

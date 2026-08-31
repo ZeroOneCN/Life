@@ -18,7 +18,11 @@ describe('PageHeader', () => {
  */
 describe('SectionCard', () => {
   it('renders title and description', () => {
-    render(<SectionCard title="区块标题" description="区块描述" />);
+    render(
+      <SectionCard title="区块标题" description="区块描述">
+        <div>内容</div>
+      </SectionCard>,
+    );
     expect(screen.getByText('区块标题')).toBeInTheDocument();
     expect(screen.getByText('区块描述')).toBeInTheDocument();
   });
@@ -40,7 +44,7 @@ describe('StatGrid', () => {
   const items = [
     { label: '总数', value: '100' },
     { label: '活跃', value: '80' },
-    { label: '异常', value: '5', tone: 'red' as const },
+    { label: '异常', value: '5', accent: 'var(--color-danger-6)' },
   ];
 
   it('renders stat items', () => {
@@ -53,7 +57,8 @@ describe('StatGrid', () => {
 
   it('renders all items', () => {
     const { container } = render(<StatGrid items={items} />);
-    const statCards = container.querySelectorAll('.stat-card');
+    /* StatGrid 现在使用 Arco Card 实现，每个指标项对应一个 .arco-card */
+    const statCards = container.querySelectorAll('.arco-card');
     expect(statCards.length).toBe(3);
   });
 });

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
+import { Card, Typography } from '@arco-design/web-react';
+
 import { EmptyState, PageHeader, SectionCard, StatGrid } from '../../components/page';
 import {
   Btn,
@@ -30,11 +32,7 @@ import type {
   GoalType,
   ContributionType,
 } from '../../types/goal';
-import {
-  GOAL_TYPE_LABELS,
-  GOAL_STATUS_LABELS,
-  CONTRIBUTION_TYPE_LABELS,
-} from '../../types/goal';
+import { GOAL_TYPE_LABELS, GOAL_STATUS_LABELS, CONTRIBUTION_TYPE_LABELS } from '../../types/goal';
 
 type TabKey = 'all' | 'active' | 'completed';
 
@@ -45,7 +43,17 @@ const TAB_OPTIONS = [
 ];
 
 const TargetIcon = ({ size = 16 }: { size?: number }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <circle cx="12" cy="12" r="10" />
     <circle cx="12" cy="12" r="6" />
     <circle cx="12" cy="12" r="2" />
@@ -53,21 +61,51 @@ const TargetIcon = ({ size = 16 }: { size?: number }) => (
 );
 
 const PlusIcon = ({ size = 16 }: { size?: number }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <line x1="12" y1="5" x2="12" y2="19" />
     <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
 );
 
 const ArrowRightIcon = ({ size = 16 }: { size?: number }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <line x1="5" y1="12" x2="19" y2="12" />
     <polyline points="12 5 19 12 12 19" />
   </svg>
 );
 
 const ArrowLeftIcon = ({ size = 16 }: { size?: number }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <line x1="19" y1="12" x2="5" y2="12" />
     <polyline points="12 19 5 12 12 5" />
   </svg>
@@ -81,7 +119,11 @@ const ArrowLeftIcon = ({ size = 16 }: { size?: number }) => (
  */
 export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
   const { toast, showToast } = useToastState();
-  const [activeTab, setActiveTab] = usePageTab<TabKey>('all', ['all', 'active', 'completed'], 'goalTab');
+  const [activeTab, setActiveTab] = usePageTab<TabKey>(
+    'all',
+    ['all', 'active', 'completed'],
+    'goalTab',
+  );
 
   const [goals, setGoals] = useState<FinanceGoal[]>([]);
   const [goalsLoading, setGoalsLoading] = useState(false);
@@ -130,30 +172,36 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
     }
   }, [showToast]);
 
-  const loadGoals = useCallback(async (status: TabKey) => {
-    setGoalsLoading(true);
-    try {
-      const statusParam = status === 'all' ? 'all' : status as GoalStatus;
-      const data = await goalApi.list({ status: statusParam, pageSize: 100 });
-      setGoals(data.items);
-    } catch (err) {
-      showToast(`加载目标失败：${buildApiErrorMessage(err)}`, 'error');
-    } finally {
-      setGoalsLoading(false);
-    }
-  }, [showToast]);
+  const loadGoals = useCallback(
+    async (status: TabKey) => {
+      setGoalsLoading(true);
+      try {
+        const statusParam = status === 'all' ? 'all' : (status as GoalStatus);
+        const data = await goalApi.list({ status: statusParam, pageSize: 100 });
+        setGoals(data.items);
+      } catch (err) {
+        showToast(`加载目标失败：${buildApiErrorMessage(err)}`, 'error');
+      } finally {
+        setGoalsLoading(false);
+      }
+    },
+    [showToast],
+  );
 
-  const loadContributions = useCallback(async (goalId: string) => {
-    setContributionsLoading(true);
-    try {
-      const data = await goalApi.listContributions(goalId, { pageSize: 50 });
-      setContributions(data.items);
-    } catch (err) {
-      showToast(`加载记录失败：${buildApiErrorMessage(err)}`, 'error');
-    } finally {
-      setContributionsLoading(false);
-    }
-  }, [showToast]);
+  const loadContributions = useCallback(
+    async (goalId: string) => {
+      setContributionsLoading(true);
+      try {
+        const data = await goalApi.listContributions(goalId, { pageSize: 50 });
+        setContributions(data.items);
+      } catch (err) {
+        showToast(`加载记录失败：${buildApiErrorMessage(err)}`, 'error');
+      } finally {
+        setContributionsLoading(false);
+      }
+    },
+    [showToast],
+  );
 
   useEffect(() => {
     loadSummary();
@@ -328,8 +376,8 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
       <SectionCard
         title="我的目标"
         description={`共 ${goals.length} 个目标`}
-        action={(
-          <div className="section-card-toolbar">
+        action={
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
             <PillTabs
               options={TAB_OPTIONS}
               value={activeTab}
@@ -344,17 +392,14 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
               </Btn>
             ) : null}
           </div>
-        )}
+        }
       >
         {goalsLoading ? (
           <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--color-ink-mute)' }}>
             加载中...
           </div>
         ) : goals.length === 0 ? (
-          <EmptyState
-            title="暂无目标"
-            description="创建你的第一个储蓄目标，开始存钱之旅吧！"
-          />
+          <EmptyState title="暂无目标" description="创建你的第一个储蓄目标，开始存钱之旅吧！" />
         ) : (
           <div className="goal-grid">
             {goals.map((goal) => (
@@ -375,9 +420,17 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
                     <div>
                       <h4 className="goal-name">{goal.name}</h4>
                       <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
-                        <Tag tone="blue" size="sm">{GOAL_TYPE_LABELS[goal.type]}</Tag>
+                        <Tag tone="blue" size="sm">
+                          {GOAL_TYPE_LABELS[goal.type]}
+                        </Tag>
                         <Tag
-                          tone={goal.status === 'completed' ? 'green' : goal.status === 'paused' ? 'orange' : 'blue'}
+                          tone={
+                            goal.status === 'completed'
+                              ? 'green'
+                              : goal.status === 'paused'
+                                ? 'orange'
+                                : 'blue'
+                          }
                           size="sm"
                         >
                           {GOAL_STATUS_LABELS[goal.status]}
@@ -435,17 +488,24 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
 
                 <div className="goal-footer">
                   <div style={{ fontSize: 13, color: 'var(--color-ink-mute)' }}>
-                    每月需存 <span style={{ fontWeight: 600, color: goal.color }}>
+                    每月需存{' '}
+                    <span style={{ fontWeight: 600, color: goal.color }}>
                       ¥{goal.monthlySavingsNeeded.toFixed(2)}
                     </span>
                   </div>
                   <div>
                     {goal.isOnTrack ? (
-                      <Tag tone="green" size="sm">进度正常</Tag>
+                      <Tag tone="green" size="sm">
+                        进度正常
+                      </Tag>
                     ) : goal.isWarning ? (
-                      <Tag tone="orange" size="sm">进度偏慢</Tag>
+                      <Tag tone="orange" size="sm">
+                        进度偏慢
+                      </Tag>
                     ) : (
-                      <Tag tone="red" size="sm">严重落后</Tag>
+                      <Tag tone="red" size="sm">
+                        严重落后
+                      </Tag>
                     )}
                   </div>
                 </div>
@@ -462,7 +522,9 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
         onClose={() => setGoalModalOpen(false)}
         footer={
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <Btn tone="ghost" onClick={() => setGoalModalOpen(false)}>取消</Btn>
+            <Btn tone="ghost" onClick={() => setGoalModalOpen(false)}>
+              取消
+            </Btn>
             <Btn tone="primary" disabled={goalSaving} onClick={handleSaveGoal}>
               {editingGoal ? '保存修改' : '创建目标'}
             </Btn>
@@ -485,7 +547,9 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
               onChange={(e) => setGoalForm({ ...goalForm, type: e.target.value as GoalType })}
             >
               {Object.entries(GOAL_TYPE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
+                <option key={value} value={value}>
+                  {label}
+                </option>
               ))}
             </SelectField>
             <SelectField
@@ -494,7 +558,9 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
               onChange={(e) => setGoalForm({ ...goalForm, status: e.target.value as GoalStatus })}
             >
               {Object.entries(GOAL_STATUS_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
+                <option key={value} value={value}>
+                  {label}
+                </option>
               ))}
             </SelectField>
           </div>
@@ -538,7 +604,13 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input
                 type="color"
-                style={{ width: 40, height: 32, border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                style={{
+                  width: 40,
+                  height: 32,
+                  border: 'none',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                }}
                 value={goalForm.color ?? '#3b82f6'}
                 onChange={(e) => setGoalForm({ ...goalForm, color: e.target.value })}
               />
@@ -552,7 +624,9 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
             label="预警阈值 (%)"
             type="number"
             value={goalForm.warningThresholdPercent ?? 80}
-            onChange={(e) => setGoalForm({ ...goalForm, warningThresholdPercent: Number(e.target.value) })}
+            onChange={(e) =>
+              setGoalForm({ ...goalForm, warningThresholdPercent: Number(e.target.value) })
+            }
             min={0}
             max={200}
           />
@@ -581,7 +655,9 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
         width={560}
         footer={
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <Btn tone="ghost" onClick={() => setDetailModalOpen(false)}>关闭</Btn>
+            <Btn tone="ghost" onClick={() => setDetailModalOpen(false)}>
+              关闭
+            </Btn>
             {selectedGoal && selectedGoal.status !== 'completed' && (
               <Btn tone="primary" onClick={() => handleOpenContrib(selectedGoal)}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -605,9 +681,17 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
               <div style={{ flex: 1 }}>
                 <h3 style={{ margin: 0, fontSize: 18 }}>{selectedGoal.name}</h3>
                 <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                  <Tag tone="blue" size="sm">{GOAL_TYPE_LABELS[selectedGoal.type]}</Tag>
+                  <Tag tone="blue" size="sm">
+                    {GOAL_TYPE_LABELS[selectedGoal.type]}
+                  </Tag>
                   <Tag
-                    tone={selectedGoal.status === 'completed' ? 'green' : selectedGoal.status === 'paused' ? 'orange' : 'blue'}
+                    tone={
+                      selectedGoal.status === 'completed'
+                        ? 'green'
+                        : selectedGoal.status === 'paused'
+                          ? 'orange'
+                          : 'blue'
+                    }
                     size="sm"
                   >
                     {GOAL_STATUS_LABELS[selectedGoal.status]}
@@ -617,18 +701,36 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              <div className="detail-stat-card">
-                <span className="detail-stat-label">已存</span>
-                <span className="detail-stat-value">¥{selectedGoal.currentAmount.toFixed(2)}</span>
-              </div>
-              <div className="detail-stat-card">
-                <span className="detail-stat-label">目标</span>
-                <span className="detail-stat-value">¥{selectedGoal.targetAmount.toFixed(2)}</span>
-              </div>
-              <div className="detail-stat-card">
-                <span className="detail-stat-label">剩余</span>
-                <span className="detail-stat-value">¥{selectedGoal.remainingAmount.toFixed(2)}</span>
-              </div>
+              <Card bordered={false} bodyStyle={{ padding: 14 }}>
+                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                  已存
+                </Typography.Text>
+                <Typography.Text
+                  style={{ fontSize: 18, fontWeight: 700, display: 'block', marginTop: 4 }}
+                >
+                  ¥{selectedGoal.currentAmount.toFixed(2)}
+                </Typography.Text>
+              </Card>
+              <Card bordered={false} bodyStyle={{ padding: 14 }}>
+                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                  目标
+                </Typography.Text>
+                <Typography.Text
+                  style={{ fontSize: 18, fontWeight: 700, display: 'block', marginTop: 4 }}
+                >
+                  ¥{selectedGoal.targetAmount.toFixed(2)}
+                </Typography.Text>
+              </Card>
+              <Card bordered={false} bodyStyle={{ padding: 14 }}>
+                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                  剩余
+                </Typography.Text>
+                <Typography.Text
+                  style={{ fontSize: 18, fontWeight: 700, display: 'block', marginTop: 4 }}
+                >
+                  ¥{selectedGoal.remainingAmount.toFixed(2)}
+                </Typography.Text>
+              </Card>
             </div>
 
             <div>
@@ -643,7 +745,9 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
                   />
                 </div>
                 <div className="goal-progress-info">
-                  <span style={{ fontWeight: 600 }}>{selectedGoal.progressPercent.toFixed(1)}%</span>
+                  <span style={{ fontWeight: 600 }}>
+                    {selectedGoal.progressPercent.toFixed(1)}%
+                  </span>
                   <span>剩余 {selectedGoal.daysRemaining} 天</span>
                 </div>
               </div>
@@ -659,11 +763,17 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--color-ink-mute)' }}>进度状态</span>
                 {selectedGoal.isOnTrack ? (
-                  <Tag tone="green" size="sm">进度正常</Tag>
+                  <Tag tone="green" size="sm">
+                    进度正常
+                  </Tag>
                 ) : selectedGoal.isWarning ? (
-                  <Tag tone="orange" size="sm">进度偏慢</Tag>
+                  <Tag tone="orange" size="sm">
+                    进度偏慢
+                  </Tag>
                 ) : (
-                  <Tag tone="red" size="sm">严重落后</Tag>
+                  <Tag tone="red" size="sm">
+                    严重落后
+                  </Tag>
                 )}
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -686,18 +796,34 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
             )}
 
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 10,
+                }}
+              >
                 <div style={{ fontWeight: 500 }}>存入/取出记录</div>
                 <span style={{ fontSize: 13, color: 'var(--color-ink-mute)' }}>
                   共 {contributions.length} 条
                 </span>
               </div>
               {contributionsLoading ? (
-                <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--color-ink-mute)' }}>
+                <div
+                  style={{ padding: '20px 0', textAlign: 'center', color: 'var(--color-ink-mute)' }}
+                >
                   加载中...
                 </div>
               ) : contributions.length === 0 ? (
-                <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--color-ink-mute)', fontSize: 13 }}>
+                <div
+                  style={{
+                    padding: '20px 0',
+                    textAlign: 'center',
+                    color: 'var(--color-ink-mute)',
+                    fontSize: 13,
+                  }}
+                >
                   暂无记录
                 </div>
               ) : (
@@ -718,10 +844,12 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
                           </div>
                         </div>
                       </div>
-                      <span style={{
-                        fontWeight: 600,
-                        color: item.type === 'deposit' ? '#10b981' : '#ef4444',
-                      }}>
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          color: item.type === 'deposit' ? '#10b981' : '#ef4444',
+                        }}
+                      >
                         {item.type === 'deposit' ? '+' : '-'}¥{item.amount.toFixed(2)}
                       </span>
                     </div>
@@ -741,7 +869,9 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
         width={420}
         footer={
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <Btn tone="ghost" onClick={() => setContribModalOpen(false)}>取消</Btn>
+            <Btn tone="ghost" onClick={() => setContribModalOpen(false)}>
+              取消
+            </Btn>
             <Btn tone="primary" disabled={contribSaving} onClick={handleSaveContrib}>
               确认
             </Btn>
@@ -807,7 +937,9 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
         width={400}
         footer={
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <Btn tone="ghost" onClick={() => setConfirmDeleteOpen(false)}>取消</Btn>
+            <Btn tone="ghost" onClick={() => setConfirmDeleteOpen(false)}>
+              取消
+            </Btn>
             <Btn tone="danger" disabled={deleting} onClick={handleConfirmDelete}>
               确认删除
             </Btn>
