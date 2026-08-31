@@ -737,7 +737,7 @@ export function ForexDashboardSection({
       title="统计看板"
       description="围绕单账户的交易、出入金和收益结构做本地复盘，时间范围只影响这块看板和规则分析。"
       action={
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+        <div className="section-card-toolbar">
           <DatePickerField
             label="开始日期"
             value={pickerStartDate}
@@ -756,6 +756,7 @@ export function ForexDashboardSection({
     >
       <div className="page-stack">
         <StatGrid
+          className="forex-dashboard-stat-grid"
           items={[
             {
               label: '净收益',
@@ -1190,6 +1191,7 @@ export function ForexDashboardSection({
             <div className="forex-ai-result">
               {aiResult.stats && (
                 <StatGrid
+                  className="forex-ai-stat-grid"
                   items={[
                     { label: '分析笔数', value: String(aiResult.stats.total_trades ?? '--') },
                     {

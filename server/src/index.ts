@@ -5,7 +5,6 @@ import { env } from './config/env';
 import { ensureDatabaseSchema } from './db/bootstrap';
 import { appDataSource } from './db/data-source';
 import { ensureFitnessCacheTables } from './modules/health/fitness-ai.service';
-import { startTelegramBot } from './modules/telegram/telegram.bot';
 
 async function bootstrap() {
   try {
@@ -42,11 +41,6 @@ async function bootstrap() {
       console.log(`LifeOS server listening on :${env.PORT}`);
     });
 
-    // 启动 Telegram Bot（非阻塞，token 未配置时自动跳过）
-    startTelegramBot().catch((error) => {
-      // eslint-disable-next-line no-console
-      console.error('[Telegram] Unhandled startup error:', error);
-    });
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('LifeOS server failed to start.', error);

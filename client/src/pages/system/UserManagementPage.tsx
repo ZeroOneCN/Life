@@ -3,7 +3,17 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Select } from '@arco-design/web-react';
 
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
-import { Btn, DataTable, Modal, Pagination, SearchInput, Switch, Tag, Toast, useToastState } from '../../components/ui';
+import {
+  Btn,
+  DataTable,
+  Modal,
+  Pagination,
+  SearchInput,
+  Switch,
+  Tag,
+  Toast,
+  useToastState,
+} from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { buildApiErrorMessage } from '../../lib/api';
 import { useAuthState } from '../../services/auth';
@@ -78,66 +88,72 @@ export default function UserManagementPage() {
     };
   }, [users, total]);
 
-  const columns = useMemo(() => [
-    { key: 'username' as const, title: '用户名', width: 120 },
-    { key: 'nickname' as const, title: '昵称', width: 120 },
-    { key: 'email' as const, title: '邮箱', width: 200 },
-    {
-      key: 'role' as const,
-      title: '角色',
-      width: 100,
-      render: (_: unknown, row: AdminUserEntry) => (
-        <Tag tone={roleColors[row.role] ?? 'default'}>{roleLabels[row.role] ?? row.role}</Tag>
-      ),
-    },
-    {
-      key: 'is_active' as const,
-      title: '状态',
-      width: 80,
-      render: (_: unknown, row: AdminUserEntry) => (
-        <Tag tone={row.is_active ? 'green' : 'default'}>{row.is_active ? '启用' : '停用'}</Tag>
-      ),
-    },
-    {
-      key: 'created_at' as const,
-      title: '注册时间',
-      width: 160,
-      render: (value: string) => dayjs(value).format('YYYY-MM-DD HH:mm'),
-    },
-    {
-      key: 'actions' as const,
-      title: '操作',
-      width: 180,
-      render: (_: unknown, row: AdminUserEntry) => {
-        const isSelf = row.id === currentUser?.id;
-        return (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <Btn
-              tone="secondary"
-              disabled={isSelf}
-              title={isSelf ? '不能修改自己的角色' : '修改角色'}
-              onClick={() => setRoleModalUser(row)}
-            >
-              角色
-            </Btn>
-            <Switch
-              checked={row.is_active}
-              disabled={isSelf}
-              onChange={async () => {
-                try {
-                  await toggleUserActive(row.id);
-                  showToastRef.current(`${row.username} 已${row.is_active ? '停用' : '启用'}。`);
-                  void fetchUsers(page);
-                } catch (error) {
-                  showToastRef.current(buildApiErrorMessage(error, '操作失败。'), 'error');
-                }
-              }}
-            />
-          </div>
-        );
-      },
-    },
-  ] as const, [currentUser, page]);
+  const columns = useMemo(
+    () =>
+      [
+        { key: 'username' as const, dataIndex: 'username' as const, title: '用户名', width: 120 },
+        { key: 'nickname' as const, dataIndex: 'nickname' as const, title: '昵称', width: 120 },
+        { key: 'email' as const, dataIndex: 'email' as const, title: '邮箱', width: 200 },
+        {
+          key: 'role' as const,
+          title: '角色',
+          width: 100,
+          render: (_: unknown, row: AdminUserEntry) => (
+            <Tag tone={roleColors[row.role] ?? 'default'}>{roleLabels[row.role] ?? row.role}</Tag>
+          ),
+        },
+        {
+          key: 'is_active' as const,
+          title: '状态',
+          width: 80,
+          render: (_: unknown, row: AdminUserEntry) => (
+            <Tag tone={row.is_active ? 'green' : 'default'}>{row.is_active ? '启用' : '停用'}</Tag>
+          ),
+        },
+        {
+          key: 'created_at' as const,
+          title: '注册时间',
+          width: 160,
+          render: (value: string) => dayjs(value).format('YYYY-MM-DD HH:mm'),
+        },
+        {
+          key: 'actions' as const,
+          title: '操作',
+          width: 180,
+          render: (_: unknown, row: AdminUserEntry) => {
+            const isSelf = row.id === currentUser?.id;
+            return (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <Btn
+                  tone="secondary"
+                  disabled={isSelf}
+                  title={isSelf ? '不能修改自己的角色' : '修改角色'}
+                  onClick={() => setRoleModalUser(row)}
+                >
+                  角色
+                </Btn>
+                <Switch
+                  checked={row.is_active}
+                  disabled={isSelf}
+                  onChange={async () => {
+                    try {
+                      await toggleUserActive(row.id);
+                      showToastRef.current(
+                        `${row.username} 已${row.is_active ? '停用' : '启用'}。`,
+                      );
+                      void fetchUsers(page);
+                    } catch (error) {
+                      showToastRef.current(buildApiErrorMessage(error, '操作失败。'), 'error');
+                    }
+                  }}
+                />
+              </div>
+            );
+          },
+        },
+      ] as const,
+    [currentUser, page],
+  );
 
   const handleRoleChange = async () => {
     if (!roleModalUser) return;
@@ -156,10 +172,7 @@ export default function UserManagementPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader
-        title="用户管理"
-        subtitle="管理系统用户和角色权限"
-      />
+      <PageHeader title="用户管理" subtitle="管理系统用户和角色权限" />
 
       <StatGrid
         items={[
@@ -170,22 +183,15 @@ export default function UserManagementPage() {
         ]}
       />
 
-      <SectionCard
-        title="用户列表"
-        description="管理所有注册用户"
-      >
+      <SectionCard title="用户列表" description="管理所有注册用户">
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
           <div style={{ width: 240 }}>
-            <SearchInput
-              value={keyword}
-              onChange={setKeyword}
-              placeholder="搜索用户名或邮箱..."
-            />
+            <SearchInput value={keyword} onChange={setKeyword} placeholder="搜索用户名或邮箱..." />
           </div>
           <Select
             placeholder="角色筛选"
             value={roleFilter || undefined}
-            onChange={(val) => setRoleFilter(val as string ?? '')}
+            onChange={(val) => setRoleFilter((val as string) ?? '')}
             allowClear
             style={{ width: 140 }}
           >
@@ -195,19 +201,10 @@ export default function UserManagementPage() {
           </Select>
         </div>
 
-        <DataTable
-          columns={columns as any}
-          data={users}
-          rowKey="id"
-          emptyText="暂无用户数据"
-        />
+        <DataTable columns={columns as any} data={users} rowKey="id" emptyText="暂无用户数据" />
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-          <Pagination
-            page={page}
-            totalPages={totalPages}
-            onPageChange={(next) => setPage(next)}
-          />
+          <Pagination page={page} totalPages={totalPages} onPageChange={(next) => setPage(next)} />
         </div>
       </SectionCard>
 
@@ -217,22 +214,34 @@ export default function UserManagementPage() {
           open
           onClose={() => setRoleModalUser(null)}
           title={`修改角色 - ${roleModalUser.username}`}
-          footer={(
+          footer={
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <Btn tone="ghost" onClick={() => setRoleModalUser(null)}>取消</Btn>
-              <Btn tone="primary" loading={roleLoading} onClick={handleRoleChange}>保存</Btn>
+              <Btn tone="ghost" onClick={() => setRoleModalUser(null)}>
+                取消
+              </Btn>
+              <Btn tone="primary" loading={roleLoading} onClick={handleRoleChange}>
+                保存
+              </Btn>
             </div>
-          )}
+          }
         >
           <div style={{ marginBottom: 12 }}>
-            <div style={{ color: 'var(--color-text-3)', marginBottom: 8, fontSize: 13 }}>当前角色</div>
-            <Tag tone={roleColors[roleModalUser.role] ?? 'default'}>{roleLabels[roleModalUser.role] ?? roleModalUser.role}</Tag>
+            <div style={{ color: 'var(--color-text-3)', marginBottom: 8, fontSize: 13 }}>
+              当前角色
+            </div>
+            <Tag tone={roleColors[roleModalUser.role] ?? 'default'}>
+              {roleLabels[roleModalUser.role] ?? roleModalUser.role}
+            </Tag>
           </div>
           <div>
-            <div style={{ color: 'var(--color-text-3)', marginBottom: 8, fontSize: 13 }}>新角色</div>
+            <div style={{ color: 'var(--color-text-3)', marginBottom: 8, fontSize: 13 }}>
+              新角色
+            </div>
             <Select
               value={roleModalUser.role}
-              onChange={(val) => setRoleModalUser({ ...roleModalUser, role: val as 'admin' | 'user' | 'readonly' })}
+              onChange={(val) =>
+                setRoleModalUser({ ...roleModalUser, role: val as 'admin' | 'user' | 'readonly' })
+              }
               style={{ width: '100%' }}
             >
               <Select.Option value="admin">管理员</Select.Option>

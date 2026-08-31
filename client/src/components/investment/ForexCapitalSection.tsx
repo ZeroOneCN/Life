@@ -374,6 +374,7 @@ export function ForexCapitalSection({
               accent: '#8b5cf6',
             },
           ]}
+          className="forex-capital-stat-grid"
         />
 
         {/* 筛选区 - 日期范围 + 类型 + 关键词 */}

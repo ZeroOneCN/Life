@@ -30,10 +30,11 @@ import { createExchangeRateRouter } from '../modules/finance/exchange-rate.route
 import { createBudgetRouter } from '../modules/finance/budget.router';
 import { createBillRouter } from '../modules/finance/bill.router';
 import { createGoalRouter } from '../modules/finance/goal.router';
-import { createTelegramRouter } from '../modules/telegram/telegram.router';
+
 import { requireJwtAuth } from '../shared/http/auth-middleware';
 import { asyncHandler } from '../shared/http/async-handler';
 import { successResponse } from '../shared/http/response';
+import { auditLogMiddleware } from '../shared/http/audit-middleware';
 import { getSystemHealthSnapshot } from '../modules/system/system-health';
 
 export function createApiRouter() {
@@ -45,6 +46,9 @@ export function createApiRouter() {
   }));
 
   router.use(requireJwtAuth);
+
+  // 审计日志中间件 — 自动记录所有非 GET 请求的操作
+  router.use(auditLogMiddleware());
 
   router.use('/notifications', createNotificationCenterRouter());
   router.use('/dashboard', createDashboardRouter());
@@ -75,7 +79,6 @@ export function createApiRouter() {
   router.use('/finance/budget', createBudgetRouter());
   router.use('/finance/bill', createBillRouter());
   router.use('/finance/goal', createGoalRouter());
-  router.use('/telegram', createTelegramRouter());
 
   return router;
 }

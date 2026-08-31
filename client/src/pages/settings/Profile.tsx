@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { PageHeader, SectionCard } from '../../components/page';
 import { Btn, Field, PillTabs, SelectField, Tag, Toast, useToastState } from '../../components/ui';
 import { DeepseekUsageWidget } from '../../components/settings/DeepseekUsageWidget';
-import TelegramBindWidget from '../../components/settings/TelegramBindWidget';
+
 import { buildApiErrorMessage, getApiFieldErrors } from '../../lib/api';
 import { changePassword, updateAuthProfile, useAuthState } from '../../services/auth';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
@@ -262,7 +262,6 @@ export default function ProfileSettingsPage() {
       {tab === 'integrations' ? (
         <>
           <DeepseekUsageWidget />
-          <TelegramBindWidget />
           <SectionCard
             title="通知渠道"
             description="管理 6 种通知渠道的启用与配置，支持邮件、企业微信、钉钉、飞书、Telegram 和 Webhook。"

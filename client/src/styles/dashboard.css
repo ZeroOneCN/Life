@@ -1282,6 +1282,7 @@
 }
 
 @media (max-width: 1024px) {
+  .fitness-overview-grid,
   .fitness-entry-grid-diet,
   .fitness-entry-grid-exercise,
   .fitness-entry-grid-shopping,
@@ -1333,6 +1334,8 @@
   .forex-insight-grid,
   .forex-calculator-result-grid,
   .forex-instrument-summary,
+  .forex-mini-stat-grid,
+  .forex-capital-stat-grid,
   .medication-entry-grid,
   .medication-purchase-grid,
   .medication-filter-grid,
@@ -1406,6 +1409,11 @@
 
   .forex-chart-card-wide {
     grid-column: 1 / -1;
+  }
+
+  .forex-dashboard-stat-grid,
+  .forex-calculator-stat-grid {
+    grid-template-columns: 1fr;
   }
 
   .subscription-upcoming-item {

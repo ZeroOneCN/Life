@@ -1,12 +1,9 @@
-import { Card, Grid, Typography } from '@arco-design/web-react';
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
 import { EmptyState, SectionCard, StatGrid } from '../../page';
 import { Tag, TrendArrow } from '../../ui';
 import type { HealthReportChange, HealthReportRangeSummary } from '../../../types/healthReport';
-
-const TypographyText = Typography.Text;
 
 interface HealthReportSummarySectionProps {
   current: HealthReportRangeSummary | null;
@@ -73,21 +70,14 @@ export function HealthReportSummarySection({
   if (loading) {
     return (
       <SectionCard title="数据汇总" description="正在加载当前周期健康指标…">
-        <Grid.Row gutter={[12, 12]}>
+        <div className="stat-grid health-report-stat-grid">
           {Array.from({ length: 6 }).map((_, index) => (
-            <Grid.Col key={index} xs={12} sm={8} md={6} lg={4} xl={4}>
-              <Card bordered={false} bodyStyle={{ padding: '16px 20px' }}>
-                <TypographyText
-                  type="secondary"
-                  style={{ fontSize: 13, display: 'block', marginBottom: 4 }}
-                >
-                  加载中
-                </TypographyText>
-                <div style={{ fontSize: 24, fontWeight: 600, color: 'var(--color-text-3)' }}>—</div>
-              </Card>
-            </Grid.Col>
+            <div className="stat-card" key={index}>
+              <span className="stat-label">加载中</span>
+              <strong className="stat-value skeleton-text">—</strong>
+            </div>
           ))}
-        </Grid.Row>
+        </div>
       </SectionCard>
     );
   }
@@ -150,7 +140,7 @@ export function HealthReportSummarySection({
       title="数据汇总"
       description={`${current.label}（${formatDateShort(current.start)} - ${formatDateShort(current.end)}）`}
       action={
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+        <div className="section-card-toolbar">
           {previous ? (
             <span className="health-report-previous-tag">对比：{previous.label}</span>
           ) : null}
@@ -158,7 +148,7 @@ export function HealthReportSummarySection({
         </div>
       }
     >
-      <StatGrid items={items} />
+      <StatGrid items={items} className="health-report-stat-grid" />
 
       {changes ? (
         <div className="health-report-changes">

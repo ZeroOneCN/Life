@@ -3,7 +3,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, DatePicker, Select } from '@arco-design/web-react';
 
 import { PageHeader, SectionCard } from '../../components/page';
-import { Btn, DataTable, Pagination, SearchInput, Tag, Toast, useToastState } from '../../components/ui';
+import {
+  Btn,
+  DataTable,
+  Pagination,
+  SearchInput,
+  Tag,
+  Toast,
+  useToastState,
+} from '../../components/ui';
 import { useBreadcrumbTail } from '../../hooks/useBreadcrumbTail';
 import { buildApiErrorMessage } from '../../lib/api';
 import {
@@ -131,66 +139,78 @@ export default function AuditLogPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
-  const columns = useMemo(() => [
-    {
-      key: 'created_at' as const,
-      title: '操作时间',
-      width: 160,
-      render: (value: string) => dayjs(value).format('YYYY-MM-DD HH:mm:ss'),
-    },
-    {
-      key: 'action' as const,
-      title: '操作类型',
-      width: 100,
-      render: (value: string) => (
-        <Tag tone={actionColors[value] ?? 'default'}>{actionLabels[value] ?? value}</Tag>
-      ),
-    },
-    {
-      key: 'entity_type' as const,
-      title: '操作模块',
-      width: 120,
-    },
-    {
-      key: 'description' as const,
-      title: '操作描述',
-      render: (_: unknown, row: AuditLogEntry) => (
-        <span
-          title={row.description}
-          style={{ cursor: 'pointer', color: 'var(--color-text-2)' }}
-          onClick={() => setDetailModalLog(row)}
-        >
-          {row.description}
-        </span>
-      ),
-    },
-    { key: 'username' as const, title: '操作人', width: 100 },
-    { key: 'ip_address' as const, title: 'IP 地址', width: 140 },
-  ] as const, []);
+  const columns = useMemo(
+    () =>
+      [
+        {
+          key: 'created_at' as const,
+          dataIndex: 'created_at' as const,
+          title: '操作时间',
+          width: 180,
+          render: (value: string) => dayjs(value).format('YYYY-MM-DD HH:mm:ss'),
+        },
+        {
+          key: 'action' as const,
+          dataIndex: 'action' as const,
+          title: '操作类型',
+          width: 100,
+          render: (value: string) => (
+            <Tag tone={actionColors[value] ?? 'default'}>{actionLabels[value] ?? value}</Tag>
+          ),
+        },
+        {
+          key: 'entity_type' as const,
+          dataIndex: 'entity_type' as const,
+          title: '操作模块',
+          width: 130,
+        },
+        {
+          key: 'description' as const,
+          dataIndex: 'description' as const,
+          title: '操作描述',
+          render: (_: unknown, row: AuditLogEntry) => (
+            <span
+              title={row.description}
+              style={{ cursor: 'pointer', color: 'var(--color-text-2)' }}
+              onClick={() => setDetailModalLog(row)}
+            >
+              {row.description}
+            </span>
+          ),
+        },
+        { key: 'username' as const, dataIndex: 'username' as const, title: '操作人', width: 100 },
+        {
+          key: 'ip_address' as const,
+          dataIndex: 'ip_address' as const,
+          title: 'IP 地址',
+          width: 140,
+        },
+      ] as const,
+    [],
+  );
 
   return (
     <div className="page-stack">
-      <PageHeader
-        title="操作日志"
-        subtitle="审计追溯所有用户操作记录"
-      />
+      <PageHeader title="操作日志" subtitle="审计追溯所有用户操作记录" />
 
-      <SectionCard
-        title="日志列表"
-        description={`共 ${total} 条操作记录`}
-      >
-        <div className="audit-log-filters" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16, alignItems: 'center' }}>
+      <SectionCard title="日志列表" description={`共 ${total} 条操作记录`}>
+        <div
+          className="audit-log-filters"
+          style={{
+            display: 'flex',
+            gap: 12,
+            flexWrap: 'wrap',
+            marginBottom: 16,
+            alignItems: 'center',
+          }}
+        >
           <div style={{ width: 220 }}>
-            <SearchInput
-              value={keyword}
-              onChange={setKeyword}
-              placeholder="搜索描述或操作人..."
-            />
+            <SearchInput value={keyword} onChange={setKeyword} placeholder="搜索描述或操作人..." />
           </div>
           <Select
             placeholder="操作类型"
             value={actionFilter || undefined}
-            onChange={(val) => setActionFilter(val as string ?? '')}
+            onChange={(val) => setActionFilter((val as string) ?? '')}
             allowClear
             style={{ width: 140 }}
           >
@@ -203,7 +223,7 @@ export default function AuditLogPage() {
           <Select
             placeholder="操作模块"
             value={entityTypeFilter || undefined}
-            onChange={(val) => setEntityTypeFilter(val as string ?? '')}
+            onChange={(val) => setEntityTypeFilter((val as string) ?? '')}
             allowClear
             style={{ width: 160 }}
           >
@@ -225,28 +245,25 @@ export default function AuditLogPage() {
             onChange={(_, dateStr) => setEndDate(typeof dateStr === 'string' ? dateStr : '')}
             style={{ width: 140 }}
           />
-          <Button size="mini" onClick={() => setQuickDate('today')}>今天</Button>
-          <Button size="mini" onClick={() => setQuickDate('week')}>本周</Button>
-          <Button size="mini" onClick={() => setQuickDate('month')}>本月</Button>
+          <Button size="mini" onClick={() => setQuickDate('today')}>
+            今天
+          </Button>
+          <Button size="mini" onClick={() => setQuickDate('week')}>
+            本周
+          </Button>
+          <Button size="mini" onClick={() => setQuickDate('month')}>
+            本月
+          </Button>
           <div style={{ flex: 1 }} />
           <Btn tone="primary" onClick={handleExport} loading={loading}>
             导出 CSV
           </Btn>
         </div>
 
-        <DataTable
-          columns={columns as any}
-          data={logs}
-          rowKey="id"
-          emptyText="暂无操作日志"
-        />
+        <DataTable columns={columns as any} data={logs} rowKey="id" emptyText="暂无操作日志" />
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-          <Pagination
-            page={page}
-            totalPages={totalPages}
-            onPageChange={(next) => setPage(next)}
-          />
+          <Pagination page={page} totalPages={totalPages} onPageChange={(next) => setPage(next)} />
         </div>
       </SectionCard>
 
@@ -254,29 +271,65 @@ export default function AuditLogPage() {
       {detailModalLog && (
         <div
           className="modal-overlay"
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
           onClick={() => setDetailModalLog(null)}
         >
           <div
             className="modal-panel"
-            style={{ background: 'var(--color-bg-2)', borderRadius: 8, padding: 24, maxWidth: 640, width: '90%', maxHeight: '80vh', overflow: 'auto' }}
+            style={{
+              background: 'var(--color-bg-2)',
+              borderRadius: 8,
+              padding: 24,
+              maxWidth: 640,
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 16,
+              }}
+            >
               <h3 style={{ margin: 0 }}>操作日志详情</h3>
               <button
                 type="button"
                 onClick={() => setDetailModalLog(null)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--color-text-3)' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: 18,
+                  color: 'var(--color-text-3)',
+                }}
               >
                 ✕
               </button>
             </div>
-            <div className="detail-grid" style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '8px 16px' }}>
+            <div
+              className="detail-grid"
+              style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '8px 16px' }}
+            >
               <span style={{ color: 'var(--color-text-3)' }}>操作时间</span>
               <span>{dayjs(detailModalLog.created_at).format('YYYY-MM-DD HH:mm:ss')}</span>
               <span style={{ color: 'var(--color-text-3)' }}>操作类型</span>
-              <span><Tag tone={actionColors[detailModalLog.action] ?? 'default'}>{actionLabels[detailModalLog.action] ?? detailModalLog.action}</Tag></span>
+              <span>
+                <Tag tone={actionColors[detailModalLog.action] ?? 'default'}>
+                  {actionLabels[detailModalLog.action] ?? detailModalLog.action}
+                </Tag>
+              </span>
               <span style={{ color: 'var(--color-text-3)' }}>操作模块</span>
               <span>{detailModalLog.entity_type}</span>
               <span style={{ color: 'var(--color-text-3)' }}>操作描述</span>
@@ -291,17 +344,19 @@ export default function AuditLogPage() {
             {detailModalLog.detail_json && Object.keys(detailModalLog.detail_json).length > 0 && (
               <div style={{ marginTop: 16 }}>
                 <div style={{ color: 'var(--color-text-3)', marginBottom: 8 }}>操作详情</div>
-                <pre style={{
-                  background: 'var(--color-fill-2)',
-                  borderRadius: 4,
-                  padding: 12,
-                  fontSize: 12,
-                  maxHeight: 300,
-                  overflow: 'auto',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-all',
-                  margin: 0,
-                }}>
+                <pre
+                  style={{
+                    background: 'var(--color-fill-2)',
+                    borderRadius: 4,
+                    padding: 12,
+                    fontSize: 12,
+                    maxHeight: 300,
+                    overflow: 'auto',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-all',
+                    margin: 0,
+                  }}
+                >
                   {JSON.stringify(detailModalLog.detail_json, null, 2)}
                 </pre>
               </div>

@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
-import { Card, Typography } from '@arco-design/web-react';
-
 import { EmptyState, PageHeader, SectionCard, StatGrid } from '../../components/page';
 import {
   Btn,
@@ -377,7 +375,7 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
         title="我的目标"
         description={`共 ${goals.length} 个目标`}
         action={
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+          <div className="section-card-toolbar">
             <PillTabs
               options={TAB_OPTIONS}
               value={activeTab}
@@ -701,36 +699,20 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              <Card bordered={false} bodyStyle={{ padding: 14 }}>
-                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
-                  已存
-                </Typography.Text>
-                <Typography.Text
-                  style={{ fontSize: 18, fontWeight: 700, display: 'block', marginTop: 4 }}
-                >
-                  ¥{selectedGoal.currentAmount.toFixed(2)}
-                </Typography.Text>
-              </Card>
-              <Card bordered={false} bodyStyle={{ padding: 14 }}>
-                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
-                  目标
-                </Typography.Text>
-                <Typography.Text
-                  style={{ fontSize: 18, fontWeight: 700, display: 'block', marginTop: 4 }}
-                >
-                  ¥{selectedGoal.targetAmount.toFixed(2)}
-                </Typography.Text>
-              </Card>
-              <Card bordered={false} bodyStyle={{ padding: 14 }}>
-                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
-                  剩余
-                </Typography.Text>
-                <Typography.Text
-                  style={{ fontSize: 18, fontWeight: 700, display: 'block', marginTop: 4 }}
-                >
+              <div className="detail-stat-card">
+                <span className="detail-stat-label">已存</span>
+                <span className="detail-stat-value">¥{selectedGoal.currentAmount.toFixed(2)}</span>
+              </div>
+              <div className="detail-stat-card">
+                <span className="detail-stat-label">目标</span>
+                <span className="detail-stat-value">¥{selectedGoal.targetAmount.toFixed(2)}</span>
+              </div>
+              <div className="detail-stat-card">
+                <span className="detail-stat-label">剩余</span>
+                <span className="detail-stat-value">
                   ¥{selectedGoal.remainingAmount.toFixed(2)}
-                </Typography.Text>
-              </Card>
+                </span>
+              </div>
             </div>
 
             <div>

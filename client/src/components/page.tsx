@@ -1,13 +1,5 @@
 import { memo, type ReactNode } from 'react';
 
-import { Button, Card, Empty, Grid, Space, Typography } from '@arco-design/web-react';
-
-const { Title, Text } = Typography;
-
-/**
- * 页面头部 — 使用 Arco Typography + Space。
- * 统一放置于页面顶部，包含标题、副标题和操作区域。
- */
 export const PageHeader = memo(function PageHeader({
   title,
   subtitle,
@@ -18,71 +10,43 @@ export const PageHeader = memo(function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-        gap: 12,
-        marginBottom: 16,
-        flexWrap: 'wrap',
-      }}
-    >
-      <div>
-        <Title heading={4} style={{ margin: 0 }}>
-          {title}
-        </Title>
-        {subtitle ? (
-          <Text type="secondary" style={{ fontSize: 13, marginTop: 2, display: 'block' }}>
-            {subtitle}
-          </Text>
-        ) : null}
+    <div className="page-header">
+      <div className="page-title-row">
+        <h1 className="page-title">{title}</h1>
+        {subtitle ? <span className="page-subtitle">{subtitle}</span> : null}
       </div>
-      {actions ? <Space size="small">{actions}</Space> : null}
+      {actions ? <div className="page-actions">{actions}</div> : null}
     </div>
   );
 });
 
-/**
- * 区块卡片 — 使用 Arco Card。
- * 统一放置于页面内容区，包含标题、描述和操作区域。
- */
 export const SectionCard = memo(function SectionCard({
   title,
   description,
   action,
   children,
-  className,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
   children: ReactNode;
-  className?: string;
 }) {
   return (
-    <Card
-      className={className}
-      title={title}
-      extra={action}
-      bordered={false}
-      style={{ marginBottom: 16 }}
-      bodyStyle={{ paddingTop: description ? 8 : 0 }}
-    >
-      {description ? (
-        <Text type="secondary" style={{ display: 'block', marginBottom: 16, fontSize: 13 }}>
-          {description}
-        </Text>
-      ) : null}
+    <section className="card section-card">
+      <div className="section-card-header">
+        <div>
+          <div className="card-title-bar">
+            <h2 className="section-title">{title}</h2>
+          </div>
+          {description ? <p className="section-description">{description}</p> : null}
+        </div>
+        {action ? <div>{action}</div> : null}
+      </div>
       {children}
-    </Card>
+    </section>
   );
 });
 
-/**
- * 统计指标网格 — 使用 Arco Card + Grid。
- * 每项展示一个指标标签和数值，支持强调色和辅助文字。
- */
 export const StatGrid = memo(function StatGrid({
   items,
   className = '',
@@ -90,42 +54,21 @@ export const StatGrid = memo(function StatGrid({
   items: Array<{ label: string; value: string | ReactNode; accent?: string; helper?: string }>;
   className?: string;
 }) {
-  if (items.length === 0) return null;
-
   return (
-    <Grid.Row className={className || undefined} gutter={[16, 16]} style={{ marginBottom: 16 }}>
+    <div className={`stat-grid ${className}`.trim()}>
       {items.map((item) => (
-        <Grid.Col key={item.label} xs={12} sm={8} md={6} lg={4} xl={3}>
-          <Card bordered={false} bodyStyle={{ padding: '16px 20px' }}>
-            <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>
-              {item.label}
-            </Text>
-            <div
-              style={{
-                fontSize: 24,
-                fontWeight: 600,
-                lineHeight: 1.3,
-                color: item.accent ?? 'var(--color-text-1)',
-              }}
-            >
-              {item.value}
-            </div>
-            {item.helper ? (
-              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-                {item.helper}
-              </Text>
-            ) : null}
-          </Card>
-        </Grid.Col>
+        <div className="stat-card" key={item.label}>
+          <span className="stat-label">{item.label}</span>
+          <strong className="stat-value" style={item.accent ? { color: item.accent } : undefined}>
+            {item.value}
+          </strong>
+          {item.helper ? <span className="stat-helper">{item.helper}</span> : null}
+        </div>
       ))}
-    </Grid.Row>
+    </div>
   );
 });
 
-/**
- * 空状态 — 使用 Arco Empty。
- * 支持自定义图标和操作按钮。
- */
 export const EmptyState = memo(function EmptyState({
   title,
   description,
@@ -138,26 +81,23 @@ export const EmptyState = memo(function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div style={{ padding: '40px 0', textAlign: 'center' }}>
-      <Empty
-        icon={icon}
-        description={
-          <div>
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>{title}</div>
-            <Text type="secondary" style={{ fontSize: 13 }}>
-              {description}
-            </Text>
-          </div>
-        }
-      />
-      {action ? <div style={{ marginTop: 16 }}>{action}</div> : null}
+    <div className="empty-state">
+      {icon && <div className="empty-state-icon">{icon}</div>}
+      <strong>{title}</strong>
+      <span>{description}</span>
+      {action && <div className="empty-state-action">{action}</div>}
     </div>
   );
 });
 
 /**
- * 上下文栏 — 使用 Arco Space。
- * 横向排列账本/货币/周期等上下文选择器与统计标签。
+ * 上下文栏：横向排列账本/货币/周期等上下文选择器 + 统计 Tag
+ *
+ * 统一放置于 PageHeader 与内容区之间，替代各页面散落的"当前上下文"SectionCard。
+ * 使用方式：将 Select / 切换按钮 / Tag 作为 children 传入，组件负责横向排布与间距。
+ *
+ * @param label - 可选分组前缀文案（如"当前账本"）
+ * @param children - 上下文控件（SelectField、PillTabs、Tag 等）
  */
 export const ContextBar = memo(function ContextBar({
   label,
@@ -167,22 +107,31 @@ export const ContextBar = memo(function ContextBar({
   children: ReactNode;
 }) {
   return (
-    <div style={{ marginBottom: 16 }}>
-      <Space size="small" wrap>
-        {label ? (
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            {label}
-          </Text>
-        ) : null}
-        {children}
-      </Space>
+    <div className="context-bar">
+      {label ? <span className="context-bar-label">{label}</span> : null}
+      {children}
     </div>
   );
 });
 
 /**
- * 统一页面模板 — 使用 Arco Skeleton 和 Empty。
- * 减少各页面重复的加载/空态/错误/分页处理逻辑。
+ * 统一页面模板，减少各页面重复的加载/空态/错误/分页处理逻辑。
+ *
+ * 使用方式：将 PageHeader / FilterBar / StatGrid / DataTable 等作为 children 传入，
+ * 模板负责包裹 loading / empty / error 状态。
+ *
+ * @param loading - 是否显示加载骨架屏
+ * @param loadingTip - 加载提示文案
+ * @param empty - 是否显示空态（当 !loading && data.length === 0 时设为 true）
+ * @param emptyTitle - 空态标题
+ * @param emptyDesc - 空态描述
+ * @param emptyIcon - 空态图标
+ * @param emptyAction - 空态操作按钮
+ * @param error - 错误信息（非 null 时显示错误降级）
+ * @param onRetry - 错误重试回调
+ * @param skeleton - 自定义骨架屏（默认使用 PageLoading）
+ * @param batchBar - 批量操作栏（选中行时显示）
+ * @param children - 页面内容（DataTable 等）
  */
 export function PageTemplate({
   loading = false,
@@ -211,24 +160,26 @@ export function PageTemplate({
   batchBar?: ReactNode;
   children: ReactNode;
 }) {
-  const wrapperStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 16 };
-
   /* 错误状态优先 */
   if (error) {
     return (
-      <div style={wrapperStyle}>
-        <Card bordered={false} style={{ textAlign: 'center', padding: '40px 0' }}>
-          <div style={{ fontSize: 48, marginBottom: 16, color: 'var(--color-danger-6)' }}>!</div>
-          <Title heading={5}>加载失败</Title>
-          <Text type="secondary">{error.message || '数据加载出错，请重试。'}</Text>
-          {onRetry ? (
-            <div style={{ marginTop: 16 }}>
-              <Button type="primary" onClick={onRetry}>
-                重试
-              </Button>
+      <div className="page-stack">
+        <div className="error-boundary-fallback">
+          <div className="error-boundary-card">
+            <div className="error-boundary-icon" aria-hidden="true">
+              !
             </div>
-          ) : null}
-        </Card>
+            <h2 className="error-boundary-title">加载失败</h2>
+            <p className="error-boundary-desc">{error.message || '数据加载出错，请重试。'}</p>
+            {onRetry ? (
+              <div className="error-boundary-actions">
+                <button type="button" className="btn btn-primary" onClick={onRetry}>
+                  重试
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
       </div>
     );
   }
@@ -236,11 +187,12 @@ export function PageTemplate({
   /* 加载状态 */
   if (loading) {
     return (
-      <div style={wrapperStyle}>
+      <div className="page-stack">
         {skeleton ?? (
-          <Card bordered={false} style={{ textAlign: 'center', padding: '40px 0' }}>
-            <Text type="secondary">{loadingTip ?? '加载中...'}</Text>
-          </Card>
+          <div className="page-loading" role="status" aria-label={loadingTip ?? '加载中...'}>
+            <div className="page-loading-spinner" aria-hidden="true" />
+            <span className="page-loading-tip">{loadingTip ?? '加载中...'}</span>
+          </div>
         )}
       </div>
     );
@@ -249,7 +201,7 @@ export function PageTemplate({
   /* 空状态 */
   if (empty) {
     return (
-      <div style={wrapperStyle}>
+      <div className="page-stack">
         <EmptyState
           title={emptyTitle}
           description={emptyDesc}
@@ -262,8 +214,8 @@ export function PageTemplate({
 
   /* 批量操作栏 */
   return (
-    <div style={wrapperStyle}>
-      {batchBar ? <div style={{ marginBottom: 8 }}>{batchBar}</div> : null}
+    <div className="page-stack">
+      {batchBar ? <div className="batch-action-bar">{batchBar}</div> : null}
       {children}
     </div>
   );

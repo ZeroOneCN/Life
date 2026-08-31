@@ -262,8 +262,17 @@ textarea:disabled {
 
 /* ---------- 0.4 卡片统一（radius 12 / canvas / 无阴影 hover） ---------- */
 .card:hover,
+.stat-card:hover,
 .chart-card:hover {
   transform: none;
+}
+
+.stat-card {
+  border-radius: 12px;
+}
+.stat-card:hover {
+  box-shadow: none;
+  border-color: var(--color-hairline-strong);
 }
 
 .dash-card {
