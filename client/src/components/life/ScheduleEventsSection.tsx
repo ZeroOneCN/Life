@@ -530,199 +530,195 @@ export function ScheduleEventsSection({
       title="事件列表"
       description="快速录入、筛选、完成切换、编辑和删除都直接命中后端。"
     >
-      <div className="page-grid-wrapper">
-        <Row gutter={[24, 20]}>
-          <div className="schedule-surface">
-            <div className="schedule-surface-head">
-              <div>
-                <strong>快速录入</strong>
-                <span>常用字段保持紧凑，描述与重复规则在编辑弹窗中细化。</span>
-              </div>
-              <Tag tone="blue">后端直写</Tag>
-            </div>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                void handleCreate();
-              }}
-            >
-              <Row gutter={[12, 12]}>
-                <Col span={8}>
-                  <Field
-                    label="标题"
-                    value={form.title}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, title: event.target.value }))
-                    }
-                    placeholder="例如：项目周会"
-                  />
-                </Col>
-                <Col span={8}>
-                  <DateTimePickerField
-                    label="开始时间"
-                    value={form.startAt}
-                    onChange={(value) => setForm((current) => ({ ...current, startAt: value }))}
-                  />
-                </Col>
-                <Col span={8}>
-                  <SelectField
-                    label="颜色"
-                    value={form.color}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, color: event.target.value }))
-                    }
-                  >
-                    {COLOR_OPTIONS.map((item) => (
-                      <option key={item.value} value={item.value}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </SelectField>
-                </Col>
-                <Col span={8}>
-                  <SelectField
-                    label="重复"
-                    value={form.recurrenceType}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        recurrenceType: event.target.value as ScheduleRecurrenceType,
-                      }))
-                    }
-                  >
-                    {Object.entries(RECURRENCE_LABELS).map(([key, label]) => (
-                      <option key={key} value={key}>
-                        {label}
-                      </option>
-                    ))}
-                  </SelectField>
-                </Col>
-                <Col span={8}>
-                  <div className="schedule-entry-action">
-                    <Btn type="submit" tone="primary">
-                      新增日程
-                    </Btn>
-                  </div>
-                </Col>
-              </Row>
-            </form>
+      <div className="schedule-surface">
+        <div className="schedule-surface-head">
+          <div>
+            <strong>快速录入</strong>
+            <span>常用字段保持紧凑，描述与重复规则在编辑弹窗中细化。</span>
           </div>
-
+          <Tag tone="blue">后端直写</Tag>
+        </div>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void handleCreate();
+          }}
+        >
           <Row gutter={[12, 12]}>
             <Col span={8}>
               <Field
-                label="关键词"
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-                placeholder="搜索标题、地点"
+                label="标题"
+                value={form.title}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, title: event.target.value }))
+                }
+                placeholder="例如：项目周会"
+              />
+            </Col>
+            <Col span={8}>
+              <DateTimePickerField
+                label="开始时间"
+                value={form.startAt}
+                onChange={(value) => setForm((current) => ({ ...current, startAt: value }))}
               />
             </Col>
             <Col span={8}>
               <SelectField
-                label="状态"
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+                label="颜色"
+                value={form.color}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, color: event.target.value }))
+                }
               >
-                <option value="all">全部</option>
-                <option value="active">进行中</option>
-                <option value="completed">已完成</option>
-                <option value="recurring">重复事件</option>
+                {COLOR_OPTIONS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
               </SelectField>
             </Col>
+            <Col span={8}>
+              <SelectField
+                label="重复"
+                value={form.recurrenceType}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    recurrenceType: event.target.value as ScheduleRecurrenceType,
+                  }))
+                }
+              >
+                {Object.entries(RECURRENCE_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </SelectField>
+            </Col>
+            <Col span={8}>
+              <div className="schedule-entry-action">
+                <Btn type="submit" tone="primary">
+                  新增日程
+                </Btn>
+              </div>
+            </Col>
           </Row>
-
-          {hasItems ? (
-            <>
-              <DataTable
-                data={items}
-                rowKey="id"
-                columns={[
-                  {
-                    key: 'title',
-                    title: '事件标题',
-                    render: (_, row) => (
-                      <div className="schedule-table-title">
-                        <span className={`schedule-color-dot color-${row.color || 'indigo'}`} />
-                        <div>
-                          <strong>{row.title}</strong>
-                          {row.location ? (
-                            <span className="schedule-table-sub">{row.location}</span>
-                          ) : null}
-                        </div>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'time',
-                    title: '时间',
-                    render: (_, row) => (
-                      <span className="schedule-table-time">{formatEventTime(row)}</span>
-                    ),
-                  },
-                  {
-                    key: 'recurrence',
-                    title: '重复',
-                    render: (_, row) =>
-                      row.recurrenceType === 'none' ? (
-                        <span className="subtle-text">-</span>
-                      ) : (
-                        <Tag tone="blue">{RECURRENCE_LABELS[row.recurrenceType]}</Tag>
-                      ),
-                  },
-                  {
-                    key: 'reminder',
-                    title: '提醒',
-                    render: (_, row) =>
-                      row.reminderMinutes === null ? (
-                        <span className="subtle-text">-</span>
-                      ) : (
-                        <span>
-                          {row.reminderMinutes === 0 ? '开始时' : `${row.reminderMinutes} 分钟前`}
-                        </span>
-                      ),
-                  },
-                  {
-                    key: 'completed',
-                    title: '状态',
-                    render: (_, row) => (
-                      <Tag tone={row.completed ? 'green' : 'orange'}>
-                        {row.completed ? '已完成' : '未完成'}
-                      </Tag>
-                    ),
-                  },
-                  {
-                    key: 'actions',
-                    title: '操作',
-                    align: 'right',
-                    render: (_, row) => (
-                      <div className="table-actions">
-                        <IconBtn
-                          tone="secondary"
-                          icon={<EditIcon />}
-                          title="编辑"
-                          onClick={() => {
-                            setEditingEvent(row);
-                            setEditingForm(buildEditForm(row));
-                          }}
-                        />
-                        <IconBtn
-                          tone="secondary"
-                          icon={<DeleteIcon />}
-                          title="移入回收站"
-                          onClick={() => setPendingDelete(row)}
-                        />
-                      </div>
-                    ),
-                  },
-                ]}
-              />
-              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-            </>
-          ) : (
-            <EmptyState title="暂无日程" description="使用上方快速录入或切换到日历视图新建事件。" />
-          )}
-        </Row>
+        </form>
       </div>
+
+      <Row gutter={[12, 12]}>
+        <Col span={8}>
+          <Field
+            label="关键词"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder="搜索标题、地点"
+          />
+        </Col>
+        <Col span={8}>
+          <SelectField
+            label="状态"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+          >
+            <option value="all">全部</option>
+            <option value="active">进行中</option>
+            <option value="completed">已完成</option>
+            <option value="recurring">重复事件</option>
+          </SelectField>
+        </Col>
+      </Row>
+
+      {hasItems ? (
+        <>
+          <DataTable
+            data={items}
+            rowKey="id"
+            columns={[
+              {
+                key: 'title',
+                title: '事件标题',
+                render: (_, row) => (
+                  <div className="schedule-table-title">
+                    <span className={`schedule-color-dot color-${row.color || 'indigo'}`} />
+                    <div>
+                      <strong>{row.title}</strong>
+                      {row.location ? (
+                        <span className="schedule-table-sub">{row.location}</span>
+                      ) : null}
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                key: 'time',
+                title: '时间',
+                render: (_, row) => (
+                  <span className="schedule-table-time">{formatEventTime(row)}</span>
+                ),
+              },
+              {
+                key: 'recurrence',
+                title: '重复',
+                render: (_, row) =>
+                  row.recurrenceType === 'none' ? (
+                    <span className="subtle-text">-</span>
+                  ) : (
+                    <Tag tone="blue">{RECURRENCE_LABELS[row.recurrenceType]}</Tag>
+                  ),
+              },
+              {
+                key: 'reminder',
+                title: '提醒',
+                render: (_, row) =>
+                  row.reminderMinutes === null ? (
+                    <span className="subtle-text">-</span>
+                  ) : (
+                    <span>
+                      {row.reminderMinutes === 0 ? '开始时' : `${row.reminderMinutes} 分钟前`}
+                    </span>
+                  ),
+              },
+              {
+                key: 'completed',
+                title: '状态',
+                render: (_, row) => (
+                  <Tag tone={row.completed ? 'green' : 'orange'}>
+                    {row.completed ? '已完成' : '未完成'}
+                  </Tag>
+                ),
+              },
+              {
+                key: 'actions',
+                title: '操作',
+                align: 'right',
+                render: (_, row) => (
+                  <div className="table-actions">
+                    <IconBtn
+                      tone="secondary"
+                      icon={<EditIcon />}
+                      title="编辑"
+                      onClick={() => {
+                        setEditingEvent(row);
+                        setEditingForm(buildEditForm(row));
+                      }}
+                    />
+                    <IconBtn
+                      tone="secondary"
+                      icon={<DeleteIcon />}
+                      title="移入回收站"
+                      onClick={() => setPendingDelete(row)}
+                    />
+                  </div>
+                ),
+              },
+            ]}
+          />
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
+      ) : (
+        <EmptyState title="暂无日程" description="使用上方快速录入或切换到日历视图新建事件。" />
+      )}
 
       <Modal
         open={Boolean(editingEvent)}

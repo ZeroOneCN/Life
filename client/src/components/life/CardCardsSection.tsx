@@ -352,343 +352,337 @@ export function CardCardsSection({
         </Btn>
       }
     >
-      <div className="page-grid-wrapper">
-        <Row gutter={[24, 20]}>
-          <div className="callout callout-info">
-            低余额阈值当前为 {formatLifeCardMoney(settings.balanceThreshold)}，账单日前提醒窗口为{' '}
-            {settings.notificationDaysBefore} 天。
-            <Btn tone="primary" onClick={handleManualDeduct} style={{ marginLeft: 12 }}>
-              手动触发本月扣账
+      <div className="callout callout-info">
+        低余额阈值当前为 {formatLifeCardMoney(settings.balanceThreshold)}，账单日前提醒窗口为{' '}
+        {settings.notificationDaysBefore} 天。
+        <Btn tone="primary" onClick={handleManualDeduct} style={{ marginLeft: 12 }}>
+          手动触发本月扣账
+        </Btn>
+      </div>
+
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          handleCreate();
+        }}
+      >
+        <Row gutter={[12, 12]}>
+          <Col span={8}>
+            <Field
+              label="电话号码"
+              value={form.phoneNumber}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, phoneNumber: event.target.value }))
+              }
+              placeholder="例如 13800138000"
+            />
+          </Col>
+          <Col span={8}>
+            <SelectField
+              label="运营商"
+              value={form.carrierId}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, carrierId: event.target.value }))
+              }
+            >
+              {carriers.map((carrier) => (
+                <option key={carrier.id} value={carrier.id}>
+                  {carrier.name}
+                </option>
+              ))}
+            </SelectField>
+          </Col>
+          <Col span={8}>
+            <Field
+              label="归属地"
+              value={form.location}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, location: event.target.value }))
+              }
+              placeholder="上海"
+            />
+          </Col>
+          <Col span={8}>
+            <Field
+              label="余额"
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.balance}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, balance: event.target.value }))
+              }
+              placeholder="0.00"
+            />
+          </Col>
+          <Col span={8}>
+            <Field
+              label="月租"
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.monthlyFee}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, monthlyFee: event.target.value }))
+              }
+              placeholder="0.00"
+            />
+          </Col>
+          <Col span={8}>
+            <Field
+              label="账单日"
+              type="number"
+              min="1"
+              max="31"
+              value={form.billingDay}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, billingDay: event.target.value }))
+              }
+            />
+          </Col>
+          <Col span={8}>
+            <Field
+              label="流量套餐"
+              value={form.dataPlan}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, dataPlan: event.target.value }))
+              }
+              placeholder="30GB/月"
+            />
+          </Col>
+          <Col span={8}>
+            <Field
+              label="通话/短信"
+              value={`${form.callMinutes || ''}${form.callMinutes && form.smsCount ? '/' : ''}${form.smsCount || ''}`}
+              onChange={(event) => {
+                const val = event.target.value;
+                const [call, sms] = val.split('/').map((s) => s.trim());
+                setForm((current) => ({
+                  ...current,
+                  callMinutes: call ?? '',
+                  smsCount: sms ?? '',
+                }));
+              }}
+              placeholder="100分钟/100条"
+            />
+          </Col>
+          <Col span={8}>
+            <DatePickerField
+              label="开卡时间"
+              value={form.activationDate}
+              onChange={(value) => setForm((current) => ({ ...current, activationDate: value }))}
+              clearable={false}
+            />
+          </Col>
+          <Col span={8}>
+            <Field
+              label="备注"
+              value={form.notes}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, notes: event.target.value }))
+              }
+              placeholder="主力号等"
+            />
+          </Col>
+          <Col span={24}>
+            <Btn tone="primary" type="submit">
+              保存
             </Btn>
-          </div>
+          </Col>
+        </Row>
+      </form>
 
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              handleCreate();
-            }}
+      <Row gutter={[12, 12]}>
+        <Col span={8}>
+          <Field
+            label="关键词"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder="搜索号码、运营商、套餐或备注"
+          />
+        </Col>
+        <Col span={8}>
+          <SelectField
+            label="运营商筛选"
+            value={carrierFilter}
+            onChange={(event) => setCarrierFilter(event.target.value)}
           >
-            <Row gutter={[12, 12]}>
-              <Col span={8}>
-                <Field
-                  label="电话号码"
-                  value={form.phoneNumber}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, phoneNumber: event.target.value }))
-                  }
-                  placeholder="例如 13800138000"
-                />
-              </Col>
-              <Col span={8}>
-                <SelectField
-                  label="运营商"
-                  value={form.carrierId}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, carrierId: event.target.value }))
-                  }
-                >
-                  {carriers.map((carrier) => (
-                    <option key={carrier.id} value={carrier.id}>
-                      {carrier.name}
-                    </option>
-                  ))}
-                </SelectField>
-              </Col>
-              <Col span={8}>
-                <Field
-                  label="归属地"
-                  value={form.location}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, location: event.target.value }))
-                  }
-                  placeholder="上海"
-                />
-              </Col>
-              <Col span={8}>
-                <Field
-                  label="余额"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.balance}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, balance: event.target.value }))
-                  }
-                  placeholder="0.00"
-                />
-              </Col>
-              <Col span={8}>
-                <Field
-                  label="月租"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.monthlyFee}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, monthlyFee: event.target.value }))
-                  }
-                  placeholder="0.00"
-                />
-              </Col>
-              <Col span={8}>
-                <Field
-                  label="账单日"
-                  type="number"
-                  min="1"
-                  max="31"
-                  value={form.billingDay}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, billingDay: event.target.value }))
-                  }
-                />
-              </Col>
-              <Col span={8}>
-                <Field
-                  label="流量套餐"
-                  value={form.dataPlan}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, dataPlan: event.target.value }))
-                  }
-                  placeholder="30GB/月"
-                />
-              </Col>
-              <Col span={8}>
-                <Field
-                  label="通话/短信"
-                  value={`${form.callMinutes || ''}${form.callMinutes && form.smsCount ? '/' : ''}${form.smsCount || ''}`}
-                  onChange={(event) => {
-                    const val = event.target.value;
-                    const [call, sms] = val.split('/').map((s) => s.trim());
-                    setForm((current) => ({
-                      ...current,
-                      callMinutes: call ?? '',
-                      smsCount: sms ?? '',
-                    }));
-                  }}
-                  placeholder="100分钟/100条"
-                />
-              </Col>
-              <Col span={8}>
-                <DatePickerField
-                  label="开卡时间"
-                  value={form.activationDate}
-                  onChange={(value) =>
-                    setForm((current) => ({ ...current, activationDate: value }))
-                  }
-                  clearable={false}
-                />
-              </Col>
-              <Col span={8}>
-                <Field
-                  label="备注"
-                  value={form.notes}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, notes: event.target.value }))
-                  }
-                  placeholder="主力号等"
-                />
-              </Col>
-              <Col span={24}>
-                <Btn tone="primary" type="submit">
-                  保存
-                </Btn>
-              </Col>
-            </Row>
-          </form>
+            <option value={CARD_ALL_CARRIERS}>全部运营商</option>
+            {carriers.map((carrier) => (
+              <option key={carrier.id} value={carrier.id}>
+                {carrier.name}
+              </option>
+            ))}
+          </SelectField>
+        </Col>
+        <Col span={8}>
+          <Field
+            label="归属地筛选"
+            value={locationFilter}
+            onChange={(event) => setLocationFilter(event.target.value)}
+            placeholder="例如 上海"
+          />
+        </Col>
+        <Col span={8}>
+          <Field
+            label="最小余额"
+            type="number"
+            min="0"
+            step="0.01"
+            value={minBalance}
+            onChange={(event) => setMinBalance(event.target.value)}
+            placeholder="不限"
+          />
+        </Col>
+        <Col span={8}>
+          <Field
+            label="最大余额"
+            type="number"
+            min="0"
+            step="0.01"
+            value={maxBalance}
+            onChange={(event) => setMaxBalance(event.target.value)}
+            placeholder="不限"
+          />
+        </Col>
+      </Row>
 
-          <Row gutter={[12, 12]}>
-            <Col span={8}>
-              <Field
-                label="关键词"
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-                placeholder="搜索号码、运营商、套餐或备注"
-              />
-            </Col>
-            <Col span={8}>
-              <SelectField
-                label="运营商筛选"
-                value={carrierFilter}
-                onChange={(event) => setCarrierFilter(event.target.value)}
-              >
-                <option value={CARD_ALL_CARRIERS}>全部运营商</option>
-                {carriers.map((carrier) => (
-                  <option key={carrier.id} value={carrier.id}>
-                    {carrier.name}
-                  </option>
-                ))}
-              </SelectField>
-            </Col>
-            <Col span={8}>
-              <Field
-                label="归属地筛选"
-                value={locationFilter}
-                onChange={(event) => setLocationFilter(event.target.value)}
-                placeholder="例如 上海"
-              />
-            </Col>
-            <Col span={8}>
-              <Field
-                label="最小余额"
-                type="number"
-                min="0"
-                step="0.01"
-                value={minBalance}
-                onChange={(event) => setMinBalance(event.target.value)}
-                placeholder="不限"
-              />
-            </Col>
-            <Col span={8}>
-              <Field
-                label="最大余额"
-                type="number"
-                min="0"
-                step="0.01"
-                value={maxBalance}
-                onChange={(event) => setMaxBalance(event.target.value)}
-                placeholder="不限"
-              />
-            </Col>
-          </Row>
+      <StatGrid
+        className="card-records-summary"
+        items={[
+          { label: '当前筛选结果', value: `${filteredCards.length} 张` },
+          {
+            label: '低余额数量',
+            value: `${filteredSummary.lowBalanceCount} 张`,
+            helper: `阈值 ${formatLifeCardMoney(settings.balanceThreshold)}`,
+          },
+          { label: '余额合计', value: formatLifeCardMoney(filteredSummary.totalBalance) },
+          { label: '月租合计', value: formatLifeCardMoney(filteredSummary.totalMonthlyFee) },
+        ]}
+      />
 
-          <StatGrid
-            className="card-records-summary"
-            items={[
-              { label: '当前筛选结果', value: `${filteredCards.length} 张` },
+      {filteredCards.length ? (
+        <>
+          <DataTable
+            rowKey="id"
+            data={pageRecords}
+            columns={[
+              { key: 'phoneNumber', title: '电话号码', dataIndex: 'phoneNumber', width: 120 },
+              { key: 'carrierName', title: '运营商', dataIndex: 'carrierName', width: 84 },
               {
-                label: '低余额数量',
-                value: `${filteredSummary.lowBalanceCount} 张`,
-                helper: `阈值 ${formatLifeCardMoney(settings.balanceThreshold)}`,
+                key: 'location',
+                title: '归属地',
+                dataIndex: 'location',
+                width: 68,
+                render: (value) => String(value || '-'),
               },
-              { label: '余额合计', value: formatLifeCardMoney(filteredSummary.totalBalance) },
-              { label: '月租合计', value: formatLifeCardMoney(filteredSummary.totalMonthlyFee) },
+              {
+                key: 'balance',
+                title: '余额',
+                width: 70,
+                align: 'right',
+                render: (_, row) => formatLifeCardMoney(row.balance),
+              },
+              {
+                key: 'monthlyFee',
+                title: '月租',
+                width: 66,
+                align: 'right',
+                render: (_, row) => formatLifeCardMoney(row.monthlyFee),
+              },
+              {
+                key: 'billingDay',
+                title: '账单日',
+                width: 58,
+                render: (_, row) => `${row.billingDay} 日`,
+              },
+              {
+                key: 'dataPlan',
+                title: '流量套餐',
+                dataIndex: 'dataPlan',
+                width: 86,
+                render: (value) => String(value || '-'),
+              },
+              {
+                key: 'callSms',
+                title: '通话/短信',
+                width: 108,
+                render: (_, row) => {
+                  const call = row.callMinutes || '';
+                  const sms = row.smsCount || '';
+                  if (!call && !sms) return '-';
+                  return [call, sms].filter(Boolean).join(' / ');
+                },
+              },
+              {
+                key: 'activationDate',
+                title: '开卡时间',
+                width: 120,
+                render: (_, row) => {
+                  if (!dayjs(row.activationDate).isValid()) return '-';
+                  const d = dayjs(row.activationDate);
+                  const now = dayjs();
+                  const years = now.diff(d, 'year');
+                  const months = now.diff(d.add(years, 'year'), 'month');
+                  return (
+                    <span style={{ whiteSpace: 'nowrap' }}>
+                      {`${d.format('YYYY-MM-DD')} (${years}年${months}月)`}
+                    </span>
+                  );
+                },
+              },
+              { key: 'notes', title: '备注', render: (_, row) => row.notes || '-', width: 140 },
+              {
+                key: 'deductionStatus',
+                title: '本月扣账',
+                width: 140,
+                render: (_, row) => renderAutoDeductionStatus(row),
+              },
+              {
+                key: 'actions',
+                title: '操作',
+                width: 200,
+                render: (_, row) => (
+                  <div className="table-actions">
+                    <Btn
+                      tone="secondary"
+                      onClick={() => {
+                        setEditingRecord(row);
+                        setEditingForm(buildCardForm(row, carriers));
+                      }}
+                    >
+                      编辑
+                    </Btn>
+                    <Btn
+                      tone="secondary"
+                      onClick={() => {
+                        setRechargeRecord(row);
+                        setRechargeForm({
+                          simId: row.id,
+                          amount: '',
+                          rechargeDate: dayjs().format('YYYY-MM-DD'),
+                          note: '',
+                        });
+                      }}
+                    >
+                      充值
+                    </Btn>
+                    <Btn tone="danger" onClick={() => setPendingDelete(row)}>
+                      删除
+                    </Btn>
+                  </div>
+                ),
+              },
             ]}
           />
-
-          {filteredCards.length ? (
-            <>
-              <DataTable
-                rowKey="id"
-                data={pageRecords}
-                columns={[
-                  { key: 'phoneNumber', title: '电话号码', dataIndex: 'phoneNumber', width: 120 },
-                  { key: 'carrierName', title: '运营商', dataIndex: 'carrierName', width: 84 },
-                  {
-                    key: 'location',
-                    title: '归属地',
-                    dataIndex: 'location',
-                    width: 68,
-                    render: (value) => String(value || '-'),
-                  },
-                  {
-                    key: 'balance',
-                    title: '余额',
-                    width: 70,
-                    align: 'right',
-                    render: (_, row) => formatLifeCardMoney(row.balance),
-                  },
-                  {
-                    key: 'monthlyFee',
-                    title: '月租',
-                    width: 66,
-                    align: 'right',
-                    render: (_, row) => formatLifeCardMoney(row.monthlyFee),
-                  },
-                  {
-                    key: 'billingDay',
-                    title: '账单日',
-                    width: 58,
-                    render: (_, row) => `${row.billingDay} 日`,
-                  },
-                  {
-                    key: 'dataPlan',
-                    title: '流量套餐',
-                    dataIndex: 'dataPlan',
-                    width: 86,
-                    render: (value) => String(value || '-'),
-                  },
-                  {
-                    key: 'callSms',
-                    title: '通话/短信',
-                    width: 108,
-                    render: (_, row) => {
-                      const call = row.callMinutes || '';
-                      const sms = row.smsCount || '';
-                      if (!call && !sms) return '-';
-                      return [call, sms].filter(Boolean).join(' / ');
-                    },
-                  },
-                  {
-                    key: 'activationDate',
-                    title: '开卡时间',
-                    width: 120,
-                    render: (_, row) => {
-                      if (!dayjs(row.activationDate).isValid()) return '-';
-                      const d = dayjs(row.activationDate);
-                      const now = dayjs();
-                      const years = now.diff(d, 'year');
-                      const months = now.diff(d.add(years, 'year'), 'month');
-                      return (
-                        <span style={{ whiteSpace: 'nowrap' }}>
-                          {`${d.format('YYYY-MM-DD')} (${years}年${months}月)`}
-                        </span>
-                      );
-                    },
-                  },
-                  { key: 'notes', title: '备注', render: (_, row) => row.notes || '-', width: 140 },
-                  {
-                    key: 'deductionStatus',
-                    title: '本月扣账',
-                    width: 140,
-                    render: (_, row) => renderAutoDeductionStatus(row),
-                  },
-                  {
-                    key: 'actions',
-                    title: '操作',
-                    width: 200,
-                    render: (_, row) => (
-                      <div className="table-actions">
-                        <Btn
-                          tone="secondary"
-                          onClick={() => {
-                            setEditingRecord(row);
-                            setEditingForm(buildCardForm(row, carriers));
-                          }}
-                        >
-                          编辑
-                        </Btn>
-                        <Btn
-                          tone="secondary"
-                          onClick={() => {
-                            setRechargeRecord(row);
-                            setRechargeForm({
-                              simId: row.id,
-                              amount: '',
-                              rechargeDate: dayjs().format('YYYY-MM-DD'),
-                              note: '',
-                            });
-                          }}
-                        >
-                          充值
-                        </Btn>
-                        <Btn tone="danger" onClick={() => setPendingDelete(row)}>
-                          删除
-                        </Btn>
-                      </div>
-                    ),
-                  },
-                ]}
-              />
-              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-            </>
-          ) : (
-            <EmptyState
-              title="暂无符合条件的号卡记录"
-              description="可以先新增一张号卡，或放宽筛选条件后再查看。"
-            />
-          )}
-        </Row>
-      </div>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
+      ) : (
+        <EmptyState
+          title="暂无符合条件的号卡记录"
+          description="可以先新增一张号卡，或放宽筛选条件后再查看。"
+        />
+      )}
 
       <Modal
         open={Boolean(editingRecord)}
