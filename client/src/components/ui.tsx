@@ -658,7 +658,7 @@ export function SelectField({
   }, [children]);
 
   return (
-    <label className={fieldClass}>
+    <div className={fieldClass}>
       {label ? <span className="field-label">{label}</span> : null}
       <Select
         value={value as string | number | string[] | number[] | undefined}
@@ -679,7 +679,7 @@ export function SelectField({
       </Select>
       {error ? <span className="field-error">{error}</span> : null}
       {hint && !error ? <span className="field-hint">{hint}</span> : null}
-    </label>
+    </div>
   );
 }
 
