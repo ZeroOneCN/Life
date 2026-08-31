@@ -1,10 +1,14 @@
 import { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
+import { Grid } from '@arco-design/web-react';
 
 import { EmptyState, SectionCard } from '../../page';
 import { Btn } from '../../ui';
 import { CHART_PNL } from '../../../lib/chartPalette';
 import type { HealthStepHeatmapItem } from '../../../types/healthDashboard';
+
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 interface HealthHeatmapSectionProps {
   items: HealthStepHeatmapItem[];
@@ -20,7 +24,20 @@ const MONTH_LABEL_HEIGHT = 16;
 const WEEKDAY_LABEL_WIDTH = 22;
 
 const WEEKDAY_CHINESE = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-const MONTH_LABELS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+const MONTH_LABELS = [
+  '1月',
+  '2月',
+  '3月',
+  '4月',
+  '5月',
+  '6月',
+  '7月',
+  '8月',
+  '9月',
+  '10月',
+  '11月',
+  '12月',
+];
 const WEEKDAY_LABELS = ['一', '三', '五'];
 
 /**
@@ -124,14 +141,23 @@ function buildYearSummary(items: HealthStepHeatmapItem[]) {
  * @param loading - 是否加载中
  * @param onYearChange - 年份变更回调
  */
-export function HealthHeatmapSection({ items, year, loading, onYearChange }: HealthHeatmapSectionProps) {
+export function HealthHeatmapSection({
+  items,
+  year,
+  loading,
+  onYearChange,
+}: HealthHeatmapSectionProps) {
   const [hovered, setHovered] = useState<HeatmapCell | null>(null);
 
   const cells = useMemo(() => buildHeatmapCells(year, items), [year, items]);
   const summary = useMemo(() => buildYearSummary(items), [items]);
 
   if (loading) {
-    return <SectionCard title="步数热力图" description="正在加载全年步数强度…"><div className="skeleton-block" /></SectionCard>;
+    return (
+      <SectionCard title="步数热力图" description="正在加载全年步数强度…">
+        <div className="skeleton-block" />
+      </SectionCard>
+    );
   }
 
   const maxColumn = cells.reduce((max, cell) => Math.max(max, cell.column), 0);
@@ -145,25 +171,62 @@ export function HealthHeatmapSection({ items, year, loading, onYearChange }: Hea
     <SectionCard
       title="步数热力图"
       description={`全年步数强度一览（${year} 年）`}
-      action={(
+      action={
         <div className="health-heatmap-year-nav">
-          <Btn type="button" tone="secondary" onClick={() => onYearChange(year - 1)} disabled={!canPrev}>上一年</Btn>
+          <Btn
+            type="button"
+            tone="secondary"
+            onClick={() => onYearChange(year - 1)}
+            disabled={!canPrev}
+          >
+            上一年
+          </Btn>
           <span className="health-heatmap-year-label">{year}</span>
-          <Btn type="button" tone="secondary" onClick={() => onYearChange(year + 1)} disabled={!canNext}>下一年</Btn>
+          <Btn
+            type="button"
+            tone="secondary"
+            onClick={() => onYearChange(year + 1)}
+            disabled={!canNext}
+          >
+            下一年
+          </Btn>
         </div>
-      )}
+      }
     >
       {cells.length === 0 ? (
-        <EmptyState title="暂无步数记录" description={`${year} 年还没有任何步数记录，去录入后会在此展示。`} />
+        <EmptyState
+          title="暂无步数记录"
+          description={`${year} 年还没有任何步数记录，去录入后会在此展示。`}
+        />
       ) : (
         <>
-          <div className="health-heatmap-summary">
-            <span>累计 <strong>{summary.totalSteps.toLocaleString()}</strong> 步</span>
-            <span>距离 <strong>{summary.totalDistanceKm}</strong> 公里</span>
-            <span>记录天数 <strong>{summary.activeDays}</strong></span>
-            <span>日均 <strong>{summary.avgSteps.toLocaleString()}</strong> 步</span>
-            <span>达标 ≥1 万步 <strong>{summary.goalHitDays}</strong> 天</span>
-          </div>
+          <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+            <Col span={6}>
+              <span>
+                累计 <strong>{summary.totalSteps.toLocaleString()}</strong> 步
+              </span>
+            </Col>
+            <Col span={6}>
+              <span>
+                距离 <strong>{summary.totalDistanceKm}</strong> 公里
+              </span>
+            </Col>
+            <Col span={4}>
+              <span>
+                记录天数 <strong>{summary.activeDays}</strong>
+              </span>
+            </Col>
+            <Col span={4}>
+              <span>
+                日均 <strong>{summary.avgSteps.toLocaleString()}</strong> 步
+              </span>
+            </Col>
+            <Col span={4}>
+              <span>
+                达标 ≥1 万步 <strong>{summary.goalHitDays}</strong> 天
+              </span>
+            </Col>
+          </Row>
           <div className="health-heatmap-wrapper">
             <svg
               viewBox={`0 0 ${totalWidth} ${totalHeight}`}
@@ -228,28 +291,25 @@ export function HealthHeatmapSection({ items, year, loading, onYearChange }: Hea
             <div className="health-heatmap-legend">
               <span>少</span>
               <svg width={CELL_SIZE * 5 + CELL_GAP * 4} height={CELL_SIZE}>
-                {[
-                  'var(--color-surface-2)',
-                  '#c7d2fe',
-                  '#818cf8',
-                  '#5e6ad2',
-                  '#312e81',
-                ].map((color, index) => (
-                  <rect
-                    key={index}
-                    x={index * (CELL_SIZE + CELL_GAP)}
-                    y={0}
-                    width={CELL_SIZE}
-                    height={CELL_SIZE}
-                    rx={3}
-                    fill={color}
-                  />
-                ))}
+                {['var(--color-surface-2)', '#c7d2fe', '#818cf8', '#5e6ad2', '#312e81'].map(
+                  (color, index) => (
+                    <rect
+                      key={index}
+                      x={index * (CELL_SIZE + CELL_GAP)}
+                      y={0}
+                      width={CELL_SIZE}
+                      height={CELL_SIZE}
+                      rx={3}
+                      fill={color}
+                    />
+                  ),
+                )}
               </svg>
               <span>多</span>
               {hovered ? (
                 <span className="health-heatmap-tooltip">
-                  {formatDateZh(hovered.date)} · {hovered.steps.toLocaleString()} 步 · {hovered.distanceKm} 公里
+                  {formatDateZh(hovered.date)} · {hovered.steps.toLocaleString()} 步 ·{' '}
+                  {hovered.distanceKm} 公里
                 </span>
               ) : null}
             </div>

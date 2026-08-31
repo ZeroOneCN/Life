@@ -1,9 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
+import { Grid } from '@arco-design/web-react';
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, ExportButton, Field, FilterBar, IconBtn, Modal, Pagination, SearchInput } from '../ui';
+const Row = Grid.Row;
+const Col = Grid.Col;
+import {
+  Btn,
+  DataTable,
+  DeleteIcon,
+  DeleteModal,
+  EditIcon,
+  ExportButton,
+  Field,
+  FilterBar,
+  IconBtn,
+  Modal,
+  Pagination,
+  SearchInput,
+} from '../ui';
 import {
   MEDICATION_RECORD_PAGE_SIZE,
   createMedicationRecord,
@@ -94,8 +110,8 @@ export function MedicationRecordsSection({
     const maximum = maxTotal ? Number(maxTotal) : null;
 
     return records
-      .filter((record) => (!startDate || record.date >= startDate))
-      .filter((record) => (!endDate || record.date <= endDate))
+      .filter((record) => !startDate || record.date >= startDate)
+      .filter((record) => !endDate || record.date <= endDate)
       .filter((record) => {
         const total = record.breakfast + record.lunch + record.dinner;
 
@@ -109,7 +125,10 @@ export function MedicationRecordsSection({
 
         return true;
       })
-      .filter((record) => (!normalizedKeyword || record.medicineName.toLowerCase().includes(normalizedKeyword)));
+      .filter(
+        (record) =>
+          !normalizedKeyword || record.medicineName.toLowerCase().includes(normalizedKeyword),
+      );
   }, [records, startDate, endDate, minTotal, maxTotal, keyword]);
 
   useEffect(() => {
@@ -128,40 +147,65 @@ export function MedicationRecordsSection({
     }
   }, [page, totalPages]);
 
-  const editingTotalDose = useMemo(() => (
-    Number(editingForm.breakfast || 0) + Number(editingForm.lunch || 0) + Number(editingForm.dinner || 0)
-  ), [editingForm.breakfast, editingForm.dinner, editingForm.lunch]);
+  const editingTotalDose = useMemo(
+    () =>
+      Number(editingForm.breakfast || 0) +
+      Number(editingForm.lunch || 0) +
+      Number(editingForm.dinner || 0),
+    [editingForm.breakfast, editingForm.dinner, editingForm.lunch],
+  );
 
-  const columns = useMemo(() => [
-    { key: 'date', title: '日期', dataIndex: 'date' as const },
-    { key: 'medicineName', title: '药品名称', dataIndex: 'medicineName' as const },
-    { key: 'breakfast', title: '早餐', render: (_value: unknown, row: MedicationRecord) => `${row.breakfast}` },
-    { key: 'lunch', title: '午餐', render: (_value: unknown, row: MedicationRecord) => `${row.lunch}` },
-    { key: 'dinner', title: '晚餐', render: (_value: unknown, row: MedicationRecord) => `${row.dinner}` },
-    {
-      key: 'total',
-      title: '总用量',
-      render: (_value: unknown, row: MedicationRecord) => `${row.breakfast + row.lunch + row.dinner}`,
-    },
-    {
-      key: 'actions',
-      title: '操作',
-      render: (_value: unknown, row: MedicationRecord) => (
-        <div className="fitness-row-actions">
-          <IconBtn
-            tone="secondary"
-            icon={<EditIcon />}
-            title="编辑"
-            onClick={() => {
-              setEditingRecord(row);
-              setEditingForm(buildFormState(row));
-            }}
-          />
-          <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(row.id)} />
-        </div>
-      ),
-    },
-  ], []);
+  const columns = useMemo(
+    () => [
+      { key: 'date', title: '日期', dataIndex: 'date' as const },
+      { key: 'medicineName', title: '药品名称', dataIndex: 'medicineName' as const },
+      {
+        key: 'breakfast',
+        title: '早餐',
+        render: (_value: unknown, row: MedicationRecord) => `${row.breakfast}`,
+      },
+      {
+        key: 'lunch',
+        title: '午餐',
+        render: (_value: unknown, row: MedicationRecord) => `${row.lunch}`,
+      },
+      {
+        key: 'dinner',
+        title: '晚餐',
+        render: (_value: unknown, row: MedicationRecord) => `${row.dinner}`,
+      },
+      {
+        key: 'total',
+        title: '总用量',
+        render: (_value: unknown, row: MedicationRecord) =>
+          `${row.breakfast + row.lunch + row.dinner}`,
+      },
+      {
+        key: 'actions',
+        title: '操作',
+        render: (_value: unknown, row: MedicationRecord) => (
+          <div className="fitness-row-actions">
+            <IconBtn
+              tone="secondary"
+              icon={<EditIcon />}
+              title="编辑"
+              onClick={() => {
+                setEditingRecord(row);
+                setEditingForm(buildFormState(row));
+              }}
+            />
+            <IconBtn
+              tone="danger"
+              icon={<DeleteIcon />}
+              title="删除"
+              onClick={() => setPendingDeleteId(row.id)}
+            />
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
 
   const handleCreate = () => {
     const draft = parseDraft(form);
@@ -198,83 +242,132 @@ export function MedicationRecordsSection({
       title="每日用药"
       description="按日期记录药品在早餐、午餐、晚餐的使用情况，并支持按用量和日期范围回看。"
     >
-      <div className="page-stack">
-        <form className="medication-entry-grid" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
-          <DatePickerField
-            label="日期"
-            value={form.date}
-            onChange={(value) => setForm((previous) => ({ ...previous, date: value }))}
-            clearable={false}
-          />
-          <Field
-            label="药品名称"
-            value={form.medicineName}
-            onChange={(event) => setForm((previous) => ({ ...previous, medicineName: event.target.value }))}
-            placeholder="例如：维生素 C"
-          />
-          <Field
-            label="早餐用量"
-            type="number"
-            min="0"
-            value={form.breakfast}
-            onChange={(event) => setForm((previous) => ({ ...previous, breakfast: event.target.value }))}
-          />
-          <Field
-            label="午餐用量"
-            type="number"
-            min="0"
-            value={form.lunch}
-            onChange={(event) => setForm((previous) => ({ ...previous, lunch: event.target.value }))}
-          />
-          <Field
-            label="晚餐用量"
-            type="number"
-            min="0"
-            value={form.dinner}
-            onChange={(event) => setForm((previous) => ({ ...previous, dinner: event.target.value }))}
-          />
-          <div className="medication-inline-action">
-            <span className="field-label">保存</span>
-            <Btn tone="primary" type="submit">保存每日用药</Btn>
-          </div>
-        </form>
+      <div className="page-grid-wrapper">
+        <Row gutter={[24, 20]}>
+          <Col span={24}>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleCreate();
+              }}
+            >
+              <Row gutter={[16, 16]}>
+                <Col span={8}>
+                  <DatePickerField
+                    label="日期"
+                    value={form.date}
+                    onChange={(value) => setForm((previous) => ({ ...previous, date: value }))}
+                    clearable={false}
+                  />
+                </Col>
+                <Col span={8}>
+                  <Field
+                    label="药品名称"
+                    value={form.medicineName}
+                    onChange={(event) =>
+                      setForm((previous) => ({ ...previous, medicineName: event.target.value }))
+                    }
+                    placeholder="例如：维生素 C"
+                  />
+                </Col>
+                <Col span={8}>
+                  <Field
+                    label="早餐用量"
+                    type="number"
+                    min="0"
+                    value={form.breakfast}
+                    onChange={(event) =>
+                      setForm((previous) => ({ ...previous, breakfast: event.target.value }))
+                    }
+                  />
+                </Col>
+                <Col span={8}>
+                  <Field
+                    label="午餐用量"
+                    type="number"
+                    min="0"
+                    value={form.lunch}
+                    onChange={(event) =>
+                      setForm((previous) => ({ ...previous, lunch: event.target.value }))
+                    }
+                  />
+                </Col>
+                <Col span={8}>
+                  <Field
+                    label="晚餐用量"
+                    type="number"
+                    min="0"
+                    value={form.dinner}
+                    onChange={(event) =>
+                      setForm((previous) => ({ ...previous, dinner: event.target.value }))
+                    }
+                  />
+                </Col>
+                <Col span={8}>
+                  <div className="medication-inline-action">
+                    <span className="field-label">保存</span>
+                    <Btn tone="primary" type="submit">
+                      保存每日用药
+                    </Btn>
+                  </div>
+                </Col>
+              </Row>
+            </form>
+          </Col>
 
-        <FilterBar
-          rightSlot={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <DatePickerField value={startDate} onChange={setStartDate} placeholder="开始日期" />
-              <DatePickerField value={endDate} onChange={setEndDate} placeholder="结束日期" />
-              <ExportButton
-                label="导出"
-                onExport={(format) => {
-                  showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
+          <Col span={24}>
+            <FilterBar
+              rightSlot={
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <DatePickerField
+                    value={startDate}
+                    onChange={setStartDate}
+                    placeholder="开始日期"
+                  />
+                  <DatePickerField value={endDate} onChange={setEndDate} placeholder="结束日期" />
+                  <ExportButton
+                    label="导出"
+                    onExport={(format) => {
+                      showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
+                    }}
+                  />
+                </div>
+              }
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  flexWrap: 'wrap',
+                  minWidth: 0,
                 }}
-              />
-            </div>
-          }
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
-            <div style={{ width: 260, flexShrink: 0 }}>
-              <SearchInput
-                value={keyword}
-                onChange={setKeyword}
-                placeholder="搜索药品名称..."
-              />
-            </div>
-          </div>
-        </FilterBar>
+              >
+                <div style={{ width: 260, flexShrink: 0 }}>
+                  <SearchInput
+                    value={keyword}
+                    onChange={setKeyword}
+                    placeholder="搜索药品名称..."
+                  />
+                </div>
+              </div>
+            </FilterBar>
+          </Col>
 
-        {filteredRecords.length ? (
-          <>
-            <DataTable rowKey="id" columns={columns} data={pageRecords} />
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-          </>
-        ) : (
-          <EmptyState
-            title="暂无每日用药记录"
-            description="先录入一条今日用药数据，后续分析、总结和提醒才会完整联动。"
-          />
-        )}
+          <Col span={24}>
+            {filteredRecords.length ? (
+              <>
+                <DataTable rowKey="id" columns={columns} data={pageRecords} />
+                <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+              </>
+            ) : (
+              <EmptyState
+                title="暂无每日用药记录"
+                description="先录入一条今日用药数据，后续分析、总结和提醒才会完整联动。"
+              />
+            )}
+          </Col>
+        </Row>
       </div>
 
       <Modal
@@ -285,7 +378,7 @@ export function MedicationRecordsSection({
         }}
         title={editingRecord ? `编辑记录：${editingRecord.medicineName}` : '编辑记录'}
         width={760}
-        footer={(
+        footer={
           <>
             <Btn
               tone="secondary"
@@ -296,9 +389,11 @@ export function MedicationRecordsSection({
             >
               取消
             </Btn>
-            <Btn tone="primary" onClick={handleSaveEdit}>保存修改</Btn>
+            <Btn tone="primary" onClick={handleSaveEdit}>
+              保存修改
+            </Btn>
           </>
-        )}
+        }
       >
         <div className="medication-modal-layout">
           <div className="medication-modal-summary">
@@ -317,20 +412,29 @@ export function MedicationRecordsSection({
               <strong>基础信息</strong>
               <span>先确认日期和药品名称，再调整三个时段的服药剂量。</span>
             </div>
-            <div className="medication-modal-grid medication-modal-grid-records">
-              <DatePickerField
-                label="日期"
-                value={editingForm.date}
-                onChange={(value) => setEditingForm((previous) => ({ ...previous, date: value }))}
-                clearable={false}
-              />
-              <Field
-                label="药品名称"
-                value={editingForm.medicineName}
-                onChange={(event) => setEditingForm((previous) => ({ ...previous, medicineName: event.target.value }))}
-                placeholder="例如：维生素 C"
-              />
-            </div>
+            <Row gutter={[16, 16]} className="medication-modal-grid medication-modal-grid-records">
+              <Col span={12}>
+                <DatePickerField
+                  label="日期"
+                  value={editingForm.date}
+                  onChange={(value) => setEditingForm((previous) => ({ ...previous, date: value }))}
+                  clearable={false}
+                />
+              </Col>
+              <Col span={12}>
+                <Field
+                  label="药品名称"
+                  value={editingForm.medicineName}
+                  onChange={(event) =>
+                    setEditingForm((previous) => ({
+                      ...previous,
+                      medicineName: event.target.value,
+                    }))
+                  }
+                  placeholder="例如：维生素 C"
+                />
+              </Col>
+            </Row>
           </div>
 
           <div className="medication-modal-section">
@@ -338,29 +442,41 @@ export function MedicationRecordsSection({
               <strong>三餐用量</strong>
               <span>保存后会同步刷新趋势分析、每日总结和提醒触发条件。</span>
             </div>
-            <div className="medication-modal-grid medication-modal-grid-dose">
-              <Field
-                label="早餐用量"
-                type="number"
-                min="0"
-                value={editingForm.breakfast}
-                onChange={(event) => setEditingForm((previous) => ({ ...previous, breakfast: event.target.value }))}
-              />
-              <Field
-                label="午餐用量"
-                type="number"
-                min="0"
-                value={editingForm.lunch}
-                onChange={(event) => setEditingForm((previous) => ({ ...previous, lunch: event.target.value }))}
-              />
-              <Field
-                label="晚餐用量"
-                type="number"
-                min="0"
-                value={editingForm.dinner}
-                onChange={(event) => setEditingForm((previous) => ({ ...previous, dinner: event.target.value }))}
-              />
-            </div>
+            <Row gutter={[16, 16]} className="medication-modal-grid medication-modal-grid-dose">
+              <Col span={8}>
+                <Field
+                  label="早餐用量"
+                  type="number"
+                  min="0"
+                  value={editingForm.breakfast}
+                  onChange={(event) =>
+                    setEditingForm((previous) => ({ ...previous, breakfast: event.target.value }))
+                  }
+                />
+              </Col>
+              <Col span={8}>
+                <Field
+                  label="午餐用量"
+                  type="number"
+                  min="0"
+                  value={editingForm.lunch}
+                  onChange={(event) =>
+                    setEditingForm((previous) => ({ ...previous, lunch: event.target.value }))
+                  }
+                />
+              </Col>
+              <Col span={8}>
+                <Field
+                  label="晚餐用量"
+                  type="number"
+                  min="0"
+                  value={editingForm.dinner}
+                  onChange={(event) =>
+                    setEditingForm((previous) => ({ ...previous, dinner: event.target.value }))
+                  }
+                />
+              </Col>
+            </Row>
           </div>
         </div>
       </Modal>

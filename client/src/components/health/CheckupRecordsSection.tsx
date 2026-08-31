@@ -10,9 +10,29 @@ import {
   YAxis,
 } from 'recharts';
 
+import { Grid } from '@arco-design/web-react';
 import { DatePickerField } from '../date';
 import { EmptyState, SectionCard } from '../page';
-import { Btn, DataTable, DeleteIcon, DeleteModal, EditIcon, ExportButton, Field, FilterBar, FilterTag, IconBtn, Modal, Pagination, SearchInput, SelectField, Tag, TextArea } from '../ui';
+const Row = Grid.Row;
+const Col = Grid.Col;
+import {
+  Btn,
+  DataTable,
+  DeleteIcon,
+  DeleteModal,
+  EditIcon,
+  ExportButton,
+  Field,
+  FilterBar,
+  FilterTag,
+  IconBtn,
+  Modal,
+  Pagination,
+  SearchInput,
+  SelectField,
+  Tag,
+  TextArea,
+} from '../ui';
 import {
   CHECKUP_RECORD_PAGE_SIZE,
   CHECKUP_STATUS_META,
@@ -128,19 +148,16 @@ export function CheckupRecordsSection({
 
     return records
       .filter((record) => statusFilter === 'all' || record.status === statusFilter)
-      .filter((record) => (!startDate || record.testDate >= startDate))
-      .filter((record) => (!endDate || record.testDate <= endDate))
+      .filter((record) => !startDate || record.testDate >= startDate)
+      .filter((record) => !endDate || record.testDate <= endDate)
       .filter((record) => {
         if (!normalizedKeyword) {
           return true;
         }
 
-        return [
-          record.testType,
-          record.testName,
-          record.notes,
-          record.referenceRange,
-        ].some((value) => value.toLowerCase().includes(normalizedKeyword));
+        return [record.testType, record.testName, record.notes, record.referenceRange].some(
+          (value) => value.toLowerCase().includes(normalizedKeyword),
+        );
       });
   }, [endDate, keyword, records, startDate, statusFilter]);
 
@@ -175,74 +192,88 @@ export function CheckupRecordsSection({
     }
   }, [page, totalPages]);
 
-  const trendData = useMemo(() => buildCheckupTrend(records, {
-    testName: trendTestName,
-    startDate: trendStartDate,
-    endDate: trendEndDate,
-  }), [records, trendEndDate, trendStartDate, trendTestName]);
+  const trendData = useMemo(
+    () =>
+      buildCheckupTrend(records, {
+        testName: trendTestName,
+        startDate: trendStartDate,
+        endDate: trendEndDate,
+      }),
+    [records, trendEndDate, trendStartDate, trendTestName],
+  );
 
-  const columns = useMemo(() => [
-    {
-      key: 'testDate',
-      title: '检查日期',
-      dataIndex: 'testDate' as const,
-    },
-    {
-      key: 'testType',
-      title: '检查类型',
-      dataIndex: 'testType' as const,
-    },
-    {
-      key: 'testName',
-      title: '项目',
-      dataIndex: 'testName' as const,
-    },
-    {
-      key: 'value',
-      title: '结果',
-      render: (_value: unknown, record: CheckupRecord) => `${record.value} ${record.unit}`.trim(),
-    },
-    {
-      key: 'referenceRange',
-      title: '参考范围',
-      dataIndex: 'referenceRange' as const,
-    },
-    {
-      key: 'status',
-      title: '状态',
-      render: (_value: unknown, record: CheckupRecord) => (
-        <Tag tone={CHECKUP_STATUS_META[record.status].tone}>{CHECKUP_STATUS_META[record.status].label}</Tag>
-      ),
-    },
-    {
-      key: 'followUpDate',
-      title: '复查日期',
-      render: (_value: unknown, record: CheckupRecord) => record.followUpDate || '-',
-    },
-    {
-      key: 'notes',
-      title: '备注',
-      render: (_value: unknown, record: CheckupRecord) => record.notes || '-',
-    },
-    {
-      key: 'actions',
-      title: '操作',
-      render: (_value: unknown, record: CheckupRecord) => (
-        <div className="fitness-row-actions">
-          <IconBtn
-            tone="secondary"
-            icon={<EditIcon />}
-            title="编辑"
-            onClick={() => {
-              setEditingRecord(record);
-              setEditingForm(buildFormState(record));
-            }}
-          />
-          <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(record.id)} />
-        </div>
-      ),
-    },
-  ], []);
+  const columns = useMemo(
+    () => [
+      {
+        key: 'testDate',
+        title: '检查日期',
+        dataIndex: 'testDate' as const,
+      },
+      {
+        key: 'testType',
+        title: '检查类型',
+        dataIndex: 'testType' as const,
+      },
+      {
+        key: 'testName',
+        title: '项目',
+        dataIndex: 'testName' as const,
+      },
+      {
+        key: 'value',
+        title: '结果',
+        render: (_value: unknown, record: CheckupRecord) => `${record.value} ${record.unit}`.trim(),
+      },
+      {
+        key: 'referenceRange',
+        title: '参考范围',
+        dataIndex: 'referenceRange' as const,
+      },
+      {
+        key: 'status',
+        title: '状态',
+        render: (_value: unknown, record: CheckupRecord) => (
+          <Tag tone={CHECKUP_STATUS_META[record.status].tone}>
+            {CHECKUP_STATUS_META[record.status].label}
+          </Tag>
+        ),
+      },
+      {
+        key: 'followUpDate',
+        title: '复查日期',
+        render: (_value: unknown, record: CheckupRecord) => record.followUpDate || '-',
+      },
+      {
+        key: 'notes',
+        title: '备注',
+        render: (_value: unknown, record: CheckupRecord) => record.notes || '-',
+      },
+      {
+        key: 'actions',
+        title: '操作',
+        render: (_value: unknown, record: CheckupRecord) => (
+          <div className="fitness-row-actions">
+            <IconBtn
+              tone="secondary"
+              icon={<EditIcon />}
+              title="编辑"
+              onClick={() => {
+                setEditingRecord(record);
+                setEditingForm(buildFormState(record));
+              }}
+            />
+            <IconBtn
+              tone="danger"
+              icon={<DeleteIcon />}
+              title="删除"
+              onClick={() => setPendingDeleteId(record.id)}
+            />
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
 
   const handleCreate = () => {
     const draft = parseDraft(form);
@@ -280,199 +311,301 @@ export function CheckupRecordsSection({
       title="指标记录"
       description="记录单条检查结果，支持按用户、状态、日期和关键词筛选，并查看单指标历史走势。"
     >
-      <div className="page-stack">
-        <form id="checkup-create-form" className="checkup-entry-grid" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
-          <DatePickerField
-            label="检查日期"
-            value={form.testDate}
-            onChange={(value) => setForm((previous) => ({ ...previous, testDate: value }))}
-            clearable={false}
-          />
-          <Field
-            label="检查类型"
-            value={form.testType}
-            onChange={(event) => setForm((previous) => ({ ...previous, testType: event.target.value }))}
-            placeholder="例如：年度体检"
-          />
-          <Field
-            label="项目"
-            value={form.testName}
-            onChange={(event) => setForm((previous) => ({ ...previous, testName: event.target.value }))}
-            placeholder="例如：空腹血糖"
-          />
-          <Field
-            label="结果"
-            type="number"
-            step="0.01"
-            value={form.value}
-            onChange={(event) => setForm((previous) => ({ ...previous, value: event.target.value }))}
-            placeholder="输入数值"
-          />
-          <Field
-            label="单位"
-            value={form.unit}
-            onChange={(event) => setForm((previous) => ({ ...previous, unit: event.target.value }))}
-            placeholder="例如：mmol/L"
-          />
-          <Field
-            label="参考范围"
-            value={form.referenceRange}
-            onChange={(event) => setForm((previous) => ({ ...previous, referenceRange: event.target.value }))}
-            placeholder="例如：3.9-6.1"
-          />
-          <DatePickerField
-            label="复查日期"
-            value={form.followUpDate}
-            onChange={(value) => setForm((previous) => ({ ...previous, followUpDate: value }))}
-            placeholder="可选"
-          />
-          <SelectField
-            label="状态覆盖"
-            value={form.status}
-            onChange={(event) => setForm((previous) => ({ ...previous, status: event.target.value as '' | CheckupStatus }))}
-          >
-            <option value="">自动判断</option>
-            <option value="normal">正常</option>
-            <option value="attention">关注</option>
-            <option value="abnormal">异常</option>
-            <option value="unknown">待判断</option>
-          </SelectField>
-        </form>
-
-        <div className="checkup-entry-footer">
-          <TextArea
-            label="备注"
-            value={form.notes}
-            onChange={(event) => setForm((previous) => ({ ...previous, notes: event.target.value }))}
-            placeholder="例如：医生建议三个月后复查"
-          />
-          <div className="fitness-form-actions">
-            <span className="subtle-text">支持填写自动判定无法识别的自定义状态，并可补充复查日期。</span>
-            <Btn tone="primary" type="submit" form="checkup-create-form">保存指标记录</Btn>
-          </div>
-        </div>
-
-        <FilterBar
-          rightSlot={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <DatePickerField value={startDate} onChange={setStartDate} placeholder="开始日期" />
-              <DatePickerField value={endDate} onChange={setEndDate} placeholder="结束日期" />
-              <ExportButton
-                label="导出"
-                onExport={(format) => {
-                  showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
-                }}
-              />
-            </div>
-          }
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
-            <div style={{ width: 260, flexShrink: 0 }}>
-              <SearchInput
-                value={keyword}
-                onChange={setKeyword}
-                placeholder="搜索项目、类型、备注..."
-              />
-            </div>
-            <FilterTag
-              label="全部状态"
-              active={statusFilter === 'all'}
-              onClick={() => setStatusFilter('all')}
-              count={filteredRecords.length}
-            />
-            <FilterTag
-              label="正常"
-              active={statusFilter === 'normal'}
-              onClick={() => setStatusFilter('normal')}
-              count={filteredRecords.filter((r) => r.status === 'normal').length}
-            />
-            <FilterTag
-              label="关注"
-              active={statusFilter === 'attention'}
-              onClick={() => setStatusFilter('attention')}
-              count={filteredRecords.filter((r) => r.status === 'attention').length}
-            />
-            <FilterTag
-              label="异常"
-              active={statusFilter === 'abnormal'}
-              onClick={() => setStatusFilter('abnormal')}
-              count={filteredRecords.filter((r) => r.status === 'abnormal').length}
-            />
-            <FilterTag
-              label="待判断"
-              active={statusFilter === 'unknown'}
-              onClick={() => setStatusFilter('unknown')}
-              count={filteredRecords.filter((r) => r.status === 'unknown').length}
-            />
-          </div>
-        </FilterBar>
-
-        {filteredRecords.length ? (
-          <>
-            <DataTable columns={columns} data={pageRecords} rowKey="id" />
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-          </>
-        ) : (
-          <EmptyState
-            title="暂无指标记录"
-            description="先录入一条体检或化验结果，后续筛选、趋势和提醒才会生效。"
-          />
-        )}
-
-        <div className="chart-card">
-          <div className="fitness-chart-header">
-            <strong>单指标趋势</strong>
-            <span>按用户、项目和日期范围查看历史变化。</span>
-          </div>
-          <div className="checkup-filter-grid">
-            <SelectField
-              label="指标项目"
-              value={trendTestName}
-              onChange={(event) => setTrendTestName(event.target.value)}
-              disabled={!trendTestOptions.length}
+      <div className="page-grid-wrapper">
+        <Row gutter={[24, 20]}>
+          <Col span={24}>
+            <form
+              id="checkup-create-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleCreate();
+              }}
             >
-              {trendTestOptions.length ? trendTestOptions.map((item) => (
-                <option key={item} value={item}>{item}</option>
-              )) : <option value="">暂无可选项目</option>}
-            </SelectField>
-            <DatePickerField label="趋势开始日期" value={trendStartDate} onChange={setTrendStartDate} placeholder="不限" />
-            <DatePickerField label="趋势结束日期" value={trendEndDate} onChange={setTrendEndDate} placeholder="不限" />
-          </div>
+              <Row gutter={[16, 16]}>
+                <Col span={6}>
+                  <DatePickerField
+                    label="检查日期"
+                    value={form.testDate}
+                    onChange={(value) => setForm((previous) => ({ ...previous, testDate: value }))}
+                    clearable={false}
+                  />
+                </Col>
+                <Col span={6}>
+                  <Field
+                    label="检查类型"
+                    value={form.testType}
+                    onChange={(event) =>
+                      setForm((previous) => ({ ...previous, testType: event.target.value }))
+                    }
+                    placeholder="例如：年度体检"
+                  />
+                </Col>
+                <Col span={6}>
+                  <Field
+                    label="项目"
+                    value={form.testName}
+                    onChange={(event) =>
+                      setForm((previous) => ({ ...previous, testName: event.target.value }))
+                    }
+                    placeholder="例如：空腹血糖"
+                  />
+                </Col>
+                <Col span={6}>
+                  <Field
+                    label="结果"
+                    type="number"
+                    step="0.01"
+                    value={form.value}
+                    onChange={(event) =>
+                      setForm((previous) => ({ ...previous, value: event.target.value }))
+                    }
+                    placeholder="输入数值"
+                  />
+                </Col>
+                <Col span={6}>
+                  <Field
+                    label="单位"
+                    value={form.unit}
+                    onChange={(event) =>
+                      setForm((previous) => ({ ...previous, unit: event.target.value }))
+                    }
+                    placeholder="例如：mmol/L"
+                  />
+                </Col>
+                <Col span={6}>
+                  <Field
+                    label="参考范围"
+                    value={form.referenceRange}
+                    onChange={(event) =>
+                      setForm((previous) => ({ ...previous, referenceRange: event.target.value }))
+                    }
+                    placeholder="例如：3.9-6.1"
+                  />
+                </Col>
+                <Col span={6}>
+                  <DatePickerField
+                    label="复查日期"
+                    value={form.followUpDate}
+                    onChange={(value) =>
+                      setForm((previous) => ({ ...previous, followUpDate: value }))
+                    }
+                    placeholder="可选"
+                  />
+                </Col>
+                <Col span={6}>
+                  <SelectField
+                    label="状态覆盖"
+                    value={form.status}
+                    onChange={(event) =>
+                      setForm((previous) => ({
+                        ...previous,
+                        status: event.target.value as '' | CheckupStatus,
+                      }))
+                    }
+                  >
+                    <option value="">自动判断</option>
+                    <option value="normal">正常</option>
+                    <option value="attention">关注</option>
+                    <option value="abnormal">异常</option>
+                    <option value="unknown">待判断</option>
+                  </SelectField>
+                </Col>
+              </Row>
+            </form>
+          </Col>
 
-          {trendData.length ? (
-            <div className="fitness-chart-shell">
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={trendData}>
-                  <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
-                  <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    formatter={(value, _name, payload) => {
-                      const point = payload?.payload as { status?: CheckupStatus } | undefined;
-                      const statusLabel = point?.status ? CHECKUP_STATUS_META[point.status].label : '未知';
-                      return [`${Number(value ?? 0).toFixed(2)}`, `状态：${statusLabel}`];
-                    }}
-                    labelFormatter={(label) => `日期：${label}`}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="var(--color-primary)"
-                    strokeWidth={2.5}
-                    dot={{ r: 3, fill: 'var(--color-primary)' }}
-                    activeDot={{ r: 5 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+          <Col span={24}>
+            <div className="checkup-entry-footer">
+              <TextArea
+                label="备注"
+                value={form.notes}
+                onChange={(event) =>
+                  setForm((previous) => ({ ...previous, notes: event.target.value }))
+                }
+                placeholder="例如：医生建议三个月后复查"
+              />
+              <div className="fitness-form-actions">
+                <span className="subtle-text">
+                  支持填写自动判定无法识别的自定义状态，并可补充复查日期。
+                </span>
+                <Btn tone="primary" type="submit" form="checkup-create-form">
+                  保存指标记录
+                </Btn>
+              </div>
             </div>
-          ) : (
-            <EmptyState
-              title="暂无趋势数据"
-              description="请选择存在记录的指标项目，或调整趋势筛选范围。"
-            />
-          )}
-        </div>
+          </Col>
+
+          <Col span={24}>
+            <FilterBar
+              rightSlot={
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <DatePickerField
+                    value={startDate}
+                    onChange={setStartDate}
+                    placeholder="开始日期"
+                  />
+                  <DatePickerField value={endDate} onChange={setEndDate} placeholder="结束日期" />
+                  <ExportButton
+                    label="导出"
+                    onExport={(format) => {
+                      showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
+                    }}
+                  />
+                </div>
+              }
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  flexWrap: 'wrap',
+                  minWidth: 0,
+                }}
+              >
+                <div style={{ width: 260, flexShrink: 0 }}>
+                  <SearchInput
+                    value={keyword}
+                    onChange={setKeyword}
+                    placeholder="搜索项目、类型、备注..."
+                  />
+                </div>
+                <FilterTag
+                  label="全部状态"
+                  active={statusFilter === 'all'}
+                  onClick={() => setStatusFilter('all')}
+                  count={filteredRecords.length}
+                />
+                <FilterTag
+                  label="正常"
+                  active={statusFilter === 'normal'}
+                  onClick={() => setStatusFilter('normal')}
+                  count={filteredRecords.filter((r) => r.status === 'normal').length}
+                />
+                <FilterTag
+                  label="关注"
+                  active={statusFilter === 'attention'}
+                  onClick={() => setStatusFilter('attention')}
+                  count={filteredRecords.filter((r) => r.status === 'attention').length}
+                />
+                <FilterTag
+                  label="异常"
+                  active={statusFilter === 'abnormal'}
+                  onClick={() => setStatusFilter('abnormal')}
+                  count={filteredRecords.filter((r) => r.status === 'abnormal').length}
+                />
+                <FilterTag
+                  label="待判断"
+                  active={statusFilter === 'unknown'}
+                  onClick={() => setStatusFilter('unknown')}
+                  count={filteredRecords.filter((r) => r.status === 'unknown').length}
+                />
+              </div>
+            </FilterBar>
+
+            {filteredRecords.length ? (
+              <>
+                <DataTable columns={columns} data={pageRecords} rowKey="id" />
+                <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+              </>
+            ) : (
+              <EmptyState
+                title="暂无指标记录"
+                description="先录入一条体检或化验结果，后续筛选、趋势和提醒才会生效。"
+              />
+            )}
+          </Col>
+
+          <Col span={24}>
+            <div className="chart-card">
+              <div className="fitness-chart-header">
+                <strong>单指标趋势</strong>
+                <span>按用户、项目和日期范围查看历史变化。</span>
+              </div>
+              <Row gutter={[16, 16]}>
+                <Col span={8}>
+                  <SelectField
+                    label="指标项目"
+                    value={trendTestName}
+                    onChange={(event) => setTrendTestName(event.target.value)}
+                    disabled={!trendTestOptions.length}
+                  >
+                    {trendTestOptions.length ? (
+                      trendTestOptions.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">暂无可选项目</option>
+                    )}
+                  </SelectField>
+                </Col>
+                <Col span={8}>
+                  <DatePickerField
+                    label="趋势开始日期"
+                    value={trendStartDate}
+                    onChange={setTrendStartDate}
+                    placeholder="不限"
+                  />
+                </Col>
+                <Col span={8}>
+                  <DatePickerField
+                    label="趋势结束日期"
+                    value={trendEndDate}
+                    onChange={setTrendEndDate}
+                    placeholder="不限"
+                  />
+                </Col>
+              </Row>
+
+              {trendData.length ? (
+                <div className="fitness-chart-shell">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={trendData}>
+                      <CartesianGrid
+                        stroke="var(--color-hairline)"
+                        strokeDasharray="3 3"
+                        vertical={false}
+                      />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }}
+                      />
+                      <YAxis
+                        tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }}
+                      />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        formatter={(value, _name, payload) => {
+                          const point = payload?.payload as { status?: CheckupStatus } | undefined;
+                          const statusLabel = point?.status
+                            ? CHECKUP_STATUS_META[point.status].label
+                            : '未知';
+                          return [`${Number(value ?? 0).toFixed(2)}`, `状态：${statusLabel}`];
+                        }}
+                        labelFormatter={(label) => `日期：${label}`}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke="var(--color-primary)"
+                        strokeWidth={2.5}
+                        dot={{ r: 3, fill: 'var(--color-primary)' }}
+                        activeDot={{ r: 5 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <EmptyState
+                  title="暂无趋势数据"
+                  description="请选择存在记录的指标项目，或调整趋势筛选范围。"
+                />
+              )}
+            </div>
+          </Col>
+        </Row>
       </div>
 
       <Modal
@@ -483,75 +616,121 @@ export function CheckupRecordsSection({
         }}
         title={editingRecord ? `编辑指标：${editingRecord.testName}` : '编辑指标'}
         width={880}
-        footer={(
+        footer={
           <>
-            <Btn tone="secondary" onClick={() => {
-              setEditingRecord(null);
-              setEditingForm(createDefaultFormState());
-            }}
+            <Btn
+              tone="secondary"
+              onClick={() => {
+                setEditingRecord(null);
+                setEditingForm(createDefaultFormState());
+              }}
             >
               取消
             </Btn>
-            <Btn tone="primary" onClick={handleSaveEdit}>保存修改</Btn>
+            <Btn tone="primary" onClick={handleSaveEdit}>
+              保存修改
+            </Btn>
           </>
-        )}
+        }
       >
-        <div className="checkup-entry-grid">
-          <DatePickerField
-            label="检查日期"
-            value={editingForm.testDate}
-            onChange={(value) => setEditingForm((previous) => ({ ...previous, testDate: value }))}
-            clearable={false}
-          />
-          <Field
-            label="检查类型"
-            value={editingForm.testType}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, testType: event.target.value }))}
-          />
-          <Field
-            label="项目"
-            value={editingForm.testName}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, testName: event.target.value }))}
-          />
-          <Field
-            label="结果"
-            type="number"
-            step="0.01"
-            value={editingForm.value}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, value: event.target.value }))}
-          />
-          <Field
-            label="单位"
-            value={editingForm.unit}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, unit: event.target.value }))}
-          />
-          <Field
-            label="参考范围"
-            value={editingForm.referenceRange}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, referenceRange: event.target.value }))}
-          />
-          <DatePickerField
-            label="复查日期"
-            value={editingForm.followUpDate}
-            onChange={(value) => setEditingForm((previous) => ({ ...previous, followUpDate: value }))}
-            placeholder="可选"
-          />
-          <SelectField
-            label="状态覆盖"
-            value={editingForm.status}
-            onChange={(event) => setEditingForm((previous) => ({ ...previous, status: event.target.value as '' | CheckupStatus }))}
-          >
-            <option value="">自动判断</option>
-            <option value="normal">正常</option>
-            <option value="attention">关注</option>
-            <option value="abnormal">异常</option>
-            <option value="unknown">待判断</option>
-          </SelectField>
+        <div>
+          <Row gutter={[16, 16]}>
+            <Col span={6}>
+              <DatePickerField
+                label="检查日期"
+                value={editingForm.testDate}
+                onChange={(value) =>
+                  setEditingForm((previous) => ({ ...previous, testDate: value }))
+                }
+                clearable={false}
+              />
+            </Col>
+            <Col span={6}>
+              <Field
+                label="检查类型"
+                value={editingForm.testType}
+                onChange={(event) =>
+                  setEditingForm((previous) => ({ ...previous, testType: event.target.value }))
+                }
+              />
+            </Col>
+            <Col span={6}>
+              <Field
+                label="项目"
+                value={editingForm.testName}
+                onChange={(event) =>
+                  setEditingForm((previous) => ({ ...previous, testName: event.target.value }))
+                }
+              />
+            </Col>
+            <Col span={6}>
+              <Field
+                label="结果"
+                type="number"
+                step="0.01"
+                value={editingForm.value}
+                onChange={(event) =>
+                  setEditingForm((previous) => ({ ...previous, value: event.target.value }))
+                }
+              />
+            </Col>
+            <Col span={6}>
+              <Field
+                label="单位"
+                value={editingForm.unit}
+                onChange={(event) =>
+                  setEditingForm((previous) => ({ ...previous, unit: event.target.value }))
+                }
+              />
+            </Col>
+            <Col span={6}>
+              <Field
+                label="参考范围"
+                value={editingForm.referenceRange}
+                onChange={(event) =>
+                  setEditingForm((previous) => ({
+                    ...previous,
+                    referenceRange: event.target.value,
+                  }))
+                }
+              />
+            </Col>
+            <Col span={6}>
+              <DatePickerField
+                label="复查日期"
+                value={editingForm.followUpDate}
+                onChange={(value) =>
+                  setEditingForm((previous) => ({ ...previous, followUpDate: value }))
+                }
+                placeholder="可选"
+              />
+            </Col>
+            <Col span={6}>
+              <SelectField
+                label="状态覆盖"
+                value={editingForm.status}
+                onChange={(event) =>
+                  setEditingForm((previous) => ({
+                    ...previous,
+                    status: event.target.value as '' | CheckupStatus,
+                  }))
+                }
+              >
+                <option value="">自动判断</option>
+                <option value="normal">正常</option>
+                <option value="attention">关注</option>
+                <option value="abnormal">异常</option>
+                <option value="unknown">待判断</option>
+              </SelectField>
+            </Col>
+          </Row>
         </div>
         <TextArea
           label="备注"
           value={editingForm.notes}
-          onChange={(event) => setEditingForm((previous) => ({ ...previous, notes: event.target.value }))}
+          onChange={(event) =>
+            setEditingForm((previous) => ({ ...previous, notes: event.target.value }))
+          }
           placeholder="补充复查建议或结论摘要"
         />
       </Modal>

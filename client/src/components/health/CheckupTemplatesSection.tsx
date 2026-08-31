@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 
+import { Grid } from '@arco-design/web-react';
 import { EmptyState, SectionCard } from '../page';
+const Row = Grid.Row;
+const Col = Grid.Col;
 import { Btn, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, TextArea } from '../ui';
 import type { CheckupTemplate, CheckupTemplateItem } from '../../types/checkup';
 
@@ -12,8 +15,15 @@ interface TemplateFormState {
 
 interface CheckupTemplatesSectionProps {
   templates: CheckupTemplate[];
-  onCreateTemplate: (draft: { name: string; testType: string; items: CheckupTemplateItem[] }) => void;
-  onUpdateTemplate: (id: string, draft: { name: string; testType: string; items: CheckupTemplateItem[] }) => void;
+  onCreateTemplate: (draft: {
+    name: string;
+    testType: string;
+    items: CheckupTemplateItem[];
+  }) => void;
+  onUpdateTemplate: (
+    id: string,
+    draft: { name: string; testType: string; items: CheckupTemplateItem[] },
+  ) => void;
   onDeleteTemplate: (id: string) => void;
   onUseTemplate: (id: string) => void;
   showToast: (message: string, type?: 'success' | 'error') => void;
@@ -109,49 +119,77 @@ export function CheckupTemplatesSection({
     <SectionCard
       title="模板中心"
       description="将常用体检项目保存为模板，后续可直接回填到批量录入，减少重复输入。"
-      action={<Btn tone="primary" onClick={openCreateModal}>新建模板</Btn>}
+      action={
+        <Btn tone="primary" onClick={openCreateModal}>
+          新建模板
+        </Btn>
+      }
     >
-      <div className="page-stack">
-        <div className="callout callout-neutral">
-          当前共有 <strong>{templates.length}</strong> 个模板，累计覆盖 <strong>{templateCountSummary}</strong> 个模板项目。
-        </div>
+      <div className="page-grid-wrapper">
+        <Row gutter={[24, 20]}>
+          <Col span={24}>
+            <div className="callout callout-neutral">
+              当前共有 <strong>{templates.length}</strong> 个模板，累计覆盖{' '}
+              <strong>{templateCountSummary}</strong> 个模板项目。
+            </div>
+          </Col>
 
-        {templates.length ? (
-          <div className="checkup-template-grid">
-            {templates.map((template) => (
-              <div className="checkup-template-card" key={template.id}>
-                <div className="notification-status-top">
-                  <div>
-                    <h3 className="card-title">{template.name}</h3>
-                    <p className="section-description">
-                      {template.testType} · {template.items.length} 个项目
-                    </p>
-                  </div>
-                </div>
+          <Col span={24}>
+            {templates.length ? (
+              <Row gutter={[16, 16]}>
+                {templates.map((template) => (
+                  <Col xs={24} sm={12} md={8} lg={6} key={template.id}>
+                    <div className="checkup-template-card">
+                      <div className="notification-status-top">
+                        <div>
+                          <h3 className="card-title">{template.name}</h3>
+                          <p className="section-description">
+                            {template.testType} · {template.items.length} 个项目
+                          </p>
+                        </div>
+                      </div>
 
-                <p
-                  className="template-preview-hint"
-                  onClick={() => setDetailTemplate(template)}
-                >
-                  {template.items.slice(0, 3).map((item) => item.testName).join('、')}
-                  {template.items.length > 3 ? ` 等${template.items.length}项` : ''}
-                  <span className="template-detail-trigger"> 查看详情 →</span>
-                </p>
+                      <p
+                        className="template-preview-hint"
+                        onClick={() => setDetailTemplate(template)}
+                      >
+                        {template.items
+                          .slice(0, 3)
+                          .map((item) => item.testName)
+                          .join('、')}
+                        {template.items.length > 3 ? ` 等${template.items.length}项` : ''}
+                        <span className="template-detail-trigger"> 查看详情 →</span>
+                      </p>
 
-                <div className="fitness-row-actions">
-                  <Btn tone="primary" onClick={() => onUseTemplate(template.id)}>用于批量录入</Btn>
-                  <IconBtn tone="secondary" icon={<EditIcon />} title="编辑" onClick={() => openEditModal(template)} />
-                  <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(template.id)} />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            title="暂无模板"
-            description="先创建一个肝功能、血脂或年度体检模板，后续批量录入会更高效。"
-          />
-        )}
+                      <div className="fitness-row-actions">
+                        <Btn tone="primary" onClick={() => onUseTemplate(template.id)}>
+                          用于批量录入
+                        </Btn>
+                        <IconBtn
+                          tone="secondary"
+                          icon={<EditIcon />}
+                          title="编辑"
+                          onClick={() => openEditModal(template)}
+                        />
+                        <IconBtn
+                          tone="danger"
+                          icon={<DeleteIcon />}
+                          title="删除"
+                          onClick={() => setPendingDeleteId(template.id)}
+                        />
+                      </div>
+                    </div>
+                  </Col>
+                ))}
+              </Row>
+            ) : (
+              <EmptyState
+                title="暂无模板"
+                description="先创建一个肝功能、血脂或年度体检模板，后续批量录入会更高效。"
+              />
+            )}
+          </Col>
+        </Row>
       </div>
 
       <Modal
@@ -159,15 +197,34 @@ export function CheckupTemplatesSection({
         onClose={() => setDetailTemplate(null)}
         title={detailTemplate ? `模板详情：${detailTemplate.name}` : ''}
         width={640}
-        footer={<Btn tone="secondary" onClick={() => setDetailTemplate(null)}>关闭</Btn>}
+        footer={
+          <Btn tone="secondary" onClick={() => setDetailTemplate(null)}>
+            关闭
+          </Btn>
+        }
       >
         {detailTemplate && (
           <div className="page-stack">
-            <div className="template-detail-meta">
-              <span><strong>检查类型：</strong>{detailTemplate.testType}</span>
-              <span><strong>项目数量：</strong>{detailTemplate.items.length} 个</span>
-              <span><strong>更新时间：</strong>{new Date(detailTemplate.updatedAt).toLocaleString()}</span>
-            </div>
+            <Row gutter={[16, 16]}>
+              <Col span={8}>
+                <span>
+                  <strong>检查类型：</strong>
+                  {detailTemplate.testType}
+                </span>
+              </Col>
+              <Col span={8}>
+                <span>
+                  <strong>项目数量：</strong>
+                  {detailTemplate.items.length} 个
+                </span>
+              </Col>
+              <Col span={8}>
+                <span>
+                  <strong>更新时间：</strong>
+                  {new Date(detailTemplate.updatedAt).toLocaleString()}
+                </span>
+              </Col>
+            </Row>
             <div className="data-table-wrap">
               <table className="data-table">
                 <thead>
@@ -182,7 +239,9 @@ export function CheckupTemplatesSection({
                   {detailTemplate.items.map((item, index) => (
                     <tr key={item.id}>
                       <td>{index + 1}</td>
-                      <td><strong>{item.testName}</strong></td>
+                      <td>
+                        <strong>{item.testName}</strong>
+                      </td>
                       <td>{item.unit || '-'}</td>
                       <td>{item.referenceRange || '-'}</td>
                     </tr>
@@ -203,33 +262,53 @@ export function CheckupTemplatesSection({
         }}
         title={editingTemplate ? `编辑模板：${editingTemplate.name}` : '新建模板'}
         width={900}
-        footer={(
+        footer={
           <>
-            <Btn tone="secondary" onClick={() => {
-              setFormOpen(false);
-              setEditingTemplate(null);
-              setForm(createDefaultFormState());
-            }}
+            <Btn
+              tone="secondary"
+              onClick={() => {
+                setFormOpen(false);
+                setEditingTemplate(null);
+                setForm(createDefaultFormState());
+              }}
             >
               取消
             </Btn>
-            <Btn tone="primary" type="submit" form="template-create-form">{editingTemplate ? '保存模板' : '创建模板'}</Btn>
+            <Btn tone="primary" type="submit" form="template-create-form">
+              {editingTemplate ? '保存模板' : '创建模板'}
+            </Btn>
           </>
-        )}
+        }
       >
-        <form id="template-create-form" className="template-form-meta" onSubmit={(event) => { event.preventDefault(); handleSave(); }}>
-          <Field
-            label="模板名称"
-            value={form.name}
-            onChange={(event) => setForm((previous) => ({ ...previous, name: event.target.value }))}
-            placeholder="例如：年度体检血脂模板"
-          />
-          <Field
-            label="检查类型"
-            value={form.testType}
-            onChange={(event) => setForm((previous) => ({ ...previous, testType: event.target.value }))}
-            placeholder="例如：生化检查"
-          />
+        <form
+          id="template-create-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSave();
+          }}
+        >
+          <Row gutter={[16, 16]}>
+            <Col span={12}>
+              <Field
+                label="模板名称"
+                value={form.name}
+                onChange={(event) =>
+                  setForm((previous) => ({ ...previous, name: event.target.value }))
+                }
+                placeholder="例如：年度体检血脂模板"
+              />
+            </Col>
+            <Col span={12}>
+              <Field
+                label="检查类型"
+                value={form.testType}
+                onChange={(event) =>
+                  setForm((previous) => ({ ...previous, testType: event.target.value }))
+                }
+                placeholder="例如：生化检查"
+              />
+            </Col>
+          </Row>
         </form>
 
         <div className="template-form-items-section">
@@ -238,10 +317,12 @@ export function CheckupTemplatesSection({
             <span className="template-form-items-count">{form.items.length} 项</span>
             <Btn
               tone="secondary"
-              onClick={() => setForm((previous) => ({
-                ...previous,
-                items: [...previous.items, createTemplateItem()],
-              }))}
+              onClick={() =>
+                setForm((previous) => ({
+                  ...previous,
+                  items: [...previous.items, createTemplateItem()],
+                }))
+              }
             >
               + 新增项目
             </Btn>
@@ -255,34 +336,46 @@ export function CheckupTemplatesSection({
                   <Field
                     label="项目名称"
                     value={item.testName}
-                    onChange={(event) => setForm((previous) => ({
-                      ...previous,
-                      items: previous.items.map((current) => (
-                        current.id === item.id ? { ...current, testName: event.target.value } : current
-                      )),
-                    }))}
+                    onChange={(event) =>
+                      setForm((previous) => ({
+                        ...previous,
+                        items: previous.items.map((current) =>
+                          current.id === item.id
+                            ? { ...current, testName: event.target.value }
+                            : current,
+                        ),
+                      }))
+                    }
                     placeholder="例如：ALT"
                   />
                   <Field
                     label="单位"
                     value={item.unit}
-                    onChange={(event) => setForm((previous) => ({
-                      ...previous,
-                      items: previous.items.map((current) => (
-                        current.id === item.id ? { ...current, unit: event.target.value } : current
-                      )),
-                    }))}
+                    onChange={(event) =>
+                      setForm((previous) => ({
+                        ...previous,
+                        items: previous.items.map((current) =>
+                          current.id === item.id
+                            ? { ...current, unit: event.target.value }
+                            : current,
+                        ),
+                      }))
+                    }
                     placeholder="例如：U/L"
                   />
                   <Field
                     label="参考范围"
                     value={item.referenceRange}
-                    onChange={(event) => setForm((previous) => ({
-                      ...previous,
-                      items: previous.items.map((current) => (
-                        current.id === item.id ? { ...current, referenceRange: event.target.value } : current
-                      )),
-                    }))}
+                    onChange={(event) =>
+                      setForm((previous) => ({
+                        ...previous,
+                        items: previous.items.map((current) =>
+                          current.id === item.id
+                            ? { ...current, referenceRange: event.target.value }
+                            : current,
+                        ),
+                      }))
+                    }
                     placeholder="例如：7-40"
                   />
                 </div>
@@ -290,10 +383,12 @@ export function CheckupTemplatesSection({
                   type="button"
                   className={`template-item-remove${form.items.length === 1 ? ' is-disabled' : ''}`}
                   disabled={form.items.length === 1}
-                  onClick={() => setForm((previous) => ({
-                    ...previous,
-                    items: previous.items.filter((current) => current.id !== item.id),
-                  }))}
+                  onClick={() =>
+                    setForm((previous) => ({
+                      ...previous,
+                      items: previous.items.filter((current) => current.id !== item.id),
+                    }))
+                  }
                   title="移除此项目"
                 >
                   ✕
@@ -305,7 +400,11 @@ export function CheckupTemplatesSection({
 
         <TextArea
           label="使用说明"
-          value={editingTemplate ? `最近更新：${new Date(editingTemplate.updatedAt).toLocaleString()}` : '模板创建后即可在批量录入页直接应用。'}
+          value={
+            editingTemplate
+              ? `最近更新：${new Date(editingTemplate.updatedAt).toLocaleString()}`
+              : '模板创建后即可在批量录入页直接应用。'
+          }
           readOnly
         />
       </Modal>

@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
+
 import { StepEntryForm } from '../../components/health/StepEntryForm';
 import { StepRecordsSection } from '../../components/health/StepRecordsSection';
 import { StepTrendSection } from '../../components/health/StepTrendSection';
@@ -67,7 +71,10 @@ export default function StepPage() {
   const [selectedHour, setSelectedHour] = useState<StepHour>(() => getCurrentTimeDefault().hour);
   const [recordTime, setRecordTime] = useState<string>(() => getCurrentTimeDefault().recordTime);
   const [todayHours, setTodayHours] = useState<number[]>([]);
-  const [pendingDuplicate, setPendingDuplicate] = useState<{ existing: StepRecord; draft: StepRecordDraft } | null>(null);
+  const [pendingDuplicate, setPendingDuplicate] = useState<{
+    existing: StepRecord;
+    draft: StepRecordDraft;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const stepsInputRef = useRef<HTMLInputElement>(null);
@@ -172,18 +179,21 @@ export default function StepPage() {
     }, 0);
   };
 
-  const updateSettings = useCallback(async (patch: Partial<StepPageState['settings']>) => {
-    try {
-      const next = await stepApi.updateSettings(patch);
-      setSettings((current) => ({
-        ...current,
-        ...next,
-      }));
-      await reload();
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '步数设置保存失败。'), 'error');
-    }
-  }, [reload, showToast]);
+  const updateSettings = useCallback(
+    async (patch: Partial<StepPageState['settings']>) => {
+      try {
+        const next = await stepApi.updateSettings(patch);
+        setSettings((current) => ({
+          ...current,
+          ...next,
+        }));
+        await reload();
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '步数设置保存失败。'), 'error');
+      }
+    },
+    [reload, showToast],
+  );
 
   const handleSelectHour = (hour: StepHour) => {
     // 点击时段按钮只负责选中该时段（23 点不特殊处理，保持选中 23 点）
@@ -196,21 +206,25 @@ export default function StepPage() {
     setSelectedHour(inferStepHourFromRecordTime(value));
   };
 
-  const persistCreate = useCallback(async (draft: StepRecordDraft) => {
-    try {
-      await stepApi.createRecord(draft);
-      await reload();
-      // 保存后自动跳到下一个时间段，方便连续录入
-      const nextHour: StepHour = draft.hour === null || draft.hour >= 23 ? null : (draft.hour + 1) as StepHour;
-      setSelectedHour(nextHour);
-      setRecordTime((prev) => buildStepRecordTime(prev, nextHour, nextHour === null ? 59 : 0));
-      setStepsInput('');
-      focusStepsInput();
-      showToast('步数记录已保存。');
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '步数记录保存失败。'), 'error');
-    }
-  }, [reload, showToast]);
+  const persistCreate = useCallback(
+    async (draft: StepRecordDraft) => {
+      try {
+        await stepApi.createRecord(draft);
+        await reload();
+        // 保存后自动跳到下一个时间段，方便连续录入
+        const nextHour: StepHour =
+          draft.hour === null || draft.hour >= 23 ? null : ((draft.hour + 1) as StepHour);
+        setSelectedHour(nextHour);
+        setRecordTime((prev) => buildStepRecordTime(prev, nextHour, nextHour === null ? 59 : 0));
+        setStepsInput('');
+        focusStepsInput();
+        showToast('步数记录已保存。');
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '步数记录保存失败。'), 'error');
+      }
+    },
+    [reload, showToast],
+  );
 
   const handleCreateRecord = () => {
     const steps = Number(stepsInput);
@@ -236,130 +250,150 @@ export default function StepPage() {
   };
 
   return (
-    <div className="page-stack">
-      <PageHeader title="运动步数" subtitle="按小时记录每日步数与公里数" />
-      {loading ? (
-        <StatGridSkeleton cols={3} />
-      ) : (
-      <StatGrid
-        items={[
-          {
-            label: '本月累计',
-            value: summary.currentMonthSteps.toLocaleString(),
-            helper: `${summary.currentMonthDistanceKm.toFixed(2)} 公里`,
-          },
-          {
-            label: '今日步数',
-            value: summary.todaySteps.toLocaleString(),
-            helper: `${summary.todayDistanceKm.toFixed(2)} 公里`,
-          },
-          {
-            label: '环比变化',
-            value: compareSummary.changePercentage === null ? '-' : `${compareSummary.changePercentage}%`,
-            helper: compareSummary.currentLabel && compareSummary.previousLabel
-              ? `${compareSummary.currentLabel} 对比 ${compareSummary.previousLabel}`
-              : '等待历史记录形成对比',
-          },
-        ]}
-      />
-      )}
+    <div className="page-grid-wrapper">
+      <Row gutter={[24, 20]}>
+        <PageHeader title="运动步数" subtitle="按小时记录每日步数与公里数" />
+        <Col span={24}>
+          {loading ? (
+            <StatGridSkeleton cols={3} />
+          ) : (
+            <StatGrid
+              items={[
+                {
+                  label: '本月累计',
+                  value: summary.currentMonthSteps.toLocaleString(),
+                  helper: `${summary.currentMonthDistanceKm.toFixed(2)} 公里`,
+                },
+                {
+                  label: '今日步数',
+                  value: summary.todaySteps.toLocaleString(),
+                  helper: `${summary.todayDistanceKm.toFixed(2)} 公里`,
+                },
+                {
+                  label: '环比变化',
+                  value:
+                    compareSummary.changePercentage === null
+                      ? '-'
+                      : `${compareSummary.changePercentage}%`,
+                  helper:
+                    compareSummary.currentLabel && compareSummary.previousLabel
+                      ? `${compareSummary.currentLabel} 对比 ${compareSummary.previousLabel}`
+                      : '等待历史记录形成对比',
+                },
+              ]}
+            />
+          )}
+        </Col>
 
-      <StepEntryForm
-        stepsInput={stepsInput}
-        selectedHour={selectedHour}
-        recordTime={recordTime}
-        stepsInputRef={stepsInputRef}
-        onStepsInputChange={setStepsInput}
-        onSelectHour={handleSelectHour}
-        onRecordTimeChange={handleRecordTimeChange}
-        onQuickTimeSelect={(hour, previousDay = false) => {
-          setSelectedHour(hour);
-          setRecordTime(getQuickRecordTime(hour, previousDay));
-          focusStepsInput();
-        }}
-        onSubmit={handleCreateRecord}
-        showToast={showToast}
-      />
+        <Col span={24}>
+          <StepEntryForm
+            stepsInput={stepsInput}
+            selectedHour={selectedHour}
+            recordTime={recordTime}
+            stepsInputRef={stepsInputRef}
+            onStepsInputChange={setStepsInput}
+            onSelectHour={handleSelectHour}
+            onRecordTimeChange={handleRecordTimeChange}
+            onQuickTimeSelect={(hour, previousDay = false) => {
+              setSelectedHour(hour);
+              setRecordTime(getQuickRecordTime(hour, previousDay));
+              focusStepsInput();
+            }}
+            onSubmit={handleCreateRecord}
+            showToast={showToast}
+          />
+        </Col>
 
-      <StepTrendSection
-        reloadKey={reloadKey}
-        userId=""
-        strideLength={settings.strideLength}
-        onUserIdChange={() => {}}
-        onStrideLengthChange={(value) => {
-          void updateSettings({ strideLength: value });
-        }}
-        showToast={showToast}
-      />
+        <Col span={24}>
+          <StepTrendSection
+            reloadKey={reloadKey}
+            userId=""
+            strideLength={settings.strideLength}
+            onUserIdChange={() => {}}
+            onStrideLengthChange={(value) => {
+              void updateSettings({ strideLength: value });
+            }}
+            showToast={showToast}
+          />
+        </Col>
 
-      <StepRecordsSection
-        reloadKey={reloadKey}
-        strideLength={settings.strideLength}
-        onUpdateRecord={(id, draft) => {
-          void (async () => {
-            try {
-              await stepApi.updateRecord(id, draft);
-              await reload();
-              showToast('记录已更新。');
-            } catch (error) {
-              showToast(buildApiErrorMessage(error, '步数记录更新失败。'), 'error');
-            }
-          })();
-        }}
-        onDeleteRecord={(id) => {
-          void (async () => {
-            try {
-              await stepApi.deleteRecord(id);
-              await reload();
-              showToast('记录已删除。');
-            } catch (error) {
-              showToast(buildApiErrorMessage(error, '步数记录删除失败。'), 'error');
-            }
-          })();
-        }}
-        onDeleteRecords={(ids) => {
-          void (async () => {
-            try {
-              await Promise.all(ids.map((id) => stepApi.deleteRecord(id)));
-              await reload();
-              showToast('批量删除已完成。');
-            } catch (error) {
-              showToast(buildApiErrorMessage(error, '批量删除失败。'), 'error');
-            }
-          })();
-        }}
-        showToast={showToast}
-      />
-
-      <Modal
-        open={Boolean(pendingDuplicate)}
-        onClose={() => setPendingDuplicate(null)}
-        title="发现重复时间段记录"
-        width={520}
-        footer={(
-          <>
-            <Btn tone="secondary" onClick={() => setPendingDuplicate(null)}>取消</Btn>
-            <Btn
-              tone="primary"
-              onClick={() => {
-                const draft = pendingDuplicate?.draft;
-                setPendingDuplicate(null);
-                if (draft) {
-                  void persistCreate(draft);
+        <Col span={24}>
+          <StepRecordsSection
+            reloadKey={reloadKey}
+            strideLength={settings.strideLength}
+            onUpdateRecord={(id, draft) => {
+              void (async () => {
+                try {
+                  await stepApi.updateRecord(id, draft);
+                  await reload();
+                  showToast('记录已更新。');
+                } catch (error) {
+                  showToast(buildApiErrorMessage(error, '步数记录更新失败。'), 'error');
                 }
-              }}
-            >
-              继续保存
-            </Btn>
-          </>
-        )}
-      >
-        <p className="subtle-text">
-          当前用户在同一天的同一时间段已经有记录。若继续保存，后端会再新增一条记录，请先确认是否符合你的录入意图。
-        </p>
-      </Modal>
+              })();
+            }}
+            onDeleteRecord={(id) => {
+              void (async () => {
+                try {
+                  await stepApi.deleteRecord(id);
+                  await reload();
+                  showToast('记录已删除。');
+                } catch (error) {
+                  showToast(buildApiErrorMessage(error, '步数记录删除失败。'), 'error');
+                }
+              })();
+            }}
+            onDeleteRecords={(ids) => {
+              void (async () => {
+                try {
+                  await Promise.all(ids.map((id) => stepApi.deleteRecord(id)));
+                  await reload();
+                  showToast('批量删除已完成。');
+                } catch (error) {
+                  showToast(buildApiErrorMessage(error, '批量删除失败。'), 'error');
+                }
+              })();
+            }}
+            showToast={showToast}
+          />
+        </Col>
 
-      <Toast toast={toast} />
+        <Col span={24}>
+          <Modal
+            open={Boolean(pendingDuplicate)}
+            onClose={() => setPendingDuplicate(null)}
+            title="发现重复时间段记录"
+            width={520}
+            footer={
+              <>
+                <Btn tone="secondary" onClick={() => setPendingDuplicate(null)}>
+                  取消
+                </Btn>
+                <Btn
+                  tone="primary"
+                  onClick={() => {
+                    const draft = pendingDuplicate?.draft;
+                    setPendingDuplicate(null);
+                    if (draft) {
+                      void persistCreate(draft);
+                    }
+                  }}
+                >
+                  继续保存
+                </Btn>
+              </>
+            }
+          >
+            <p className="subtle-text">
+              当前用户在同一天的同一时间段已经有记录。若继续保存，后端会再新增一条记录，请先确认是否符合你的录入意图。
+            </p>
+          </Modal>
+        </Col>
+
+        <Col span={24}>
+          <Toast toast={toast} />
+        </Col>
+      </Row>
     </div>
   );
 }

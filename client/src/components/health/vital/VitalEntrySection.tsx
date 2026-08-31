@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
+import { Grid } from '@arco-design/web-react';
 
 import { SectionCard } from '../../page';
+
 import { Btn, Tag } from '../../ui';
 import type { VitalMetricInfo, VitalMetricKey, VitalStatus } from '../../../types/vital';
+
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 interface VitalEntrySectionProps {
   metrics: VitalMetricInfo[];
@@ -110,96 +115,111 @@ export function VitalEntrySection({ metrics, loading, onSubmit }: VitalEntrySect
     return previewStatus(Number(value), currentMetric.referenceRange);
   })();
 
-  const statusTone = previewedStatus === 'normal' ? 'green' : previewedStatus === 'abnormal' ? 'red' : 'default';
-  const statusText = previewedStatus === 'normal' ? '正常' : previewedStatus === 'abnormal' ? '异常' : '待录入';
+  const statusTone =
+    previewedStatus === 'normal' ? 'green' : previewedStatus === 'abnormal' ? 'red' : 'default';
+  const statusText =
+    previewedStatus === 'normal' ? '正常' : previewedStatus === 'abnormal' ? '异常' : '待录入';
 
   return (
     <SectionCard title="体征录入" description="快速记录心率、血压、血氧、血糖、体温等日常体征">
-      <div className="vital-entry-grid">
-        <div className="vital-entry-field">
-          <label>指标类型</label>
-          <div className="vital-entry-metric-tabs">
-            {metrics.map((metric) => (
-              <button
-                key={metric.key}
-                type="button"
-                className={`vital-entry-metric-tab ${selectedMetric === metric.key ? 'active' : ''}`}
-                onClick={() => setSelectedMetric(metric.key as VitalMetricKey)}
-              >
-                {metric.label}
-              </button>
-            ))}
+      <Row gutter={[12, 12]}>
+        <Col span={24}>
+          <div className="vital-entry-field">
+            <label>指标类型</label>
+            <div className="vital-entry-metric-tabs">
+              {metrics.map((metric) => (
+                <button
+                  key={metric.key}
+                  type="button"
+                  className={`vital-entry-metric-tab ${selectedMetric === metric.key ? 'active' : ''}`}
+                  onClick={() => setSelectedMetric(metric.key as VitalMetricKey)}
+                >
+                  {metric.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        </Col>
 
         {isBloodPressure ? (
           <>
-            <div className="vital-entry-field">
-              <label>收缩压 (mmHg)</label>
-              <input
-                type="number"
-                value={systolic}
-                onChange={(e) => setSystolic(e.target.value)}
-                placeholder="例如 120"
-                className="vital-entry-input"
-              />
-            </div>
-            <div className="vital-entry-field">
-              <label>舒张压 (mmHg)</label>
-              <input
-                type="number"
-                value={diastolic}
-                onChange={(e) => setDiastolic(e.target.value)}
-                placeholder="例如 80"
-                className="vital-entry-input"
-              />
-            </div>
+            <Col span={12}>
+              <div className="vital-entry-field">
+                <label>收缩压 (mmHg)</label>
+                <input
+                  type="number"
+                  value={systolic}
+                  onChange={(e) => setSystolic(e.target.value)}
+                  placeholder="例如 120"
+                  className="vital-entry-input"
+                />
+              </div>
+            </Col>
+            <Col span={12}>
+              <div className="vital-entry-field">
+                <label>舒张压 (mmHg)</label>
+                <input
+                  type="number"
+                  value={diastolic}
+                  onChange={(e) => setDiastolic(e.target.value)}
+                  placeholder="例如 80"
+                  className="vital-entry-input"
+                />
+              </div>
+            </Col>
           </>
         ) : (
+          <Col span={12}>
+            <div className="vital-entry-field">
+              <label>
+                {currentMetric?.label} ({currentMetric?.unit})
+              </label>
+              <input
+                type="number"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder={`请输入${currentMetric?.label ?? ''}值`}
+                step="0.1"
+                className="vital-entry-input"
+              />
+            </div>
+          </Col>
+        )}
+
+        <Col span={8}>
           <div className="vital-entry-field">
-            <label>
-              {currentMetric?.label} ({currentMetric?.unit})
-            </label>
+            <label>记录时间</label>
             <input
-              type="number"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder={`请输入${currentMetric?.label ?? ''}值`}
-              step="0.1"
+              type="datetime-local"
+              value={recordTime}
+              onChange={(e) => setRecordTime(e.target.value)}
               className="vital-entry-input"
             />
           </div>
-        )}
+        </Col>
 
-        <div className="vital-entry-field">
-          <label>记录时间</label>
-          <input
-            type="datetime-local"
-            value={recordTime}
-            onChange={(e) => setRecordTime(e.target.value)}
-            className="vital-entry-input"
-          />
-        </div>
-
-        <div className="vital-entry-field">
-          <label>备注</label>
-          <input
-            type="text"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="可选，例如：运动后、空腹等"
-            className="vital-entry-input"
-          />
-        </div>
-      </div>
+        <Col span={8}>
+          <div className="vital-entry-field">
+            <label>备注</label>
+            <input
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="可选，例如：运动后、空腹等"
+              className="vital-entry-input"
+            />
+          </div>
+        </Col>
+      </Row>
 
       <div className="vital-entry-footer">
         <div className="vital-entry-reference">
           <span className="muted">
-            参考范围：{currentMetric?.referenceRange ?? '-'}{' '}
-            {currentMetric?.unit ?? ''}
+            参考范围：{currentMetric?.referenceRange ?? '-'} {currentMetric?.unit ?? ''}
           </span>
-          <Tag tone={statusTone} size="sm">{statusText}</Tag>
+          <Tag tone={statusTone} size="sm">
+            {statusText}
+          </Tag>
         </div>
         <Btn type="button" tone="primary" onClick={handleSubmit} disabled={loading}>
           {loading ? '保存中…' : '保存记录'}

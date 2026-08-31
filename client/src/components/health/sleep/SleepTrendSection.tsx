@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Grid } from '@arco-design/web-react';
 import {
   CartesianGrid,
   Line,
@@ -14,6 +15,9 @@ import {
 import { EmptyState, SectionCard } from '../../page';
 import { PillTabs } from '../../ui';
 import type { SleepTrend } from '../../../types/sleep';
+
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 interface SleepTrendSectionProps {
   trend: SleepTrend | null;
@@ -59,29 +63,37 @@ function formatDuration(minutes: number) {
  * @param period - 当前周期
  * @param onPeriodChange - 切换周期回调
  */
-export function SleepTrendSection({ trend, loading, period, onPeriodChange }: SleepTrendSectionProps) {
+export function SleepTrendSection({
+  trend,
+  loading,
+  period,
+  onPeriodChange,
+}: SleepTrendSectionProps) {
   const chartData = useMemo(() => {
     if (!trend) return [];
     return trend.items.map((item) => ({
       ...item,
       duration: item.durationMinutes,
-      durationLabel: item.durationMinutes !== null ? formatDuration(item.durationMinutes) : '无数据',
+      durationLabel:
+        item.durationMinutes !== null ? formatDuration(item.durationMinutes) : '无数据',
     }));
   }, [trend]);
 
   const validItems = trend?.items.filter((i) => i.durationMinutes !== null) ?? [];
-  const maxDuration = validItems.length > 0
-    ? Math.max(...validItems.map((i) => i.durationMinutes ?? 0))
-    : 0;
-  const minDuration = validItems.length > 0
-    ? Math.min(...validItems.map((i) => i.durationMinutes ?? 0))
-    : 0;
+  const maxDuration =
+    validItems.length > 0 ? Math.max(...validItems.map((i) => i.durationMinutes ?? 0)) : 0;
+  const minDuration =
+    validItems.length > 0 ? Math.min(...validItems.map((i) => i.durationMinutes ?? 0)) : 0;
 
   return (
     <SectionCard
       title="睡眠趋势"
-      description={trend ? `${trend.period === 'week' ? '近 7 天' : trend.period === 'month' ? '近 30 天' : '近一年'}睡眠时长变化` : '查看睡眠趋势分析'}
-      action={(
+      description={
+        trend
+          ? `${trend.period === 'week' ? '近 7 天' : trend.period === 'month' ? '近 30 天' : '近一年'}睡眠时长变化`
+          : '查看睡眠趋势分析'
+      }
+      action={
         <div className="vital-trend-controls">
           <PillTabs
             options={PERIOD_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
@@ -89,7 +101,7 @@ export function SleepTrendSection({ trend, loading, period, onPeriodChange }: Sl
             onChange={(v) => onPeriodChange(v as 'week' | 'month' | 'year')}
           />
         </div>
-      )}
+      }
     >
       {!trend ? (
         loading ? (
@@ -109,7 +121,11 @@ export function SleepTrendSection({ trend, loading, period, onPeriodChange }: Sl
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-hairline)" />
-                <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-2)', fontSize: 11 }} stroke="var(--color-hairline)" />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fill: 'var(--color-ink-2)', fontSize: 11 }}
+                  stroke="var(--color-hairline)"
+                />
                 <YAxis
                   tick={{ fill: 'var(--color-ink-3)', fontSize: 10 }}
                   stroke="var(--color-hairline)"
@@ -119,12 +135,27 @@ export function SleepTrendSection({ trend, loading, period, onPeriodChange }: Sl
                   contentStyle={tooltipStyle}
                   formatter={(value) => {
                     const v = value as number | null;
-                    return [v !== null && v !== undefined ? formatDuration(v) : '无数据', '睡眠时长'];
+                    return [
+                      v !== null && v !== undefined ? formatDuration(v) : '无数据',
+                      '睡眠时长',
+                    ];
                   }}
                 />
                 <Legend />
-                <ReferenceLine y={RECOMMENDED_MIN} stroke="#27a644" strokeDasharray="3 3" strokeWidth={1} label={{ value: '7h', fill: '#27a644', fontSize: 10, position: 'right' }} />
-                <ReferenceLine y={RECOMMENDED_MAX} stroke="#27a644" strokeDasharray="3 3" strokeWidth={1} label={{ value: '9h', fill: '#27a644', fontSize: 10, position: 'right' }} />
+                <ReferenceLine
+                  y={RECOMMENDED_MIN}
+                  stroke="#27a644"
+                  strokeDasharray="3 3"
+                  strokeWidth={1}
+                  label={{ value: '7h', fill: '#27a644', fontSize: 10, position: 'right' }}
+                />
+                <ReferenceLine
+                  y={RECOMMENDED_MAX}
+                  stroke="#27a644"
+                  strokeDasharray="3 3"
+                  strokeWidth={1}
+                  label={{ value: '9h', fill: '#27a644', fontSize: 10, position: 'right' }}
+                />
                 <Line
                   type="monotone"
                   dataKey="duration"
@@ -139,30 +170,36 @@ export function SleepTrendSection({ trend, loading, period, onPeriodChange }: Sl
             </ResponsiveContainer>
           </div>
 
-          <div className="vital-trend-stats">
-            <div className="vital-trend-stat">
-              <span className="muted">平均时长</span>
-              <strong>{trend.avgDurationLabel || '-'}</strong>
-            </div>
-            <div className="vital-trend-stat">
-              <span className="muted">最长</span>
-              <strong style={{ color: '#27a644' }}>
-                {validItems.length > 0 ? formatDuration(maxDuration) : '-'}
-              </strong>
-            </div>
-            <div className="vital-trend-stat">
-              <span className="muted">最短</span>
-              <strong style={{ color: '#e5484d' }}>
-                {validItems.length > 0 ? formatDuration(minDuration) : '-'}
-              </strong>
-            </div>
-            <div className="vital-trend-stat">
-              <span className="muted">平均质量</span>
-              <strong>
-                {trend.avgQuality !== null ? `${trend.avgQuality} / 5` : '-'}
-              </strong>
-            </div>
-          </div>
+          <Row gutter={[12, 12]} style={{ marginTop: 16 }}>
+            <Col span={6}>
+              <div className="vital-trend-stat">
+                <span className="muted">平均时长</span>
+                <strong>{trend.avgDurationLabel || '-'}</strong>
+              </div>
+            </Col>
+            <Col span={6}>
+              <div className="vital-trend-stat">
+                <span className="muted">最长</span>
+                <strong style={{ color: '#27a644' }}>
+                  {validItems.length > 0 ? formatDuration(maxDuration) : '-'}
+                </strong>
+              </div>
+            </Col>
+            <Col span={6}>
+              <div className="vital-trend-stat">
+                <span className="muted">最短</span>
+                <strong style={{ color: '#e5484d' }}>
+                  {validItems.length > 0 ? formatDuration(minDuration) : '-'}
+                </strong>
+              </div>
+            </Col>
+            <Col span={6}>
+              <div className="vital-trend-stat">
+                <span className="muted">平均质量</span>
+                <strong>{trend.avgQuality !== null ? `${trend.avgQuality} / 5` : '-'}</strong>
+              </div>
+            </Col>
+          </Row>
         </div>
       )}
     </SectionCard>

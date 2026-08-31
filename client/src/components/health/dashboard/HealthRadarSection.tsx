@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import dayjs from 'dayjs';
+import { Grid } from '@arco-design/web-react';
 import {
   CartesianGrid,
   PolarAngleAxis,
@@ -13,6 +14,9 @@ import {
 
 import { EmptyState, SectionCard, StatGrid } from '../../page';
 import type { HealthRadarSummary } from '../../../types/healthDashboard';
+
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 interface HealthRadarSectionProps {
   radar: HealthRadarSummary | null;
@@ -56,7 +60,11 @@ export function HealthRadarSection({ radar, loading }: HealthRadarSectionProps) 
   }, [radar]);
 
   if (loading) {
-    return <SectionCard title="综合健康度" description="正在加载评分…"><div className="skeleton-block" /></SectionCard>;
+    return (
+      <SectionCard title="综合健康度" description="正在加载评分…">
+        <div className="skeleton-block" />
+      </SectionCard>
+    );
   }
 
   if (!radar || chartData.length === 0) {
@@ -81,7 +89,12 @@ export function HealthRadarSection({ radar, loading }: HealthRadarSectionProps) 
             label: '综合得分',
             value: `${radar.overallScore}`,
             helper: describeScore(radar.overallScore),
-            accent: radar.overallScore >= 70 ? '#27a644' : radar.overallScore >= 50 ? '#f59e0b' : '#e5484d',
+            accent:
+              radar.overallScore >= 70
+                ? '#27a644'
+                : radar.overallScore >= 50
+                  ? '#f59e0b'
+                  : '#e5484d',
           },
           {
             label: '统计周期',
@@ -95,7 +108,12 @@ export function HealthRadarSection({ radar, loading }: HealthRadarSectionProps) 
           <RadarChart data={chartData} outerRadius="75%">
             <PolarGrid stroke="var(--color-hairline)" />
             <PolarAngleAxis dataKey="subject" tick={{ fill: 'var(--color-ink-2)', fontSize: 12 }} />
-            <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: 'var(--color-ink-3)', fontSize: 10 }} stroke="var(--color-hairline)" />
+            <PolarRadiusAxis
+              angle={90}
+              domain={[0, 100]}
+              tick={{ fill: 'var(--color-ink-3)', fontSize: 10 }}
+              stroke="var(--color-hairline)"
+            />
             <Radar
               name="健康度"
               dataKey="score"
@@ -108,7 +126,9 @@ export function HealthRadarSection({ radar, loading }: HealthRadarSectionProps) 
               contentStyle={tooltipStyle}
               labelStyle={{ fontWeight: 600 }}
               formatter={(value, _name, item) => {
-                const payload = (item as { payload?: { unit?: string; value?: number; subject?: string } })?.payload;
+                const payload = (
+                  item as { payload?: { unit?: string; value?: number; subject?: string } }
+                )?.payload;
                 const unit = payload?.unit ?? '';
                 const raw = payload?.value;
                 return [`评分 ${value} / 100 · 数值 ${raw} ${unit}`, payload?.subject ?? ''];
@@ -118,17 +138,19 @@ export function HealthRadarSection({ radar, loading }: HealthRadarSectionProps) 
           </RadarChart>
         </ResponsiveContainer>
       </div>
-      <div className="health-radar-dimensions">
+      <Row gutter={[12, 12]} style={{ marginTop: 16 }}>
         {radar.dimensions.map((dim) => (
-          <div key={dim.key} className="health-radar-dimension">
-            <span className="health-radar-dimension-label">{dim.label}</span>
-            <strong className="health-radar-dimension-score">{dim.score}</strong>
-            <span className="health-radar-dimension-detail">
-              {dim.value} {dim.unit}
-            </span>
-          </div>
+          <Col span={8} key={dim.key}>
+            <div className="health-radar-dimension">
+              <span className="health-radar-dimension-label">{dim.label}</span>
+              <strong className="health-radar-dimension-score">{dim.score}</strong>
+              <span className="health-radar-dimension-detail">
+                {dim.value} {dim.unit}
+              </span>
+            </div>
+          </Col>
         ))}
-      </div>
+      </Row>
     </SectionCard>
   );
 }

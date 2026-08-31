@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
+
 import { MedicationAnalysisSection } from '../../components/health/MedicationAnalysisSection';
 import { MedicationPurchasesSection } from '../../components/health/MedicationPurchasesSection';
 import { MedicationRecordsSection } from '../../components/health/MedicationRecordsSection';
@@ -54,7 +58,11 @@ const EMPTY_OVERVIEW: MedicationOverviewSummary = {
 
 export default function MedicationPage() {
   const authState = useAuthState();
-  const [tab, setTab] = usePageTab<MedicationTab>('records', TAB_OPTIONS.map((item) => item.value), 'medicationTab');
+  const [tab, setTab] = usePageTab<MedicationTab>(
+    'records',
+    TAB_OPTIONS.map((item) => item.value),
+    'medicationTab',
+  );
   useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const [records, setRecords] = useState<MedicationRecord[]>([]);
   const [purchases, setPurchases] = useState<MedicationPurchaseRecord[]>([]);
@@ -67,18 +75,21 @@ export default function MedicationPage() {
   showToastRef.current = showToast;
 
   const reload = useCallback(async () => {
-    const [nextRecords, nextPurchases, nextSummaries, nextOverview, nextSettings] = await Promise.all([
-      medicationApi.listRecords({ page: 1, page_size: 1000 }),
-      medicationApi.listPurchases({ page: 1, page_size: 1000 }),
-      medicationApi.listSummaries(),
-      medicationApi.getOverview(),
-      medicationApi.getSettings(),
-    ]);
+    const [nextRecords, nextPurchases, nextSummaries, nextOverview, nextSettings] =
+      await Promise.all([
+        medicationApi.listRecords({ page: 1, page_size: 1000 }),
+        medicationApi.listPurchases({ page: 1, page_size: 1000 }),
+        medicationApi.listSummaries(),
+        medicationApi.getOverview(),
+        medicationApi.getSettings(),
+      ]);
 
     const normalizeDate = (d: string) => (dayjs(d).isValid() ? dayjs(d).format('YYYY-MM-DD') : d);
 
     setRecords(nextRecords.items.map((r) => ({ ...r, date: normalizeDate(r.date) })));
-    setPurchases(nextPurchases.items.map((p) => ({ ...p, purchaseDate: normalizeDate(p.purchaseDate) })));
+    setPurchases(
+      nextPurchases.items.map((p) => ({ ...p, purchaseDate: normalizeDate(p.purchaseDate) })),
+    );
     setSummaries(nextSummaries.items.map((s) => ({ ...s, date: normalizeDate(s.date) })));
     setOverview(nextOverview);
     setSettings({
@@ -112,81 +123,95 @@ export default function MedicationPage() {
     };
   }, [reload]);
 
-  const updateSettings = useCallback(async (patch: Partial<MedicationPageState['settings']>) => {
-    try {
-      if (patch.medicineThresholds) {
-        const currentThresholds = await medicationApi.listThresholds();
-        const existingMap = new Map(currentThresholds.items.map((item) => [item.medicineName, item]));
-        const nextThresholds = patch.medicineThresholds;
+  const updateSettings = useCallback(
+    async (patch: Partial<MedicationPageState['settings']>) => {
+      try {
+        if (patch.medicineThresholds) {
+          const currentThresholds = await medicationApi.listThresholds();
+          const existingMap = new Map(
+            currentThresholds.items.map((item) => [item.medicineName, item]),
+          );
+          const nextThresholds = patch.medicineThresholds;
 
-        await Promise.all([
-          ...currentThresholds.items
-            .filter((item) => !(item.medicineName in nextThresholds))
-            .map((item) => medicationApi.deleteThreshold(item.id)),
-          ...Object.entries(nextThresholds).map(([medicineName, threshold]) => {
-            const existing = existingMap.get(medicineName);
-            if (!existing) {
-              return medicationApi.createThreshold({ medicineName, threshold });
-            }
-            if (existing.threshold !== threshold) {
-              return medicationApi.updateThreshold(existing.id, { medicineName, threshold });
-            }
-            return Promise.resolve();
-          }),
-        ]);
-      }
-
-      const next = await medicationApi.updateSettings({
-        ...patch,
-        medicineThresholds: undefined,
-      });
-      setSettings((current) => ({
-        ...current,
-        ...next,
-        medicineThresholds: patch.medicineThresholds ?? current.medicineThresholds,
-      }));
-      await reload();
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '用药设置保存失败。'), 'error');
-    }
-  }, [reload, showToast]);
-
-  const syncCollection = useMemo(() => createSyncCollection({ reload, showToast }), [reload, showToast]);
-
-  const handleSaveSummary = useCallback(async (date: string, content: string) => {
-    try {
-      const existing = summaries.find((item) => item.date === date);
-
-      if (!content.trim()) {
-        if (existing) {
-          await medicationApi.deleteSummary(existing.id);
+          await Promise.all([
+            ...currentThresholds.items
+              .filter((item) => !(item.medicineName in nextThresholds))
+              .map((item) => medicationApi.deleteThreshold(item.id)),
+            ...Object.entries(nextThresholds).map(([medicineName, threshold]) => {
+              const existing = existingMap.get(medicineName);
+              if (!existing) {
+                return medicationApi.createThreshold({ medicineName, threshold });
+              }
+              if (existing.threshold !== threshold) {
+                return medicationApi.updateThreshold(existing.id, { medicineName, threshold });
+              }
+              return Promise.resolve();
+            }),
+          ]);
         }
-      } else if (existing) {
-        await medicationApi.updateSummary(existing.id, { date, content });
-      } else {
-        await medicationApi.createSummary({
-          date,
-          content,
+
+        const next = await medicationApi.updateSettings({
+          ...patch,
+          medicineThresholds: undefined,
         });
+        setSettings((current) => ({
+          ...current,
+          ...next,
+          medicineThresholds: patch.medicineThresholds ?? current.medicineThresholds,
+        }));
+        await reload();
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '用药设置保存失败。'), 'error');
       }
+    },
+    [reload, showToast],
+  );
 
-      await reload();
-      showToast(content.trim() ? '每日总结已保存。' : '该日期的每日总结已清除。');
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '每日总结保存失败。'), 'error');
-    }
-  }, [reload, showToast, summaries]);
+  const syncCollection = useMemo(
+    () => createSyncCollection({ reload, showToast }),
+    [reload, showToast],
+  );
 
-  const triggerDoseReminder = useCallback(async (slot: MedicationReminderTimeKey) => {
-    try {
-      await medicationApi.triggerDoseReminder({
-        title: `用药提醒：${slot}`,
-      });
-      showToast('用药提醒已交给通知中心处理。');
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '用药提醒触发失败。'), 'error');
-    }
-  }, [showToast]);
+  const handleSaveSummary = useCallback(
+    async (date: string, content: string) => {
+      try {
+        const existing = summaries.find((item) => item.date === date);
+
+        if (!content.trim()) {
+          if (existing) {
+            await medicationApi.deleteSummary(existing.id);
+          }
+        } else if (existing) {
+          await medicationApi.updateSummary(existing.id, { date, content });
+        } else {
+          await medicationApi.createSummary({
+            date,
+            content,
+          });
+        }
+
+        await reload();
+        showToast(content.trim() ? '每日总结已保存。' : '该日期的每日总结已清除。');
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '每日总结保存失败。'), 'error');
+      }
+    },
+    [reload, showToast, summaries],
+  );
+
+  const triggerDoseReminder = useCallback(
+    async (slot: MedicationReminderTimeKey) => {
+      try {
+        await medicationApi.triggerDoseReminder({
+          title: `用药提醒：${slot}`,
+        });
+        showToast('用药提醒已交给通知中心处理。');
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '用药提醒触发失败。'), 'error');
+      }
+    },
+    [showToast],
+  );
 
   const triggerStockReminder = useCallback(async () => {
     try {
@@ -198,100 +223,135 @@ export default function MedicationPage() {
   }, [showToast]);
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        title="用药管理"
-        subtitle="药品库存、用药记录与每日总结"
-        actions={(<PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as MedicationTab)} />)}
-      />
-      {loading ? (
-        <StatGridSkeleton cols={4} />
-      ) : (
-      <StatGrid
-        items={[
-          { label: '累计用量', value: `${overview.totalDosage}`, helper: `共 ${overview.trackedDays} 天追踪` },
-          { label: '活跃药品', value: `${overview.activeMedicineCount}`, accent: overview.activeMedicineCount === 0 ? 'var(--color-warning)' : undefined, helper: overview.activeMedicineCount === 0 ? '尚未添加药品' : undefined },
-          { label: '购药总额', value: `¥${overview.totalPurchaseAmount.toFixed(2)}`, helper: `${overview.purchaseCount} 次购药` },
-          { label: '今日用量', value: `${overview.todayDosage}`, accent: overview.todayDosage > 0 ? 'var(--color-primary)' : undefined, helper: overview.todayDosage === 0 ? '今日暂无记录' : undefined },
-        ]}
-      />
-      )}
-
-      {tab === 'records' ? (
-        <MedicationRecordsSection
-          records={records}
-          onChangeRecords={(updater) => {
-            const previous = records;
-            const next = updater(previous);
-            setRecords(next);
-            void syncCollection(
-              previous,
-              next,
-              (item) => medicationApi.createRecord(item),
-              (item) => medicationApi.updateRecord(item.id, item),
-              (id) => medicationApi.deleteRecord(id),
-              '用药记录保存失败。',
-            );
-          }}
-          showToast={showToast}
+    <div className="page-grid-wrapper">
+      <Row gutter={[24, 20]}>
+        <PageHeader
+          title="用药管理"
+          subtitle="药品库存、用药记录与每日总结"
+          actions={
+            <PillTabs
+              options={TAB_OPTIONS}
+              value={tab}
+              onChange={(value) => setTab(value as MedicationTab)}
+            />
+          }
         />
-      ) : null}
+        <Col span={24}>
+          {loading ? (
+            <StatGridSkeleton cols={4} />
+          ) : (
+            <StatGrid
+              items={[
+                {
+                  label: '累计用量',
+                  value: `${overview.totalDosage}`,
+                  helper: `共 ${overview.trackedDays} 天追踪`,
+                },
+                {
+                  label: '活跃药品',
+                  value: `${overview.activeMedicineCount}`,
+                  accent: overview.activeMedicineCount === 0 ? 'var(--color-warning)' : undefined,
+                  helper: overview.activeMedicineCount === 0 ? '尚未添加药品' : undefined,
+                },
+                {
+                  label: '购药总额',
+                  value: `¥${overview.totalPurchaseAmount.toFixed(2)}`,
+                  helper: `${overview.purchaseCount} 次购药`,
+                },
+                {
+                  label: '今日用量',
+                  value: `${overview.todayDosage}`,
+                  accent: overview.todayDosage > 0 ? 'var(--color-primary)' : undefined,
+                  helper: overview.todayDosage === 0 ? '今日暂无记录' : undefined,
+                },
+              ]}
+            />
+          )}
+        </Col>
 
-      {tab === 'purchases' ? (
-        <MedicationPurchasesSection
-          purchases={purchases}
-          onChangePurchases={(updater) => {
-            const previous = purchases;
-            const next = updater(previous);
-            setPurchases(next);
-            void syncCollection(
-              previous,
-              next,
-              (item) => medicationApi.createPurchase(item),
-              (item) => medicationApi.updatePurchase(item.id, item),
-              (id) => medicationApi.deletePurchase(id),
-              '购药记录保存失败。',
-            );
-          }}
-          showToast={showToast}
-        />
-      ) : null}
+        {tab === 'records' ? (
+          <Col span={24}>
+            <MedicationRecordsSection
+              records={records}
+              onChangeRecords={(updater) => {
+                const previous = records;
+                const next = updater(previous);
+                setRecords(next);
+                void syncCollection(
+                  previous,
+                  next,
+                  (item) => medicationApi.createRecord(item),
+                  (item) => medicationApi.updateRecord(item.id, item),
+                  (id) => medicationApi.deleteRecord(id),
+                  '用药记录保存失败。',
+                );
+              }}
+              showToast={showToast}
+            />
+          </Col>
+        ) : null}
 
-      {tab === 'analysis' ? (
-        <MedicationAnalysisSection
-          records={records}
-          purchases={purchases}
-        />
-      ) : null}
+        {tab === 'purchases' ? (
+          <Col span={24}>
+            <MedicationPurchasesSection
+              purchases={purchases}
+              onChangePurchases={(updater) => {
+                const previous = purchases;
+                const next = updater(previous);
+                setPurchases(next);
+                void syncCollection(
+                  previous,
+                  next,
+                  (item) => medicationApi.createPurchase(item),
+                  (item) => medicationApi.updatePurchase(item.id, item),
+                  (id) => medicationApi.deletePurchase(id),
+                  '购药记录保存失败。',
+                );
+              }}
+              showToast={showToast}
+            />
+          </Col>
+        ) : null}
 
-      {tab === 'summary' ? (
-        <MedicationSummarySection
-          records={records}
-          purchases={purchases}
-          summaries={summaries}
-          settings={settings}
-          onSettingsChange={(patch) => {
-            void updateSettings(patch);
-          }}
-          onSaveSummary={(date, content) => {
-            void handleSaveSummary(date, content);
-          }}
-          onDoseReminderToggle={(checked) => {
-            void updateSettings({ doseReminderEnabled: checked });
-          }}
-          onStockReminderToggle={(checked) => {
-            void updateSettings({ stockReminderEnabled: checked });
-          }}
-          onTriggerDoseReminder={(slot) => {
-            void triggerDoseReminder(slot);
-          }}
-          onTriggerStockReminder={() => {
-            void triggerStockReminder();
-          }}
-        />
-      ) : null}
+        {tab === 'analysis' ? (
+          <Col span={24}>
+            <MedicationAnalysisSection records={records} purchases={purchases} />
+          </Col>
+        ) : null}
 
-      <Toast toast={toast} />
+        {tab === 'summary' ? (
+          <Col span={24}>
+            <MedicationSummarySection
+              records={records}
+              purchases={purchases}
+              summaries={summaries}
+              settings={settings}
+              onSettingsChange={(patch) => {
+                void updateSettings(patch);
+              }}
+              onSaveSummary={(date, content) => {
+                void handleSaveSummary(date, content);
+              }}
+              onDoseReminderToggle={(checked) => {
+                void updateSettings({ doseReminderEnabled: checked });
+              }}
+              onStockReminderToggle={(checked) => {
+                void updateSettings({ stockReminderEnabled: checked });
+              }}
+              onTriggerDoseReminder={(slot) => {
+                void triggerDoseReminder(slot);
+              }}
+              onTriggerStockReminder={() => {
+                void triggerStockReminder();
+              }}
+            />
+          </Col>
+        ) : null}
+
+        <Col span={24}>
+          <Toast toast={toast} />
+        </Col>
+      </Row>
     </div>
   );
 }

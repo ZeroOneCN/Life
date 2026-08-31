@@ -1,8 +1,11 @@
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
+import { Grid } from '@arco-design/web-react';
 import { EmptyState, SectionCard, StatGrid } from '../../page';
 import { Tag, TrendArrow } from '../../ui';
+const Row = Grid.Row;
+const Col = Grid.Col;
 import type { HealthReportChange, HealthReportRangeSummary } from '../../../types/healthReport';
 
 interface HealthReportSummarySectionProps {
@@ -148,57 +151,79 @@ export function HealthReportSummarySection({
         </div>
       }
     >
-      <StatGrid items={items} className="health-report-stat-grid" />
+      <Row gutter={[24, 20]}>
+        <Col span={24}>
+          <StatGrid items={items} className="health-report-stat-grid" />
+        </Col>
 
-      {changes ? (
-        <div className="health-report-changes">
-          <div className="health-report-change-card">
-            <span className="health-report-change-label">步数同比</span>
-            <div className="health-report-change-value">
-              <TrendArrow direction={changes.step.trend === 'none' ? 'flat' : changes.step.trend} />
-              <strong>{formatPercent(changes.step.percent)}</strong>
-            </div>
-            {weightTag && changes.step.percent === null ? (
-              <span className="muted">上一周期无数据</span>
-            ) : null}
-          </div>
-          <div className="health-report-change-card">
-            <span className="health-report-change-label">运动同比</span>
-            <div className="health-report-change-value">
-              <TrendArrow
-                direction={changes.exercise.trend === 'none' ? 'flat' : changes.exercise.trend}
-              />
-              <strong>{formatPercent(changes.exercise.percent)}</strong>
-            </div>
-            {changes.exercise.percent === null ? (
-              <span className="muted">上一周期无数据</span>
-            ) : null}
-          </div>
-          <div className="health-report-change-card">
-            <span className="health-report-change-label">净热量同比</span>
-            <div className="health-report-change-value">
-              <TrendArrow direction={changes.diet.trend === 'none' ? 'flat' : changes.diet.trend} />
-              <strong>{formatPercent(changes.diet.percent)}</strong>
-            </div>
-            {changes.diet.percent === null ? <span className="muted">上一周期无数据</span> : null}
-          </div>
-          <div className="health-report-change-card">
-            <span className="health-report-change-label">体重变化</span>
-            <div className="health-report-change-value">
-              {weightTag ? (
-                <Tag tone={weightTag.tone} size="sm">
-                  {weightTag.text}
-                </Tag>
-              ) : null}
-              <strong>
-                {current.weight.weightChange !== null
-                  ? `${current.weight.weightChange > 0 ? '+' : ''}${current.weight.weightChange.toFixed(1)} kg`
-                  : '—'}
-              </strong>
-            </div>
-          </div>
-        </div>
-      ) : null}
+        {changes ? (
+          <Col span={24}>
+            <Row gutter={[16, 16]}>
+              <Col span={6}>
+                <div className="health-report-change-card">
+                  <span className="health-report-change-label">步数同比</span>
+                  <div className="health-report-change-value">
+                    <TrendArrow
+                      direction={changes.step.trend === 'none' ? 'flat' : changes.step.trend}
+                    />
+                    <strong>{formatPercent(changes.step.percent)}</strong>
+                  </div>
+                  {weightTag && changes.step.percent === null ? (
+                    <span className="muted">上一周期无数据</span>
+                  ) : null}
+                </div>
+              </Col>
+              <Col span={6}>
+                <div className="health-report-change-card">
+                  <span className="health-report-change-label">运动同比</span>
+                  <div className="health-report-change-value">
+                    <TrendArrow
+                      direction={
+                        changes.exercise.trend === 'none' ? 'flat' : changes.exercise.trend
+                      }
+                    />
+                    <strong>{formatPercent(changes.exercise.percent)}</strong>
+                  </div>
+                  {changes.exercise.percent === null ? (
+                    <span className="muted">上一周期无数据</span>
+                  ) : null}
+                </div>
+              </Col>
+              <Col span={6}>
+                <div className="health-report-change-card">
+                  <span className="health-report-change-label">净热量同比</span>
+                  <div className="health-report-change-value">
+                    <TrendArrow
+                      direction={changes.diet.trend === 'none' ? 'flat' : changes.diet.trend}
+                    />
+                    <strong>{formatPercent(changes.diet.percent)}</strong>
+                  </div>
+                  {changes.diet.percent === null ? (
+                    <span className="muted">上一周期无数据</span>
+                  ) : null}
+                </div>
+              </Col>
+              <Col span={6}>
+                <div className="health-report-change-card">
+                  <span className="health-report-change-label">体重变化</span>
+                  <div className="health-report-change-value">
+                    {weightTag ? (
+                      <Tag tone={weightTag.tone} size="sm">
+                        {weightTag.text}
+                      </Tag>
+                    ) : null}
+                    <strong>
+                      {current.weight.weightChange !== null
+                        ? `${current.weight.weightChange > 0 ? '+' : ''}${current.weight.weightChange.toFixed(1)} kg`
+                        : '—'}
+                    </strong>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          </Col>
+        ) : null}
+      </Row>
     </SectionCard>
   );
 }

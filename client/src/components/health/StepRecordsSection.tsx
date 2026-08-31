@@ -1,8 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 
+import { Grid } from '@arco-design/web-react';
 import { DatePickerField, DateTimePickerField } from '../date';
-import { DeleteIcon, DeleteModal, EditIcon, ExportButton, FilterBar, IconBtn, Modal, Pagination, Btn, Field, SelectField, TableSkeleton } from '../ui';
+import {
+  DeleteIcon,
+  DeleteModal,
+  EditIcon,
+  ExportButton,
+  FilterBar,
+  IconBtn,
+  Modal,
+  Pagination,
+  Btn,
+  Field,
+  SelectField,
+  TableSkeleton,
+} from '../ui';
+
+const Row = Grid.Row;
+const Col = Grid.Col;
 import { EmptyState } from '../page';
 import {
   STEP_HOURS,
@@ -13,7 +30,12 @@ import {
   inferStepHourFromRecordTime,
 } from '../../services/stepRecords';
 import { stepApi } from '../../services/stepApi';
-import type { StepHour, StepRecord, StepRecordDraft, StepRecordSortField } from '../../types/health';
+import type {
+  StepHour,
+  StepRecord,
+  StepRecordDraft,
+  StepRecordSortField,
+} from '../../types/health';
 import { SectionCard } from '../page';
 
 type SortDirection = 'asc' | 'desc';
@@ -124,7 +146,8 @@ export function StepRecordsSection({
 
   const totalPages = Math.max(1, Math.ceil(totalRecords / PAGE_SIZE));
 
-  const allPageSelected = sortedRecords.length > 0 && sortedRecords.every((record) => selectedIds.includes(record.id));
+  const allPageSelected =
+    sortedRecords.length > 0 && sortedRecords.every((record) => selectedIds.includes(record.id));
 
   const toggleSort = (field: StepRecordSortField) => {
     if (sortField === field) {
@@ -178,124 +201,178 @@ export function StepRecordsSection({
 
   return (
     <SectionCard title="步数记录" description="支持排序、分页、编辑和批量删除。">
-      <div className="page-stack">
-        <FilterBar
-          rightSlot={
-            <ExportButton
-              label="导出"
-              onExport={(format) => {
-                showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
-              }}
-            />
-          }
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
-            <span className="subtle-text">共 {totalRecords} 条记录</span>
-          </div>
-        </FilterBar>
-
-        <div className="step-records-toolbar">
-          <div className="step-records-selection">
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={allPageSelected}
-                onChange={(event) => {
-                  if (event.target.checked) {
-                    setSelectedIds((previous) => [...new Set([...previous, ...sortedRecords.map((record) => record.id)])]);
-                    return;
-                  }
-
-                  setSelectedIds((previous) => previous.filter((id) => !sortedRecords.some((record) => record.id === id)));
-                }}
-              />
-              <span>全选当前页</span>
-            </label>
-            <Btn
-              tone="danger"
-              disabled={!selectedIds.length || batchDeleting}
-              onClick={() => setShowBatchDeleteModal(true)}
+      <div className="page-grid-wrapper">
+        <Row gutter={[24, 20]}>
+          <Col span={24}>
+            <FilterBar
+              rightSlot={
+                <ExportButton
+                  label="导出"
+                  onExport={(format) => {
+                    showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
+                  }}
+                />
+              }
             >
-              {batchDeleting ? '删除中...' : '批量删除'}
-            </Btn>
-          </div>
-          {selectedIds.length ? (
-            <span className="subtle-text">已选择 {selectedIds.length} 条</span>
-          ) : null}
-        </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  flexWrap: 'wrap',
+                  minWidth: 0,
+                }}
+              >
+                <span className="subtle-text">共 {totalRecords} 条记录</span>
+              </div>
+            </FilterBar>
+          </Col>
 
-        {loading && !records.length ? (
-          <TableSkeleton rows={10} cols={6} />
-        ) : sortedRecords.length ? (
-          <div className={`step-records-table-wrap ${loading ? 'is-loading' : ''}`}>
-            <div className="table-wrap">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: 54 }}>选择</th>
-                    <th>
-                      <button type="button" className="step-sort-button" onClick={() => toggleSort('steps')}>
-                        步数
-                        <span>{getSortIndicator(sortField === 'steps', sortDirection)}</span>
-                      </button>
-                    </th>
-                    <th>
-                      <button type="button" className="step-sort-button" onClick={() => toggleSort('hour')}>
-                        时间段
-                        <span>{getSortIndicator(sortField === 'hour', sortDirection)}</span>
-                      </button>
-                    </th>
-                    <th>
-                      <button type="button" className="step-sort-button" onClick={() => toggleSort('recordTime')}>
-                        记录时间
-                        <span>{getSortIndicator(sortField === 'recordTime', sortDirection)}</span>
-                      </button>
-                    </th>
-                    <th>距离</th>
-                    <th>操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedRecords.map((record) => (
-                    <tr key={record.id}>
-                      <td>
-                        <input
-                          className="step-record-checkbox"
-                          type="checkbox"
-                          checked={selectedIds.includes(record.id)}
-                          onChange={(event) => {
-                            if (event.target.checked) {
-                              setSelectedIds((previous) => [...new Set([...previous, record.id])]);
-                              return;
-                            }
+          <Col span={24}>
+            <Row gutter={[16, 12]} align="center">
+              <Col>
+                <div className="step-records-selection">
+                  <label className="checkbox">
+                    <input
+                      type="checkbox"
+                      checked={allPageSelected}
+                      onChange={(event) => {
+                        if (event.target.checked) {
+                          setSelectedIds((previous) => [
+                            ...new Set([...previous, ...sortedRecords.map((record) => record.id)]),
+                          ]);
+                          return;
+                        }
 
-                            setSelectedIds((previous) => previous.filter((item) => item !== record.id));
-                          }}
-                        />
-                      </td>
-                      <td>{record.steps.toLocaleString()}</td>
-                      <td>{getStepHourLabel(record.hour)}</td>
-                      <td>{formatStepRecordTime(record.recordTime)}</td>
-                      <td>{calculateStepDistanceKm(record.steps, strideLength)} 公里</td>
-                      <td>
-                        <div className="step-record-actions">
-                          <IconBtn tone="secondary" icon={<EditIcon />} title="编辑" onClick={() => openEditModal(record)} />
-                          <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(record.id)} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-          </div>
-        ) : (
-          <EmptyState
-            title="还没有步数记录"
-            description="先在上方录入一条记录，这里会自动展示可管理的列表。"
-          />
-        )}
+                        setSelectedIds((previous) =>
+                          previous.filter(
+                            (id) => !sortedRecords.some((record) => record.id === id),
+                          ),
+                        );
+                      }}
+                    />
+                    <span>全选当前页</span>
+                  </label>
+                  <Btn
+                    tone="danger"
+                    disabled={!selectedIds.length || batchDeleting}
+                    onClick={() => setShowBatchDeleteModal(true)}
+                  >
+                    {batchDeleting ? '删除中...' : '批量删除'}
+                  </Btn>
+                </div>
+              </Col>
+              {selectedIds.length ? (
+                <Col>
+                  <span className="subtle-text">已选择 {selectedIds.length} 条</span>
+                </Col>
+              ) : null}
+            </Row>
+          </Col>
+
+          <Col span={24}>
+            {loading && !records.length ? (
+              <TableSkeleton rows={10} cols={6} />
+            ) : sortedRecords.length ? (
+              <div className={`step-records-table-wrap ${loading ? 'is-loading' : ''}`}>
+                <div className="table-wrap">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: 54 }}>选择</th>
+                        <th>
+                          <button
+                            type="button"
+                            className="step-sort-button"
+                            onClick={() => toggleSort('steps')}
+                          >
+                            步数
+                            <span>{getSortIndicator(sortField === 'steps', sortDirection)}</span>
+                          </button>
+                        </th>
+                        <th>
+                          <button
+                            type="button"
+                            className="step-sort-button"
+                            onClick={() => toggleSort('hour')}
+                          >
+                            时间段
+                            <span>{getSortIndicator(sortField === 'hour', sortDirection)}</span>
+                          </button>
+                        </th>
+                        <th>
+                          <button
+                            type="button"
+                            className="step-sort-button"
+                            onClick={() => toggleSort('recordTime')}
+                          >
+                            记录时间
+                            <span>
+                              {getSortIndicator(sortField === 'recordTime', sortDirection)}
+                            </span>
+                          </button>
+                        </th>
+                        <th>距离</th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedRecords.map((record) => (
+                        <tr key={record.id}>
+                          <td>
+                            <input
+                              className="step-record-checkbox"
+                              type="checkbox"
+                              checked={selectedIds.includes(record.id)}
+                              onChange={(event) => {
+                                if (event.target.checked) {
+                                  setSelectedIds((previous) => [
+                                    ...new Set([...previous, record.id]),
+                                  ]);
+                                  return;
+                                }
+
+                                setSelectedIds((previous) =>
+                                  previous.filter((item) => item !== record.id),
+                                );
+                              }}
+                            />
+                          </td>
+                          <td>{record.steps.toLocaleString()}</td>
+                          <td>{getStepHourLabel(record.hour)}</td>
+                          <td>{formatStepRecordTime(record.recordTime)}</td>
+                          <td>{calculateStepDistanceKm(record.steps, strideLength)} 公里</td>
+                          <td>
+                            <div className="step-record-actions">
+                              <IconBtn
+                                tone="secondary"
+                                icon={<EditIcon />}
+                                title="编辑"
+                                onClick={() => openEditModal(record)}
+                              />
+                              <IconBtn
+                                tone="danger"
+                                icon={<DeleteIcon />}
+                                title="删除"
+                                onClick={() => setPendingDeleteId(record.id)}
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+              </div>
+            ) : (
+              <EmptyState
+                title="还没有步数记录"
+                description="先在上方录入一条记录，这里会自动展示可管理的列表。"
+              />
+            )}
+          </Col>
+        </Row>
       </div>
 
       <Modal
@@ -303,12 +380,16 @@ export function StepRecordsSection({
         onClose={closeEditModal}
         width={760}
         title="编辑步数记录"
-        footer={(
+        footer={
           <>
-            <Btn tone="secondary" onClick={closeEditModal}>取消</Btn>
-            <Btn tone="primary" onClick={handleSaveEdit}>保存修改</Btn>
+            <Btn tone="secondary" onClick={closeEditModal}>
+              取消
+            </Btn>
+            <Btn tone="primary" onClick={handleSaveEdit}>
+              保存修改
+            </Btn>
           </>
-        )}
+        }
       >
         <div className="page-stack">
           <Field
@@ -335,19 +416,25 @@ export function StepRecordsSection({
             label="时间段"
             value={editingHour ?? ''}
             onChange={(event) => {
-              const nextHour = event.target.value ? Number(event.target.value) as Exclude<StepHour, null> : null;
+              const nextHour = event.target.value
+                ? (Number(event.target.value) as Exclude<StepHour, null>)
+                : null;
               setEditingHour(nextHour);
 
               if (!editingRecordTime) {
                 return;
               }
 
-              setEditingRecordTime(buildStepRecordTime(editingRecordTime, nextHour, nextHour === null ? 59 : 0));
+              setEditingRecordTime(
+                buildStepRecordTime(editingRecordTime, nextHour, nextHour === null ? 59 : 0),
+              );
             }}
           >
             <option value="">全天</option>
             {STEP_HOURS.map((hour) => (
-              <option key={hour} value={hour}>{getStepHourLabel(hour)}</option>
+              <option key={hour} value={hour}>
+                {getStepHourLabel(hour)}
+              </option>
             ))}
           </SelectField>
         </div>

@@ -1,7 +1,11 @@
 import type { Ref } from 'react';
+import { Grid } from '@arco-design/web-react';
 
 import { DateTimePickerField } from '../date';
 import { Btn, Field } from '../ui';
+
+const Row = Grid.Row;
+const Col = Grid.Col;
 import { STEP_HOURS, getStepHourLabel } from '../../services/stepRecords';
 import type { StepHour } from '../../types/health';
 import { SectionCard } from '../page';
@@ -24,9 +28,7 @@ function getEntryTitle(hour: StepHour) {
 }
 
 function getEntryDescription(hour: StepHour) {
-  return hour === null
-    ? '适合补录当天总步数，重复提交时会提醒你是否覆盖原有记录。'
-    : '';
+  return hour === null ? '适合补录当天总步数，重复提交时会提醒你是否覆盖原有记录。' : '';
 }
 
 export function StepEntryForm({
@@ -49,46 +51,59 @@ export function StepEntryForm({
         </div>
 
         {/* 一行：用户 + 步数 + 记录时间 + 保存按钮 */}
-        <form className="step-entry-main-row" onSubmit={(event) => {
-          event.preventDefault();
-          const trimmed = stepsInput.trim();
-          if (!trimmed) {
-            showToast('请输入步数。', 'error');
-            stepsInputRef && typeof stepsInputRef !== 'function' && stepsInputRef.current?.focus();
-            return;
-          }
-          const parsed = Number(trimmed);
-          if (!Number.isFinite(parsed) || parsed < 0 || parsed > 999999) {
-            showToast('请输入有效的步数（0-999999）。', 'error');
-            stepsInputRef && typeof stepsInputRef !== 'function' && stepsInputRef.current?.focus();
-            return;
-          }
-          onSubmit();
-        }}>
-
-          <label className="field">
-            <span className="field-label">步数</span>
-            <input
-              ref={stepsInputRef}
-              type="number"
-              min="0"
-              placeholder="输入本次步数"
-              value={stepsInput}
-              onChange={(event) => onStepsInputChange(event.target.value)}
-              onWheel={(event) => event.currentTarget.blur()}
-            />
-          </label>
-
-          <DateTimePickerField
-            label="记录时间"
-            value={recordTime}
-            onChange={onRecordTimeChange}
-            clearable={false}
-          />
-
-          <div className="step-save-cell">
-            <Btn tone="primary" type="submit">保存本次记录</Btn>
-          </div>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            const trimmed = stepsInput.trim();
+            if (!trimmed) {
+              showToast('请输入步数。', 'error');
+              stepsInputRef &&
+                typeof stepsInputRef !== 'function' &&
+                stepsInputRef.current?.focus();
+              return;
+            }
+            const parsed = Number(trimmed);
+            if (!Number.isFinite(parsed) || parsed < 0 || parsed > 999999) {
+              showToast('请输入有效的步数（0-999999）。', 'error');
+              stepsInputRef &&
+                typeof stepsInputRef !== 'function' &&
+                stepsInputRef.current?.focus();
+              return;
+            }
+            onSubmit();
+          }}
+        >
+          <Row gutter={[16, 12]} align="end">
+            <Col span={6}>
+              <label className="field">
+                <span className="field-label">步数</span>
+                <input
+                  ref={stepsInputRef}
+                  type="number"
+                  min="0"
+                  placeholder="输入本次步数"
+                  value={stepsInput}
+                  onChange={(event) => onStepsInputChange(event.target.value)}
+                  onWheel={(event) => event.currentTarget.blur()}
+                />
+              </label>
+            </Col>
+            <Col span={8}>
+              <DateTimePickerField
+                label="记录时间"
+                value={recordTime}
+                onChange={onRecordTimeChange}
+                clearable={false}
+              />
+            </Col>
+            <Col span={4}>
+              <div className="step-save-cell">
+                <Btn tone="primary" type="submit">
+                  保存本次记录
+                </Btn>
+              </div>
+            </Col>
+          </Row>
         </form>
 
         {/* 时间段选择行 */}

@@ -1,9 +1,13 @@
 import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
+import { Grid } from '@arco-design/web-react';
 
 import { EmptyState, SectionCard } from '../../page';
 import { Tag } from '../../ui';
 import type { HealthDashboardOverview } from '../../../types/healthDashboard';
+
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 interface HealthOverviewSectionProps {
   overview: HealthDashboardOverview | null;
@@ -69,14 +73,16 @@ export function HealthOverviewSection({ overview, loading }: HealthOverviewSecti
   if (loading) {
     return (
       <SectionCard title="健康概览" description="正在加载综合指标…">
-        <div className="stat-grid health-stat-grid">
+        <Row gutter={[12, 12]}>
           {Array.from({ length: 6 }).map((_, index) => (
-            <div className="stat-card" key={index}>
-              <span className="stat-label">加载中</span>
-              <strong className="stat-value skeleton-text">—</strong>
-            </div>
+            <Col span={8} key={index}>
+              <div className="stat-card">
+                <span className="stat-label">加载中</span>
+                <strong className="stat-value skeleton-text">—</strong>
+              </div>
+            </Col>
           ))}
-        </div>
+        </Row>
       </SectionCard>
     );
   }
@@ -92,7 +98,10 @@ export function HealthOverviewSection({ overview, loading }: HealthOverviewSecti
     );
   }
 
-  const checkupTag = describeCheckupStatus(overview.checkup.abnormalCount, overview.checkup.totalRecords);
+  const checkupTag = describeCheckupStatus(
+    overview.checkup.abnormalCount,
+    overview.checkup.totalRecords,
+  );
   const bmiTag = describeBmi(overview.weight.bmi);
 
   const cards: MetricCardConfig[] = [
@@ -107,9 +116,17 @@ export function HealthOverviewSection({ overview, loading }: HealthOverviewSecti
     {
       key: 'weight',
       label: '最新体重',
-      value: overview.weight.latestWeightKg !== null ? `${overview.weight.latestWeightKg.toFixed(1)} kg` : '-',
-      helper: overview.weight.latestDate ? `录入于 ${formatDateShort(overview.weight.latestDate)}` : '尚未录入',
-      accent: overview.weight.bmi !== null && overview.weight.bmi >= 18.5 && overview.weight.bmi <= 24 ? '#27a644' : '#f59e0b',
+      value:
+        overview.weight.latestWeightKg !== null
+          ? `${overview.weight.latestWeightKg.toFixed(1)} kg`
+          : '-',
+      helper: overview.weight.latestDate
+        ? `录入于 ${formatDateShort(overview.weight.latestDate)}`
+        : '尚未录入',
+      accent:
+        overview.weight.bmi !== null && overview.weight.bmi >= 18.5 && overview.weight.bmi <= 24
+          ? '#27a644'
+          : '#f59e0b',
       link: '/health/fitness',
       linkText: '查看明细',
       tag: bmiTag,
@@ -136,15 +153,21 @@ export function HealthOverviewSection({ overview, loading }: HealthOverviewSecti
       label: '近 30 天用药',
       value: `${overview.medication.recordDays30} / ${overview.medication.plannedDays30} 天`,
       helper: '已记录天数 / 计划天数',
-      accent: overview.medication.recordDays30 / Math.max(1, overview.medication.plannedDays30) >= 0.8 ? '#27a644' : '#f59e0b',
+      accent:
+        overview.medication.recordDays30 / Math.max(1, overview.medication.plannedDays30) >= 0.8
+          ? '#27a644'
+          : '#f59e0b',
       link: '/health/checkup',
       linkText: '查看明细',
     },
     {
       key: 'checkup',
       label: '体检记录',
-      value: overview.checkup.totalRecords > 0 ? overview.checkup.totalRecords.toLocaleString() : '0',
-      helper: overview.checkup.latestDate ? `最近体检 ${formatDateShort(overview.checkup.latestDate)}` : '尚未录入',
+      value:
+        overview.checkup.totalRecords > 0 ? overview.checkup.totalRecords.toLocaleString() : '0',
+      helper: overview.checkup.latestDate
+        ? `最近体检 ${formatDateShort(overview.checkup.latestDate)}`
+        : '尚未录入',
       link: '/health/checkup',
       linkText: '查看明细',
       tag: checkupTag,
@@ -152,34 +175,35 @@ export function HealthOverviewSection({ overview, loading }: HealthOverviewSecti
   ];
 
   return (
-    <SectionCard
-      title="健康概览"
-      description="跨子模块综合指标，点击「查看明细」可跳转到对应模块"
-    >
-      <div className="stat-grid health-stat-grid">
+    <SectionCard title="健康概览" description="跨子模块综合指标，点击「查看明细」可跳转到对应模块">
+      <Row gutter={[12, 12]}>
         {cards.map((card) => (
-          <div className="stat-card" key={card.key}>
-            <div className="stat-card-header">
-              <span className="stat-label">{card.label}</span>
-              {card.tag ? <Tag tone={card.tag.tone} size="sm">{card.tag.text}</Tag> : null}
+          <Col span={8} key={card.key}>
+            <div className="stat-card">
+              <div className="stat-card-header">
+                <span className="stat-label">{card.label}</span>
+                {card.tag ? (
+                  <Tag tone={card.tag.tone} size="sm">
+                    {card.tag.text}
+                  </Tag>
+                ) : null}
+              </div>
+              <strong
+                className="stat-value"
+                style={card.accent ? { color: card.accent } : undefined}
+              >
+                {card.value}
+              </strong>
+              <span className="stat-helper">{card.helper}</span>
+              {card.link ? (
+                <Link className="stat-card-link" to={card.link}>
+                  {card.linkText ?? '查看明细'} →
+                </Link>
+              ) : null}
             </div>
-            <strong
-              className="stat-value"
-              style={card.accent ? { color: card.accent } : undefined}
-            >
-              {card.value}
-            </strong>
-            <span className="stat-helper">{card.helper}</span>
-            {card.link ? (
-              <Link className="stat-card-link" to={card.link}>
-                {card.linkText ?? '查看明细'} →
-              </Link>
-            ) : null}
-          </div>
+          </Col>
         ))}
-      </div>
+      </Row>
     </SectionCard>
   );
 }
-
-

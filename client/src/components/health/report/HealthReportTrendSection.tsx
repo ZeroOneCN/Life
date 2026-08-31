@@ -9,10 +9,11 @@ import {
   YAxis,
 } from 'recharts';
 
+import { Grid } from '@arco-design/web-react';
 import { EmptyState, SectionCard } from '../../page';
-import type {
-  HealthReportRangeSummary,
-} from '../../../types/healthReport';
+const Row = Grid.Row;
+const Col = Grid.Col;
+import type { HealthReportRangeSummary } from '../../../types/healthReport';
 
 interface HealthReportTrendSectionProps {
   current: HealthReportRangeSummary | null;
@@ -84,16 +85,20 @@ export function HealthReportTrendSection({
   ];
 
   return (
-    <SectionCard
-      title="趋势分析"
-      description={`当前 ${current.label} vs 上期 ${previous.label}`}
-    >
+    <SectionCard title="趋势分析" description={`当前 ${current.label} vs 上期 ${previous.label}`}>
       <div style={{ width: '100%', height: 360 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 16, right: 24, left: 0, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-hairline)" />
-            <XAxis dataKey="name" tick={{ fill: 'var(--color-ink-2)', fontSize: 12 }} stroke="var(--color-hairline)" />
-            <YAxis tick={{ fill: 'var(--color-ink-3)', fontSize: 10 }} stroke="var(--color-hairline)" />
+            <XAxis
+              dataKey="name"
+              tick={{ fill: 'var(--color-ink-2)', fontSize: 12 }}
+              stroke="var(--color-hairline)"
+            />
+            <YAxis
+              tick={{ fill: 'var(--color-ink-3)', fontSize: 10 }}
+              stroke="var(--color-hairline)"
+            />
             <Tooltip
               contentStyle={tooltipStyle}
               formatter={(value, name) => [value, name === '当前' ? current.label : previous.label]}

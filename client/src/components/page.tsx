@@ -1,4 +1,8 @@
 import { memo, type ReactNode } from 'react';
+import { Grid } from '@arco-design/web-react';
+
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 export const PageHeader = memo(function PageHeader({
   title,
@@ -55,17 +59,19 @@ export const StatGrid = memo(function StatGrid({
   className?: string;
 }) {
   return (
-    <div className={`stat-grid ${className}`.trim()}>
+    <Row className={`stat-grid ${className}`.trim()} gutter={[12, 12]}>
       {items.map((item) => (
-        <div className="stat-card" key={item.label}>
-          <span className="stat-label">{item.label}</span>
-          <strong className="stat-value" style={item.accent ? { color: item.accent } : undefined}>
-            {item.value}
-          </strong>
-          {item.helper ? <span className="stat-helper">{item.helper}</span> : null}
-        </div>
+        <Col xs={24} sm={12} md={8} lg={6} key={item.label}>
+          <div className="stat-card">
+            <span className="stat-label">{item.label}</span>
+            <strong className="stat-value" style={item.accent ? { color: item.accent } : undefined}>
+              {item.value}
+            </strong>
+            {item.helper ? <span className="stat-helper">{item.helper}</span> : null}
+          </div>
+        </Col>
       ))}
-    </div>
+    </Row>
   );
 });
 

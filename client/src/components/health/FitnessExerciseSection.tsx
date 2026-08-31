@@ -1,8 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
+import { Grid } from '@arco-design/web-react';
 import { DatePickerField } from '../date';
-import { DataTable, Btn, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Pagination, SelectField } from '../ui';
+import {
+  DataTable,
+  Btn,
+  DeleteIcon,
+  DeleteModal,
+  EditIcon,
+  Field,
+  IconBtn,
+  Modal,
+  Pagination,
+  SelectField,
+} from '../ui';
+
+const Row = Grid.Row;
+const Col = Grid.Col;
 import { EmptyState, SectionCard } from '../page';
 import {
   EXERCISE_TYPE_META,
@@ -14,7 +29,12 @@ import {
 } from '../../services/fitness';
 import { fetchExerciseCalorie } from '../../services/fitnessAiApi';
 import { buildApiErrorMessage } from '../../lib/api';
-import type { ExerciseRecord, ExerciseRecordDraft, ExerciseType, IntensityLevel } from '../../types/fitness';
+import type {
+  ExerciseRecord,
+  ExerciseRecordDraft,
+  ExerciseType,
+  IntensityLevel,
+} from '../../types/fitness';
 
 interface FitnessExerciseSectionProps {
   records: ExerciseRecord[];
@@ -102,71 +122,79 @@ export function FitnessExerciseSection({
     }
   }, [page, totalPages]);
 
-  const columns = useMemo(() => [
-    {
-      key: 'date',
-      title: '日期',
-      dataIndex: 'date' as const,
-    },
-    {
-      key: 'exerciseType',
-      title: '类型',
-      render: (_value: unknown, record: ExerciseRecord) => (
-        <span style={{ color: EXERCISE_TYPE_META[record.exerciseType].color }}>
-          {EXERCISE_TYPE_META[record.exerciseType].label}
-        </span>
-      ),
-    },
-    {
-      key: 'exerciseName',
-      title: '运动名称',
-      dataIndex: 'exerciseName' as const,
-    },
-    {
-      key: 'duration',
-      title: '时长',
-      render: (_value: unknown, record: ExerciseRecord) => `${record.duration} 分钟`,
-    },
-    {
-      key: 'calories',
-      title: '消耗热量',
-      render: (_value: unknown, record: ExerciseRecord) => `${record.calories} kcal`,
-    },
-    {
-      key: 'intensity',
-      title: '强度',
-      render: (_value: unknown, record: ExerciseRecord) => (
-        <span style={{ color: INTENSITY_LEVEL_META[record.intensity].color }}>
-          {INTENSITY_LEVEL_META[record.intensity].label}
-        </span>
-      ),
-    },
-    {
-      key: 'actions',
-      title: '操作',
-      render: (_value: unknown, record: ExerciseRecord) => (
-        <div className="fitness-row-actions">
-          <IconBtn
-            tone="secondary"
-            icon={<EditIcon />}
-            title="编辑"
-            onClick={() => {
-              setEditingRecord(record);
-              setEditingForm({
-                date: record.date,
-                exerciseType: record.exerciseType,
-                exerciseName: record.exerciseName,
-                duration: String(record.duration),
-                calories: String(record.calories),
-                intensity: record.intensity,
-              });
-            }}
-          />
-          <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(record.id)} />
-        </div>
-      ),
-    },
-  ], []);
+  const columns = useMemo(
+    () => [
+      {
+        key: 'date',
+        title: '日期',
+        dataIndex: 'date' as const,
+      },
+      {
+        key: 'exerciseType',
+        title: '类型',
+        render: (_value: unknown, record: ExerciseRecord) => (
+          <span style={{ color: EXERCISE_TYPE_META[record.exerciseType].color }}>
+            {EXERCISE_TYPE_META[record.exerciseType].label}
+          </span>
+        ),
+      },
+      {
+        key: 'exerciseName',
+        title: '运动名称',
+        dataIndex: 'exerciseName' as const,
+      },
+      {
+        key: 'duration',
+        title: '时长',
+        render: (_value: unknown, record: ExerciseRecord) => `${record.duration} 分钟`,
+      },
+      {
+        key: 'calories',
+        title: '消耗热量',
+        render: (_value: unknown, record: ExerciseRecord) => `${record.calories} kcal`,
+      },
+      {
+        key: 'intensity',
+        title: '强度',
+        render: (_value: unknown, record: ExerciseRecord) => (
+          <span style={{ color: INTENSITY_LEVEL_META[record.intensity].color }}>
+            {INTENSITY_LEVEL_META[record.intensity].label}
+          </span>
+        ),
+      },
+      {
+        key: 'actions',
+        title: '操作',
+        render: (_value: unknown, record: ExerciseRecord) => (
+          <div className="fitness-row-actions">
+            <IconBtn
+              tone="secondary"
+              icon={<EditIcon />}
+              title="编辑"
+              onClick={() => {
+                setEditingRecord(record);
+                setEditingForm({
+                  date: record.date,
+                  exerciseType: record.exerciseType,
+                  exerciseName: record.exerciseName,
+                  duration: String(record.duration),
+                  calories: String(record.calories),
+                  intensity: record.intensity,
+                });
+              }}
+            />
+            <IconBtn
+              tone="danger"
+              icon={<DeleteIcon />}
+              title="删除"
+              onClick={() => setPendingDeleteId(record.id)}
+            />
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
 
   const handleCreate = () => {
     const draft = parseDraft(form);
@@ -210,10 +238,15 @@ export function FitnessExerciseSection({
 
       setAiSource(info.source);
       const sourceLabel = info.source === 'cache' ? '命中本地缓存' : 'AI 实时估算';
-      setAiHint(`${sourceLabel}：${info.exerciseName} · ${info.caloriesPerMin.toFixed(1)} kcal/分钟 · 建议 ${safeDuration} 分钟 / ${totalCalories} kcal（${INTENSITY_LEVEL_META[info.suggestedIntensity].label}）`);
+      setAiHint(
+        `${sourceLabel}：${info.exerciseName} · ${info.caloriesPerMin.toFixed(1)} kcal/分钟 · 建议 ${safeDuration} 分钟 / ${totalCalories} kcal（${INTENSITY_LEVEL_META[info.suggestedIntensity].label}）`,
+      );
       showToast(`${exerciseName} 训练参数已自动填入（${sourceLabel}）。`, 'success');
     } catch (error) {
-      showToast(buildApiErrorMessage(error, 'AI 运动消耗查询失败，请检查网络或 DEEPSEEK_API_KEY 配置。'), 'error');
+      showToast(
+        buildApiErrorMessage(error, 'AI 运动消耗查询失败，请检查网络或 DEEPSEEK_API_KEY 配置。'),
+        'error',
+      );
     } finally {
       setAiQuerying(false);
     }
@@ -243,75 +276,122 @@ export function FitnessExerciseSection({
       description="记录训练类型、时长、消耗和强度，为净热量和训练频率分析提供数据。"
     >
       <div className="page-stack">
-        <form className="form-grid fitness-entry-grid fitness-entry-grid-exercise" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
-          <DatePickerField
-            label="记录日期"
-            value={form.date}
-            onChange={(value) => setForm((previous) => ({ ...previous, date: value }))}
-            clearable={false}
-          />
-          <SelectField
-            label="运动类型"
-            value={form.exerciseType}
-            onChange={(event) => setForm((previous) => ({ ...previous, exerciseType: event.target.value as ExerciseType }))}
-          >
-            {Object.entries(EXERCISE_TYPE_META).map(([value, item]) => (
-              <option key={value} value={value}>{item.label}</option>
-            ))}
-          </SelectField>
-          <div className="fitness-name-ai-cell">
-            <Field
-              label="运动名称"
-              placeholder="例如：跑步机间歇跑"
-              value={form.exerciseName}
-              onChange={(event) => setForm((previous) => ({ ...previous, exerciseName: event.target.value }))}
-            />
-            <Btn
-              tone="secondary"
-              type="button"
-              className="fitness-ai-btn"
-              onClick={() => {
-                void handleAiQuery();
-              }}
-              disabled={aiQuerying || !form.exerciseName.trim()}
-            >
-              {aiQuerying ? 'AI 估算中…' : 'AI 估算消耗'}
-            </Btn>
-          </div>
-          {aiHint ? (
-            <div className="fitness-ai-result">
-              <span className={`fitness-ai-result-tag ${aiSource === 'cache' ? 'is-cache' : 'is-ai'}`.trim()}>
-                {aiSource === 'cache' ? '命中缓存' : 'AI 实时估算'}
-              </span>
-              <span className="fitness-ai-result-text">{aiHint}</span>
-            </div>
-          ) : null}
-          <Field
-            label="训练时长（分钟）"
-            type="number"
-            min="1"
-            value={form.duration}
-            onChange={(event) => setForm((previous) => ({ ...previous, duration: event.target.value }))}
-          />
-          <Field
-            label="消耗热量（kcal）"
-            type="number"
-            min="0"
-            value={form.calories}
-            onChange={(event) => setForm((previous) => ({ ...previous, calories: event.target.value }))}
-          />
-          <SelectField
-            label="训练强度"
-            value={form.intensity}
-            onChange={(event) => setForm((previous) => ({ ...previous, intensity: event.target.value as IntensityLevel }))}
-          >
-            {Object.entries(INTENSITY_LEVEL_META).map(([value, item]) => (
-              <option key={value} value={value}>{item.label}</option>
-            ))}
-          </SelectField>
-          <div className="fitness-save-cell">
-            <Btn tone="primary" type="submit">新增运动记录</Btn>
-          </div>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleCreate();
+          }}
+        >
+          <Row gutter={[16, 12]}>
+            <Col span={6}>
+              <DatePickerField
+                label="记录日期"
+                value={form.date}
+                onChange={(value) => setForm((previous) => ({ ...previous, date: value }))}
+                clearable={false}
+              />
+            </Col>
+            <Col span={6}>
+              <SelectField
+                label="运动类型"
+                value={form.exerciseType}
+                onChange={(event) =>
+                  setForm((previous) => ({
+                    ...previous,
+                    exerciseType: event.target.value as ExerciseType,
+                  }))
+                }
+              >
+                {Object.entries(EXERCISE_TYPE_META).map(([value, item]) => (
+                  <option key={value} value={value}>
+                    {item.label}
+                  </option>
+                ))}
+              </SelectField>
+            </Col>
+            <Col span={6}>
+              <div className="fitness-name-ai-cell">
+                <Field
+                  label="运动名称"
+                  placeholder="例如：跑步机间歇跑"
+                  value={form.exerciseName}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, exerciseName: event.target.value }))
+                  }
+                />
+                <Btn
+                  tone="secondary"
+                  type="button"
+                  className="fitness-ai-btn"
+                  onClick={() => {
+                    void handleAiQuery();
+                  }}
+                  disabled={aiQuerying || !form.exerciseName.trim()}
+                >
+                  {aiQuerying ? 'AI 估算中…' : 'AI 估算消耗'}
+                </Btn>
+              </div>
+            </Col>
+            {aiHint ? (
+              <Col span={24}>
+                <div className="fitness-ai-result">
+                  <span
+                    className={`fitness-ai-result-tag ${aiSource === 'cache' ? 'is-cache' : 'is-ai'}`.trim()}
+                  >
+                    {aiSource === 'cache' ? '命中缓存' : 'AI 实时估算'}
+                  </span>
+                  <span className="fitness-ai-result-text">{aiHint}</span>
+                </div>
+              </Col>
+            ) : null}
+            <Col span={6}>
+              <Field
+                label="训练时长（分钟）"
+                type="number"
+                min="1"
+                value={form.duration}
+                onChange={(event) =>
+                  setForm((previous) => ({ ...previous, duration: event.target.value }))
+                }
+              />
+            </Col>
+            <Col span={6}>
+              <Field
+                label="消耗热量（kcal）"
+                type="number"
+                min="0"
+                value={form.calories}
+                onChange={(event) =>
+                  setForm((previous) => ({ ...previous, calories: event.target.value }))
+                }
+              />
+            </Col>
+            <Col span={6}>
+              <SelectField
+                label="训练强度"
+                value={form.intensity}
+                onChange={(event) =>
+                  setForm((previous) => ({
+                    ...previous,
+                    intensity: event.target.value as IntensityLevel,
+                  }))
+                }
+              >
+                {Object.entries(INTENSITY_LEVEL_META).map(([value, item]) => (
+                  <option key={value} value={value}>
+                    {item.label}
+                  </option>
+                ))}
+              </SelectField>
+            </Col>
+            <Col span={6}>
+              <div className="fitness-save-cell">
+                <Btn tone="primary" type="submit">
+                  新增运动记录
+                </Btn>
+              </div>
+            </Col>
+          </Row>
         </form>
 
         <div className="step-filter-grid">
@@ -324,9 +404,7 @@ export function FitnessExerciseSection({
         </div>
 
         <div className="fitness-section-summary">
-          <span className="subtle-text">
-            共 {filteredRecords.length} 条运动记录
-          </span>
+          <span className="subtle-text">共 {filteredRecords.length} 条运动记录</span>
         </div>
 
         {filteredRecords.length ? (
@@ -347,12 +425,16 @@ export function FitnessExerciseSection({
         onClose={() => setEditingRecord(null)}
         title="编辑运动记录"
         width={760}
-        footer={(
+        footer={
           <>
-            <Btn tone="secondary" onClick={() => setEditingRecord(null)}>取消</Btn>
-            <Btn tone="primary" onClick={handleSaveEdit}>保存修改</Btn>
+            <Btn tone="secondary" onClick={() => setEditingRecord(null)}>
+              取消
+            </Btn>
+            <Btn tone="primary" onClick={handleSaveEdit}>
+              保存修改
+            </Btn>
           </>
-        )}
+        }
       >
         <div className="page-stack">
           <DatePickerField
@@ -366,38 +448,58 @@ export function FitnessExerciseSection({
             <SelectField
               label="运动类型"
               value={editingForm.exerciseType}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, exerciseType: event.target.value as ExerciseType }))}
+              onChange={(event) =>
+                setEditingForm((previous) => ({
+                  ...previous,
+                  exerciseType: event.target.value as ExerciseType,
+                }))
+              }
             >
               {Object.entries(EXERCISE_TYPE_META).map(([value, item]) => (
-                <option key={value} value={value}>{item.label}</option>
+                <option key={value} value={value}>
+                  {item.label}
+                </option>
               ))}
             </SelectField>
             <Field
               label="运动名称"
               value={editingForm.exerciseName}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, exerciseName: event.target.value }))}
+              onChange={(event) =>
+                setEditingForm((previous) => ({ ...previous, exerciseName: event.target.value }))
+              }
             />
             <Field
               label="训练时长（分钟）"
               type="number"
               min="1"
               value={editingForm.duration}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, duration: event.target.value }))}
+              onChange={(event) =>
+                setEditingForm((previous) => ({ ...previous, duration: event.target.value }))
+              }
             />
             <Field
               label="消耗热量（kcal）"
               type="number"
               min="0"
               value={editingForm.calories}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, calories: event.target.value }))}
+              onChange={(event) =>
+                setEditingForm((previous) => ({ ...previous, calories: event.target.value }))
+              }
             />
             <SelectField
               label="训练强度"
               value={editingForm.intensity}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, intensity: event.target.value as IntensityLevel }))}
+              onChange={(event) =>
+                setEditingForm((previous) => ({
+                  ...previous,
+                  intensity: event.target.value as IntensityLevel,
+                }))
+              }
             >
               {Object.entries(INTENSITY_LEVEL_META).map(([value, item]) => (
-                <option key={value} value={value}>{item.label}</option>
+                <option key={value} value={value}>
+                  {item.label}
+                </option>
               ))}
             </SelectField>
           </div>

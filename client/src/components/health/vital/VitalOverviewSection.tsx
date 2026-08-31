@@ -1,5 +1,9 @@
-import { EmptyState, SectionCard, StatGrid } from '../../page';
+import { Grid } from '@arco-design/web-react';
+import { EmptyState, SectionCard } from '../../page';
 import type { VitalOverview } from '../../../types/vital';
+
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 interface VitalOverviewSectionProps {
   overview: VitalOverview | null;
@@ -15,14 +19,16 @@ export function VitalOverviewSection({ overview, loading }: VitalOverviewSection
   if (loading) {
     return (
       <SectionCard title="体征概览" description="正在加载体征数据…">
-        <div className="stat-grid">
+        <Row gutter={[12, 12]}>
           {Array.from({ length: 6 }).map((_, i) => (
-            <div className="stat-card" key={i}>
-              <span className="stat-label">加载中</span>
-              <strong className="stat-value skeleton-text">—</strong>
-            </div>
+            <Col span={8} key={i}>
+              <div className="stat-card">
+                <span className="stat-label">加载中</span>
+                <strong className="stat-value skeleton-text">—</strong>
+              </div>
+            </Col>
           ))}
-        </div>
+        </Row>
       </SectionCard>
     );
   }
@@ -39,7 +45,8 @@ export function VitalOverviewSection({ overview, loading }: VitalOverviewSection
     label: metric.label,
     value: metric.latest ? `${metric.latest.value} ${metric.unit}` : '-',
     helper: `${metric.recordCount} 条记录 · 异常 ${metric.abnormalCount} 次`,
-    accent: metric.latest?.status === 'abnormal' ? '#e5484d' : metric.latest ? undefined : undefined,
+    accent:
+      metric.latest?.status === 'abnormal' ? '#e5484d' : metric.latest ? undefined : undefined,
   }));
 
   return (
@@ -47,7 +54,22 @@ export function VitalOverviewSection({ overview, loading }: VitalOverviewSection
       title="体征概览"
       description={`共 ${overview.totalRecords} 条记录 · 异常 ${overview.totalAbnormal} 次 · 最近 ${overview.latestRecordTime ?? '-'}`}
     >
-      <StatGrid items={items} className="vital-overview-grid" />
+      <Row gutter={[12, 12]}>
+        {items.map((item) => (
+          <Col key={item.label} xs={24} sm={12} md={8} lg={6}>
+            <div className="stat-card">
+              <span className="stat-label">{item.label}</span>
+              <strong
+                className="stat-value"
+                style={item.accent ? { color: item.accent } : undefined}
+              >
+                {item.value}
+              </strong>
+              {item.helper ? <span className="stat-helper">{item.helper}</span> : null}
+            </div>
+          </Col>
+        ))}
+      </Row>
     </SectionCard>
   );
 }

@@ -1,8 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
+import { Grid } from '@arco-design/web-react';
 import { DatePickerField } from '../date';
-import { DataTable, Btn, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Pagination } from '../ui';
+import {
+  DataTable,
+  Btn,
+  DeleteIcon,
+  DeleteModal,
+  EditIcon,
+  Field,
+  IconBtn,
+  Modal,
+  Pagination,
+} from '../ui';
+
+const Row = Grid.Row;
+const Col = Grid.Col;
 import { EmptyState, SectionCard } from '../page';
 import {
   FITNESS_RECORD_PAGE_SIZE,
@@ -45,7 +59,14 @@ function parseDraft(form: ShoppingFormState): FitnessShoppingRecordDraft | null 
     return null;
   }
 
-  if (!Number.isFinite(specGrams) || specGrams <= 0 || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitPrice) || unitPrice <= 0) {
+  if (
+    !Number.isFinite(specGrams) ||
+    specGrams <= 0 ||
+    !Number.isFinite(quantity) ||
+    quantity <= 0 ||
+    !Number.isFinite(unitPrice) ||
+    unitPrice <= 0
+  ) {
     return null;
   }
 
@@ -95,60 +116,70 @@ export function FitnessShoppingSection({
     }
   }, [page, totalPages]);
 
-  const columns = useMemo(() => [
-    { key: 'date', title: '日期', dataIndex: 'date' as const },
-    { key: 'itemName', title: '食材名称', dataIndex: 'itemName' as const },
-    {
-      key: 'specGrams',
-      title: '规格',
-      render: (_value: unknown, record: FitnessShoppingRecord) => `${record.specGrams} g / 份`,
-    },
-    {
-      key: 'quantity',
-      title: '数量',
-      render: (_value: unknown, record: FitnessShoppingRecord) => `${record.quantity} 份`,
-    },
-    {
-      key: 'unitPrice',
-      title: '单价',
-      render: (_value: unknown, record: FitnessShoppingRecord) => `¥${record.unitPrice.toFixed(2)}`,
-    },
-    {
-      key: 'total',
-      title: '合计',
-      render: (_value: unknown, record: FitnessShoppingRecord) => `¥${(record.quantity * record.unitPrice).toFixed(2)}`,
-    },
-    {
-      key: 'location',
-      title: '购买地点',
-      dataIndex: 'location' as const,
-    },
-    {
-      key: 'actions',
-      title: '操作',
-      render: (_value: unknown, record: FitnessShoppingRecord) => (
-        <div className="fitness-row-actions">
-          <IconBtn
-            tone="secondary"
-            icon={<EditIcon />}
-            title="编辑"
-            onClick={() => {
-              setEditingRecord(record);
-              setEditingForm({
-                date: record.date,
-                itemName: record.itemName,
-                specGrams: String(record.specGrams),
-                quantity: String(record.quantity),
-                unitPrice: String(record.unitPrice),
-                location: record.location,
-              });
-            }}
-          />
-          <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(record.id)} />
-        </div>
-      ),
-    },
-  ], []);
+  const columns = useMemo(
+    () => [
+      { key: 'date', title: '日期', dataIndex: 'date' as const },
+      { key: 'itemName', title: '食材名称', dataIndex: 'itemName' as const },
+      {
+        key: 'specGrams',
+        title: '规格',
+        render: (_value: unknown, record: FitnessShoppingRecord) => `${record.specGrams} g / 份`,
+      },
+      {
+        key: 'quantity',
+        title: '数量',
+        render: (_value: unknown, record: FitnessShoppingRecord) => `${record.quantity} 份`,
+      },
+      {
+        key: 'unitPrice',
+        title: '单价',
+        render: (_value: unknown, record: FitnessShoppingRecord) =>
+          `¥${record.unitPrice.toFixed(2)}`,
+      },
+      {
+        key: 'total',
+        title: '合计',
+        render: (_value: unknown, record: FitnessShoppingRecord) =>
+          `¥${(record.quantity * record.unitPrice).toFixed(2)}`,
+      },
+      {
+        key: 'location',
+        title: '购买地点',
+        dataIndex: 'location' as const,
+      },
+      {
+        key: 'actions',
+        title: '操作',
+        render: (_value: unknown, record: FitnessShoppingRecord) => (
+          <div className="fitness-row-actions">
+            <IconBtn
+              tone="secondary"
+              icon={<EditIcon />}
+              title="编辑"
+              onClick={() => {
+                setEditingRecord(record);
+                setEditingForm({
+                  date: record.date,
+                  itemName: record.itemName,
+                  specGrams: String(record.specGrams),
+                  quantity: String(record.quantity),
+                  unitPrice: String(record.unitPrice),
+                  location: record.location,
+                });
+              }}
+            />
+            <IconBtn
+              tone="danger"
+              icon={<DeleteIcon />}
+              title="删除"
+              onClick={() => setPendingDeleteId(record.id)}
+            />
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
 
   const handleCreate = () => {
     const draft = parseDraft(form);
@@ -191,51 +222,84 @@ export function FitnessShoppingSection({
           这些采购记录只服务于健康页食材成本分析，不与财务模块共用。
         </div>
 
-        <form className="form-grid fitness-entry-grid fitness-entry-grid-shopping" onSubmit={(event) => { event.preventDefault(); handleCreate(); }}>
-          <DatePickerField
-            label="采购日期"
-            value={form.date}
-            onChange={(value) => setForm((previous) => ({ ...previous, date: value }))}
-            clearable={false}
-          />
-          <Field
-            label="食材名称"
-            placeholder="例如：鸡胸肉"
-            value={form.itemName}
-            onChange={(event) => setForm((previous) => ({ ...previous, itemName: event.target.value }))}
-          />
-          <Field
-            label="规格（g / 份）"
-            type="number"
-            min="1"
-            value={form.specGrams}
-            onChange={(event) => setForm((previous) => ({ ...previous, specGrams: event.target.value }))}
-          />
-          <Field
-            label="数量（份）"
-            type="number"
-            min="1"
-            step="0.1"
-            value={form.quantity}
-            onChange={(event) => setForm((previous) => ({ ...previous, quantity: event.target.value }))}
-          />
-          <Field
-            label="单价（元 / 份）"
-            type="number"
-            min="0"
-            step="0.01"
-            value={form.unitPrice}
-            onChange={(event) => setForm((previous) => ({ ...previous, unitPrice: event.target.value }))}
-          />
-          <Field
-            label="购买地点"
-            placeholder="例如：山姆"
-            value={form.location}
-            onChange={(event) => setForm((previous) => ({ ...previous, location: event.target.value }))}
-          />
-          <div className="fitness-save-cell">
-            <Btn tone="primary" type="submit">新增采购记录</Btn>
-          </div>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleCreate();
+          }}
+        >
+          <Row gutter={[16, 12]}>
+            <Col span={6}>
+              <DatePickerField
+                label="采购日期"
+                value={form.date}
+                onChange={(value) => setForm((previous) => ({ ...previous, date: value }))}
+                clearable={false}
+              />
+            </Col>
+            <Col span={6}>
+              <Field
+                label="食材名称"
+                placeholder="例如：鸡胸肉"
+                value={form.itemName}
+                onChange={(event) =>
+                  setForm((previous) => ({ ...previous, itemName: event.target.value }))
+                }
+              />
+            </Col>
+            <Col span={4}>
+              <Field
+                label="规格（g / 份）"
+                type="number"
+                min="1"
+                value={form.specGrams}
+                onChange={(event) =>
+                  setForm((previous) => ({ ...previous, specGrams: event.target.value }))
+                }
+              />
+            </Col>
+            <Col span={4}>
+              <Field
+                label="数量（份）"
+                type="number"
+                min="1"
+                step="0.1"
+                value={form.quantity}
+                onChange={(event) =>
+                  setForm((previous) => ({ ...previous, quantity: event.target.value }))
+                }
+              />
+            </Col>
+            <Col span={4}>
+              <Field
+                label="单价（元 / 份）"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.unitPrice}
+                onChange={(event) =>
+                  setForm((previous) => ({ ...previous, unitPrice: event.target.value }))
+                }
+              />
+            </Col>
+            <Col span={6}>
+              <Field
+                label="购买地点"
+                placeholder="例如：山姆"
+                value={form.location}
+                onChange={(event) =>
+                  setForm((previous) => ({ ...previous, location: event.target.value }))
+                }
+              />
+            </Col>
+            <Col span={6}>
+              <div className="fitness-save-cell">
+                <Btn tone="primary" type="submit">
+                  新增采购记录
+                </Btn>
+              </div>
+            </Col>
+          </Row>
         </form>
 
         <div className="step-filter-grid">
@@ -248,9 +312,7 @@ export function FitnessShoppingSection({
         </div>
 
         <div className="fitness-section-summary">
-          <span className="subtle-text">
-            共 {filteredRecords.length} 条食材采购记录
-          </span>
+          <span className="subtle-text">共 {filteredRecords.length} 条食材采购记录</span>
         </div>
 
         {filteredRecords.length ? (
@@ -271,12 +333,16 @@ export function FitnessShoppingSection({
         onClose={() => setEditingRecord(null)}
         title="编辑食材采购记录"
         width={760}
-        footer={(
+        footer={
           <>
-            <Btn tone="secondary" onClick={() => setEditingRecord(null)}>取消</Btn>
-            <Btn tone="primary" onClick={handleSaveEdit}>保存修改</Btn>
+            <Btn tone="secondary" onClick={() => setEditingRecord(null)}>
+              取消
+            </Btn>
+            <Btn tone="primary" onClick={handleSaveEdit}>
+              保存修改
+            </Btn>
           </>
-        )}
+        }
       >
         <div className="page-stack">
           <DatePickerField
@@ -290,14 +356,18 @@ export function FitnessShoppingSection({
             <Field
               label="食材名称"
               value={editingForm.itemName}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, itemName: event.target.value }))}
+              onChange={(event) =>
+                setEditingForm((previous) => ({ ...previous, itemName: event.target.value }))
+              }
             />
             <Field
               label="规格（g / 份）"
               type="number"
               min="1"
               value={editingForm.specGrams}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, specGrams: event.target.value }))}
+              onChange={(event) =>
+                setEditingForm((previous) => ({ ...previous, specGrams: event.target.value }))
+              }
             />
             <Field
               label="数量（份）"
@@ -305,7 +375,9 @@ export function FitnessShoppingSection({
               min="1"
               step="0.1"
               value={editingForm.quantity}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, quantity: event.target.value }))}
+              onChange={(event) =>
+                setEditingForm((previous) => ({ ...previous, quantity: event.target.value }))
+              }
             />
             <Field
               label="单价（元 / 份）"
@@ -313,12 +385,16 @@ export function FitnessShoppingSection({
               min="0"
               step="0.01"
               value={editingForm.unitPrice}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, unitPrice: event.target.value }))}
+              onChange={(event) =>
+                setEditingForm((previous) => ({ ...previous, unitPrice: event.target.value }))
+              }
             />
             <Field
               label="购买地点"
               value={editingForm.location}
-              onChange={(event) => setEditingForm((previous) => ({ ...previous, location: event.target.value }))}
+              onChange={(event) =>
+                setEditingForm((previous) => ({ ...previous, location: event.target.value }))
+              }
             />
           </div>
         </div>

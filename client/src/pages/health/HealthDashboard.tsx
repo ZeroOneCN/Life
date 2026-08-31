@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
+
 import { HealthOverviewSection } from '../../components/health/dashboard/HealthOverviewSection';
 import { HealthHeatmapSection } from '../../components/health/dashboard/HealthHeatmapSection';
 import { HealthRadarSection } from '../../components/health/dashboard/HealthRadarSection';
@@ -54,17 +58,20 @@ export default function HealthDashboardPage() {
    * 加载步数热力图数据。
    * @param year - 年份
    */
-  const loadHeatmap = useCallback(async (year: number) => {
-    setHeatmapLoading(true);
-    try {
-      const data = await healthDashboardApi.getStepHeatmap(year);
-      setHeatmapItems(data.items);
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '步数热力图加载失败。'), 'error');
-    } finally {
-      setHeatmapLoading(false);
-    }
-  }, [showToast]);
+  const loadHeatmap = useCallback(
+    async (year: number) => {
+      setHeatmapLoading(true);
+      try {
+        const data = await healthDashboardApi.getStepHeatmap(year);
+        setHeatmapItems(data.items);
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '步数热力图加载失败。'), 'error');
+      } finally {
+        setHeatmapLoading(false);
+      }
+    },
+    [showToast],
+  );
 
   /**
    * 加载雷达图数据。
@@ -91,27 +98,35 @@ export default function HealthDashboardPage() {
   }, [heatmapYear, loadHeatmap]);
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        title="健康概览"
-        subtitle="综合展示健康指标、趋势与提醒"
-        actions={null}
-      />
+    <div className="page-grid-wrapper">
+      <Row gutter={[24, 20]}>
+        <PageHeader title="健康概览" subtitle="综合展示健康指标、趋势与提醒" actions={null} />
 
-      <HealthOverviewSection overview={overview} loading={overviewLoading} />
+        <Col span={24}>
+          <HealthOverviewSection overview={overview} loading={overviewLoading} />
+        </Col>
 
-      <HealthHeatmapSection
-        items={heatmapItems}
-        year={heatmapYear}
-        loading={heatmapLoading}
-        onYearChange={setHeatmapYear}
-      />
+        <Col span={24}>
+          <HealthHeatmapSection
+            items={heatmapItems}
+            year={heatmapYear}
+            loading={heatmapLoading}
+            onYearChange={setHeatmapYear}
+          />
+        </Col>
 
-      <HealthRadarSection radar={radar} loading={radarLoading} />
+        <Col span={24}>
+          <HealthRadarSection radar={radar} loading={radarLoading} />
+        </Col>
 
-      <HealthComparisonSection showToast={showToast} />
+        <Col span={24}>
+          <HealthComparisonSection showToast={showToast} />
+        </Col>
 
-      <Toast toast={toast} />
+        <Col span={24}>
+          <Toast toast={toast} />
+        </Col>
+      </Row>
     </div>
   );
 }

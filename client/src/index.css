@@ -13285,3 +13285,23 @@ button:active {
   padding: 24px 0;
   text-align: center;
 }
+
+/* Arco Design Grid 适配 - health 模块替换 */
+.page-grid-wrapper > .arco-row {
+  overflow-x: hidden; /* 防止 gutter 负边距溢出 */
+}
+
+@media (max-width: 900px) {
+  .page-grid-wrapper .arco-col {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+.section-card {
+  border-radius: 0;
+}
+
+/* 保留药丸标签和圆形图标圆角 */
+/* - pills/tags keep border-radius: 9999px */
+/* - circular icons keep border-radius: 50% */

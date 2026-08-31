@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
+
 import { CheckupBatchEntrySection } from '../../components/health/CheckupBatchEntrySection';
 import { CheckupInsightsSection } from '../../components/health/CheckupInsightsSection';
 import { CheckupRecordsSection } from '../../components/health/CheckupRecordsSection';
@@ -44,7 +48,11 @@ const EMPTY_OVERVIEW: CheckupOverviewSummary = {
 
 export default function CheckupPage() {
   const authState = useAuthState();
-  const [tab, setTab] = usePageTab<CheckupTab>('records', TAB_OPTIONS.map((item) => item.value), 'checkupTab');
+  const [tab, setTab] = usePageTab<CheckupTab>(
+    'records',
+    TAB_OPTIONS.map((item) => item.value),
+    'checkupTab',
+  );
   useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const [records, setRecords] = useState<CheckupRecord[]>([]);
   const [templates, setTemplates] = useState<CheckupTemplate[]>([]);
@@ -98,88 +106,146 @@ export default function CheckupPage() {
     };
   }, [reload]);
 
-  const updateSettings = useCallback(async (patch: Partial<CheckupPageState['settings']>) => {
-    try {
-      const next = await checkupApi.updateSettings(patch);
-      setSettings((current) => ({
-        ...current,
-        ...next,
-      }));
-      await reload();
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '体检设置保存失败。'), 'error');
-    }
-  }, [reload, showToast]);
-
-  const runWithReload = useCallback(async (action: () => Promise<void>, successMessage?: string) => {
-    try {
-      await action();
-      await reload();
-      if (successMessage) {
-        showToast(successMessage);
+  const updateSettings = useCallback(
+    async (patch: Partial<CheckupPageState['settings']>) => {
+      try {
+        const next = await checkupApi.updateSettings(patch);
+        setSettings((current) => ({
+          ...current,
+          ...next,
+        }));
+        await reload();
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '体检设置保存失败。'), 'error');
       }
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '体检数据保存失败。'), 'error');
-    }
-  }, [reload, showToast]);
+    },
+    [reload, showToast],
+  );
+
+  const runWithReload = useCallback(
+    async (action: () => Promise<void>, successMessage?: string) => {
+      try {
+        await action();
+        await reload();
+        if (successMessage) {
+          showToast(successMessage);
+        }
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '体检数据保存失败。'), 'error');
+      }
+    },
+    [reload, showToast],
+  );
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        title="体检用药"
-        subtitle="管理体检指标、批量录入与用药模板"
-        actions={(<PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as CheckupTab)} />)}
-      />
+    <div className="page-grid-wrapper">
+      <Row gutter={[24, 20]}>
+        <PageHeader
+          title="体检用药"
+          subtitle="管理体检指标、批量录入与用药模板"
+          actions={
+            <PillTabs
+              options={TAB_OPTIONS}
+              value={tab}
+              onChange={(value) => setTab(value as CheckupTab)}
+            />
+          }
+        />
 
-      <StatGrid
+        <Col span={24}>
+          <StatGrid
             items={[
               { label: '指标总数', value: `${overview.totalRecords}`, helper: '累计检查记录' },
-              { label: '异常 / 关注', value: `${overview.abnormalCount} / ${overview.attentionCount}`, accent: overview.abnormalCount > 0 ? 'var(--color-warning)' : undefined, helper: overview.abnormalCount > 0 ? '需要关注' : '正常范围' },
-              { label: '待复查', value: `${overview.dueFollowUpCount}`, accent: overview.dueFollowUpCount > 0 ? 'var(--color-danger)' : undefined, helper: overview.dueFollowUpCount > 0 ? '请安排复查' : '无需复查' },
-              { label: '最近检查', value: overview.recentTestDate ?? '-', helper: '最近一次检查日期' },
+              {
+                label: '异常 / 关注',
+                value: `${overview.abnormalCount} / ${overview.attentionCount}`,
+                accent: overview.abnormalCount > 0 ? 'var(--color-warning)' : undefined,
+                helper: overview.abnormalCount > 0 ? '需要关注' : '正常范围',
+              },
+              {
+                label: '待复查',
+                value: `${overview.dueFollowUpCount}`,
+                accent: overview.dueFollowUpCount > 0 ? 'var(--color-danger)' : undefined,
+                helper: overview.dueFollowUpCount > 0 ? '请安排复查' : '无需复查',
+              },
+              {
+                label: '最近检查',
+                value: overview.recentTestDate ?? '-',
+                helper: '最近一次检查日期',
+              },
             ]}
           />
+        </Col>
 
-          {tab === 'records' ? (
+        {tab === 'records' ? (
+          <Col span={24}>
             <CheckupRecordsSection
               records={records}
               onCreateRecord={(draft) => {
-                void runWithReload(() => checkupApi.createRecord(draft).then(() => undefined), '指标记录已新增。');
+                void runWithReload(
+                  () => checkupApi.createRecord(draft).then(() => undefined),
+                  '指标记录已新增。',
+                );
               }}
               onUpdateRecord={(id, draft) => {
-                void runWithReload(() => checkupApi.updateRecord(id, draft).then(() => undefined), '指标记录已更新。');
+                void runWithReload(
+                  () => checkupApi.updateRecord(id, draft).then(() => undefined),
+                  '指标记录已更新。',
+                );
               }}
               onDeleteRecord={(id) => {
-                void runWithReload(() => checkupApi.deleteRecord(id).then(() => undefined), '指标记录已删除。');
+                void runWithReload(
+                  () => checkupApi.deleteRecord(id).then(() => undefined),
+                  '指标记录已删除。',
+                );
               }}
               showToast={showToast}
             />
-          ) : null}
+          </Col>
+        ) : null}
 
-          {tab === 'batch' ? (
+        {tab === 'batch' ? (
+          <Col span={24}>
             <CheckupBatchEntrySection
               templates={templates}
               preferredTemplateId={preferredTemplateId}
               onPreferredTemplateConsumed={() => setPreferredTemplateId(null)}
               onCreateBatch={(drafts: CheckupRecordDraft[]) => {
-                void runWithReload(() => Promise.all(drafts.map((draft) => checkupApi.createRecord(draft))).then(() => undefined), `已批量保存 ${drafts.length} 条指标记录。`);
+                void runWithReload(
+                  () =>
+                    Promise.all(drafts.map((draft) => checkupApi.createRecord(draft))).then(
+                      () => undefined,
+                    ),
+                  `已批量保存 ${drafts.length} 条指标记录。`,
+                );
               }}
               onSaveSuccess={() => setTab('records')}
               showToast={showToast}
             />
-          ) : null}
+          </Col>
+        ) : null}
 
-          {tab === 'templates' ? (
+        {tab === 'templates' ? (
+          <Col span={24}>
             <CheckupTemplatesSection
               templates={templates}
               onCreateTemplate={(draft) => {
-                void runWithReload(() => checkupApi.createTemplate(draft).then(() => undefined), '模板已创建。');
+                void runWithReload(
+                  () => checkupApi.createTemplate(draft).then(() => undefined),
+                  '模板已创建。',
+                );
               }}
               onUpdateTemplate={(id, draft) => {
-                void runWithReload(() => checkupApi.updateTemplate(id, draft).then(() => undefined), '模板已更新。');
+                void runWithReload(
+                  () => checkupApi.updateTemplate(id, draft).then(() => undefined),
+                  '模板已更新。',
+                );
               }}
               onDeleteTemplate={(id) => {
-                void runWithReload(() => checkupApi.deleteTemplate(id).then(() => undefined), '模板已删除。');
+                void runWithReload(
+                  () => checkupApi.deleteTemplate(id).then(() => undefined),
+                  '模板已删除。',
+                );
               }}
               onUseTemplate={(id) => {
                 setPreferredTemplateId(id);
@@ -187,9 +253,11 @@ export default function CheckupPage() {
               }}
               showToast={showToast}
             />
-          ) : null}
+          </Col>
+        ) : null}
 
-          {tab === 'insights' ? (
+        {tab === 'insights' ? (
+          <Col span={24}>
             <CheckupInsightsSection
               records={records}
               settings={settings}
@@ -203,9 +271,13 @@ export default function CheckupPage() {
                 void updateSettings({ abnormalAlertEnabled: checked });
               }}
             />
-          ) : null}
+          </Col>
+        ) : null}
 
+        <Col span={24}>
           <Toast toast={toast} />
+        </Col>
+      </Row>
     </div>
   );
 }

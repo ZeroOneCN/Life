@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Grid } from '@arco-design/web-react';
 import {
   CartesianGrid,
   Line,
@@ -14,6 +15,9 @@ import {
 import { EmptyState, SectionCard } from '../../page';
 import { PillTabs } from '../../ui';
 import type { VitalTrend, VitalMetricKey, VitalMetricInfo } from '../../../types/vital';
+
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 interface VitalTrendSectionProps {
   trend: VitalTrend | null;
@@ -63,7 +67,9 @@ export function VitalTrendSection({
    */
   const rangeValues = useMemo(() => {
     if (!trend) return { min: null as number | null, max: null as number | null };
-    const match = trend.referenceRange.replace(/\s+/g, '').match(/^(-?\d+(?:\.\d+)?)(?:-|~)(-?\d+(?:\.\d+)?)$/);
+    const match = trend.referenceRange
+      .replace(/\s+/g, '')
+      .match(/^(-?\d+(?:\.\d+)?)(?:-|~)(-?\d+(?:\.\d+)?)$/);
     if (match) {
       return { min: Number(match[1]), max: Number(match[2]) };
     }
@@ -81,7 +87,11 @@ export function VitalTrendSection({
   return (
     <SectionCard
       title="趋势分析"
-      description={trend ? `${trend.metricLabel} · ${trend.period === 'week' ? '近 7 天' : trend.period === 'month' ? '近 30 天' : '近一年'}` : '选择指标查看趋势'}
+      description={
+        trend
+          ? `${trend.metricLabel} · ${trend.period === 'week' ? '近 7 天' : trend.period === 'month' ? '近 30 天' : '近一年'}`
+          : '选择指标查看趋势'
+      }
       action={
         <div className="vital-trend-controls">
           <PillTabs
@@ -115,21 +125,43 @@ export function VitalTrendSection({
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-hairline)" />
-                <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-2)', fontSize: 11 }} stroke="var(--color-hairline)" />
-                <YAxis tick={{ fill: 'var(--color-ink-3)', fontSize: 10 }} stroke="var(--color-hairline)" />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fill: 'var(--color-ink-2)', fontSize: 11 }}
+                  stroke="var(--color-hairline)"
+                />
+                <YAxis
+                  tick={{ fill: 'var(--color-ink-3)', fontSize: 10 }}
+                  stroke="var(--color-hairline)"
+                />
                 <Tooltip
                   contentStyle={tooltipStyle}
                   formatter={(value) => {
                     const v = value as number | null;
-                    return [v !== null && v !== undefined ? `${v} ${trend.unit}` : '无数据', '平均值'];
+                    return [
+                      v !== null && v !== undefined ? `${v} ${trend.unit}` : '无数据',
+                      '平均值',
+                    ];
                   }}
                 />
                 <Legend />
                 {rangeValues.min !== null ? (
-                  <ReferenceLine y={rangeValues.min} stroke="#27a644" strokeDasharray="3 3" strokeWidth={1} label={{ value: '下限', fill: '#27a644', fontSize: 10, position: 'right' }} />
+                  <ReferenceLine
+                    y={rangeValues.min}
+                    stroke="#27a644"
+                    strokeDasharray="3 3"
+                    strokeWidth={1}
+                    label={{ value: '下限', fill: '#27a644', fontSize: 10, position: 'right' }}
+                  />
                 ) : null}
                 {rangeValues.max !== null ? (
-                  <ReferenceLine y={rangeValues.max} stroke="#e5484d" strokeDasharray="3 3" strokeWidth={1} label={{ value: '上限', fill: '#e5484d', fontSize: 10, position: 'right' }} />
+                  <ReferenceLine
+                    y={rangeValues.max}
+                    stroke="#e5484d"
+                    strokeDasharray="3 3"
+                    strokeWidth={1}
+                    label={{ value: '上限', fill: '#e5484d', fontSize: 10, position: 'right' }}
+                  />
                 ) : null}
                 <Line
                   type="monotone"
@@ -145,37 +177,52 @@ export function VitalTrendSection({
             </ResponsiveContainer>
           </div>
 
-          <div className="vital-trend-stats">
-            <div className="vital-trend-stat">
-              <span className="muted">最新值</span>
-              <strong>
-                {trend.items.filter((i) => i.avgValue !== null).length > 0
-                  ? `${trend.items.filter((i) => i.avgValue !== null)[trend.items.filter((i) => i.avgValue !== null).length - 1].avgValue} ${trend.unit}`
-                  : '-'}
-              </strong>
-            </div>
-            <div className="vital-trend-stat">
-              <span className="muted">最高值</span>
-              <strong style={{ color: '#e5484d' }}>
-                {Math.max(...trend.items.map((i) => i.maxValue ?? -Infinity)).toFixed(1)} {trend.unit}
-              </strong>
-            </div>
-            <div className="vital-trend-stat">
-              <span className="muted">最低值</span>
-              <strong style={{ color: '#27a644' }}>
-                {Math.min(...trend.items.filter((i) => i.minValue !== null).map((i) => i.minValue!)).toFixed(1)} {trend.unit}
-              </strong>
-            </div>
-            <div className="vital-trend-stat">
-              <span className="muted">平均值</span>
-              <strong>
-                {(
-                  trend.items.filter((i) => i.avgValue !== null).reduce((sum, i) => sum + (i.avgValue ?? 0), 0) /
-                  Math.max(1, trend.items.filter((i) => i.avgValue !== null).length)
-                ).toFixed(1)} {trend.unit}
-              </strong>
-            </div>
-          </div>
+          <Row gutter={[12, 12]} style={{ marginTop: 16 }}>
+            <Col span={6}>
+              <div className="vital-trend-stat">
+                <span className="muted">最新值</span>
+                <strong>
+                  {trend.items.filter((i) => i.avgValue !== null).length > 0
+                    ? `${trend.items.filter((i) => i.avgValue !== null)[trend.items.filter((i) => i.avgValue !== null).length - 1].avgValue} ${trend.unit}`
+                    : '-'}
+                </strong>
+              </div>
+            </Col>
+            <Col span={6}>
+              <div className="vital-trend-stat">
+                <span className="muted">最高值</span>
+                <strong style={{ color: '#e5484d' }}>
+                  {Math.max(...trend.items.map((i) => i.maxValue ?? -Infinity)).toFixed(1)}{' '}
+                  {trend.unit}
+                </strong>
+              </div>
+            </Col>
+            <Col span={6}>
+              <div className="vital-trend-stat">
+                <span className="muted">最低值</span>
+                <strong style={{ color: '#27a644' }}>
+                  {Math.min(
+                    ...trend.items.filter((i) => i.minValue !== null).map((i) => i.minValue!),
+                  ).toFixed(1)}{' '}
+                  {trend.unit}
+                </strong>
+              </div>
+            </Col>
+            <Col span={6}>
+              <div className="vital-trend-stat">
+                <span className="muted">平均值</span>
+                <strong>
+                  {(
+                    trend.items
+                      .filter((i) => i.avgValue !== null)
+                      .reduce((sum, i) => sum + (i.avgValue ?? 0), 0) /
+                    Math.max(1, trend.items.filter((i) => i.avgValue !== null).length)
+                  ).toFixed(1)}{' '}
+                  {trend.unit}
+                </strong>
+              </div>
+            </Col>
+          </Row>
         </div>
       )}
     </SectionCard>

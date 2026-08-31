@@ -14,8 +14,11 @@ import {
   YAxis,
 } from 'recharts';
 
+import { Grid } from '@arco-design/web-react';
 import { EmptyState, SectionCard, StatGrid } from '../page';
 import { Field } from '../ui';
+const Row = Grid.Row;
+const Col = Grid.Col;
 import { CHART_CATEGORY_8 } from '../../lib/chartPalette';
 import {
   MEDICATION_TIME_COLORS,
@@ -75,10 +78,7 @@ function ChartCard({
   );
 }
 
-export function MedicationAnalysisSection({
-  records,
-  purchases,
-}: MedicationAnalysisSectionProps) {
+export function MedicationAnalysisSection({ records, purchases }: MedicationAnalysisSectionProps) {
   const [trendDays, setTrendDays] = useState<(typeof MEDICATION_TREND_RANGE_OPTIONS)[number]>(30);
 
   const filteredRecords = useMemo(() => records, [records]);
@@ -88,10 +88,14 @@ export function MedicationAnalysisSection({
   const rankingData = useMemo(() => buildMedicationRanking(records), [records]);
   const timeSummary = useMemo(() => buildMedicationTimeOfDaySummary(records), [records]);
 
-  const dosageShareData = useMemo(() => rankingData.slice(0, 6).map((item) => ({
-    name: item.medicineName,
-    value: item.totalDose,
-  })), [rankingData]);
+  const dosageShareData = useMemo(
+    () =>
+      rankingData.slice(0, 6).map((item) => ({
+        name: item.medicineName,
+        value: item.totalDose,
+      })),
+    [rankingData],
+  );
 
   const rankingTableData = useMemo(() => rankingData.slice(0, 8), [rankingData]);
   const hasTrendData = trendData.some((point) => point.total > 0);
@@ -107,159 +111,241 @@ export function MedicationAnalysisSection({
       title="分析看板"
       description="从趋势、时段和药品维度汇总当前用户的用药轨迹，同时补充购药金额背景。"
     >
-      <div className="page-stack">
-        <StatGrid
-          items={[
-            { label: '总记录数', value: `${overview.totalRecords}`, helper: `覆盖 ${overview.trackedDays} 个记录日` },
-            { label: '累计用量', value: `${overview.totalDosage}`, helper: `日均 ${overview.avgDailyDosage} 次` },
-            {
-              label: '活跃药品',
-              value: `${overview.activeMedicineCount}`,
-              helper: overview.latestRecordDate ? `最近记录：${overview.latestRecordDate}` : '暂无最近记录',
-            },
-            { label: '购药总额', value: `¥${overview.totalPurchaseAmount.toFixed(2)}`, helper: `共 ${overview.purchaseCount} 笔购药记录` },
-            { label: '今日用量', value: `${overview.todayDosage}`, helper: filteredRecords.length ? '按今天日期汇总三餐用量' : '暂无今日记录' },
-          ]}
-        />
+      <div className="page-grid-wrapper">
+        <Row gutter={[24, 20]}>
+          <Col span={24}>
+            <StatGrid
+              items={[
+                {
+                  label: '总记录数',
+                  value: `${overview.totalRecords}`,
+                  helper: `覆盖 ${overview.trackedDays} 个记录日`,
+                },
+                {
+                  label: '累计用量',
+                  value: `${overview.totalDosage}`,
+                  helper: `日均 ${overview.avgDailyDosage} 次`,
+                },
+                {
+                  label: '活跃药品',
+                  value: `${overview.activeMedicineCount}`,
+                  helper: overview.latestRecordDate
+                    ? `最近记录：${overview.latestRecordDate}`
+                    : '暂无最近记录',
+                },
+                {
+                  label: '购药总额',
+                  value: `¥${overview.totalPurchaseAmount.toFixed(2)}`,
+                  helper: `共 ${overview.purchaseCount} 笔购药记录`,
+                },
+                {
+                  label: '今日用量',
+                  value: `${overview.todayDosage}`,
+                  helper: filteredRecords.length ? '按今天日期汇总三餐用量' : '暂无今日记录',
+                },
+              ]}
+            />
+          </Col>
 
-        <div className="fitness-row-actions medication-range-tabs">
-          {MEDICATION_TREND_RANGE_OPTIONS.map((item) => (
-            <button
-              key={item}
-              type="button"
-              className={`step-hour-button ${trendDays === item ? 'is-active' : ''}`}
-              onClick={() => setTrendDays(item)}
-            >
-              近 {item} 天
-            </button>
-          ))}
-        </div>
+          <Col span={24}>
+            <div className="fitness-row-actions medication-range-tabs">
+              {MEDICATION_TREND_RANGE_OPTIONS.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={`step-hour-button ${trendDays === item ? 'is-active' : ''}`}
+                  onClick={() => setTrendDays(item)}
+                >
+                  近 {item} 天
+                </button>
+              ))}
+            </div>
+          </Col>
 
-        <div className="medication-analysis-grid">
-          <ChartCard title="用药趋势" description="按早餐、午餐、晚餐、总用量查看近阶段变化。">
-            {hasTrendData ? (
-              <div className="fitness-chart-shell">
-                <div className="medication-chart-legend">
-                  {TREND_SERIES.map((series) => (
-                    <div key={series.key} className="medication-chart-legend-item">
-                      <span
-                        className="medication-chart-legend-dot"
-                        style={{ background: series.color }}
-                      />
-                      <span>{series.label}</span>
+          <Col span={24}>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <ChartCard
+                  title="用药趋势"
+                  description="按早餐、午餐、晚餐、总用量查看近阶段变化。"
+                >
+                  {hasTrendData ? (
+                    <div className="fitness-chart-shell">
+                      <div className="medication-chart-legend">
+                        {TREND_SERIES.map((series) => (
+                          <div key={series.key} className="medication-chart-legend-item">
+                            <span
+                              className="medication-chart-legend-dot"
+                              style={{ background: series.color }}
+                            />
+                            <span>{series.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={trendData}>
+                          <CartesianGrid
+                            stroke="var(--color-hairline)"
+                            strokeDasharray="3 3"
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey="label"
+                            tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }}
+                          />
+                          <YAxis
+                            tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }}
+                          />
+                          <Tooltip
+                            contentStyle={tooltipStyle}
+                            itemSorter={(item) => {
+                              const key = String(item.dataKey ?? '') as keyof typeof TREND_ORDER;
+                              return TREND_ORDER[key] ?? 99;
+                            }}
+                          />
+                          {TREND_SERIES.map((series) => (
+                            <Line
+                              key={series.key}
+                              type="monotone"
+                              dataKey={series.key}
+                              name={series.label}
+                              stroke={series.color}
+                              strokeWidth={series.width}
+                              dot={false}
+                            />
+                          ))}
+                        </LineChart>
+                      </ResponsiveContainer>
                     </div>
-                  ))}
-                </div>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={trendData}>
-                    <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
-                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
-                    <Tooltip
-                      contentStyle={tooltipStyle}
-                      itemSorter={(item) => {
-                        const key = String(item.dataKey ?? '') as keyof typeof TREND_ORDER;
-                        return TREND_ORDER[key] ?? 99;
-                      }}
+                  ) : (
+                    <EmptyState
+                      title="暂无趋势数据"
+                      description="先录入几天的每日用药记录，趋势图才会形成可读变化。"
                     />
-                    {TREND_SERIES.map((series) => (
-                      <Line
-                        key={series.key}
-                        type="monotone"
-                        dataKey={series.key}
-                        name={series.label}
-                        stroke={series.color}
-                        strokeWidth={series.width}
-                        dot={false}
-                      />
-                    ))}
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <EmptyState title="暂无趋势数据" description="先录入几天的每日用药记录，趋势图才会形成可读变化。" />
-            )}
-          </ChartCard>
+                  )}
+                </ChartCard>
+              </Col>
 
-          <ChartCard title="药品用量占比" description="按药品聚合的总用量结构。">
-            {hasRankingData ? (
-              <div className="fitness-chart-shell">
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={dosageShareData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={92}
-                      label={({ name, percent }) => `${name} ${(Number(percent ?? 0) * 100).toFixed(0)}%`}
-                      labelLine={false}
-                    >
-                      {dosageShareData.map((entry, index) => (
-                        <Cell
-                          key={entry.name}
-                          fill={DOSAGE_SHARE_COLORS[index % DOSAGE_SHARE_COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={tooltipStyle}
-                      formatter={(value) => [`${Number(value ?? 0).toFixed(1)}`, '累计用量']}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <EmptyState title="暂无药品结构" description="等有足够的用药记录后，这里会展示各药品的用量占比。" />
-            )}
-          </ChartCard>
-
-          <ChartCard title="时段用量对比" description="对比早餐、午餐、晚餐三个时段的累计用量。">
-            {timeOfDayData.some((item) => item.value > 0) ? (
-              <div className="fitness-chart-shell">
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={timeOfDayData}>
-                    <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
-                    <YAxis tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }} />
-                    <Tooltip
-                      contentStyle={tooltipStyle}
-                      formatter={(value) => [`${Number(value ?? 0).toFixed(1)}`, '累计用量']}
-                    />
-                    <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                      {timeOfDayData.map((item) => (
-                        <Cell key={item.label} fill={item.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <EmptyState title="暂无时段对比" description="当前用户还没有可用于早餐、午餐、晚餐对比的用药数据。" />
-            )}
-          </ChartCard>
-
-          <ChartCard title="用药排行" description="按累计用量排序的重点药品列表。">
-            {rankingTableData.length ? (
-              <div className="medication-ranking-list">
-                {rankingTableData.map((item, index) => (
-                  <div className="list-row" key={item.medicineName}>
-                    <div>
-                      <strong>{index + 1}. {item.medicineName}</strong>
-                      <div className="list-row-meta">累计用量 {item.totalDose}，占比 {item.percentage}%</div>
+              <Col span={12}>
+                <ChartCard title="药品用量占比" description="按药品聚合的总用量结构。">
+                  {hasRankingData ? (
+                    <div className="fitness-chart-shell">
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={dosageShareData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={92}
+                            label={({ name, percent }) =>
+                              `${name} ${(Number(percent ?? 0) * 100).toFixed(0)}%`
+                            }
+                            labelLine={false}
+                          >
+                            {dosageShareData.map((entry, index) => (
+                              <Cell
+                                key={entry.name}
+                                fill={DOSAGE_SHARE_COLORS[index % DOSAGE_SHARE_COLORS.length]}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={tooltipStyle}
+                            formatter={(value) => [`${Number(value ?? 0).toFixed(1)}`, '累计用量']}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
                     </div>
-                    <span className="subtle-text">
-                      购药记录 {filteredPurchases.filter((purchase) => purchase.medicineName === item.medicineName).length} 笔
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState title="暂无排行数据" description="用药排行会在累计多条记录后自动形成。" />
-            )}
-          </ChartCard>
-        </div>
+                  ) : (
+                    <EmptyState
+                      title="暂无药品结构"
+                      description="等有足够的用药记录后，这里会展示各药品的用量占比。"
+                    />
+                  )}
+                </ChartCard>
+              </Col>
+
+              <Col span={12}>
+                <ChartCard
+                  title="时段用量对比"
+                  description="对比早餐、午餐、晚餐三个时段的累计用量。"
+                >
+                  {timeOfDayData.some((item) => item.value > 0) ? (
+                    <div className="fitness-chart-shell">
+                      <ResponsiveContainer width="100%" height={280}>
+                        <BarChart data={timeOfDayData}>
+                          <CartesianGrid
+                            stroke="var(--color-hairline)"
+                            strokeDasharray="3 3"
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey="label"
+                            tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }}
+                          />
+                          <YAxis
+                            tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-meta)' }}
+                          />
+                          <Tooltip
+                            contentStyle={tooltipStyle}
+                            formatter={(value) => [`${Number(value ?? 0).toFixed(1)}`, '累计用量']}
+                          />
+                          <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                            {timeOfDayData.map((item) => (
+                              <Cell key={item.label} fill={item.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <EmptyState
+                      title="暂无时段对比"
+                      description="当前用户还没有可用于早餐、午餐、晚餐对比的用药数据。"
+                    />
+                  )}
+                </ChartCard>
+              </Col>
+
+              <Col span={12}>
+                <ChartCard title="用药排行" description="按累计用量排序的重点药品列表。">
+                  {rankingTableData.length ? (
+                    <div className="medication-ranking-list">
+                      {rankingTableData.map((item, index) => (
+                        <div className="list-row" key={item.medicineName}>
+                          <div>
+                            <strong>
+                              {index + 1}. {item.medicineName}
+                            </strong>
+                            <div className="list-row-meta">
+                              累计用量 {item.totalDose}，占比 {item.percentage}%
+                            </div>
+                          </div>
+                          <span className="subtle-text">
+                            购药记录{' '}
+                            {
+                              filteredPurchases.filter(
+                                (purchase) => purchase.medicineName === item.medicineName,
+                              ).length
+                            }{' '}
+                            笔
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState
+                      title="暂无排行数据"
+                      description="用药排行会在累计多条记录后自动形成。"
+                    />
+                  )}
+                </ChartCard>
+              </Col>
+            </Row>
+          </Col>
+        </Row>
       </div>
     </SectionCard>
   );

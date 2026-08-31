@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
+
 import { HealthReportSummarySection } from '../../components/health/report/HealthReportSummarySection';
 import { HealthReportTrendSection } from '../../components/health/report/HealthReportTrendSection';
 import { HealthReportAbnormalSection } from '../../components/health/report/HealthReportAbnormalSection';
@@ -48,9 +52,15 @@ export default function HealthReportPage() {
   const [period, setPeriod] = useState<HealthReportPeriod>('month');
   const [date, setDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
 
-  const [summary, setSummary] = useState<import('../../types/healthReport').HealthReportSummary | null>(null);
-  const [abnormal, setAbnormal] = useState<import('../../types/healthReport').HealthReportAbnormal | null>(null);
-  const [suggestion, setSuggestion] = useState<import('../../types/healthReport').HealthReportAISuggestion | null>(null);
+  const [summary, setSummary] = useState<
+    import('../../types/healthReport').HealthReportSummary | null
+  >(null);
+  const [abnormal, setAbnormal] = useState<
+    import('../../types/healthReport').HealthReportAbnormal | null
+  >(null);
+  const [suggestion, setSuggestion] = useState<
+    import('../../types/healthReport').HealthReportAISuggestion | null
+  >(null);
 
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [abnormalLoading, setAbnormalLoading] = useState(true);
@@ -125,81 +135,95 @@ export default function HealthReportPage() {
     if (period === 'month') {
       return { type: 'month' as const, value: date.length >= 7 ? date.slice(0, 7) : date };
     }
-    return { type: 'number' as const, value: date.length >= 4 ? date.slice(0, 4) : String(dayjs().year()) };
+    return {
+      type: 'number' as const,
+      value: date.length >= 4 ? date.slice(0, 4) : String(dayjs().year()),
+    };
   })();
 
   const exportFileName = `健康报告-${period === 'year' ? dayjs(date).format('YYYY') : period === 'month' ? dayjs(date).format('YYYY-MM') : dayjs(date).format('YYYY-MM-DD')}`;
   const canExport = !!summary && !summaryLoading;
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        title="健康报告"
-        subtitle="汇总周期健康数据，生成可视化报告"
-        actions={(
-          <PillTabs
-            options={PERIOD_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
-            value={period}
-            onChange={(value) => handlePeriodChange(value as HealthReportPeriod)}
-          />
-        )}
-      />
-
-      <div ref={reportRef} className="page-stack">
-        <HealthReportSummarySection
-          current={summary?.current ?? null}
-          previous={summary?.previous ?? null}
-          changes={summary?.changes ?? null}
-          loading={summaryLoading}
-          toolbar={(
-            <>
-              <input
-                className="health-report-date-input"
-                type={dateInputProps.type}
-                value={dateInputProps.value}
-                min={period === 'year' ? 2000 : undefined}
-                max={period === 'year' ? dayjs().year() : undefined}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  if (period === 'week') handleDateChange(value);
-                  else if (period === 'month') handleDateChange(`${value}-01`);
-                  else handleDateChange(`${value}-01-01`);
-                }}
-                aria-label="选择周期日期"
-              />
-              <Btn type="button" tone="secondary" onClick={handleRefresh} disabled={summaryLoading}>
-                {summaryLoading ? '加载中…' : '刷新报告'}
-              </Btn>
-              <HealthReportExportButton
-                targetRef={reportRef}
-                fileName={exportFileName}
-                disabled={!canExport}
-                showToast={showToast}
-              />
-            </>
-          )}
+    <div className="page-grid-wrapper">
+      <Row gutter={[24, 20]}>
+        <PageHeader
+          title="健康报告"
+          subtitle="汇总周期健康数据，生成可视化报告"
+          actions={
+            <PillTabs
+              options={PERIOD_OPTIONS.map((option) => ({
+                value: option.value,
+                label: option.label,
+              }))}
+              value={period}
+              onChange={(value) => handlePeriodChange(value as HealthReportPeriod)}
+            />
+          }
         />
 
-        <HealthReportTrendSection
-          current={summary?.current ?? null}
-          previous={summary?.previous ?? null}
-          loading={summaryLoading}
-        />
+        <Col span={24}>
+          <div ref={reportRef} className="page-stack">
+            <HealthReportSummarySection
+              current={summary?.current ?? null}
+              previous={summary?.previous ?? null}
+              changes={summary?.changes ?? null}
+              loading={summaryLoading}
+              toolbar={
+                <>
+                  <input
+                    className="health-report-date-input"
+                    type={dateInputProps.type}
+                    value={dateInputProps.value}
+                    min={period === 'year' ? 2000 : undefined}
+                    max={period === 'year' ? dayjs().year() : undefined}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      if (period === 'week') handleDateChange(value);
+                      else if (period === 'month') handleDateChange(`${value}-01`);
+                      else handleDateChange(`${value}-01-01`);
+                    }}
+                    aria-label="选择周期日期"
+                  />
+                  <Btn
+                    type="button"
+                    tone="secondary"
+                    onClick={handleRefresh}
+                    disabled={summaryLoading}
+                  >
+                    {summaryLoading ? '加载中…' : '刷新报告'}
+                  </Btn>
+                  <HealthReportExportButton
+                    targetRef={reportRef}
+                    fileName={exportFileName}
+                    disabled={!canExport}
+                    showToast={showToast}
+                  />
+                </>
+              }
+            />
 
-        <HealthReportAbnormalSection
-          abnormal={abnormal}
-          loading={abnormalLoading}
-        />
+            <HealthReportTrendSection
+              current={summary?.current ?? null}
+              previous={summary?.previous ?? null}
+              loading={summaryLoading}
+            />
 
-        <HealthReportAISuggestionSection
-          suggestion={suggestion}
-          loading={false}
-          generating={aiGenerating}
-          onGenerate={handleGenerateAISuggestion}
-        />
-      </div>
+            <HealthReportAbnormalSection abnormal={abnormal} loading={abnormalLoading} />
 
-      <Toast toast={toast} />
+            <HealthReportAISuggestionSection
+              suggestion={suggestion}
+              loading={false}
+              generating={aiGenerating}
+              onGenerate={handleGenerateAISuggestion}
+            />
+          </div>
+        </Col>
+
+        <Col span={24}>
+          <Toast toast={toast} />
+        </Col>
+      </Row>
     </div>
   );
 }

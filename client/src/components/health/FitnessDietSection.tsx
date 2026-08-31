@@ -1,8 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
+import { Grid } from '@arco-design/web-react';
 import { DatePickerField } from '../date';
-import { DataTable, Btn, DeleteIcon, DeleteModal, EditIcon, Field, IconBtn, Modal, Pagination, SelectField } from '../ui';
+import {
+  DataTable,
+  Btn,
+  DeleteIcon,
+  DeleteModal,
+  EditIcon,
+  Field,
+  IconBtn,
+  Modal,
+  Pagination,
+  SelectField,
+} from '../ui';
+
+const Row = Grid.Row;
+const Col = Grid.Col;
 import { EmptyState, SectionCard } from '../page';
 import {
   FITNESS_RECORD_PAGE_SIZE,
@@ -109,77 +124,87 @@ export function FitnessDietSection({
     }
   }, [page, totalPages]);
 
-  const columns = useMemo(() => [
-    {
-      key: 'date',
-      title: '日期',
-      dataIndex: 'date' as const,
-    },
-    {
-      key: 'mealType',
-      title: '餐别',
-      render: (_value: unknown, record: DietRecord) => (
-        <span style={{ color: MEAL_TYPE_META[record.mealType].color }}>{MEAL_TYPE_META[record.mealType].label}</span>
-      ),
-    },
-    {
-      key: 'foodName',
-      title: '食物名称',
-      dataIndex: 'foodName' as const,
-    },
-    {
-      key: 'grams',
-      title: '重量',
-      render: (_value: unknown, record: DietRecord) => `${record.grams} g`,
-    },
-    {
-      key: 'calories',
-      title: '热量',
-      render: (_value: unknown, record: DietRecord) => `${record.calories} kcal`,
-    },
-    {
-      key: 'protein',
-      title: '蛋白质',
-      render: (_value: unknown, record: DietRecord) => `${record.protein} g`,
-    },
-    {
-      key: 'carbs',
-      title: '碳水',
-      render: (_value: unknown, record: DietRecord) => `${record.carbs} g`,
-    },
-    {
-      key: 'fat',
-      title: '脂肪',
-      render: (_value: unknown, record: DietRecord) => `${record.fat} g`,
-    },
-    {
-      key: 'actions',
-      title: '操作',
-      render: (_value: unknown, record: DietRecord) => (
-        <div className="fitness-row-actions">
-          <IconBtn
-            tone="secondary"
-            icon={<EditIcon />}
-            title="编辑"
-            onClick={() => {
-              setEditingRecord(record);
-              setEditingForm({
-                date: record.date,
-                mealType: record.mealType,
-                foodName: record.foodName,
-                grams: String(record.grams),
-                calories: String(record.calories),
-                protein: String(record.protein),
-                carbs: String(record.carbs),
-                fat: String(record.fat),
-              });
-            }}
-          />
-          <IconBtn tone="danger" icon={<DeleteIcon />} title="删除" onClick={() => setPendingDeleteId(record.id)} />
-        </div>
-      ),
-    },
-  ], []);
+  const columns = useMemo(
+    () => [
+      {
+        key: 'date',
+        title: '日期',
+        dataIndex: 'date' as const,
+      },
+      {
+        key: 'mealType',
+        title: '餐别',
+        render: (_value: unknown, record: DietRecord) => (
+          <span style={{ color: MEAL_TYPE_META[record.mealType].color }}>
+            {MEAL_TYPE_META[record.mealType].label}
+          </span>
+        ),
+      },
+      {
+        key: 'foodName',
+        title: '食物名称',
+        dataIndex: 'foodName' as const,
+      },
+      {
+        key: 'grams',
+        title: '重量',
+        render: (_value: unknown, record: DietRecord) => `${record.grams} g`,
+      },
+      {
+        key: 'calories',
+        title: '热量',
+        render: (_value: unknown, record: DietRecord) => `${record.calories} kcal`,
+      },
+      {
+        key: 'protein',
+        title: '蛋白质',
+        render: (_value: unknown, record: DietRecord) => `${record.protein} g`,
+      },
+      {
+        key: 'carbs',
+        title: '碳水',
+        render: (_value: unknown, record: DietRecord) => `${record.carbs} g`,
+      },
+      {
+        key: 'fat',
+        title: '脂肪',
+        render: (_value: unknown, record: DietRecord) => `${record.fat} g`,
+      },
+      {
+        key: 'actions',
+        title: '操作',
+        render: (_value: unknown, record: DietRecord) => (
+          <div className="fitness-row-actions">
+            <IconBtn
+              tone="secondary"
+              icon={<EditIcon />}
+              title="编辑"
+              onClick={() => {
+                setEditingRecord(record);
+                setEditingForm({
+                  date: record.date,
+                  mealType: record.mealType,
+                  foodName: record.foodName,
+                  grams: String(record.grams),
+                  calories: String(record.calories),
+                  protein: String(record.protein),
+                  carbs: String(record.carbs),
+                  fat: String(record.fat),
+                });
+              }}
+            />
+            <IconBtn
+              tone="danger"
+              icon={<DeleteIcon />}
+              title="删除"
+              onClick={() => setPendingDeleteId(record.id)}
+            />
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
 
   const handleCreate = () => {
     const draft = parseDraft(form);
@@ -190,7 +215,11 @@ export function FitnessDietSection({
     }
 
     onChangeRecords((previous) => createDietRecord(previous, draft));
-    setForm((previous) => ({ ...defaultFormState(), date: previous.date, mealType: previous.mealType }));
+    setForm((previous) => ({
+      ...defaultFormState(),
+      date: previous.date,
+      mealType: previous.mealType,
+    }));
     setAiHint('');
     setAiSource(null);
     showToast('饮食记录已新增。');
@@ -218,10 +247,15 @@ export function FitnessDietSection({
       }));
       setAiSource(info.source);
       const sourceLabel = info.source === 'cache' ? '命中本地缓存' : 'AI 实时估算';
-      setAiHint(`${sourceLabel}：100g 基准 ${info.caloriesPer100g.toFixed(0)} kcal · 蛋白 ${info.proteinPer100g.toFixed(1)}g${info.note ? ` · ${info.note}` : ''}`);
+      setAiHint(
+        `${sourceLabel}：100g 基准 ${info.caloriesPer100g.toFixed(0)} kcal · 蛋白 ${info.proteinPer100g.toFixed(1)}g${info.note ? ` · ${info.note}` : ''}`,
+      );
       showToast(`${foodName} 营养已自动填入（${sourceLabel}）。`, 'success');
     } catch (error) {
-      showToast(buildApiErrorMessage(error, 'AI 营养查询失败，请检查网络或 DEEPSEEK_API_KEY 配置。'), 'error');
+      showToast(
+        buildApiErrorMessage(error, 'AI 营养查询失败，请检查网络或 DEEPSEEK_API_KEY 配置。'),
+        'error',
+      );
     } finally {
       setAiQuerying(false);
     }
@@ -264,10 +298,14 @@ export function FitnessDietSection({
               <SelectField
                 label="餐别"
                 value={form.mealType}
-                onChange={(event) => setForm((previous) => ({ ...previous, mealType: event.target.value as MealType }))}
+                onChange={(event) =>
+                  setForm((previous) => ({ ...previous, mealType: event.target.value as MealType }))
+                }
               >
                 {Object.entries(MEAL_TYPE_META).map(([value, item]) => (
-                  <option key={value} value={value}>{item.label}</option>
+                  <option key={value} value={value}>
+                    {item.label}
+                  </option>
                 ))}
               </SelectField>
               <div className="fitness-name-ai-cell">
@@ -275,7 +313,9 @@ export function FitnessDietSection({
                   label="食物名称"
                   placeholder="例如：鸡胸肉沙拉"
                   value={form.foodName}
-                  onChange={(event) => setForm((previous) => ({ ...previous, foodName: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, foodName: event.target.value }))
+                  }
                 />
                 <Btn
                   tone="secondary"
@@ -294,7 +334,9 @@ export function FitnessDietSection({
 
           {aiHint ? (
             <div className="fitness-ai-result">
-              <span className={`fitness-ai-result-tag ${aiSource === 'cache' ? 'is-cache' : 'is-ai'}`.trim()}>
+              <span
+                className={`fitness-ai-result-tag ${aiSource === 'cache' ? 'is-cache' : 'is-ai'}`.trim()}
+              >
                 {aiSource === 'cache' ? '命中缓存' : 'AI 实时估算'}
               </span>
               <span className="fitness-ai-result-text">{aiHint}</span>
@@ -303,56 +345,78 @@ export function FitnessDietSection({
 
           <div className="diet-form-group">
             <div className="diet-form-group-title">营养成分</div>
-            <div className="diet-form-group-fields cols-5">
-              <Field
-                label="重量（g）"
-                type="number"
-                min="0"
-                placeholder="0"
-                value={form.grams}
-                onChange={(event) => setForm((previous) => ({ ...previous, grams: event.target.value }))}
-              />
-              <Field
-                label="热量（kcal）"
-                type="number"
-                min="0"
-                step="0.1"
-                placeholder="0"
-                value={form.calories}
-                onChange={(event) => setForm((previous) => ({ ...previous, calories: event.target.value }))}
-              />
-              <Field
-                label="蛋白质（g）"
-                type="number"
-                min="0"
-                step="0.1"
-                placeholder="0"
-                value={form.protein}
-                onChange={(event) => setForm((previous) => ({ ...previous, protein: event.target.value }))}
-              />
-              <Field
-                label="碳水（g）"
-                type="number"
-                min="0"
-                step="0.1"
-                placeholder="0"
-                value={form.carbs}
-                onChange={(event) => setForm((previous) => ({ ...previous, carbs: event.target.value }))}
-              />
-              <Field
-                label="脂肪（g）"
-                type="number"
-                min="0"
-                step="0.1"
-                placeholder="0"
-                value={form.fat}
-                onChange={(event) => setForm((previous) => ({ ...previous, fat: event.target.value }))}
-              />
-            </div>
+            <Row gutter={[16, 12]}>
+              <Col span={6}>
+                <Field
+                  label="重量（g）"
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={form.grams}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, grams: event.target.value }))
+                  }
+                />
+              </Col>
+              <Col span={6}>
+                <Field
+                  label="热量（kcal）"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="0"
+                  value={form.calories}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, calories: event.target.value }))
+                  }
+                />
+              </Col>
+              <Col span={4}>
+                <Field
+                  label="蛋白质（g）"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="0"
+                  value={form.protein}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, protein: event.target.value }))
+                  }
+                />
+              </Col>
+              <Col span={4}>
+                <Field
+                  label="碳水（g）"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="0"
+                  value={form.carbs}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, carbs: event.target.value }))
+                  }
+                />
+              </Col>
+              <Col span={4}>
+                <Field
+                  label="脂肪（g）"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="0"
+                  value={form.fat}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, fat: event.target.value }))
+                  }
+                />
+              </Col>
+            </Row>
           </div>
 
           <div className="diet-form-actions">
-            <Btn tone="primary" type="button" onClick={handleCreate}>新增饮食记录</Btn>
+            <Btn tone="primary" type="button" onClick={handleCreate}>
+              新增饮食记录
+            </Btn>
           </div>
         </div>
 
@@ -366,9 +430,7 @@ export function FitnessDietSection({
         </div>
 
         <div className="fitness-section-summary">
-          <span className="subtle-text">
-            共 {filteredRecords.length} 条饮食记录
-          </span>
+          <span className="subtle-text">共 {filteredRecords.length} 条饮食记录</span>
         </div>
 
         {filteredRecords.length ? (
@@ -389,12 +451,16 @@ export function FitnessDietSection({
         onClose={() => setEditingRecord(null)}
         title="编辑饮食记录"
         width={760}
-        footer={(
+        footer={
           <>
-            <Btn tone="secondary" onClick={() => setEditingRecord(null)}>取消</Btn>
-            <Btn tone="primary" onClick={handleSaveEdit}>保存修改</Btn>
+            <Btn tone="secondary" onClick={() => setEditingRecord(null)}>
+              取消
+            </Btn>
+            <Btn tone="primary" onClick={handleSaveEdit}>
+              保存修改
+            </Btn>
           </>
-        )}
+        }
       >
         <div className="diet-entry-form">
           <div className="diet-form-group">
@@ -410,63 +476,92 @@ export function FitnessDietSection({
               <SelectField
                 label="餐别"
                 value={editingForm.mealType}
-                onChange={(event) => setEditingForm((previous) => ({ ...previous, mealType: event.target.value as MealType }))}
+                onChange={(event) =>
+                  setEditingForm((previous) => ({
+                    ...previous,
+                    mealType: event.target.value as MealType,
+                  }))
+                }
               >
                 {Object.entries(MEAL_TYPE_META).map(([value, item]) => (
-                  <option key={value} value={value}>{item.label}</option>
+                  <option key={value} value={value}>
+                    {item.label}
+                  </option>
                 ))}
               </SelectField>
               <Field
                 label="食物名称"
                 value={editingForm.foodName}
-                onChange={(event) => setEditingForm((previous) => ({ ...previous, foodName: event.target.value }))}
+                onChange={(event) =>
+                  setEditingForm((previous) => ({ ...previous, foodName: event.target.value }))
+                }
               />
             </div>
           </div>
 
           <div className="diet-form-group">
             <div className="diet-form-group-title">营养成分</div>
-            <div className="diet-form-group-fields cols-5">
-              <Field
-                label="重量（g）"
-                type="number"
-                min="0"
-                value={editingForm.grams}
-                onChange={(event) => setEditingForm((previous) => ({ ...previous, grams: event.target.value }))}
-              />
-              <Field
-                label="热量（kcal）"
-                type="number"
-                min="0"
-                step="0.1"
-                value={editingForm.calories}
-                onChange={(event) => setEditingForm((previous) => ({ ...previous, calories: event.target.value }))}
-              />
-              <Field
-                label="蛋白质（g）"
-                type="number"
-                min="0"
-                step="0.1"
-                value={editingForm.protein}
-                onChange={(event) => setEditingForm((previous) => ({ ...previous, protein: event.target.value }))}
-              />
-              <Field
-                label="碳水（g）"
-                type="number"
-                min="0"
-                step="0.1"
-                value={editingForm.carbs}
-                onChange={(event) => setEditingForm((previous) => ({ ...previous, carbs: event.target.value }))}
-              />
-              <Field
-                label="脂肪（g）"
-                type="number"
-                min="0"
-                step="0.1"
-                value={editingForm.fat}
-                onChange={(event) => setEditingForm((previous) => ({ ...previous, fat: event.target.value }))}
-              />
-            </div>
+            <Row gutter={[16, 12]}>
+              <Col span={6}>
+                <Field
+                  label="重量（g）"
+                  type="number"
+                  min="0"
+                  value={editingForm.grams}
+                  onChange={(event) =>
+                    setEditingForm((previous) => ({ ...previous, grams: event.target.value }))
+                  }
+                />
+              </Col>
+              <Col span={6}>
+                <Field
+                  label="热量（kcal）"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={editingForm.calories}
+                  onChange={(event) =>
+                    setEditingForm((previous) => ({ ...previous, calories: event.target.value }))
+                  }
+                />
+              </Col>
+              <Col span={4}>
+                <Field
+                  label="蛋白质（g）"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={editingForm.protein}
+                  onChange={(event) =>
+                    setEditingForm((previous) => ({ ...previous, protein: event.target.value }))
+                  }
+                />
+              </Col>
+              <Col span={4}>
+                <Field
+                  label="碳水（g）"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={editingForm.carbs}
+                  onChange={(event) =>
+                    setEditingForm((previous) => ({ ...previous, carbs: event.target.value }))
+                  }
+                />
+              </Col>
+              <Col span={4}>
+                <Field
+                  label="脂肪（g）"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={editingForm.fat}
+                  onChange={(event) =>
+                    setEditingForm((previous) => ({ ...previous, fat: event.target.value }))
+                  }
+                />
+              </Col>
+            </Row>
           </div>
         </div>
       </Modal>

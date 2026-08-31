@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
+import { Grid } from '@arco-design/web-react';
 import {
   Bar,
   BarChart,
@@ -21,6 +22,9 @@ import type {
   HealthComparisonPeriod,
   HealthComparisonResult,
 } from '../../../types/healthDashboard';
+
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 interface HealthComparisonSectionProps {
   showToast: (message: string, type?: 'success' | 'error') => void;
@@ -137,7 +141,11 @@ export function HealthComparisonSection({ showToast }: HealthComparisonSectionPr
 
   const chartData = data
     ? [
-        { name: data.previous.label, value: Number(data.previous.value.toFixed(2)), tone: 'previous' },
+        {
+          name: data.previous.label,
+          value: Number(data.previous.value.toFixed(2)),
+          tone: 'previous',
+        },
         { name: data.current.label, value: Number(data.current.value.toFixed(2)), tone: 'current' },
       ]
     : [];
@@ -148,7 +156,7 @@ export function HealthComparisonSection({ showToast }: HealthComparisonSectionPr
     <SectionCard
       title="数据对比"
       description="同比 / 环比对比当前周期与上一周期"
-      action={(
+      action={
         <div className="health-comparison-controls">
           <PillTabs
             options={METRIC_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
@@ -161,29 +169,39 @@ export function HealthComparisonSection({ showToast }: HealthComparisonSectionPr
             onChange={handlePeriodChange}
           />
         </div>
-      )}
+      }
     >
       {!data ? (
         <EmptyState title="暂无对比数据" description="请稍后重试。" />
       ) : (
         <>
-          <div className="health-comparison-summary">
-            <div className="health-comparison-card">
-              <span>{data.previous.label}</span>
-              <strong>{formatValue(data.previous.value, metric)} {METRIC_UNITS[metric]}</strong>
-              <span className="muted">{data.previous.recordCount} 条记录</span>
-            </div>
-            <div className="health-comparison-card">
-              <span>{data.current.label}</span>
-              <strong>{formatValue(data.current.value, metric)} {METRIC_UNITS[metric]}</strong>
-              <span className="muted">{data.current.recordCount} 条记录</span>
-            </div>
-            <div className="health-comparison-card">
-              <span>同比变化</span>
-              <strong style={{ color: getTrendColor(data.trend) }}>{changeText}</strong>
-              <span className="muted">{METRIC_LABELS[metric]}</span>
-            </div>
-          </div>
+          <Row gutter={[12, 12]}>
+            <Col span={8}>
+              <div className="health-comparison-card">
+                <span>{data.previous.label}</span>
+                <strong>
+                  {formatValue(data.previous.value, metric)} {METRIC_UNITS[metric]}
+                </strong>
+                <span className="muted">{data.previous.recordCount} 条记录</span>
+              </div>
+            </Col>
+            <Col span={8}>
+              <div className="health-comparison-card">
+                <span>{data.current.label}</span>
+                <strong>
+                  {formatValue(data.current.value, metric)} {METRIC_UNITS[metric]}
+                </strong>
+                <span className="muted">{data.current.recordCount} 条记录</span>
+              </div>
+            </Col>
+            <Col span={8}>
+              <div className="health-comparison-card">
+                <span>同比变化</span>
+                <strong style={{ color: getTrendColor(data.trend) }}>{changeText}</strong>
+                <span className="muted">{METRIC_LABELS[metric]}</span>
+              </div>
+            </Col>
+          </Row>
           <div
             style={{
               width: '100%',
@@ -197,8 +215,15 @@ export function HealthComparisonSection({ showToast }: HealthComparisonSectionPr
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-hairline)" />
-                <XAxis dataKey="name" tick={{ fill: 'var(--color-ink-2)', fontSize: 12 }} stroke="var(--color-hairline)" />
-                <YAxis tick={{ fill: 'var(--color-ink-3)', fontSize: 10 }} stroke="var(--color-hairline)" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fill: 'var(--color-ink-2)', fontSize: 12 }}
+                  stroke="var(--color-hairline)"
+                />
+                <YAxis
+                  tick={{ fill: 'var(--color-ink-3)', fontSize: 10 }}
+                  stroke="var(--color-hairline)"
+                />
                 <Tooltip
                   contentStyle={tooltipStyle}
                   formatter={(value) => [`${value} ${METRIC_UNITS[metric]}`, METRIC_LABELS[metric]]}
@@ -206,10 +231,7 @@ export function HealthComparisonSection({ showToast }: HealthComparisonSectionPr
                 <Legend />
                 <Bar dataKey="value" name={METRIC_LABELS[metric]} radius={[8, 8, 0, 0]}>
                   {chartData.map((entry, index) => (
-                    <Cell
-                      key={index}
-                      fill={entry.tone === 'current' ? '#5e6ad2' : '#c7d2fe'}
-                    />
+                    <Cell key={index} fill={entry.tone === 'current' ? '#5e6ad2' : '#c7d2fe'} />
                   ))}
                 </Bar>
               </BarChart>
