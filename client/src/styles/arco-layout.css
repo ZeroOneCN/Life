@@ -8,6 +8,18 @@
   transition: background-color 0.2s ease;
 }
 
+/* 最外层 Arco Layout 必须固定高度，避免出现双重滚动条 */
+.arco-layout-wrapper > .arco-layout {
+  height: 100vh !important;
+  overflow: hidden !important;
+}
+
+/* 内层内容布局容器（header + content + footer）也需要隐藏溢出，
+   让滚动只发生在 .arco-layout-content 内部 */
+.arco-layout-wrapper > .arco-layout > .arco-layout {
+  overflow: hidden !important;
+}
+
 /* ============ 侧边栏 ============ */
 .arco-layout-sider {
   position: sticky !important;
@@ -161,6 +173,7 @@
 .arco-layout-content {
   min-height: calc(100vh - 56px - 40px);
   background: var(--color-bg-1, #f5f6f8);
+  overflow: auto;
 }
 
 /* 页面容器（带过渡动画） */
@@ -344,6 +357,7 @@
   /* 内容区 */
   .arco-layout-content {
     min-height: calc(100vh - 48px - 36px);
+    overflow: auto;
   }
 
   .arco-layout-page {
