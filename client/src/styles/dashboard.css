@@ -77,6 +77,18 @@
   }
 }
 
+/* Arco Grid 响应式适配 */
+@media (max-width: 900px) {
+  .dash-arco-grid .arco-col {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+}
+.dash-arco-grid .arco-col > .dash-masonry-item {
+  margin-bottom: 0;
+  animation: dashFadeInUp 0.4s ease both;
+}
+
 .dash-masonry-item {
   break-inside: avoid;
   margin-bottom: 20px;
@@ -259,24 +271,10 @@
 }
 
 /* ===== 待办列表（agenda inline）====== */
-/* 使用 Arco List 组件，保留 .dash-agenda-item 作为内部样式 */
-
-/* Arco List 替换后的样式修正 */
-.dash-card-bd .arco-list {
-  border: none;
-  background: transparent;
-  padding: 0;
-}
-.dash-card-bd .arco-list .arco-list-content .arco-list-item {
-  border: none;
-  padding: 0;
-  margin-bottom: 8px;
-}
-.dash-card-bd .arco-list .arco-list-content .arco-list-item:last-child {
-  margin-bottom: 0;
-}
-.dash-card-bd .arco-list .arco-list-content .arco-list-item .arco-list-item-content {
-  padding: 0;
+.dash-agenda-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .dash-agenda-item {
@@ -292,6 +290,24 @@
   font-size: var(--fs-body);
   transition: all 0.15s;
   animation: dashItemFadeIn 0.3s ease both;
+}
+.dash-agenda-item:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.dash-agenda-item:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.dash-agenda-item:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.dash-agenda-item:nth-child(4) {
+  animation-delay: 0.2s;
+}
+.dash-agenda-item:nth-child(5) {
+  animation-delay: 0.25s;
+}
+.dash-agenda-item:nth-child(6) {
+  animation-delay: 0.3s;
 }
 .dash-agenda-item:hover {
   background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface-2));

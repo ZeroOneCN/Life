@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { List } from '@arco-design/web-react';
+import { Grid } from '@arco-design/web-react';
 
 import { EmptyState, PageHeader } from '../components/page';
 import { Skeleton, Tag } from '../components/ui';
@@ -11,6 +11,9 @@ import type {
   DashboardModuleSnapshot,
   DashboardPageSummary,
 } from '../types/dashboard';
+
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 interface RawDashboardSummaryResponse {
   overviewCards: Array<{ key: string; label: string; value: string | number }>;
@@ -405,14 +408,12 @@ export default function Dashboard() {
 
   const agendaInline = useMemo(() => {
     if (!summary) return [];
-    return summary.agenda
-      .slice(0, 6)
-      .map((item) => ({
-        id: item.id,
-        dotClass: SEVERITY_DOT_CLASS[item.severity] ?? 'dash-dot dash-dot-low',
-        title: item.title,
-        href: item.href,
-      }));
+    return summary.agenda.slice(0, 6).map((item) => ({
+      id: item.id,
+      dotClass: SEVERITY_DOT_CLASS[item.severity] ?? 'dash-dot dash-dot-low',
+      title: item.title,
+      href: item.href,
+    }));
   }, [summary]);
 
   const timelineItems = useMemo(() => {
@@ -501,374 +502,393 @@ export default function Dashboard() {
         }
       />
 
-      <div className="dash-masonry">
+      <Row gutter={[24, 20]} className="dash-arco-grid">
         {/* ====== 0. 待办事项（顶部一行，全宽横跨）====== */}
         {hasAgenda ? (
-          <div className="dash-masonry-item dash-card is-full">
-            <div className="dash-card-hd is-tight">
-              <div className="dash-card-icon dash-bg-life">
-                <IconTodo />
+          <Col span={24}>
+            <div className="dash-masonry-item dash-card is-full">
+              <div className="dash-card-hd is-tight">
+                <div className="dash-card-icon dash-bg-life">
+                  <IconTodo />
+                </div>
+                <div className="dash-card-title-area">
+                  <h3>待处理事项</h3>
+                  <span>共 {summary.agenda.length} 项需要关注</span>
+                </div>
+                <Link to="/life/todo?todoTab=tasks" className="dash-link-primary">
+                  查看全部 →
+                </Link>
               </div>
-              <div className="dash-card-title-area">
-                <h3>待处理事项</h3>
-                <span>共 {summary.agenda.length} 项需要关注</span>
+              <div className="dash-card-bd">
+                <div className="dash-agenda-list">
+                  {agendaInline.map((item) => (
+                    <Link key={item.id} to={item.href} className="dash-agenda-item">
+                      <span className={item.dotClass} aria-hidden="true" />
+                      <span className="dash-agenda-title">{item.title}</span>
+                      <span className="dash-agenda-arrow">→</span>
+                    </Link>
+                  ))}
+                </div>
               </div>
-              <Link to="/life/todo?todoTab=tasks" className="dash-link-primary">
-                查看全部 →
-              </Link>
             </div>
-            <div className="dash-card-bd">
-              <List
-                dataSource={agendaInline}
-                render={(item, index) => (
-                  <Link
-                    key={item.id}
-                    to={item.href}
-                    className="dash-agenda-item"
-                    style={{ animationDelay: `${(index + 1) * 0.05}s` }}
-                  >
-                    <span className={item.dotClass} aria-hidden="true" />
-                    <span className="dash-agenda-title">{item.title}</span>
-                    <span className="dash-agenda-arrow">→</span>
-                  </Link>
-                )}
-              />
-            </div>
-          </div>
+          </Col>
         ) : null}
 
         {/* ====== 1. 健康中心（大模块，可点击跳转）====== */}
-        <Link to="/health/overview" className="dash-masonry-item dash-card dash-card-link">
-          <div className="dash-card-hd is-tight">
-            <div className="dash-card-icon dash-bg-health">
-              <IconHeart />
-            </div>
-            <div className="dash-card-title-area">
-              <h3>健康中心</h3>
-              <span>今日数据快照</span>
-            </div>
-            <span className="dash-arrow">→</span>
-          </div>
-          <div className="dash-card-bd">
-            <div className="dash-step-block">
-              <div className="dash-step-label">今日步数</div>
-              <div className="dash-step-value">{h[0]?.value?.toLocaleString() || '0'}</div>
-              <div className="dash-step-meta">
-                <span className="dash-step-meta-label">今日已录入</span>
-                <span className="dash-step-meta-value">{stepsNum.toLocaleString()} 步</span>
-              </div>
-            </div>
-            <div className="dash-mini-grid">
-              {h.slice(1).map((m, i) => (
-                <div key={i} className="dash-mini-stat">
-                  <div className="dash-mini-stat-label">{m.label}</div>
-                  <div className="dash-mini-stat-value">{m.value}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Link>
-
-        {/* ====== 2. 投资中心（可点击跳转）====== */}
-        <Link
-          to="/investment/forex?forexTab=trades"
-          className="dash-masonry-item dash-card dash-card-link"
-        >
-          <div className="dash-card-hd is-tight">
-            <div className="dash-card-icon dash-bg-invest">
-              <IconTrend />
-            </div>
-            <div className="dash-card-title-area">
-              <h3>投资中心</h3>
-              <span>本月累计数据</span>
-            </div>
-            <span className="dash-arrow">→</span>
-          </div>
-          <div className="dash-card-bd">
-            <div className="dash-pnl-block">
-              <div className="dash-pnl-block-label">净收益</div>
-              <div className={`dash-pnl-display ${isPnlPositive ? 'is-positive' : 'is-negative'}`}>
-                {inv[0]?.value || '¥0'}
-              </div>
-            </div>
-            {inv.slice(1).map((m, i) => (
-              <div key={i} className="dash-metric-row is-tight">
-                <span className="dash-metric-label">{m.label}</span>
-                <span className="dash-metric-value">{m.value}</span>
-              </div>
-            ))}
-            <div className="dash-trend-cta">
-              <span
-                className={`dash-trend-cta-pill ${isPnlPositive ? 'is-positive' : 'is-negative'}`}
-              >
-                {isPnlPositive ? '盈利中' : '亏损中'} · 查看详情 →
-              </span>
-            </div>
-          </div>
-        </Link>
-
-        {/* ====== 4. 财务中心（可点击跳转）====== */}
-        <Link to="/finance/overview" className="dash-masonry-item dash-card dash-card-link">
-          <div className="dash-card-hd is-tight">
-            <div className="dash-card-icon dash-bg-finance">
-              <IconWallet />
-            </div>
-            <div className="dash-card-title-area">
-              <h3>财务中心</h3>
-              <span>资金与订阅概览</span>
-            </div>
-            <span className="dash-arrow">→</span>
-          </div>
-          <div className="dash-card-bd">
-            {f.map((m, i) => (
-              <div key={i} className="dash-metric-row is-loose">
-                <span className="dash-metric-label">{m.label}</span>
-                <span
-                  className={`dash-metric-value is-strong ${i === 0 ? 'is-danger-accent' : ''}`}
-                >
-                  {m.value}
-                </span>
-              </div>
-            ))}
-            <div className="dash-trend-cta">
-              <span className="dash-trend-cta-pill is-negative">管理财务 →</span>
-            </div>
-          </div>
-        </Link>
-
-        {/* ====== 4.5 即将到期订阅（7 天内）====== */}
-        {summary.upcomingSubscriptions.length > 0 ? (
-          <Link
-            to="/finance/subscription?subscriptionTab=records"
-            className="dash-masonry-item dash-card dash-card-link"
-          >
+        <Col span={12}>
+          <Link to="/health/overview" className="dash-masonry-item dash-card dash-card-link">
             <div className="dash-card-hd is-tight">
-              <div className="dash-card-icon dash-bg-finance">
-                <IconBell />
+              <div className="dash-card-icon dash-bg-health">
+                <IconHeart />
               </div>
               <div className="dash-card-title-area">
-                <h3>即将到期订阅</h3>
-                <span>{summary.upcomingSubscriptions.length} 项订阅 7 天内到期</span>
+                <h3>健康中心</h3>
+                <span>今日数据快照</span>
               </div>
               <span className="dash-arrow">→</span>
             </div>
             <div className="dash-card-bd">
-              <div className="dash-upcoming-sub-list">
-                {summary.upcomingSubscriptions.map((sub) => (
-                  <div key={sub.id} className="dash-upcoming-sub-item">
-                    <div className="dash-upcoming-sub-main">
-                      <strong>{sub.serviceName}</strong>
-                      <span className="subtle-text">
-                        {sub.planName || '默认套餐'}
-                        {sub.autoRenew ? ' · 自动续费' : ' · 手动续费'}
-                      </span>
-                    </div>
-                    <div className="dash-upcoming-sub-meta">
-                      <span
-                        className={`dash-upcoming-sub-days ${sub.daysLeft <= 0 ? 'is-expired' : sub.daysLeft <= 3 ? 'is-warn' : ''}`}
-                      >
-                        {sub.daysLeft < 0
-                          ? `逾期 ${Math.abs(sub.daysLeft)} 天`
-                          : sub.daysLeft === 0
-                            ? '今日到期'
-                            : `${sub.daysLeft} 天后`}
-                      </span>
-                      <span className="subtle-text">{sub.endDate}</span>
-                      <span className="dash-upcoming-sub-price">¥{sub.cyclePrice.toFixed(2)}</span>
-                    </div>
+              <div className="dash-step-block">
+                <div className="dash-step-label">今日步数</div>
+                <div className="dash-step-value">{h[0]?.value?.toLocaleString() || '0'}</div>
+                <div className="dash-step-meta">
+                  <span className="dash-step-meta-label">今日已录入</span>
+                  <span className="dash-step-meta-value">{stepsNum.toLocaleString()} 步</span>
+                </div>
+              </div>
+              <div className="dash-mini-grid">
+                {h.slice(1).map((m, i) => (
+                  <div key={i} className="dash-mini-stat">
+                    <div className="dash-mini-stat-label">{m.label}</div>
+                    <div className="dash-mini-stat-value">{m.value}</div>
                   </div>
                 ))}
               </div>
             </div>
           </Link>
+        </Col>
+
+        {/* ====== 2. 投资中心（可点击跳转）====== */}
+        <Col span={12}>
+          <Link
+            to="/investment/forex?forexTab=trades"
+            className="dash-masonry-item dash-card dash-card-link"
+          >
+            <div className="dash-card-hd is-tight">
+              <div className="dash-card-icon dash-bg-invest">
+                <IconTrend />
+              </div>
+              <div className="dash-card-title-area">
+                <h3>投资中心</h3>
+                <span>本月累计数据</span>
+              </div>
+              <span className="dash-arrow">→</span>
+            </div>
+            <div className="dash-card-bd">
+              <div className="dash-pnl-block">
+                <div className="dash-pnl-block-label">净收益</div>
+                <div
+                  className={`dash-pnl-display ${isPnlPositive ? 'is-positive' : 'is-negative'}`}
+                >
+                  {inv[0]?.value || '¥0'}
+                </div>
+              </div>
+              {inv.slice(1).map((m, i) => (
+                <div key={i} className="dash-metric-row is-tight">
+                  <span className="dash-metric-label">{m.label}</span>
+                  <span className="dash-metric-value">{m.value}</span>
+                </div>
+              ))}
+              <div className="dash-trend-cta">
+                <span
+                  className={`dash-trend-cta-pill ${isPnlPositive ? 'is-positive' : 'is-negative'}`}
+                >
+                  {isPnlPositive ? '盈利中' : '亏损中'} · 查看详情 →
+                </span>
+              </div>
+            </div>
+          </Link>
+        </Col>
+
+        {/* ====== 4. 财务中心（可点击跳转）====== */}
+        <Col span={12}>
+          <Link to="/finance/overview" className="dash-masonry-item dash-card dash-card-link">
+            <div className="dash-card-hd is-tight">
+              <div className="dash-card-icon dash-bg-finance">
+                <IconWallet />
+              </div>
+              <div className="dash-card-title-area">
+                <h3>财务中心</h3>
+                <span>资金与订阅概览</span>
+              </div>
+              <span className="dash-arrow">→</span>
+            </div>
+            <div className="dash-card-bd">
+              {f.map((m, i) => (
+                <div key={i} className="dash-metric-row is-loose">
+                  <span className="dash-metric-label">{m.label}</span>
+                  <span
+                    className={`dash-metric-value is-strong ${i === 0 ? 'is-danger-accent' : ''}`}
+                  >
+                    {m.value}
+                  </span>
+                </div>
+              ))}
+              <div className="dash-trend-cta">
+                <span className="dash-trend-cta-pill is-negative">管理财务 →</span>
+              </div>
+            </div>
+          </Link>
+        </Col>
+
+        {/* ====== 4.5 即将到期订阅（7 天内）====== */}
+        {summary.upcomingSubscriptions.length > 0 ? (
+          <Col span={12}>
+            <Link
+              to="/finance/subscription?subscriptionTab=records"
+              className="dash-masonry-item dash-card dash-card-link"
+            >
+              <div className="dash-card-hd is-tight">
+                <div className="dash-card-icon dash-bg-finance">
+                  <IconBell />
+                </div>
+                <div className="dash-card-title-area">
+                  <h3>即将到期订阅</h3>
+                  <span>{summary.upcomingSubscriptions.length} 项订阅 7 天内到期</span>
+                </div>
+                <span className="dash-arrow">→</span>
+              </div>
+              <div className="dash-card-bd">
+                <div className="dash-upcoming-sub-list">
+                  {summary.upcomingSubscriptions.map((sub) => (
+                    <div key={sub.id} className="dash-upcoming-sub-item">
+                      <div className="dash-upcoming-sub-main">
+                        <strong>{sub.serviceName}</strong>
+                        <span className="subtle-text">
+                          {sub.planName || '默认套餐'}
+                          {sub.autoRenew ? ' · 自动续费' : ' · 手动续费'}
+                        </span>
+                      </div>
+                      <div className="dash-upcoming-sub-meta">
+                        <span
+                          className={`dash-upcoming-sub-days ${sub.daysLeft <= 0 ? 'is-expired' : sub.daysLeft <= 3 ? 'is-warn' : ''}`}
+                        >
+                          {sub.daysLeft < 0
+                            ? `逾期 ${Math.abs(sub.daysLeft)} 天`
+                            : sub.daysLeft === 0
+                              ? '今日到期'
+                              : `${sub.daysLeft} 天后`}
+                        </span>
+                        <span className="subtle-text">{sub.endDate}</span>
+                        <span className="dash-upcoming-sub-price">
+                          ¥{sub.cyclePrice.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Link>
+          </Col>
         ) : null}
 
         {/* ====== 5. 生活中心（可点击跳转）====== */}
-        <Link to="/life/todo?todoTab=tasks" className="dash-masonry-item dash-card dash-card-link">
-          <div className="dash-card-hd is-tight">
-            <div className="dash-card-icon dash-bg-life">
-              <IconHome />
-            </div>
-            <div className="dash-card-title-area">
-              <h3>生活中心</h3>
-              <span>待办与物品追踪</span>
-            </div>
-            <span className="dash-arrow">→</span>
-          </div>
-          <div className="dash-card-bd">
-            {l.map((m, i) => (
-              <div key={i} className="dash-metric-row is-loose">
-                <span className="dash-metric-label">{m.label}</span>
-                <span className="dash-metric-value is-strong">{m.value}</span>
+        <Col span={12}>
+          <Link
+            to="/life/todo?todoTab=tasks"
+            className="dash-masonry-item dash-card dash-card-link"
+          >
+            <div className="dash-card-hd is-tight">
+              <div className="dash-card-icon dash-bg-life">
+                <IconHome />
               </div>
-            ))}
-            <div className="dash-trend-cta">
-              <span className="dash-trend-cta-pill is-primary">管理生活 →</span>
+              <div className="dash-card-title-area">
+                <h3>生活中心</h3>
+                <span>待办与物品追踪</span>
+              </div>
+              <span className="dash-arrow">→</span>
             </div>
-          </div>
-        </Link>
+            <div className="dash-card-bd">
+              {l.map((m, i) => (
+                <div key={i} className="dash-metric-row is-loose">
+                  <span className="dash-metric-label">{m.label}</span>
+                  <span className="dash-metric-value is-strong">{m.value}</span>
+                </div>
+              ))}
+              <div className="dash-trend-cta">
+                <span className="dash-trend-cta-pill is-primary">管理生活 →</span>
+              </div>
+            </div>
+          </Link>
+        </Col>
 
         {/* ====== 6. 最近动态（表格）====== */}
-        <div className="dash-masonry-item dash-card">
-          <div className="dash-card-hd is-tight">
-            <div className="dash-card-icon dash-bg-notif">
-              <IconBell />
+        <Col span={12}>
+          <div className="dash-masonry-item dash-card">
+            <div className="dash-card-hd is-tight">
+              <div className="dash-card-icon dash-bg-notif">
+                <IconBell />
+              </div>
+              <div className="dash-card-title-area">
+                <h3>最近动态</h3>
+                <span>实时活动记录</span>
+              </div>
             </div>
-            <div className="dash-card-title-area">
-              <h3>最近动态</h3>
-              <span>实时活动记录</span>
-            </div>
-          </div>
-          <div className="dash-card-bd">
-            {timelineItems.length > 0 ? (
-              <>
-                <div className="dash-timeline-grid dash-timeline-header">
-                  <span>日期时间</span>
-                  <span>类型</span>
-                  <span>具体内容</span>
-                </div>
-                {timelineItems.map((item, i) => (
-                  <div key={i} className="dash-timeline-grid dash-timeline-row">
-                    <span className="dash-timeline-cell-time">{item.time}</span>
-                    <span className={`dash-timeline-cell-module ${item.moduleClass}`}>
-                      {item.module}
-                    </span>
-                    <span className="dash-timeline-cell-title">{item.title}</span>
+            <div className="dash-card-bd">
+              {timelineItems.length > 0 ? (
+                <>
+                  <div className="dash-timeline-grid dash-timeline-header">
+                    <span>日期时间</span>
+                    <span>类型</span>
+                    <span>具体内容</span>
                   </div>
-                ))}
-              </>
-            ) : (
-              <EmptyState title="暂无动态" description="当有新活动时会在这里显示" />
-            )}
-          </div>
-        </div>
-
-        {/* ====== 7. 通知渠道状态 ====== */}
-        <div className="dash-masonry-item dash-card">
-          <div className="dash-card-hd is-tight">
-            <div className="dash-card-icon dash-bg-notif">
-              <IconBell />
-            </div>
-            <div className="dash-card-title-area">
-              <h3>通知中心</h3>
-              <span>渠道与日志状态</span>
-            </div>
-          </div>
-          <div className="dash-card-bd">
-            <div className="dash-notif-stats">
-              <div className="dash-notif-stat">
-                <div className="dash-notif-stat-value is-primary">
-                  {summary.notifications.enabledChannels}
-                </div>
-                <div className="dash-notif-stat-label">已启用渠道</div>
-              </div>
-              <div className="dash-notif-stat">
-                <div className="dash-notif-stat-value">{summary.notifications.logCount}</div>
-                <div className="dash-notif-stat-label">最近日志数</div>
-              </div>
-            </div>
-            <div className="dash-notif-channel-list">
-              {channelStatuses.length > 0 ? (
-                channelStatuses.map((ch) => (
-                  <div className="dash-notif-channel-row" key={ch.type}>
-                    <span className="dash-notif-channel-row-label">
-                      <span aria-hidden="true" style={{ marginRight: 6 }}>
-                        {ch.icon}
+                  {timelineItems.map((item, i) => (
+                    <div key={i} className="dash-timeline-grid dash-timeline-row">
+                      <span className="dash-timeline-cell-time">{item.time}</span>
+                      <span className={`dash-timeline-cell-module ${item.moduleClass}`}>
+                        {item.module}
                       </span>
-                      {ch.label}
-                    </span>
-                    <Tag
-                      tone={ch.enabled ? (ch.status === 'ready' ? 'green' : 'orange') : 'default'}
-                    >
-                      {!ch.enabled
-                        ? '未启用'
-                        : ch.status === 'ready'
-                          ? ch.hasRecentLog
-                            ? '活跃'
-                            : '就绪'
-                          : '未配置'}
-                    </Tag>
-                  </div>
-                ))
+                      <span className="dash-timeline-cell-title">{item.title}</span>
+                    </div>
+                  ))}
+                </>
               ) : (
-                <div className="dash-notif-channel-row">
-                  <span className="dash-notif-channel-row-label">通知渠道加载中</span>
-                </div>
+                <EmptyState title="暂无动态" description="当有新活动时会在这里显示" />
               )}
             </div>
           </div>
-        </div>
+        </Col>
+
+        {/* ====== 7. 通知渠道状态 ====== */}
+        <Col span={12}>
+          <div className="dash-masonry-item dash-card">
+            <div className="dash-card-hd is-tight">
+              <div className="dash-card-icon dash-bg-notif">
+                <IconBell />
+              </div>
+              <div className="dash-card-title-area">
+                <h3>通知中心</h3>
+                <span>渠道与日志状态</span>
+              </div>
+            </div>
+            <div className="dash-card-bd">
+              <div className="dash-notif-stats">
+                <div className="dash-notif-stat">
+                  <div className="dash-notif-stat-value is-primary">
+                    {summary.notifications.enabledChannels}
+                  </div>
+                  <div className="dash-notif-stat-label">已启用渠道</div>
+                </div>
+                <div className="dash-notif-stat">
+                  <div className="dash-notif-stat-value">{summary.notifications.logCount}</div>
+                  <div className="dash-notif-stat-label">最近日志数</div>
+                </div>
+              </div>
+              <div className="dash-notif-channel-list">
+                {channelStatuses.length > 0 ? (
+                  channelStatuses.map((ch) => (
+                    <div className="dash-notif-channel-row" key={ch.type}>
+                      <span className="dash-notif-channel-row-label">
+                        <span aria-hidden="true" style={{ marginRight: 6 }}>
+                          {ch.icon}
+                        </span>
+                        {ch.label}
+                      </span>
+                      <Tag
+                        tone={ch.enabled ? (ch.status === 'ready' ? 'green' : 'orange') : 'default'}
+                      >
+                        {!ch.enabled
+                          ? '未启用'
+                          : ch.status === 'ready'
+                            ? ch.hasRecentLog
+                              ? '活跃'
+                              : '就绪'
+                            : '未配置'}
+                      </Tag>
+                    </div>
+                  ))
+                ) : (
+                  <div className="dash-notif-channel-row">
+                    <span className="dash-notif-channel-row-label">通知渠道加载中</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </Col>
 
         {/* ====== 8. AI 助理调用记录 ====== */}
-        <div className="dash-masonry-item dash-card">
-          <div className="dash-card-hd is-tight">
-            <div className="dash-card-icon dash-bg-invest">
-              <IconChart />
+        <Col span={12}>
+          <div className="dash-masonry-item dash-card">
+            <div className="dash-card-hd is-tight">
+              <div className="dash-card-icon dash-bg-invest">
+                <IconChart />
+              </div>
+              <div className="dash-card-title-area">
+                <h3>AI 助理</h3>
+                <span>调用次数与 Token 消耗</span>
+              </div>
+              <Link to="/settings/profile" className="dash-link-primary">
+                详情 →
+              </Link>
             </div>
-            <div className="dash-card-title-area">
-              <h3>AI 助理</h3>
-              <span>调用次数与 Token 消耗</span>
-            </div>
-            <Link to="/settings/profile" className="dash-link-primary">
-              详情 →
-            </Link>
-          </div>
-          <div className="dash-card-bd">
-            {aiUsage ? (
-              <>
-                <div className="dash-notif-stats">
-                  <div className="dash-notif-stat">
-                    <div className="dash-notif-stat-value is-primary">
-                      {aiUsage.local.todayCalls}
-                    </div>
-                    <div className="dash-notif-stat-label">今日调用</div>
-                  </div>
-                  <div className="dash-notif-stat">
-                    <div className="dash-notif-stat-value">
-                      {aiUsage.local.todayTokens.toLocaleString()}
-                    </div>
-                    <div className="dash-notif-stat-label">今日 Token</div>
-                  </div>
-                  <div className="dash-notif-stat">
-                    <div className="dash-notif-stat-value">
-                      {aiUsage.local.totalCalls.toLocaleString()}
-                    </div>
-                    <div className="dash-notif-stat-label">累计调用</div>
-                  </div>
-                  <div className="dash-notif-stat">
-                    <div className="dash-notif-stat-value">
-                      {aiUsage.local.totalTokens.toLocaleString()}
-                    </div>
-                    <div className="dash-notif-stat-label">累计 Token</div>
-                  </div>
-                </div>
-                {aiUsage.scenes.length > 0 ? (
-                  <div className="dash-upcoming-sub-list">
-                    {aiUsage.scenes.slice(0, 4).map((scene) => (
-                      <div key={scene.scene} className="dash-upcoming-sub-item">
-                        <div className="dash-upcoming-sub-main">
-                          <strong>{scene.label}</strong>
-                          <span className="subtle-text">{scene.totalCalls} 次调用</span>
-                        </div>
-                        <div className="dash-upcoming-sub-meta">
-                          <span className="subtle-text">
-                            {scene.totalTokens.toLocaleString()} tokens
-                          </span>
-                          <span className="dash-upcoming-sub-price">
-                            ¥{scene.estimatedCost.toFixed(4)}
-                          </span>
-                        </div>
+            <div className="dash-card-bd">
+              {aiUsage ? (
+                <>
+                  <div className="dash-notif-stats">
+                    <div className="dash-notif-stat">
+                      <div className="dash-notif-stat-value is-primary">
+                        {aiUsage.local.todayCalls}
                       </div>
-                    ))}
+                      <div className="dash-notif-stat-label">今日调用</div>
+                    </div>
+                    <div className="dash-notif-stat">
+                      <div className="dash-notif-stat-value">
+                        {aiUsage.local.todayTokens.toLocaleString()}
+                      </div>
+                      <div className="dash-notif-stat-label">今日 Token</div>
+                    </div>
+                    <div className="dash-notif-stat">
+                      <div className="dash-notif-stat-value">
+                        {aiUsage.local.totalCalls.toLocaleString()}
+                      </div>
+                      <div className="dash-notif-stat-label">累计调用</div>
+                    </div>
+                    <div className="dash-notif-stat">
+                      <div className="dash-notif-stat-value">
+                        {aiUsage.local.totalTokens.toLocaleString()}
+                      </div>
+                      <div className="dash-notif-stat-label">累计 Token</div>
+                    </div>
                   </div>
-                ) : null}
-              </>
-            ) : (
-              <EmptyState title="AI 未启用" description="未配置 DEEPSEEK_API_KEY 或加载失败" />
-            )}
+                  {aiUsage.scenes.length > 0 ? (
+                    <div className="dash-upcoming-sub-list">
+                      {aiUsage.scenes.slice(0, 4).map((scene) => (
+                        <div key={scene.scene} className="dash-upcoming-sub-item">
+                          <div className="dash-upcoming-sub-main">
+                            <strong>{scene.label}</strong>
+                            <span className="subtle-text">{scene.totalCalls} 次调用</span>
+                          </div>
+                          <div className="dash-upcoming-sub-meta">
+                            <span className="subtle-text">
+                              {scene.totalTokens.toLocaleString()} tokens
+                            </span>
+                            <span className="dash-upcoming-sub-price">
+                              ¥{scene.estimatedCost.toFixed(4)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <EmptyState title="AI 未启用" description="未配置 DEEPSEEK_API_KEY 或加载失败" />
+              )}
+            </div>
           </div>
-        </div>
-      </div>
+        </Col>
+      </Row>
     </div>
   );
 }
