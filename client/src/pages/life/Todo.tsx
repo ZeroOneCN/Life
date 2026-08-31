@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 import { TodoLogsSection } from '../../components/life/TodoLogsSection';
 import { TodoSettingsSection } from '../../components/life/TodoSettingsSection';
@@ -42,7 +45,11 @@ const EMPTY_SETTINGS: TodoReminderSettings = {
 };
 
 export default function TodoPage() {
-  const [tab, setTab] = usePageTab<TodoTab>('tasks', TAB_OPTIONS.map((item) => item.value), 'todoTab');
+  const [tab, setTab] = usePageTab<TodoTab>(
+    'tasks',
+    TAB_OPTIONS.map((item) => item.value),
+    'todoTab',
+  );
   useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);
@@ -92,64 +99,74 @@ export default function TodoPage() {
     };
   }, [refreshToken]);
 
-  const subtitle = useMemo(() => (
-    '管理日常待办事项，追踪任务完成进度'
-  ), []);
+  const subtitle = useMemo(() => '管理日常待办事项，追踪任务完成进度', []);
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        title="待办中心"
-        subtitle={subtitle}
-        actions={(
-          <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as TodoTab)} />
-        )}
-      />
+    <div className="page-grid-wrapper">
+      <Row gutter={[24, 20]}>
+        <Col span={24}>
+          <PageHeader
+            title="待办中心"
+            subtitle={subtitle}
+            actions={
+              <PillTabs
+                options={TAB_OPTIONS}
+                value={tab}
+                onChange={(value) => setTab(value as TodoTab)}
+              />
+            }
+          />
+        </Col>
 
-      <StatGrid
-        className="todo-overview-grid"
-        items={[
-          { label: '总任务数', value: `${overview.totalCount}` },
-          { label: '进行中', value: `${overview.activeCount}` },
-          { label: '已完成', value: `${overview.completedCount}` },
-          { label: '重复任务', value: `${overview.recurringCount}`, helper: `每日 ${overview.dailyCount} 项` },
-          { label: '今日到期', value: `${overview.dueTodayCount}`, helper: `高${overview.highPriorityCount} / 中${overview.mediumPriorityCount} / 低${overview.lowPriorityCount}` },
-        ]}
-      />
+        <Col span={24}>
+          <StatGrid
+            items={[
+              { label: '总任务数', value: `${overview.totalCount}` },
+              { label: '进行中', value: `${overview.activeCount}` },
+              { label: '已完成', value: `${overview.completedCount}` },
+              {
+                label: '重复任务',
+                value: `${overview.recurringCount}`,
+                helper: `每日 ${overview.dailyCount} 项`,
+              },
+              {
+                label: '今日到期',
+                value: `${overview.dueTodayCount}`,
+                helper: `高${overview.highPriorityCount} / 中${overview.mediumPriorityCount} / 低${overview.lowPriorityCount}`,
+              },
+            ]}
+          />
+        </Col>
 
-      {tab === 'tasks' ? (
-        <TodoTasksSection
-          showToast={showToast}
-          onChanged={refreshPage}
-        />
-      ) : null}
+        <Col span={24}>
+          {tab === 'tasks' ? (
+            <TodoTasksSection showToast={showToast} onChanged={refreshPage} />
+          ) : null}
 
-      {tab === 'settings' ? (
-        <TodoSettingsSection
-          settings={settings}
-          showToast={showToast}
-          onChanged={async () => {
-            await hydrateNotificationCenterState();
-            refreshPage();
-          }}
-        />
-      ) : null}
+          {tab === 'settings' ? (
+            <TodoSettingsSection
+              settings={settings}
+              showToast={showToast}
+              onChanged={async () => {
+                await hydrateNotificationCenterState();
+                refreshPage();
+              }}
+            />
+          ) : null}
 
-      {tab === 'logs' ? (
-        <TodoLogsSection
-          showToast={showToast}
-          refreshToken={refreshToken}
-        />
-      ) : null}
+          {tab === 'logs' ? (
+            <TodoLogsSection showToast={showToast} refreshToken={refreshToken} />
+          ) : null}
 
-      {tab === 'trash' ? (
-        <TodoTrashSection
-          showToast={showToast}
-          onChanged={refreshPage}
-        />
-      ) : null}
+          {tab === 'trash' ? (
+            <TodoTrashSection showToast={showToast} onChanged={refreshPage} />
+          ) : null}
+        </Col>
 
-      <Toast toast={toast} />
+        <Col span={24}>
+          <Toast toast={toast} />
+        </Col>
+      </Row>
     </div>
   );
 }

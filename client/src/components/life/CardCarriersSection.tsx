@@ -7,7 +7,15 @@ import {
   deleteLifeCardCarrier,
   updateLifeCardCarrier,
 } from '../../services/card';
-import type { LifeCardCarrier, LifeCardCarrierDraft, LifeCardRecord, LifeCardBillRecord } from '../../types/card';
+import type {
+  LifeCardCarrier,
+  LifeCardCarrierDraft,
+  LifeCardRecord,
+  LifeCardBillRecord,
+} from '../../types/card';
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 interface CardCarriersSectionProps {
   carriers: LifeCardCarrier[];
@@ -59,15 +67,21 @@ export function CardCarriersSection({
   const [editingForm, setEditingForm] = useState<CarrierFormState>(createDefaultForm);
   const [pendingDelete, setPendingDelete] = useState<LifeCardCarrier | null>(null);
 
-  const carrierUsageMap = useMemo(() => new Map(
-    carriers.map((carrier) => [
-      carrier.id,
-      {
-        cardCount: cards.filter((card) => card.carrierId === carrier.id || card.carrierName === carrier.name).length,
-        billCount: bills.filter((bill) => bill.carrierName === carrier.name).length,
-      },
-    ]),
-  ), [bills, cards, carriers]);
+  const carrierUsageMap = useMemo(
+    () =>
+      new Map(
+        carriers.map((carrier) => [
+          carrier.id,
+          {
+            cardCount: cards.filter(
+              (card) => card.carrierId === carrier.id || card.carrierName === carrier.name,
+            ).length,
+            billCount: bills.filter((bill) => bill.carrierName === carrier.name).length,
+          },
+        ]),
+      ),
+    [bills, cards, carriers],
+  );
 
   const handleCreate = () => {
     const draft = parseDraft(form);
@@ -112,68 +126,101 @@ export function CardCarriersSection({
       title="运营商管理"
       description="维护录入和筛选要用到的运营商列表，历史数据继续保留运营商名称快照。"
     >
-      <div className="page-stack">
-        <form className="card-carrier-entry-grid" onSubmit={(e) => { e.preventDefault(); handleCreate(); }}>
-          <Field
-            label="运营商名称"
-            value={form.name}
-            onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-            placeholder="例如 中国移动"
-          />
-          <Field
-            label="描述"
-            value={form.description}
-            onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-            placeholder="例如 适合日常通话与流量套餐管理"
-          />
-          <div className="card-entry-action">
-            <Btn tone="primary" type="submit">新增运营商</Btn>
-          </div>
-        </form>
+      <div className="page-grid-wrapper">
+        <Row gutter={[24, 20]}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleCreate();
+            }}
+          >
+            <Row gutter={[12, 12]}>
+              <Col span={8}>
+                <Field
+                  label="运营商名称"
+                  value={form.name}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, name: event.target.value }))
+                  }
+                  placeholder="例如 中国移动"
+                />
+              </Col>
+              <Col span={8}>
+                <Field
+                  label="描述"
+                  value={form.description}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, description: event.target.value }))
+                  }
+                  placeholder="例如 适合日常通话与流量套餐管理"
+                />
+              </Col>
+              <Col span={8}>
+                <div className="card-entry-action">
+                  <Btn tone="primary" type="submit">
+                    新增运营商
+                  </Btn>
+                </div>
+              </Col>
+            </Row>
+          </form>
 
-        {carriers.length ? (
-          <DataTable
-            rowKey="id"
-            data={carriers}
-            columns={[
-              { key: 'name', title: '运营商名称', dataIndex: 'name', width: 160 },
-              { key: 'description', title: '描述', render: (_, row) => row.description || '-', width: 320 },
-              {
-                key: 'usage',
-                title: '历史使用',
-                width: 180,
-                render: (_, row) => {
-                  const usage = carrierUsageMap.get(row.id);
-                  return (
-                    <div className="card-tag-list">
-                      <Tag tone="blue">号卡 {usage?.cardCount ?? 0}</Tag>
-                      <Tag tone="default">账单 {usage?.billCount ?? 0}</Tag>
-                    </div>
-                  );
+          {carriers.length ? (
+            <DataTable
+              rowKey="id"
+              data={carriers}
+              columns={[
+                { key: 'name', title: '运营商名称', dataIndex: 'name', width: 160 },
+                {
+                  key: 'description',
+                  title: '描述',
+                  render: (_, row) => row.description || '-',
+                  width: 320,
                 },
-              },
-              {
-                key: 'actions',
-                title: '操作',
-                width: 160,
-                render: (_, row) => (
-                  <div className="table-actions">
-                    <Btn tone="secondary" onClick={() => {
-                      setEditingCarrier(row);
-                      setEditingForm(buildFormState(row));
-                    }}
-                    >
-                      编辑
-                    </Btn>
-                    <Btn tone="danger" onClick={() => setPendingDelete(row)}>删除</Btn>
-                  </div>
-                ),
-              },
-            ]}
-          />
-        ) : (
-          <EmptyState title="暂无运营商" description="先添加一个运营商，号卡录入和筛选才能更完整地联动。" />
-        )}
+                {
+                  key: 'usage',
+                  title: '历史使用',
+                  width: 180,
+                  render: (_, row) => {
+                    const usage = carrierUsageMap.get(row.id);
+                    return (
+                      <div className="card-tag-list">
+                        <Tag tone="blue">号卡 {usage?.cardCount ?? 0}</Tag>
+                        <Tag tone="default">账单 {usage?.billCount ?? 0}</Tag>
+                      </div>
+                    );
+                  },
+                },
+                {
+                  key: 'actions',
+                  title: '操作',
+                  width: 160,
+                  render: (_, row) => (
+                    <div className="table-actions">
+                      <Btn
+                        tone="secondary"
+                        onClick={() => {
+                          setEditingCarrier(row);
+                          setEditingForm(buildFormState(row));
+                        }}
+                      >
+                        编辑
+                      </Btn>
+                      <Btn tone="danger" onClick={() => setPendingDelete(row)}>
+                        删除
+                      </Btn>
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          ) : (
+            <EmptyState
+              title="暂无运营商"
+              description="先添加一个运营商，号卡录入和筛选才能更完整地联动。"
+            />
+          )}
+        </Row>
       </div>
 
       <Modal
@@ -181,25 +228,37 @@ export function CardCarriersSection({
         onClose={() => setEditingCarrier(null)}
         title={editingCarrier ? `编辑运营商：${editingCarrier.name}` : '编辑运营商'}
         width={680}
-        footer={(
+        footer={
           <>
-            <Btn tone="secondary" onClick={() => setEditingCarrier(null)}>取消</Btn>
-            <Btn tone="primary" onClick={handleSaveEdit}>保存修改</Btn>
+            <Btn tone="secondary" onClick={() => setEditingCarrier(null)}>
+              取消
+            </Btn>
+            <Btn tone="primary" onClick={handleSaveEdit}>
+              保存修改
+            </Btn>
           </>
-        )}
+        }
       >
-        <div className="card-carrier-modal-grid card-carrier-modal-grid-inline">
-          <Field
-            label="运营商名称"
-            value={editingForm.name}
-            onChange={(event) => setEditingForm((current) => ({ ...current, name: event.target.value }))}
-          />
-          <Field
-            label="描述"
-            value={editingForm.description}
-            onChange={(event) => setEditingForm((current) => ({ ...current, description: event.target.value }))}
-          />
-        </div>
+        <Row gutter={[12, 12]}>
+          <Col span={8}>
+            <Field
+              label="运营商名称"
+              value={editingForm.name}
+              onChange={(event) =>
+                setEditingForm((current) => ({ ...current, name: event.target.value }))
+              }
+            />
+          </Col>
+          <Col span={8}>
+            <Field
+              label="描述"
+              value={editingForm.description}
+              onChange={(event) =>
+                setEditingForm((current) => ({ ...current, description: event.target.value }))
+              }
+            />
+          </Col>
+        </Row>
       </Modal>
 
       <DeleteModal

@@ -1,4 +1,7 @@
 import { Btn, Tag } from '../ui';
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
 import { TrashSection, type TrashFilter } from '../shared/TrashSection';
 import { scheduleApi } from '../../services/scheduleApi';
 import type {
@@ -41,17 +44,14 @@ const RECURRENCE_FILTERS: TrashFilter[] = [
  * @param props 组件属性（showToast、onChanged）
  * @returns 渲染日程回收站的 React 元素
  */
-export function ScheduleTrashSection({
-  showToast,
-  onChanged,
-}: ScheduleTrashSectionProps) {
+export function ScheduleTrashSection({ showToast, onChanged }: ScheduleTrashSectionProps) {
   return (
     <TrashSection<ScheduleEventRecord>
       title="回收站"
       description="已删除的日程会先进入回收站，恢复、永久删除和清空都走后端。"
       entityName="日程"
       searchPlaceholder="搜索标题、地点"
-      filterGridClassName="schedule-trash-filter-grid"
+      filterGridClassName=""
       filters={RECURRENCE_FILTERS}
       columns={(helpers) => [
         {
@@ -70,11 +70,12 @@ export function ScheduleTrashSection({
         {
           key: 'recurrence',
           title: '重复',
-          render: (_, row) => (
-            row.recurrenceType === 'none'
-              ? <span className="subtle-text">-</span>
-              : <Tag tone="blue">{RECURRENCE_LABELS[row.recurrenceType]}</Tag>
-          ),
+          render: (_, row) =>
+            row.recurrenceType === 'none' ? (
+              <span className="subtle-text">-</span>
+            ) : (
+              <Tag tone="blue">{RECURRENCE_LABELS[row.recurrenceType]}</Tag>
+            ),
         },
         {
           key: 'trashedAt',
@@ -87,8 +88,12 @@ export function ScheduleTrashSection({
           align: 'right',
           render: (_, row) => (
             <div className="table-actions">
-              <Btn tone="secondary" onClick={() => helpers.onRestore(row)}>恢复</Btn>
-              <Btn tone="danger" onClick={() => helpers.onRequestDelete(row)}>永久删除</Btn>
+              <Btn tone="secondary" onClick={() => helpers.onRestore(row)}>
+                恢复
+              </Btn>
+              <Btn tone="danger" onClick={() => helpers.onRequestDelete(row)}>
+                永久删除
+              </Btn>
             </div>
           ),
         },

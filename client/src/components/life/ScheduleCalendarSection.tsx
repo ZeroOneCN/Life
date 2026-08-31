@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
+
 import { DateTimePickerField } from '../date';
 import { SectionCard } from '../page';
 import {
@@ -148,7 +152,10 @@ function isSameDay(a: string, b: dayjs.Dayjs): boolean {
  * @param type   重复类型
  * @returns {weekdays, dayOfMonth}
  */
-function extractRecurrenceFields(config: ScheduleRecurrenceConfig | null, type: ScheduleRecurrenceType) {
+function extractRecurrenceFields(
+  config: ScheduleRecurrenceConfig | null,
+  type: ScheduleRecurrenceType,
+) {
   return {
     recurrenceWeekdays: config?.weekdays ? [...config.weekdays] : [],
     recurrenceDayOfMonth: config?.dayOfMonth ?? 1,
@@ -215,7 +222,9 @@ function parseDraft(form: EventFormState): ScheduleEventDraft | null {
     recurrenceType: form.recurrenceType,
     recurrenceConfig: buildRecurrenceConfig(form),
     recurrenceEndDate: form.recurrenceEndDate || null,
-    reminderMinutes: Number.isFinite(reminderMinutes as number) ? (reminderMinutes as number) : null,
+    reminderMinutes: Number.isFinite(reminderMinutes as number)
+      ? (reminderMinutes as number)
+      : null,
   };
 }
 
@@ -252,10 +261,14 @@ export function ScheduleCalendarSection({
   const [loading, setLoading] = useState(false);
   const [selectedOccurrence, setSelectedOccurrence] = useState<ScheduleOccurrence | null>(null);
   const [editingEvent, setEditingEvent] = useState<ScheduleEventRecord | null>(null);
-  const [editingForm, setEditingForm] = useState<EventFormState>(() => createEmptyForm(settings.defaultReminderMinutes));
+  const [editingForm, setEditingForm] = useState<EventFormState>(() =>
+    createEmptyForm(settings.defaultReminderMinutes),
+  );
   const [pendingDelete, setPendingDelete] = useState<ScheduleEventRecord | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState<EventFormState>(() => createEmptyForm(settings.defaultReminderMinutes));
+  const [createForm, setCreateForm] = useState<EventFormState>(() =>
+    createEmptyForm(settings.defaultReminderMinutes),
+  );
 
   const weekStartsOn = settings.weekStartsOn;
   const weekdayLabels = weekStartsOn === 0 ? WEEKDAY_LABELS_SUN : WEEKDAY_LABELS_MON;
@@ -346,12 +359,14 @@ export function ScheduleCalendarSection({
       list.push(item);
       map.set(dayKey, list);
     });
-    map.forEach((list) => list.sort((left, right) => {
-      if (left.isAllDay !== right.isAllDay) {
-        return left.isAllDay ? -1 : 1;
-      }
-      return dayjs(left.startAt).valueOf() - dayjs(right.startAt).valueOf();
-    }));
+    map.forEach((list) =>
+      list.sort((left, right) => {
+        if (left.isAllDay !== right.isAllDay) {
+          return left.isAllDay ? -1 : 1;
+        }
+        return dayjs(left.startAt).valueOf() - dayjs(right.startAt).valueOf();
+      }),
+    );
     return map;
   }, [occurrences]);
 
@@ -514,16 +529,28 @@ export function ScheduleCalendarSection({
     value: ScheduleRecurrenceType,
     weekdays: number[],
     dayOfMonth: number,
-    onChange: (next: { recurrenceType: ScheduleRecurrenceType; weekdays: number[]; dayOfMonth: number }) => void,
+    onChange: (next: {
+      recurrenceType: ScheduleRecurrenceType;
+      weekdays: number[];
+      dayOfMonth: number;
+    }) => void,
   ) => (
     <div className="schedule-recurrence-editor">
       <SelectField
         label="重复规则"
         value={value}
-        onChange={(event) => onChange({ recurrenceType: event.target.value as ScheduleRecurrenceType, weekdays, dayOfMonth })}
+        onChange={(event) =>
+          onChange({
+            recurrenceType: event.target.value as ScheduleRecurrenceType,
+            weekdays,
+            dayOfMonth,
+          })
+        }
       >
         {Object.entries(RECURRENCE_LABELS).map(([key, label]) => (
-          <option key={key} value={key}>{label}</option>
+          <option key={key} value={key}>
+            {label}
+          </option>
         ))}
       </SelectField>
       {value === 'weekly' ? (
@@ -537,7 +564,11 @@ export function ScheduleCalendarSection({
                 className={`schedule-recurrence-weekday-pill ${weekdays.includes(item.value) ? 'is-active' : ''}`}
                 onClick={() => {
                   if (weekdays.includes(item.value)) {
-                    onChange({ recurrenceType: value, weekdays: weekdays.filter((w) => w !== item.value), dayOfMonth });
+                    onChange({
+                      recurrenceType: value,
+                      weekdays: weekdays.filter((w) => w !== item.value),
+                      dayOfMonth,
+                    });
                   } else {
                     onChange({
                       recurrenceType: value,
@@ -560,11 +591,13 @@ export function ScheduleCalendarSection({
           min={1}
           max={31}
           value={String(dayOfMonth)}
-          onChange={(event) => onChange({
-            recurrenceType: value,
-            weekdays,
-            dayOfMonth: Math.max(1, Math.min(31, Number(event.target.value) || 1)),
-          })}
+          onChange={(event) =>
+            onChange({
+              recurrenceType: value,
+              weekdays,
+              dayOfMonth: Math.max(1, Math.min(31, Number(event.target.value) || 1)),
+            })
+          }
         />
       ) : null}
     </div>
@@ -611,17 +644,23 @@ export function ScheduleCalendarSection({
           onChange={(event) => setForm((current) => ({ ...current, color: event.target.value }))}
         >
           {COLOR_OPTIONS.map((item) => (
-            <option key={item.value} value={item.value}>{item.label}</option>
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
           ))}
         </SelectField>
         <SelectField
           label="提醒"
           value={form.reminderMinutes}
-          onChange={(event) => setForm((current) => ({ ...current, reminderMinutes: event.target.value }))}
+          onChange={(event) =>
+            setForm((current) => ({ ...current, reminderMinutes: event.target.value }))
+          }
         >
           <option value="">不提醒</option>
           {REMINDER_OPTIONS.map((item) => (
-            <option key={item.value} value={item.value}>{item.label}</option>
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
           ))}
         </SelectField>
       </div>
@@ -631,21 +670,29 @@ export function ScheduleCalendarSection({
         onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))}
         placeholder="可选"
       />
-      {renderRecurrenceEditor(form.recurrenceType, form.recurrenceWeekdays, form.recurrenceDayOfMonth, ({ recurrenceType, weekdays, dayOfMonth }) => setForm((current) => ({
-        ...current,
-        recurrenceType,
-        recurrenceWeekdays: weekdays,
-        recurrenceDayOfMonth: dayOfMonth,
-      })))}
+      {renderRecurrenceEditor(
+        form.recurrenceType,
+        form.recurrenceWeekdays,
+        form.recurrenceDayOfMonth,
+        ({ recurrenceType, weekdays, dayOfMonth }) =>
+          setForm((current) => ({
+            ...current,
+            recurrenceType,
+            recurrenceWeekdays: weekdays,
+            recurrenceDayOfMonth: dayOfMonth,
+          })),
+      )}
       {form.recurrenceType !== 'none' ? (
         <Field
           label="重复截止日期"
           type="date"
           value={form.recurrenceEndDate ? dayjs(form.recurrenceEndDate).format('YYYY-MM-DD') : ''}
-          onChange={(event) => setForm((current) => ({
-            ...current,
-            recurrenceEndDate: event.target.value ? dayjs(event.target.value).toISOString() : '',
-          }))}
+          onChange={(event) =>
+            setForm((current) => ({
+              ...current,
+              recurrenceEndDate: event.target.value ? dayjs(event.target.value).toISOString() : '',
+            }))
+          }
           hint="留空则长期重复"
         />
       ) : null}
@@ -653,7 +700,9 @@ export function ScheduleCalendarSection({
         label="描述"
         rows={3}
         value={form.descriptionMarkdown}
-        onChange={(event) => setForm((current) => ({ ...current, descriptionMarkdown: event.target.value }))}
+        onChange={(event) =>
+          setForm((current) => ({ ...current, descriptionMarkdown: event.target.value }))
+        }
         placeholder="支持 Markdown"
       />
     </div>
@@ -663,177 +712,212 @@ export function ScheduleCalendarSection({
     <SectionCard
       title="日历视图"
       description="按月/周/日浏览日程，支持事件展开、完成切换、编辑和快速新建。"
-      action={<Btn tone="primary" onClick={() => {
-        setCreateForm(createEmptyForm(settings.defaultReminderMinutes));
-        setCreateOpen(true);
-      }}>新建日程</Btn>}
+      action={
+        <Btn
+          tone="primary"
+          onClick={() => {
+            setCreateForm(createEmptyForm(settings.defaultReminderMinutes));
+            setCreateOpen(true);
+          }}
+        >
+          新建日程
+        </Btn>
+      }
     >
-      <div className={`page-stack schedule-calendar ${loading ? 'is-loading' : ''}`}>
-        <div className="schedule-toolbar">
-          <div className="schedule-toolbar-nav">
-            <Btn tone="secondary" onClick={goPrev}>上一页</Btn>
-            <Btn tone="secondary" onClick={goToday}>今天</Btn>
-            <Btn tone="secondary" onClick={goNext}>下一页</Btn>
-          </div>
-          <strong className="schedule-period-label">{periodLabel}</strong>
-          <PillTabs
-            options={[
-              { value: 'month', label: '月视图' },
-              { value: 'week', label: '周视图' },
-              { value: 'day', label: '日视图' },
-            ]}
-            value={view}
-            onChange={(value) => setView(value as ScheduleCalendarView)}
-          />
-        </div>
-
-        {view === 'month' ? (
-          <div className="schedule-month-grid">
-            <div className="schedule-month-header">
-              {weekdayLabels.map((item) => (
-                <div key={item.value} className="schedule-month-header-cell">{item.label}</div>
-              ))}
+      <div className={`page-grid-wrapper schedule-calendar ${loading ? 'is-loading' : ''}`}>
+        <Row gutter={[24, 20]}>
+          <div className="schedule-toolbar">
+            <div className="schedule-toolbar-nav">
+              <Btn tone="secondary" onClick={goPrev}>
+                上一页
+              </Btn>
+              <Btn tone="secondary" onClick={goToday}>
+                今天
+              </Btn>
+              <Btn tone="secondary" onClick={goNext}>
+                下一页
+              </Btn>
             </div>
-            <div className="schedule-month-body">
-              {monthGrid.map((day) => {
-                const dayKey = day.format('YYYY-MM-DD');
-                const dayEvents = occurrencesByDay.get(dayKey) ?? [];
-                const isCurrentMonth = day.month() === cursor.month();
-                const isToday = day.isSame(dayjs(), 'day');
-                return (
-                  <div
-                    key={dayKey}
-                    className={`schedule-month-cell ${isCurrentMonth ? '' : 'is-outside'} ${isToday ? 'is-today' : ''}`}
-                    onClick={() => handleDayClick(day)}
-                  >
-                    <div className="schedule-month-cell-head">
-                      <span className="schedule-month-day-num">{day.date()}</span>
-                      <div className="schedule-month-cell-actions">
-                        <button
-                          type="button"
-                          className="schedule-month-add-btn"
-                          title="在该日新建"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleQuickCreate(day);
-                          }}
-                        >
-                          +
-                        </button>
+            <strong className="schedule-period-label">{periodLabel}</strong>
+            <PillTabs
+              options={[
+                { value: 'month', label: '月视图' },
+                { value: 'week', label: '周视图' },
+                { value: 'day', label: '日视图' },
+              ]}
+              value={view}
+              onChange={(value) => setView(value as ScheduleCalendarView)}
+            />
+          </div>
+
+          {view === 'month' ? (
+            <Row gutter={[12, 12]}>
+              <div className="schedule-month-header">
+                {weekdayLabels.map((item) => (
+                  <div key={item.value} className="schedule-month-header-cell">
+                    {item.label}
+                  </div>
+                ))}
+              </div>
+              <div className="schedule-month-body">
+                {monthGrid.map((day) => {
+                  const dayKey = day.format('YYYY-MM-DD');
+                  const dayEvents = occurrencesByDay.get(dayKey) ?? [];
+                  const isCurrentMonth = day.month() === cursor.month();
+                  const isToday = day.isSame(dayjs(), 'day');
+                  return (
+                    <div
+                      key={dayKey}
+                      className={`schedule-month-cell ${isCurrentMonth ? '' : 'is-outside'} ${isToday ? 'is-today' : ''}`}
+                      onClick={() => handleDayClick(day)}
+                    >
+                      <div className="schedule-month-cell-head">
+                        <span className="schedule-month-day-num">{day.date()}</span>
+                        <div className="schedule-month-cell-actions">
+                          <button
+                            type="button"
+                            className="schedule-month-add-btn"
+                            title="在该日新建"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleQuickCreate(day);
+                            }}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                      <div className="schedule-month-events">
+                        {dayEvents.slice(0, 3).map((occurrence) => (
+                          <button
+                            key={occurrence.occurrenceKey}
+                            type="button"
+                            className={`schedule-event-chip color-${occurrence.color || 'indigo'} ${occurrence.completed ? 'is-completed' : ''}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleOpenOccurrence(occurrence);
+                            }}
+                            title={occurrence.title}
+                          >
+                            <span className="schedule-event-chip-time">
+                              {formatOccurrenceTime(occurrence.startAt, occurrence.isAllDay)}
+                            </span>
+                            <span className="schedule-event-chip-title">{occurrence.title}</span>
+                            {occurrence.recurring ? (
+                              <span className="schedule-event-chip-repeat">↻</span>
+                            ) : null}
+                          </button>
+                        ))}
+                        {dayEvents.length > 3 ? (
+                          <span className="schedule-month-more">
+                            还有 {dayEvents.length - 3} 项
+                          </span>
+                        ) : null}
                       </div>
                     </div>
-                    <div className="schedule-month-events">
-                      {dayEvents.slice(0, 3).map((occurrence) => (
-                        <button
-                          key={occurrence.occurrenceKey}
-                          type="button"
-                          className={`schedule-event-chip color-${occurrence.color || 'indigo'} ${occurrence.completed ? 'is-completed' : ''}`}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleOpenOccurrence(occurrence);
-                          }}
-                          title={occurrence.title}
-                        >
-                          <span className="schedule-event-chip-time">
-                            {formatOccurrenceTime(occurrence.startAt, occurrence.isAllDay)}
-                          </span>
-                          <span className="schedule-event-chip-title">{occurrence.title}</span>
-                          {occurrence.recurring ? <span className="schedule-event-chip-repeat">↻</span> : null}
-                        </button>
-                      ))}
-                      {dayEvents.length > 3 ? (
-                        <span className="schedule-month-more">还有 {dayEvents.length - 3} 项</span>
-                      ) : null}
+                  );
+                })}
+              </div>
+            </Row>
+          ) : null}
+
+          {view === 'week' ? (
+            <Row gutter={[12, 12]}>
+              {weekGrid.map((day) => {
+                const dayKey = day.format('YYYY-MM-DD');
+                const dayEvents = occurrencesByDay.get(dayKey) ?? [];
+                const isToday = day.isSame(dayjs(), 'day');
+                return (
+                  <div key={dayKey} className={`schedule-week-col ${isToday ? 'is-today' : ''}`}>
+                    <div className="schedule-week-col-head">
+                      <span className="schedule-week-day-label">
+                        {weekdayLabels.find((item) => item.value === day.day())?.label ?? ''}
+                      </span>
+                      <span className="schedule-week-day-num">{day.date()}</span>
+                      <button
+                        type="button"
+                        className="schedule-week-add-btn"
+                        title="在该日新建"
+                        onClick={() => handleQuickCreate(day)}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="schedule-week-events">
+                      {dayEvents.length ? (
+                        dayEvents.map((occurrence) => (
+                          <button
+                            key={occurrence.occurrenceKey}
+                            type="button"
+                            className={`schedule-event-block color-${occurrence.color || 'indigo'} ${occurrence.completed ? 'is-completed' : ''}`}
+                            onClick={() => handleOpenOccurrence(occurrence)}
+                          >
+                            <div className="schedule-event-block-time">
+                              {formatOccurrenceTime(occurrence.startAt, occurrence.isAllDay)}
+                              {occurrence.endAt
+                                ? ` - ${formatOccurrenceTime(occurrence.endAt, occurrence.isAllDay)}`
+                                : ''}
+                            </div>
+                            <div className="schedule-event-block-title">{occurrence.title}</div>
+                            {occurrence.location ? (
+                              <div className="schedule-event-block-location">
+                                @{occurrence.location}
+                              </div>
+                            ) : null}
+                            {occurrence.recurring ? (
+                              <span className="schedule-event-block-repeat">↻ 重复</span>
+                            ) : null}
+                          </button>
+                        ))
+                      ) : (
+                        <span className="schedule-week-empty">暂无日程</span>
+                      )}
                     </div>
                   </div>
                 );
               })}
-            </div>
-          </div>
-        ) : null}
+            </Row>
+          ) : null}
 
-        {view === 'week' ? (
-          <div className="schedule-week-grid">
-            {weekGrid.map((day) => {
-              const dayKey = day.format('YYYY-MM-DD');
-              const dayEvents = occurrencesByDay.get(dayKey) ?? [];
-              const isToday = day.isSame(dayjs(), 'day');
-              return (
-                <div key={dayKey} className={`schedule-week-col ${isToday ? 'is-today' : ''}`}>
-                  <div className="schedule-week-col-head">
-                    <span className="schedule-week-day-label">
-                      {weekdayLabels.find((item) => item.value === day.day())?.label ?? ''}
-                    </span>
-                    <span className="schedule-week-day-num">{day.date()}</span>
-                    <button
-                      type="button"
-                      className="schedule-week-add-btn"
-                      title="在该日新建"
-                      onClick={() => handleQuickCreate(day)}
-                    >
-                      +
-                    </button>
-                  </div>
-                  <div className="schedule-week-events">
-                    {dayEvents.length ? dayEvents.map((occurrence) => (
-                      <button
-                        key={occurrence.occurrenceKey}
-                        type="button"
-                        className={`schedule-event-block color-${occurrence.color || 'indigo'} ${occurrence.completed ? 'is-completed' : ''}`}
-                        onClick={() => handleOpenOccurrence(occurrence)}
-                      >
-                        <div className="schedule-event-block-time">
-                          {formatOccurrenceTime(occurrence.startAt, occurrence.isAllDay)}
-                          {occurrence.endAt ? ` - ${formatOccurrenceTime(occurrence.endAt, occurrence.isAllDay)}` : ''}
-                        </div>
-                        <div className="schedule-event-block-title">{occurrence.title}</div>
-                        {occurrence.location ? (
-                          <div className="schedule-event-block-location">@{occurrence.location}</div>
-                        ) : null}
-                        {occurrence.recurring ? <span className="schedule-event-block-repeat">↻ 重复</span> : null}
-                      </button>
-                    )) : <span className="schedule-week-empty">暂无日程</span>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : null}
-
-        {view === 'day' ? (
-          <div className="schedule-day-view">
-            <div className="schedule-day-head">
-              <strong>{cursor.format('YYYY 年 M 月 D 日 dddd')}</strong>
-              <Btn tone="secondary" onClick={() => handleQuickCreate(cursor)}>新建日程</Btn>
+          {view === 'day' ? (
+            <div className="schedule-day-view">
+              <div className="schedule-day-head">
+                <strong>{cursor.format('YYYY 年 M 月 D 日 dddd')}</strong>
+                <Btn tone="secondary" onClick={() => handleQuickCreate(cursor)}>
+                  新建日程
+                </Btn>
+              </div>
+              <div className="schedule-day-events">
+                {(occurrencesByDay.get(cursor.format('YYYY-MM-DD')) ?? []).map((occurrence) => (
+                  <button
+                    key={occurrence.occurrenceKey}
+                    type="button"
+                    className={`schedule-day-event color-${occurrence.color || 'indigo'} ${occurrence.completed ? 'is-completed' : ''}`}
+                    onClick={() => handleOpenOccurrence(occurrence)}
+                  >
+                    <div className="schedule-day-event-time">
+                      {formatOccurrenceTime(occurrence.startAt, occurrence.isAllDay)}
+                      {occurrence.endAt
+                        ? ` - ${formatOccurrenceTime(occurrence.endAt, occurrence.isAllDay)}`
+                        : ''}
+                    </div>
+                    <div className="schedule-day-event-body">
+                      <strong>{occurrence.title}</strong>
+                      {occurrence.location ? <span>@{occurrence.location}</span> : null}
+                      {occurrence.recurring ? <Tag tone="blue">重复</Tag> : null}
+                      {occurrence.descriptionMarkdown ? (
+                        <p className="schedule-day-event-desc">{occurrence.descriptionMarkdown}</p>
+                      ) : null}
+                    </div>
+                  </button>
+                ))}
+                {(occurrencesByDay.get(cursor.format('YYYY-MM-DD')) ?? []).length === 0 ? (
+                  <span className="schedule-day-empty">今日暂无日程</span>
+                ) : null}
+              </div>
             </div>
-            <div className="schedule-day-events">
-              {(occurrencesByDay.get(cursor.format('YYYY-MM-DD')) ?? []).map((occurrence) => (
-                <button
-                  key={occurrence.occurrenceKey}
-                  type="button"
-                  className={`schedule-day-event color-${occurrence.color || 'indigo'} ${occurrence.completed ? 'is-completed' : ''}`}
-                  onClick={() => handleOpenOccurrence(occurrence)}
-                >
-                  <div className="schedule-day-event-time">
-                    {formatOccurrenceTime(occurrence.startAt, occurrence.isAllDay)}
-                    {occurrence.endAt ? ` - ${formatOccurrenceTime(occurrence.endAt, occurrence.isAllDay)}` : ''}
-                  </div>
-                  <div className="schedule-day-event-body">
-                    <strong>{occurrence.title}</strong>
-                    {occurrence.location ? <span>@{occurrence.location}</span> : null}
-                    {occurrence.recurring ? <Tag tone="blue">重复</Tag> : null}
-                    {occurrence.descriptionMarkdown ? (
-                      <p className="schedule-day-event-desc">{occurrence.descriptionMarkdown}</p>
-                    ) : null}
-                  </div>
-                </button>
-              ))}
-              {(occurrencesByDay.get(cursor.format('YYYY-MM-DD')) ?? []).length === 0 ? (
-                <span className="schedule-day-empty">今日暂无日程</span>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
+          ) : null}
+        </Row>
       </div>
 
       {/* 事件详情/编辑弹窗 */}
@@ -842,13 +926,19 @@ export function ScheduleCalendarSection({
         onClose={() => setEditingEvent(null)}
         title={editingEvent ? `编辑日程：${editingEvent.title}` : '编辑日程'}
         width={620}
-        footer={(
+        footer={
           <>
-            <Btn tone="danger" onClick={() => setPendingDelete(editingEvent)}>移入回收站</Btn>
-            <Btn tone="secondary" onClick={() => setEditingEvent(null)}>取消</Btn>
-            <Btn tone="primary" onClick={() => void handleSaveEdit()}>保存</Btn>
+            <Btn tone="danger" onClick={() => setPendingDelete(editingEvent)}>
+              移入回收站
+            </Btn>
+            <Btn tone="secondary" onClick={() => setEditingEvent(null)}>
+              取消
+            </Btn>
+            <Btn tone="primary" onClick={() => void handleSaveEdit()}>
+              保存
+            </Btn>
           </>
-        )}
+        }
       >
         {editingEvent ? renderEventForm(editingForm, setEditingForm) : null}
         {editingEvent ? (
@@ -857,10 +947,7 @@ export function ScheduleCalendarSection({
               {editingEvent.completed ? '已完成' : '未完成'}
             </Tag>
             <Tag tone="blue">{RECURRENCE_LABELS[editingEvent.recurrenceType]}</Tag>
-            <Btn
-              tone="secondary"
-              onClick={() => void handleToggleCompleted(editingEvent)}
-            >
+            <Btn tone="secondary" onClick={() => void handleToggleCompleted(editingEvent)}>
               {editingEvent.completed ? '标记未完成' : '标记已完成'}
             </Btn>
           </div>
@@ -873,12 +960,16 @@ export function ScheduleCalendarSection({
         onClose={() => setCreateOpen(false)}
         title="新建日程"
         width={620}
-        footer={(
+        footer={
           <>
-            <Btn tone="secondary" onClick={() => setCreateOpen(false)}>取消</Btn>
-            <Btn tone="primary" onClick={() => void handleCreate()}>创建</Btn>
+            <Btn tone="secondary" onClick={() => setCreateOpen(false)}>
+              取消
+            </Btn>
+            <Btn tone="primary" onClick={() => void handleCreate()}>
+              创建
+            </Btn>
           </>
-        )}
+        }
       >
         {renderEventForm(createForm, setCreateForm)}
       </Modal>
@@ -889,7 +980,11 @@ export function ScheduleCalendarSection({
         onClose={() => setSelectedOccurrence(null)}
         title={selectedOccurrence ? selectedOccurrence.title : '日程详情'}
         width={480}
-        footer={<Btn tone="secondary" onClick={() => setSelectedOccurrence(null)}>关闭</Btn>}
+        footer={
+          <Btn tone="secondary" onClick={() => setSelectedOccurrence(null)}>
+            关闭
+          </Btn>
+        }
       >
         {selectedOccurrence ? (
           <div className="schedule-event-detail">
@@ -897,7 +992,9 @@ export function ScheduleCalendarSection({
               <span className="field-label">时间</span>
               <span>
                 {formatOccurrenceTime(selectedOccurrence.startAt, selectedOccurrence.isAllDay)}
-                {selectedOccurrence.endAt ? ` - ${formatOccurrenceTime(selectedOccurrence.endAt, selectedOccurrence.isAllDay)}` : ''}
+                {selectedOccurrence.endAt
+                  ? ` - ${formatOccurrenceTime(selectedOccurrence.endAt, selectedOccurrence.isAllDay)}`
+                  : ''}
               </span>
             </div>
             {selectedOccurrence.location ? (

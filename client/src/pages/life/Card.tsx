@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 import { CardBillsSection } from '../../components/life/CardBillsSection';
 import { CardCardsSection } from '../../components/life/CardCardsSection';
@@ -50,7 +53,11 @@ const EMPTY_SETTINGS: LifeCardPageState['settings'] = {
 };
 
 export default function CardPage() {
-  const [tab, setTab] = usePageTab<CardTab>('cards', TAB_OPTIONS.map((item) => item.value), 'cardTab');
+  const [tab, setTab] = usePageTab<CardTab>(
+    'cards',
+    TAB_OPTIONS.map((item) => item.value),
+    'cardTab',
+  );
   useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);
@@ -65,21 +72,15 @@ export default function CardPage() {
   const [refreshToken, setRefreshToken] = useState(0);
 
   const reload = useCallback(async () => {
-    const [
-      nextCards,
-      nextBills,
-      nextRecharges,
-      nextCarriers,
-      nextOverview,
-      nextSettings,
-    ] = await Promise.all([
-      cardApi.listCards({ page: 1, page_size: 1000 }),
-      cardApi.listBills({ page: 1, page_size: 1000 }),
-      cardApi.listRecharges({ page: 1, page_size: 1000 }),
-      cardApi.listCarriers(),
-      cardApi.getOverview(),
-      cardApi.getSettings(),
-    ]);
+    const [nextCards, nextBills, nextRecharges, nextCarriers, nextOverview, nextSettings] =
+      await Promise.all([
+        cardApi.listCards({ page: 1, page_size: 1000 }),
+        cardApi.listBills({ page: 1, page_size: 1000 }),
+        cardApi.listRecharges({ page: 1, page_size: 1000 }),
+        cardApi.listCarriers(),
+        cardApi.getOverview(),
+        cardApi.getSettings(),
+      ]);
 
     setCards(nextCards.items);
     setBills(nextBills.items);
@@ -121,247 +122,298 @@ export default function CardPage() {
     };
   }, [reload, refreshToken]);
 
-  const updateSettings = useCallback(async (patch: Partial<LifeCardPageState['settings']>) => {
-    try {
-      const next = await cardApi.updateSettings(patch);
-      setSettings(next);
-      await hydrateNotificationCenterState();
-      showToast('号卡提醒设置已更新。');
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '号卡提醒设置更新失败。'), 'error');
-    }
-  }, [showToast]);
-
-  const handleCardsChange = useCallback(async (updater: (records: LifeCardRecord[]) => LifeCardRecord[]) => {
-    const previous = cards;
-    const next = updater(previous);
-    setCards(next);
-
-    try {
-      const created = findCreated(previous, next);
-      const deletedIds = findDeletedIds(previous, next);
-      const updated = findUpdated(previous, next);
-
-      await Promise.all([
-        ...created.map((item) => cardApi.createCard({
-          phoneNumber: item.phoneNumber,
-          carrierId: item.carrierId,
-          carrierName: item.carrierName,
-          location: item.location,
-          balance: item.balance,
-          monthlyFee: item.monthlyFee,
-          billingDay: item.billingDay,
-          dataPlan: item.dataPlan,
-          callMinutes: item.callMinutes,
-          smsCount: item.smsCount,
-          activationDate: item.activationDate,
-          notes: item.notes,
-        })),
-        ...updated.map((item) => cardApi.updateCard(item.id, {
-          phoneNumber: item.phoneNumber,
-          carrierId: item.carrierId,
-          carrierName: item.carrierName,
-          location: item.location,
-          balance: item.balance,
-          monthlyFee: item.monthlyFee,
-          billingDay: item.billingDay,
-          dataPlan: item.dataPlan,
-          callMinutes: item.callMinutes,
-          smsCount: item.smsCount,
-          activationDate: item.activationDate,
-          notes: item.notes,
-        })),
-        ...deletedIds.map((id) => cardApi.deleteCard(id)),
-      ]);
-      await reload();
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '号卡保存失败。'), 'error');
-      await reload();
-    }
-  }, [cards, reload, showToast]);
-
-  const handleRechargeChange = useCallback(async (updater: (current: { cards: LifeCardRecord[]; recharges: LifeCardRechargeRecord[] }) => { cards: LifeCardRecord[]; recharges: LifeCardRechargeRecord[] }) => {
-    const previous = { cards, recharges };
-    const next = updater(previous);
-    setCards(next.cards);
-    setRecharges(next.recharges);
-
-    try {
-      const addedRecharge = next.recharges.find((item) => !previous.recharges.some((record) => record.id === item.id));
-      if (addedRecharge) {
-        await cardApi.recharge({
-          simId: addedRecharge.simId,
-          amount: addedRecharge.amount,
-          rechargeDate: addedRecharge.rechargeDate,
-          note: addedRecharge.note,
-        });
+  const updateSettings = useCallback(
+    async (patch: Partial<LifeCardPageState['settings']>) => {
+      try {
+        const next = await cardApi.updateSettings(patch);
+        setSettings(next);
+        await hydrateNotificationCenterState();
+        showToast('号卡提醒设置已更新。');
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '号卡提醒设置更新失败。'), 'error');
       }
-      await reload();
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '充值保存失败。'), 'error');
-      await reload();
-    }
-  }, [cards, recharges, reload, showToast]);
+    },
+    [showToast],
+  );
 
-  const handleBillsChange = useCallback(async (updater: (records: LifeCardBillRecord[]) => LifeCardBillRecord[]) => {
-    const previous = bills;
-    const next = updater(previous);
-    setBills(next);
+  const handleCardsChange = useCallback(
+    async (updater: (records: LifeCardRecord[]) => LifeCardRecord[]) => {
+      const previous = cards;
+      const next = updater(previous);
+      setCards(next);
 
-    try {
-      const created = findCreated(previous, next);
-      const deletedIds = findDeletedIds(previous, next);
-      const updated = findUpdated(previous, next);
+      try {
+        const created = findCreated(previous, next);
+        const deletedIds = findDeletedIds(previous, next);
+        const updated = findUpdated(previous, next);
 
-      await Promise.all([
-        ...created.map((item) => cardApi.createBill({
-          simId: item.simId,
-          phoneNumber: item.phoneNumber,
-          carrierName: item.carrierName,
-          billingMonth: item.billingMonth,
-          monthlyFee: item.monthlyFee,
-          actualFee: item.actualFee,
-          extraCharges: item.extraCharges,
-          totalFee: item.totalFee,
-          note: item.note,
-        })),
-        ...updated.map((item) => cardApi.updateBill(item.id, {
-          simId: item.simId,
-          phoneNumber: item.phoneNumber,
-          carrierName: item.carrierName,
-          billingMonth: item.billingMonth,
-          monthlyFee: item.monthlyFee,
-          actualFee: item.actualFee,
-          extraCharges: item.extraCharges,
-          totalFee: item.totalFee,
-          note: item.note,
-        })),
-        ...deletedIds.map((id) => cardApi.deleteBill(id)),
-      ]);
-      await reload();
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '账单保存失败。'), 'error');
-      await reload();
-    }
-  }, [bills, reload, showToast]);
+        await Promise.all([
+          ...created.map((item) =>
+            cardApi.createCard({
+              phoneNumber: item.phoneNumber,
+              carrierId: item.carrierId,
+              carrierName: item.carrierName,
+              location: item.location,
+              balance: item.balance,
+              monthlyFee: item.monthlyFee,
+              billingDay: item.billingDay,
+              dataPlan: item.dataPlan,
+              callMinutes: item.callMinutes,
+              smsCount: item.smsCount,
+              activationDate: item.activationDate,
+              notes: item.notes,
+            }),
+          ),
+          ...updated.map((item) =>
+            cardApi.updateCard(item.id, {
+              phoneNumber: item.phoneNumber,
+              carrierId: item.carrierId,
+              carrierName: item.carrierName,
+              location: item.location,
+              balance: item.balance,
+              monthlyFee: item.monthlyFee,
+              billingDay: item.billingDay,
+              dataPlan: item.dataPlan,
+              callMinutes: item.callMinutes,
+              smsCount: item.smsCount,
+              activationDate: item.activationDate,
+              notes: item.notes,
+            }),
+          ),
+          ...deletedIds.map((id) => cardApi.deleteCard(id)),
+        ]);
+        await reload();
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '号卡保存失败。'), 'error');
+        await reload();
+      }
+    },
+    [cards, reload, showToast],
+  );
 
-  const handleCarriersChange = useCallback(async (updater: (records: LifeCardCarrier[]) => LifeCardCarrier[]) => {
-    const previous = carriers;
-    const next = updater(previous);
-    setCarriers(next);
+  const handleRechargeChange = useCallback(
+    async (
+      updater: (current: { cards: LifeCardRecord[]; recharges: LifeCardRechargeRecord[] }) => {
+        cards: LifeCardRecord[];
+        recharges: LifeCardRechargeRecord[];
+      },
+    ) => {
+      const previous = { cards, recharges };
+      const next = updater(previous);
+      setCards(next.cards);
+      setRecharges(next.recharges);
 
-    try {
-      const created = findCreated(previous, next);
-      const deletedIds = findDeletedIds(previous, next);
-      const updated = findUpdated(previous, next);
+      try {
+        const addedRecharge = next.recharges.find(
+          (item) => !previous.recharges.some((record) => record.id === item.id),
+        );
+        if (addedRecharge) {
+          await cardApi.recharge({
+            simId: addedRecharge.simId,
+            amount: addedRecharge.amount,
+            rechargeDate: addedRecharge.rechargeDate,
+            note: addedRecharge.note,
+          });
+        }
+        await reload();
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '充值保存失败。'), 'error');
+        await reload();
+      }
+    },
+    [cards, recharges, reload, showToast],
+  );
 
-      await Promise.all([
-        ...created.map((item) => cardApi.createCarrier({
-          name: item.name,
-          description: item.description,
-        })),
-        ...updated.map((item) => cardApi.updateCarrier(item.id, {
-          name: item.name,
-          description: item.description,
-        })),
-        ...deletedIds.map((id) => cardApi.deleteCarrier(id)),
-      ]);
-      await reload();
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '运营商保存失败。'), 'error');
-      await reload();
-    }
-  }, [carriers, reload, showToast]);
+  const handleBillsChange = useCallback(
+    async (updater: (records: LifeCardBillRecord[]) => LifeCardBillRecord[]) => {
+      const previous = bills;
+      const next = updater(previous);
+      setBills(next);
 
-  const overviewCards = useMemo(() => ([
-    { label: '总号卡数', value: `${overview.totalCards} 张` },
-    { label: '低余额数', value: `${overview.lowBalanceCount} 张` },
-    { label: '总余额', value: `¥${overview.totalBalance.toFixed(2)}` },
-    { label: '运营商数', value: `${overview.carrierCount}` },
-    { label: '月租合计', value: `¥${overview.monthlyFeeTotal.toFixed(2)}` },
-    { label: '本月账单数', value: `${overview.currentMonthBillCount}` },
-    { label: '本月账单金额', value: `¥${overview.currentMonthBillAmount.toFixed(2)}` },
-    { label: '累计充值额', value: `¥${overview.totalRechargeAmount.toFixed(2)}` },
-  ]), [overview]);
+      try {
+        const created = findCreated(previous, next);
+        const deletedIds = findDeletedIds(previous, next);
+        const updated = findUpdated(previous, next);
+
+        await Promise.all([
+          ...created.map((item) =>
+            cardApi.createBill({
+              simId: item.simId,
+              phoneNumber: item.phoneNumber,
+              carrierName: item.carrierName,
+              billingMonth: item.billingMonth,
+              monthlyFee: item.monthlyFee,
+              actualFee: item.actualFee,
+              extraCharges: item.extraCharges,
+              totalFee: item.totalFee,
+              note: item.note,
+            }),
+          ),
+          ...updated.map((item) =>
+            cardApi.updateBill(item.id, {
+              simId: item.simId,
+              phoneNumber: item.phoneNumber,
+              carrierName: item.carrierName,
+              billingMonth: item.billingMonth,
+              monthlyFee: item.monthlyFee,
+              actualFee: item.actualFee,
+              extraCharges: item.extraCharges,
+              totalFee: item.totalFee,
+              note: item.note,
+            }),
+          ),
+          ...deletedIds.map((id) => cardApi.deleteBill(id)),
+        ]);
+        await reload();
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '账单保存失败。'), 'error');
+        await reload();
+      }
+    },
+    [bills, reload, showToast],
+  );
+
+  const handleCarriersChange = useCallback(
+    async (updater: (records: LifeCardCarrier[]) => LifeCardCarrier[]) => {
+      const previous = carriers;
+      const next = updater(previous);
+      setCarriers(next);
+
+      try {
+        const created = findCreated(previous, next);
+        const deletedIds = findDeletedIds(previous, next);
+        const updated = findUpdated(previous, next);
+
+        await Promise.all([
+          ...created.map((item) =>
+            cardApi.createCarrier({
+              name: item.name,
+              description: item.description,
+            }),
+          ),
+          ...updated.map((item) =>
+            cardApi.updateCarrier(item.id, {
+              name: item.name,
+              description: item.description,
+            }),
+          ),
+          ...deletedIds.map((id) => cardApi.deleteCarrier(id)),
+        ]);
+        await reload();
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '运营商保存失败。'), 'error');
+        await reload();
+      }
+    },
+    [carriers, reload, showToast],
+  );
+
+  const overviewCards = useMemo(
+    () => [
+      { label: '总号卡数', value: `${overview.totalCards} 张` },
+      { label: '低余额数', value: `${overview.lowBalanceCount} 张` },
+      { label: '总余额', value: `¥${overview.totalBalance.toFixed(2)}` },
+      { label: '运营商数', value: `${overview.carrierCount}` },
+      { label: '月租合计', value: `¥${overview.monthlyFeeTotal.toFixed(2)}` },
+      { label: '本月账单数', value: `${overview.currentMonthBillCount}` },
+      { label: '本月账单金额', value: `¥${overview.currentMonthBillAmount.toFixed(2)}` },
+      { label: '累计充值额', value: `¥${overview.totalRechargeAmount.toFixed(2)}` },
+    ],
+    [overview],
+  );
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        title="号卡中心"
-        subtitle="统一管理号卡、账单、统计与运营商"
-        actions={(
-          <>
-            <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as CardTab)} />
-            <div className="inline-row">
-              <Tag tone="blue">低余额 {overview.lowBalanceCount} 张</Tag>
-              <Tag tone="default">本月账单 {overview.currentMonthBillCount} 张</Tag>
-            </div>
-          </>
-        )}
-      />
+    <div className="page-grid-wrapper">
+      <Row gutter={[24, 20]}>
+        <Col span={24}>
+          <PageHeader
+            title="号卡中心"
+            subtitle="统一管理号卡、账单、统计与运营商"
+            actions={
+              <>
+                <PillTabs
+                  options={TAB_OPTIONS}
+                  value={tab}
+                  onChange={(value) => setTab(value as CardTab)}
+                />
+                <div className="inline-row">
+                  <Tag tone="blue">低余额 {overview.lowBalanceCount} 张</Tag>
+                  <Tag tone="default">本月账单 {overview.currentMonthBillCount} 张</Tag>
+                </div>
+              </>
+            }
+          />
+        </Col>
 
-      <StatGrid className="card-overview-grid" items={overviewCards} />
+        <Col span={24}>
+          <StatGrid items={overviewCards} />
+        </Col>
 
-      {tab === 'cards' ? (
-        <CardCardsSection
-          cards={cards}
-          carriers={carriers}
-          settings={settings}
-          onChangeCards={(updater) => {
-            void handleCardsChange(updater);
-          }}
-          onRecharge={(updater) => {
-            void handleRechargeChange(updater);
-          }}
-          onTriggerAutoDeduct={() => reload()}
-          showToast={showToast}
-        />
-      ) : null}
+        <Col span={24}>
+          {tab === 'cards' ? (
+            <CardCardsSection
+              cards={cards}
+              carriers={carriers}
+              settings={settings}
+              onChangeCards={(updater) => {
+                void handleCardsChange(updater);
+              }}
+              onRecharge={(updater) => {
+                void handleRechargeChange(updater);
+              }}
+              onTriggerAutoDeduct={() => reload()}
+              showToast={showToast}
+            />
+          ) : null}
 
-      {tab === 'bills' ? (
-        <CardBillsSection
-          cards={cards}
-          bills={bills}
-          onChangeBills={(updater) => {
-            void handleBillsChange(updater);
-          }}
-          showToast={showToast}
-        />
-      ) : null}
+          {tab === 'bills' ? (
+            <CardBillsSection
+              cards={cards}
+              bills={bills}
+              onChangeBills={(updater) => {
+                void handleBillsChange(updater);
+              }}
+              showToast={showToast}
+            />
+          ) : null}
 
-      {tab === 'statistics' ? (
-        <CardStatisticsSection
-          cards={cards}
-          bills={bills}
-          recharges={recharges}
-          settings={settings}
-        />
-      ) : null}
+          {tab === 'statistics' ? (
+            <CardStatisticsSection
+              cards={cards}
+              bills={bills}
+              recharges={recharges}
+              settings={settings}
+            />
+          ) : null}
 
-      {tab === 'carriers' ? (
-        <CardCarriersSection
-          carriers={carriers}
-          cards={cards}
-          bills={bills}
-          onChangeCarriers={(updater) => {
-            void handleCarriersChange(updater);
-          }}
-          showToast={showToast}
-        />
-      ) : null}
+          {tab === 'carriers' ? (
+            <CardCarriersSection
+              carriers={carriers}
+              cards={cards}
+              bills={bills}
+              onChangeCarriers={(updater) => {
+                void handleCarriersChange(updater);
+              }}
+              showToast={showToast}
+            />
+          ) : null}
 
-      {tab === 'settings' ? (
-        <CardSettingsSection
-          cards={cards}
-          settings={settings}
-          onSettingsChange={(patch) => {
-            void updateSettings(patch);
-          }}
-          showToast={showToast}
-        />
-      ) : null}
+          {tab === 'settings' ? (
+            <CardSettingsSection
+              cards={cards}
+              settings={settings}
+              onSettingsChange={(patch) => {
+                void updateSettings(patch);
+              }}
+              showToast={showToast}
+            />
+          ) : null}
+        </Col>
 
-      <Toast toast={toast} />
+        <Col span={24}>
+          <Toast toast={toast} />
+        </Col>
+      </Row>
     </div>
   );
 }

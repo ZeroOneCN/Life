@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 import { StorageArchiveSection } from '../../components/life/StorageArchiveSection';
 import { StorageDashboardSection } from '../../components/life/StorageDashboardSection';
@@ -38,7 +41,11 @@ const EMPTY_SETTINGS: StoragePageSettings = {
 };
 
 export default function StoragePage() {
-  const [tab, setTab] = usePageTab<StorageTab>('items', TAB_OPTIONS.map((item) => item.value), 'storageTab');
+  const [tab, setTab] = usePageTab<StorageTab>(
+    'items',
+    TAB_OPTIONS.map((item) => item.value),
+    'storageTab',
+  );
   const { toast, showToast } = useToastState();
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
@@ -86,52 +93,59 @@ export default function StoragePage() {
     };
   }, [refreshToken]);
 
-  const subtitle = useMemo(() => (
-    '追踪个人物品位置、状态与关联信息'
-  ), []);
+  const subtitle = useMemo(() => '追踪个人物品位置、状态与关联信息', []);
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        title="物品追踪"
-        subtitle={subtitle}
-        actions={(
-          <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as StorageTab)} />
-        )}
-      />
+    <div className="page-grid-wrapper">
+      <Row gutter={[24, 20]}>
+        <Col span={24}>
+          <PageHeader
+            title="物品追踪"
+            subtitle={subtitle}
+            actions={
+              <PillTabs
+                options={TAB_OPTIONS}
+                value={tab}
+                onChange={(value) => setTab(value as StorageTab)}
+              />
+            }
+          />
+        </Col>
 
-      {tab === 'items' ? (
-        <StorageItemsSection
-          settings={settings}
-          showToast={showToast}
-          onChanged={refreshPage}
-        />
-      ) : null}
+        <Col span={24}>
+          {tab === 'items' ? (
+            <StorageItemsSection
+              settings={settings}
+              showToast={showToast}
+              onChanged={refreshPage}
+            />
+          ) : null}
 
-      {tab === 'dashboard' ? (
-        <StorageDashboardSection
-          settings={settings}
-          showToast={showToast}
-          onChanged={refreshPage}
-        />
-      ) : null}
+          {tab === 'dashboard' ? (
+            <StorageDashboardSection
+              settings={settings}
+              showToast={showToast}
+              onChanged={refreshPage}
+            />
+          ) : null}
 
-      {tab === 'retired' ? (
-        <StorageArchiveSection
-          showToast={showToast}
-          onChanged={refreshPage}
-        />
-      ) : null}
+          {tab === 'retired' ? (
+            <StorageArchiveSection showToast={showToast} onChanged={refreshPage} />
+          ) : null}
 
-      {tab === 'settings' ? (
-        <StorageSettingsSection
-          settings={settings}
-          showToast={showToast}
-          onChanged={refreshPage}
-        />
-      ) : null}
+          {tab === 'settings' ? (
+            <StorageSettingsSection
+              settings={settings}
+              showToast={showToast}
+              onChanged={refreshPage}
+            />
+          ) : null}
+        </Col>
 
-      <Toast toast={toast} />
+        <Col span={24}>
+          <Toast toast={toast} />
+        </Col>
+      </Row>
     </div>
   );
 }

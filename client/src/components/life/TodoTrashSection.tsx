@@ -29,17 +29,14 @@ const PRIORITY_FILTERS: TrashFilter[] = [
  * @param props 组件属性（showToast、onChanged）
  * @returns 渲染待办回收站的 React 元素
  */
-export function TodoTrashSection({
-  showToast,
-  onChanged,
-}: TodoTrashSectionProps) {
+export function TodoTrashSection({ showToast, onChanged }: TodoTrashSectionProps) {
   return (
     <TrashSection<TodoTaskRecord>
       title="回收站"
       description="已删除的任务会先进入回收站，恢复、永久删除和清空都走后端。"
       entityName="任务"
       searchPlaceholder="搜索标题或标签"
-      filterGridClassName="todo-trash-filter-grid"
+      filterGridClassName=""
       filters={PRIORITY_FILTERS}
       columns={(helpers) => [
         { key: 'title', title: '任务标题', dataIndex: 'title' },
@@ -51,7 +48,7 @@ export function TodoTrashSection({
         {
           key: 'tags',
           title: '标签',
-          render: (_, row) => row.tags.length ? row.tags.join(' / ') : '-',
+          render: (_, row) => (row.tags.length ? row.tags.join(' / ') : '-'),
         },
         {
           key: 'trashedAt',
@@ -63,8 +60,12 @@ export function TodoTrashSection({
           title: '操作',
           render: (_, row) => (
             <div className="todo-table-actions">
-              <Btn tone="secondary" onClick={() => helpers.onRestore(row)}>恢复</Btn>
-              <Btn tone="danger" onClick={() => helpers.onRequestDelete(row)}>永久删除</Btn>
+              <Btn tone="secondary" onClick={() => helpers.onRestore(row)}>
+                恢复
+              </Btn>
+              <Btn tone="danger" onClick={() => helpers.onRequestDelete(row)}>
+                永久删除
+              </Btn>
             </div>
           ),
         },

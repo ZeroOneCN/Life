@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 import { ScheduleCalendarSection } from '../../components/life/ScheduleCalendarSection';
 import { ScheduleEventsSection } from '../../components/life/ScheduleEventsSection';
@@ -50,7 +53,11 @@ const EMPTY_SETTINGS: ScheduleSettings = {
  * 日程管理主页面：聚合统计、Tab 切换、5 个子区块。
  */
 export default function SchedulePage() {
-  const [tab, setTab] = usePageTab<ScheduleTab>('events', TAB_OPTIONS.map((item) => item.value), 'scheduleTab');
+  const [tab, setTab] = usePageTab<ScheduleTab>(
+    'events',
+    TAB_OPTIONS.map((item) => item.value),
+    'scheduleTab',
+  );
   useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const [eventView, setEventView] = useState<'calendar' | 'list'>('calendar');
   const { toast, showToast } = useToastState();
@@ -104,82 +111,95 @@ export default function SchedulePage() {
     };
   }, [refreshToken]);
 
-  const subtitle = useMemo(() => (
-    '管理日常日程，支持重复事件与到期提醒'
-  ), []);
+  const subtitle = useMemo(() => '管理日常日程，支持重复事件与到期提醒', []);
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        title="日程管理"
-        subtitle={subtitle}
-        actions={(
-          <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as ScheduleTab)} />
-        )}
-      />
+    <div className="page-grid-wrapper">
+      <Row gutter={[24, 20]}>
+        <Col span={24}>
+          <PageHeader
+            title="日程管理"
+            subtitle={subtitle}
+            actions={
+              <PillTabs
+                options={TAB_OPTIONS}
+                value={tab}
+                onChange={(value) => setTab(value as ScheduleTab)}
+              />
+            }
+          />
+        </Col>
 
-      <StatGrid
-        className="schedule-overview-grid"
-        items={[
-          { label: '总日程数', value: `${overview.totalCount}` },
-          { label: '进行中', value: `${overview.activeCount}` },
-          { label: '已完成', value: `${overview.completedCount}` },
-          { label: '重复事件', value: `${overview.recurringCount}`, helper: `提醒 ${overview.reminderCount} 项` },
-          { label: '今日到期', value: `${overview.dueTodayCount}`, helper: `本周 ${overview.dueThisWeekCount} / 逾期 ${overview.overdueCount}` },
-        ]}
-      />
+        <Col span={24}>
+          <StatGrid
+            items={[
+              { label: '总日程数', value: `${overview.totalCount}` },
+              { label: '进行中', value: `${overview.activeCount}` },
+              { label: '已完成', value: `${overview.completedCount}` },
+              {
+                label: '重复事件',
+                value: `${overview.recurringCount}`,
+                helper: `提醒 ${overview.reminderCount} 项`,
+              },
+              {
+                label: '今日到期',
+                value: `${overview.dueTodayCount}`,
+                helper: `本周 ${overview.dueThisWeekCount} / 逾期 ${overview.overdueCount}`,
+              },
+            ]}
+          />
+        </Col>
 
-      {tab === 'events' ? (
-        <>
-          <div className="schedule-view-toggle">
-            <PillTabs
-              value={eventView}
-              onChange={(v) => setEventView(v as 'calendar' | 'list')}
-              options={VIEW_OPTIONS}
-            />
-          </div>
-          {eventView === 'calendar' ? (
-            <ScheduleCalendarSection
+        <Col span={24}>
+          {tab === 'events' ? (
+            <>
+              <div className="schedule-view-toggle">
+                <PillTabs
+                  value={eventView}
+                  onChange={(v) => setEventView(v as 'calendar' | 'list')}
+                  options={VIEW_OPTIONS}
+                />
+              </div>
+              {eventView === 'calendar' ? (
+                <ScheduleCalendarSection
+                  settings={settings}
+                  showToast={showToast}
+                  onChanged={refreshPage}
+                />
+              ) : (
+                <ScheduleEventsSection
+                  settings={settings}
+                  showToast={showToast}
+                  onChanged={refreshPage}
+                />
+              )}
+            </>
+          ) : null}
+
+          {tab === 'settings' ? (
+            <ScheduleSettingsSection
               settings={settings}
               showToast={showToast}
-              onChanged={refreshPage}
+              onChanged={async () => {
+                await hydrateNotificationCenterState();
+                refreshPage();
+              }}
             />
-          ) : (
-            <ScheduleEventsSection
-              settings={settings}
-              showToast={showToast}
-              onChanged={refreshPage}
-            />
-          )}
-        </>
-      ) : null}
+          ) : null}
 
-      {tab === 'settings' ? (
-        <ScheduleSettingsSection
-          settings={settings}
-          showToast={showToast}
-          onChanged={async () => {
-            await hydrateNotificationCenterState();
-            refreshPage();
-          }}
-        />
-      ) : null}
+          {tab === 'logs' ? (
+            <ScheduleLogsSection showToast={showToast} refreshToken={refreshToken} />
+          ) : null}
 
-      {tab === 'logs' ? (
-        <ScheduleLogsSection
-          showToast={showToast}
-          refreshToken={refreshToken}
-        />
-      ) : null}
+          {tab === 'trash' ? (
+            <ScheduleTrashSection showToast={showToast} onChanged={refreshPage} />
+          ) : null}
+        </Col>
 
-      {tab === 'trash' ? (
-        <ScheduleTrashSection
-          showToast={showToast}
-          onChanged={refreshPage}
-        />
-      ) : null}
-
-      <Toast toast={toast} />
+        <Col span={24}>
+          <Toast toast={toast} />
+        </Col>
+      </Row>
     </div>
   );
 }

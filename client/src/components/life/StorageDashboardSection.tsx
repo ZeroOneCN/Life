@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
 import { EmptyState, SectionCard } from '../page';
 import { buildApiErrorMessage } from '../../lib/api';
 import { CHART_CATEGORY_6 } from '../../lib/chartPalette';
@@ -38,12 +41,13 @@ const tooltipStyle = {
   boxShadow: 'var(--shadow-soft)',
 };
 
-const RANGE_OPTIONS: Array<{ value: StoragePageSettings['defaultDashboardRange']; label: string }> = [
-  { value: '30d', label: '30天' },
-  { value: '90d', label: '90天' },
-  { value: '365d', label: '365天' },
-  { value: 'all', label: '全部' },
-];
+const RANGE_OPTIONS: Array<{ value: StoragePageSettings['defaultDashboardRange']; label: string }> =
+  [
+    { value: '30d', label: '30天' },
+    { value: '90d', label: '90天' },
+    { value: '365d', label: '365天' },
+    { value: 'all', label: '全部' },
+  ];
 
 const SEGMENT_COLORS = ['#5e6ad2', '#1eaedb', '#27a644', '#f59e0b', '#e5484d', '#10b981'];
 
@@ -145,11 +149,7 @@ export function StorageDashboardSection({
 
   if (!hasData) {
     return (
-      <SectionCard
-        title="成本看板"
-        description="数据概览、活动流与成本分析"
-        action={rangePills}
-      >
+      <SectionCard title="成本看板" description="数据概览、活动流与成本分析" action={rangePills}>
         <div className="storage-dashboard-empty">
           <EmptyState
             title="暂无可分析的物品数据"
@@ -163,161 +163,205 @@ export function StorageDashboardSection({
   }
 
   return (
-    <SectionCard
-      title="成本看板"
-      description="数据概览、活动流与成本分析"
-      action={rangePills}
-    >
+    <SectionCard title="成本看板" description="数据概览、活动流与成本分析" action={rangePills}>
       <div className="storage-dashboard-stack">
-      {/* Hero 4 张数字卡 */}
-      <div className="storage-hero-grid">
-        <div className="storage-hero-card">
-          <span className="storage-hero-label">总物品数</span>
-          <strong className="storage-hero-value">{overview.totalCount}</strong>
-          <span className="storage-hero-hint">使用中 {overview.activeCount} · 停用 {overview.retiredCount}</span>
-        </div>
-        <div className="storage-hero-card storage-hero-card-accent">
-          <span className="storage-hero-label">累计购入金额</span>
-          <strong className="storage-hero-value">{formatStorageMoney(overview.totalPurchaseAmount)}</strong>
-          <span className="storage-hero-hint">所有时间投入</span>
-        </div>
-        <div className="storage-hero-card">
-          <span className="storage-hero-label">日均成本</span>
-          <strong className="storage-hero-value">{formatStorageMoney(overview.currentDailyCostTotal)}</strong>
-          <span className="storage-hero-hint">按自然日持续摊销</span>
-        </div>
-        <div className="storage-hero-card">
-          <span className="storage-hero-label">本月新增</span>
-          <strong className="storage-hero-value">{overview.currentMonthNewCount}</strong>
-          <span className="storage-hero-hint">平均持有 {overview.averageUsageDays} 天</span>
-        </div>
-      </div>
-
-      {/* 趋势 + 分布 双列 */}
-      <div className="storage-mid-grid">
-        <div className="storage-panel">
-          <div className="storage-panel-head">
-            <strong>月度购入趋势</strong>
-            <span>近 12 个月购入金额与件数</span>
-          </div>
-          <div className="storage-trend-chart">
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={trend} barCategoryGap="22%">
-                <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-overline)' }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-overline)' }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={36}
-                />
-                <Tooltip
-                  cursor={{ fill: 'color-mix(in srgb, var(--color-primary) 6%, transparent)' }}
-                  contentStyle={tooltipStyle}
-                  formatter={(value, key) =>
-                    key === 'amount'
-                      ? [formatStorageMoney(Number(value ?? 0)), '购入金额']
-                      : [`${Number(value ?? 0)} 件`, '购入件数']
-                  }
-                />
-                <Bar dataKey="amount" fill="var(--color-primary)" radius={[8, 8, 0, 0]} maxBarSize={28} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="storage-panel">
-          <div className="storage-panel-head">
-            <strong>价格分布</strong>
-            <span>前 6 件购入金额占比</span>
-          </div>
-          {priceBreakdown.length ? (
-            <div className="storage-distribution">
-              <div className="storage-distribution-bar">
-                {priceBreakdown.map((item) =>
-                  item.percent > 0 ? (
-                    <span
-                      key={item.id}
-                      className="storage-distribution-segment"
-                      style={{ width: `${item.percent}%`, background: item.color }}
-                      title={`${item.name} · ${formatStorageMoney(item.value)} · ${item.percent.toFixed(0)}%`}
-                    />
-                  ) : null,
-                )}
-              </div>
-              <ul className="storage-distribution-legend">
-                {priceBreakdown.map((item) => (
-                  <li key={item.id} className="storage-distribution-legend-item">
-                    <span className="storage-distribution-dot" style={{ background: item.color }} />
-                    <span className="storage-distribution-name" title={item.name}>{item.name}</span>
-                    <span className="storage-distribution-percent">{item.percent.toFixed(0)}%</span>
-                  </li>
-                ))}
-              </ul>
+        {/* Hero 4 张数字卡 */}
+        <Row gutter={[12, 12]}>
+          <Col span={12}>
+            <div className="storage-hero-card">
+              <span className="storage-hero-label">总物品数</span>
+              <strong className="storage-hero-value">{overview.totalCount}</strong>
+              <span className="storage-hero-hint">
+                使用中 {overview.activeCount} · 停用 {overview.retiredCount}
+              </span>
             </div>
+          </Col>
+          <Col span={12}>
+            <div className="storage-hero-card storage-hero-card-accent">
+              <span className="storage-hero-label">累计购入金额</span>
+              <strong className="storage-hero-value">
+                {formatStorageMoney(overview.totalPurchaseAmount)}
+              </strong>
+              <span className="storage-hero-hint">所有时间投入</span>
+            </div>
+          </Col>
+          <Col span={12}>
+            <div className="storage-hero-card">
+              <span className="storage-hero-label">日均成本</span>
+              <strong className="storage-hero-value">
+                {formatStorageMoney(overview.currentDailyCostTotal)}
+              </strong>
+              <span className="storage-hero-hint">按自然日持续摊销</span>
+            </div>
+          </Col>
+          <Col span={12}>
+            <div className="storage-hero-card">
+              <span className="storage-hero-label">本月新增</span>
+              <strong className="storage-hero-value">{overview.currentMonthNewCount}</strong>
+              <span className="storage-hero-hint">平均持有 {overview.averageUsageDays} 天</span>
+            </div>
+          </Col>
+        </Row>
+
+        {/* 趋势 + 分布 双列 */}
+        <Row gutter={[12, 12]}>
+          <Col span={12}>
+            <div className="storage-panel">
+              <div className="storage-panel-head">
+                <strong>月度购入趋势</strong>
+                <span>近 12 个月购入金额与件数</span>
+              </div>
+              <div className="storage-trend-chart">
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={trend} barCategoryGap="22%">
+                    <CartesianGrid
+                      stroke="var(--color-hairline)"
+                      strokeDasharray="3 3"
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-overline)' }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      tick={{ fill: 'var(--color-ink-subtle)', fontSize: 'var(--fs-overline)' }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={36}
+                    />
+                    <Tooltip
+                      cursor={{ fill: 'color-mix(in srgb, var(--color-primary) 6%, transparent)' }}
+                      contentStyle={tooltipStyle}
+                      formatter={(value, key) =>
+                        key === 'amount'
+                          ? [formatStorageMoney(Number(value ?? 0)), '购入金额']
+                          : [`${Number(value ?? 0)} 件`, '购入件数']
+                      }
+                    />
+                    <Bar
+                      dataKey="amount"
+                      fill="var(--color-primary)"
+                      radius={[8, 8, 0, 0]}
+                      maxBarSize={28}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </Col>
+
+          <Col span={12}>
+            <div className="storage-panel">
+              <div className="storage-panel-head">
+                <strong>价格分布</strong>
+                <span>前 6 件购入金额占比</span>
+              </div>
+              {priceBreakdown.length ? (
+                <div className="storage-distribution">
+                  <div className="storage-distribution-bar">
+                    {priceBreakdown.map((item) =>
+                      item.percent > 0 ? (
+                        <span
+                          key={item.id}
+                          className="storage-distribution-segment"
+                          style={{ width: `${item.percent}%`, background: item.color }}
+                          title={`${item.name} · ${formatStorageMoney(item.value)} · ${item.percent.toFixed(0)}%`}
+                        />
+                      ) : null,
+                    )}
+                  </div>
+                  <ul className="storage-distribution-legend">
+                    {priceBreakdown.map((item) => (
+                      <li key={item.id} className="storage-distribution-legend-item">
+                        <span
+                          className="storage-distribution-dot"
+                          style={{ background: item.color }}
+                        />
+                        <span className="storage-distribution-name" title={item.name}>
+                          {item.name}
+                        </span>
+                        <span className="storage-distribution-percent">
+                          {item.percent.toFixed(0)}%
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <div className="storage-panel-empty">暂无分布数据</div>
+              )}
+            </div>
+          </Col>
+        </Row>
+
+        {/* 活动流 */}
+        <div className="storage-panel">
+          <div className="storage-panel-head">
+            <strong>最近活动</strong>
+            <span>按购入时间倒序</span>
+          </div>
+          {activityFeed.length ? (
+            <ul className="storage-activity-feed">
+              {activityFeed.map((item) => (
+                <li key={item.id} className="storage-activity-item">
+                  <span className="storage-activity-date">
+                    {formatActivityDate(item.purchaseDate)}
+                  </span>
+                  <span className={`tag ${item.status === 'active' ? 'tag-green' : 'tag-muted'}`}>
+                    {item.status === 'active' ? '使用中' : '已停用'}
+                  </span>
+                  <span className="storage-activity-name" title={item.itemName}>
+                    {item.itemName}
+                  </span>
+                  <span className="storage-activity-price">
+                    {formatStorageMoney(item.purchasePrice)}
+                  </span>
+                  <span className="storage-activity-daily">
+                    {formatStorageMoney(item.dailyCost)} / 天
+                  </span>
+                  <span className="storage-activity-days">{item.usageDays} 天</span>
+                </li>
+              ))}
+            </ul>
           ) : (
-            <div className="storage-panel-empty">暂无分布数据</div>
+            <div className="storage-panel-empty">暂无活动记录</div>
           )}
         </div>
-      </div>
 
-      {/* 活动流 */}
-      <div className="storage-panel">
-        <div className="storage-panel-head">
-          <strong>最近活动</strong>
-          <span>按购入时间倒序</span>
-        </div>
-        {activityFeed.length ? (
-          <ul className="storage-activity-feed">
-            {activityFeed.map((item) => (
-              <li key={item.id} className="storage-activity-item">
-                <span className="storage-activity-date">{formatActivityDate(item.purchaseDate)}</span>
-                <span className={`tag ${item.status === 'active' ? 'tag-green' : 'tag-muted'}`}>
-                  {item.status === 'active' ? '使用中' : '已停用'}
-                </span>
-                <span className="storage-activity-name" title={item.itemName}>{item.itemName}</span>
-                <span className="storage-activity-price">{formatStorageMoney(item.purchasePrice)}</span>
-                <span className="storage-activity-daily">{formatStorageMoney(item.dailyCost)} / 天</span>
-                <span className="storage-activity-days">{item.usageDays} 天</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="storage-panel-empty">暂无活动记录</div>
-        )}
-      </div>
-
-      {/* 成本 Top 3 */}
-      {topCost.length > 0 ? (
-        <div className="storage-panel">
-          <div className="storage-panel-head">
-            <strong>成本 Top 3</strong>
-            <span>使用中日均成本最高</span>
+        {/* 成本 Top 3 */}
+        {topCost.length > 0 ? (
+          <div className="storage-panel">
+            <div className="storage-panel-head">
+              <strong>成本 Top 3</strong>
+              <span>使用中日均成本最高</span>
+            </div>
+            <Row gutter={[12, 12]}>
+              {topCost.map((item, index) => (
+                <Col span={12} key={item.id}>
+                  <article className="storage-top-card">
+                    <span className="storage-top-rank">{index + 1}</span>
+                    <div className="storage-top-main">
+                      <strong className="storage-top-name" title={item.itemName}>
+                        {item.itemName}
+                      </strong>
+                      <span className="storage-top-meta">
+                        {item.usageDays} 天 · 购入 {formatStorageMoney(item.purchasePrice)}
+                      </span>
+                    </div>
+                    <div className="storage-top-value">
+                      <strong>{formatStorageMoney(item.dailyCost)}</strong>
+                      <span>每日摊销</span>
+                    </div>
+                  </article>
+                </Col>
+              ))}
+            </Row>
           </div>
-          <div className="storage-top-grid">
-            {topCost.map((item, index) => (
-              <article key={item.id} className="storage-top-card">
-                <span className="storage-top-rank">{index + 1}</span>
-                <div className="storage-top-main">
-                  <strong className="storage-top-name" title={item.itemName}>{item.itemName}</strong>
-                  <span className="storage-top-meta">{item.usageDays} 天 · 购入 {formatStorageMoney(item.purchasePrice)}</span>
-                </div>
-                <div className="storage-top-value">
-                  <strong>{formatStorageMoney(item.dailyCost)}</strong>
-                  <span>每日摊销</span>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      {loading ? <div className="storage-dashboard-loading">加载中…</div> : null}
+        {loading ? <div className="storage-dashboard-loading">加载中…</div> : null}
       </div>
     </SectionCard>
   );
