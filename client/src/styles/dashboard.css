@@ -78,6 +78,9 @@
 }
 
 /* Arco Grid 响应式适配 */
+.dash-arco-grid {
+  overflow-x: hidden;
+}
 @media (max-width: 900px) {
   .dash-arco-grid .arco-col {
     flex: 0 0 100% !important;
