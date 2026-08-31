@@ -1,5 +1,9 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
+
 import { PageHeader, SectionCard, StatGrid } from '../../components/page';
 import { PillTabs, Tag, Toast, useToastState } from '../../components/ui';
 import { usePageTab } from '../../hooks/usePageTab';
@@ -69,7 +73,11 @@ function formatChange(change: number, percent: number) {
  */
 export default function FinanceOverviewPage() {
   const { toast, showToast } = useToastState();
-  const [activeTab, setActiveTab] = usePageTab<OverviewTab>('overview', ['overview', 'report'], 'financeOverviewTab');
+  const [activeTab, setActiveTab] = usePageTab<OverviewTab>(
+    'overview',
+    ['overview', 'report'],
+    'financeOverviewTab',
+  );
   const [report, setReport] = useState<FinanceMonthlyReport | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -98,118 +106,179 @@ export default function FinanceOverviewPage() {
   }, [loadOverview]);
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        title="财务概览"
-        subtitle="汇总各财务模块数据，查看概览与周期报告"
-        actions={(
-          <PillTabs
-            options={TAB_OPTIONS}
-            value={activeTab}
-            onChange={(v) => setActiveTab(v as OverviewTab)}
+    <div className="page-grid-wrapper">
+      <Row gutter={[24, 20]}>
+        <Col span={24}>
+          <PageHeader
+            title="财务概览"
+            subtitle="汇总各财务模块数据，查看概览与周期报告"
+            actions={
+              <PillTabs
+                options={TAB_OPTIONS}
+                value={activeTab}
+                onChange={(v) => setActiveTab(v as OverviewTab)}
+              />
+            }
           />
-        )}
-      />
+        </Col>
 
-      {activeTab === 'overview' ? (
-        <>
-          <StatGrid
-            items={[
-              { label: '本月总支出', value: report ? formatCurrency(report.totalExpense) : '—' },
-              {
-                label: '环比变化',
-                value: report ? formatChange(report.monthOverMonthChange, report.monthOverMonthChangePercent) : '—',
-                helper: report ? `上月：${formatCurrency(report.previousMonthExpense)}` : undefined,
-              },
-              {
-                label: '同比变化',
-                value: report ? formatChange(report.yearOverYearChange, report.yearOverYearChangePercent) : '—',
-                helper: report ? `去年同月：${formatCurrency(report.lastYearSameMonthExpense)}` : undefined,
-              },
-              { label: '投资净收益', value: report ? formatUsd(report.investment.netPnl) : '—' },
-            ]}
-          />
+        {activeTab === 'overview' ? (
+          <>
+            <Col span={24}>
+              <StatGrid
+                items={[
+                  {
+                    label: '本月总支出',
+                    value: report ? formatCurrency(report.totalExpense) : '—',
+                  },
+                  {
+                    label: '环比变化',
+                    value: report
+                      ? formatChange(
+                          report.monthOverMonthChange,
+                          report.monthOverMonthChangePercent,
+                        )
+                      : '—',
+                    helper: report
+                      ? `上月：${formatCurrency(report.previousMonthExpense)}`
+                      : undefined,
+                  },
+                  {
+                    label: '同比变化',
+                    value: report
+                      ? formatChange(report.yearOverYearChange, report.yearOverYearChangePercent)
+                      : '—',
+                    helper: report
+                      ? `去年同月：${formatCurrency(report.lastYearSameMonthExpense)}`
+                      : undefined,
+                  },
+                  {
+                    label: '投资净收益',
+                    value: report ? formatUsd(report.investment.netPnl) : '—',
+                  },
+                ]}
+              />
+            </Col>
 
-          <SectionCard
-            title="模块支出分布"
-            description="本月各财务模块支出占比一览"
-          >
-            {loading ? (
-              <div style={{ opacity: 0.6, padding: 24, textAlign: 'center' }}>加载中…</div>
-            ) : report && report.moduleBreakdown.length > 0 ? (
-              <div className="finance-overview-module-list">
-                {report.moduleBreakdown.map((item) => (
-                  <div key={item.module} className="finance-overview-module-item">
-                    <div className="finance-overview-module-head">
-                      <Tag tone={TONE_MAP[item.module]}>{MODULE_LABELS[item.module]}</Tag>
-                      <span className="finance-overview-module-amount">
-                        {formatCurrency(item.amount)}
-                        <span className="finance-overview-module-meta">
-                          {item.count} 笔 · {(item.percentage * 100).toFixed(1)}%
-                        </span>
-                      </span>
-                    </div>
-                    <div className="finance-overview-module-bar">
-                      <div
-                        className="finance-overview-module-bar-fill"
-                        style={{ width: `${Math.max(item.percentage * 100, 2)}%` }}
-                      />
-                    </div>
+            <Col span={24}>
+              <SectionCard title="模块支出分布" description="本月各财务模块支出占比一览">
+                {loading ? (
+                  <div style={{ opacity: 0.6, padding: 24, textAlign: 'center' }}>加载中…</div>
+                ) : report && report.moduleBreakdown.length > 0 ? (
+                  <div className="finance-overview-module-list">
+                    {report.moduleBreakdown.map((item) => (
+                      <div key={item.module} className="finance-overview-module-item">
+                        <div className="finance-overview-module-head">
+                          <Tag tone={TONE_MAP[item.module]}>{MODULE_LABELS[item.module]}</Tag>
+                          <span className="finance-overview-module-amount">
+                            {formatCurrency(item.amount)}
+                            <span className="finance-overview-module-meta">
+                              {item.count} 笔 · {(item.percentage * 100).toFixed(1)}%
+                            </span>
+                          </span>
+                        </div>
+                        <div className="finance-overview-module-bar">
+                          <div
+                            className="finance-overview-module-bar-fill"
+                            style={{ width: `${Math.max(item.percentage * 100, 2)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-ink-tertiary)' }}>
-                本月暂无支出记录
-              </div>
-            )}
-          </SectionCard>
+                ) : (
+                  <div
+                    style={{ padding: 24, textAlign: 'center', color: 'var(--color-ink-tertiary)' }}
+                  >
+                    本月暂无支出记录
+                  </div>
+                )}
+              </SectionCard>
+            </Col>
 
-          <SectionCard
-            title="投资与净资产"
-            description={`投资账户为美元，未还贷款为人民币；净资产按实时汇率折算后统一以人民币展示。`}
-            action={report ? (
-              <Tag tone={report.netWorth.exchangeRateSource === 'exchangerate-api' ? 'blue' : 'default'}>
-                {report.netWorth.exchangeRateSource === 'exchangerate-api' ? '实时汇率' : '降级汇率'}
-              </Tag>
-            ) : undefined}
-          >
-            {loading ? (
-              <div style={{ opacity: 0.6, padding: 24, textAlign: 'center' }}>加载中…</div>
-            ) : report ? (
-              <>
-                <div className="callout callout-info" style={{ marginBottom: 12 }}>
-                  汇率 1 USD = {report.netWorth.exchangeRate.toFixed(4)} CNY
-                  （{report.netWorth.exchangeRateSource === 'exchangerate-api' ? 'Exchange Rate API 实时' : '内置降级汇率'}）
-                </div>
-                <StatGrid
-                  items={[
-                    { label: '毛收益', value: formatUsd(report.investment.grossPnl), helper: `≈ ¥${(report.investment.grossPnl * report.investment.exchangeRate).toLocaleString('zh-CN', { maximumFractionDigits: 2 })}` },
-                    { label: '手续费', value: formatUsd(report.investment.totalCommission) },
-                    { label: '隔夜费', value: formatUsd(report.investment.totalOvernightFee) },
-                    { label: '交易笔数', value: `${report.investment.tradeCount}` },
-                  ]}
-                />
-                <StatGrid
-                  items={[
-                    { label: '投资净值', value: formatUsd(report.investment.equity), helper: `≈ ¥${report.investment.equityInReportCurrency.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}` },
-                    { label: '投资回报率', value: `${(report.investment.roi * 100).toFixed(2)}%` },
-                    { label: '未还贷款', value: formatCurrency(report.netWorth.unpaidLoanTotal) },
-                    { label: '净资产（CNY）', value: formatCurrency(report.netWorth.netWorth), accent: report.netWorth.netWorth >= 0 ? 'var(--color-success-strong)' : 'var(--color-danger-strong)' },
-                  ]}
-                />
-              </>
-            ) : null}
-          </SectionCard>
-        </>
-      ) : (
-        <div className="finance-overview-report">
-          <Suspense fallback={<div className="skeleton-block" />}>
-            <FinanceReportPage embedded />
-          </Suspense>
-        </div>
-      )}
-
+            <Col span={24}>
+              <SectionCard
+                title="投资与净资产"
+                description={`投资账户为美元，未还贷款为人民币；净资产按实时汇率折算后统一以人民币展示。`}
+                action={
+                  report ? (
+                    <Tag
+                      tone={
+                        report.netWorth.exchangeRateSource === 'exchangerate-api'
+                          ? 'blue'
+                          : 'default'
+                      }
+                    >
+                      {report.netWorth.exchangeRateSource === 'exchangerate-api'
+                        ? '实时汇率'
+                        : '降级汇率'}
+                    </Tag>
+                  ) : undefined
+                }
+              >
+                {loading ? (
+                  <div style={{ opacity: 0.6, padding: 24, textAlign: 'center' }}>加载中…</div>
+                ) : report ? (
+                  <>
+                    <div className="callout callout-info" style={{ marginBottom: 12 }}>
+                      汇率 1 USD = {report.netWorth.exchangeRate.toFixed(4)} CNY （
+                      {report.netWorth.exchangeRateSource === 'exchangerate-api'
+                        ? 'Exchange Rate API 实时'
+                        : '内置降级汇率'}
+                      ）
+                    </div>
+                    <StatGrid
+                      items={[
+                        {
+                          label: '毛收益',
+                          value: formatUsd(report.investment.grossPnl),
+                          helper: `≈ ¥${(report.investment.grossPnl * report.investment.exchangeRate).toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`,
+                        },
+                        { label: '手续费', value: formatUsd(report.investment.totalCommission) },
+                        { label: '隔夜费', value: formatUsd(report.investment.totalOvernightFee) },
+                        { label: '交易笔数', value: `${report.investment.tradeCount}` },
+                      ]}
+                    />
+                    <StatGrid
+                      items={[
+                        {
+                          label: '投资净值',
+                          value: formatUsd(report.investment.equity),
+                          helper: `≈ ¥${report.investment.equityInReportCurrency.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`,
+                        },
+                        {
+                          label: '投资回报率',
+                          value: `${(report.investment.roi * 100).toFixed(2)}%`,
+                        },
+                        {
+                          label: '未还贷款',
+                          value: formatCurrency(report.netWorth.unpaidLoanTotal),
+                        },
+                        {
+                          label: '净资产（CNY）',
+                          value: formatCurrency(report.netWorth.netWorth),
+                          accent:
+                            report.netWorth.netWorth >= 0
+                              ? 'var(--color-success-strong)'
+                              : 'var(--color-danger-strong)',
+                        },
+                      ]}
+                    />
+                  </>
+                ) : null}
+              </SectionCard>
+            </Col>
+          </>
+        ) : (
+          <Col span={24}>
+            <div className="finance-overview-report">
+              <Suspense fallback={<div className="skeleton-block" />}>
+                <FinanceReportPage embedded />
+              </Suspense>
+            </div>
+          </Col>
+        )}
+      </Row>
       <Toast toast={toast} />
     </div>
   );

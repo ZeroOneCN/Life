@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
+
 import { TravelBooksSection } from '../../components/finance/TravelBooksSection';
 import { TravelDetailsSection } from '../../components/finance/TravelDetailsSection';
 import { TravelLeaderboardSection } from '../../components/finance/TravelLeaderboardSection';
@@ -64,14 +68,20 @@ function hydrateSettings(
   return {
     ...normalized,
     activeBookId,
-    detailsBookId: hasBookOrAll(normalized.detailsBookId) ? normalized.detailsBookId : (activeBookId || TRAVEL_ALL_BOOKS),
+    detailsBookId: hasBookOrAll(normalized.detailsBookId)
+      ? normalized.detailsBookId
+      : activeBookId || TRAVEL_ALL_BOOKS,
     statsBookId: hasBook(normalized.statsBookId) ? normalized.statsBookId : activeBookId,
     reportBookId: hasBook(normalized.reportBookId) ? normalized.reportBookId : activeBookId,
   };
 }
 
 export default function TravelPage() {
-  const [tab, setTab] = usePageTab<TravelTab>('books', TAB_OPTIONS.map((item) => item.value), 'travelTab');
+  const [tab, setTab] = usePageTab<TravelTab>(
+    'books',
+    TAB_OPTIONS.map((item) => item.value),
+    'travelTab',
+  );
   useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const [books, setBooks] = useState<TravelBook[]>([]);
   const [records, setRecords] = useState<TravelExpenseRecord[]>([]);
@@ -85,12 +95,13 @@ export default function TravelPage() {
   showToastRef.current = showToast;
 
   const reload = useCallback(async () => {
-    const [booksResponse, recordsResponse, payChannelsResponse, settingsResponse] = await Promise.all([
-      travelApi.listBooks(),
-      travelApi.listRecords({ page: 1, page_size: 1000 }),
-      travelApi.listPayChannels(),
-      travelApi.getSettings(),
-    ]);
+    const [booksResponse, recordsResponse, payChannelsResponse, settingsResponse] =
+      await Promise.all([
+        travelApi.listBooks(),
+        travelApi.listRecords({ page: 1, page_size: 1000 }),
+        travelApi.listPayChannels(),
+        travelApi.getSettings(),
+      ]);
 
     const nextBooks = booksResponse.items;
     const nextSettings = hydrateSettings(settingsResponse, nextBooks);
@@ -130,159 +141,186 @@ export default function TravelPage() {
     };
   }, [reload]);
 
-  const updateSettings = useCallback(async (patch: Partial<TravelPageState['settings']>) => {
-    try {
-      const next = await travelApi.updateSettings(patch);
-      const normalized = hydrateSettings(next, books);
-      setSettings(normalized);
-      const nextSummary = await travelApi.getSummary(
-        normalized.activeBookId ? { bookId: normalized.activeBookId } : undefined,
-      );
-      setSummary(nextSummary);
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '旅行设置保存失败。'), 'error');
-    }
-  }, [books, showToast]);
+  const updateSettings = useCallback(
+    async (patch: Partial<TravelPageState['settings']>) => {
+      try {
+        const next = await travelApi.updateSettings(patch);
+        const normalized = hydrateSettings(next, books);
+        setSettings(normalized);
+        const nextSummary = await travelApi.getSummary(
+          normalized.activeBookId ? { bookId: normalized.activeBookId } : undefined,
+        );
+        setSummary(nextSummary);
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '旅行设置保存失败。'), 'error');
+      }
+    },
+    [books, showToast],
+  );
 
-  const resolveBookId = useCallback(async (bookId: string) => {
-    if (!bookId) {
+  const resolveBookId = useCallback(
+    async (bookId: string) => {
+      if (!bookId) {
+        return bookId;
+      }
+
+      if (books.some((item) => item.id === bookId)) {
+        return bookId;
+      }
+
+      const pending = tempBookIdsRef.current.get(bookId);
+      if (pending) {
+        return pending;
+      }
+
       return bookId;
-    }
+    },
+    [books],
+  );
 
-    if (books.some((item) => item.id === bookId)) {
-      return bookId;
-    }
+  const handleBooksChange = useCallback(
+    async (updater: (items: TravelBook[]) => TravelBook[]) => {
+      const previous = books;
+      const next = updater(previous);
+      setBooks(next);
 
-    const pending = tempBookIdsRef.current.get(bookId);
-    if (pending) {
-      return pending;
-    }
+      try {
+        const created = findCreated(previous, next);
+        const deletedIds = findDeletedIds(previous, next);
+        const updated = findUpdated(previous, next);
 
-    return bookId;
-  }, [books]);
+        await Promise.all([
+          ...created.map((item) => {
+            const request = travelApi
+              .createBook({
+                name: item.name,
+                description: item.description,
+                startDate: item.startDate,
+                endDate: item.endDate,
+                summary: item.summary,
+                status: item.status,
+                currency: item.currency,
+                budget: item.budget ?? undefined,
+              })
+              .then((createdItem) => createdItem.id);
+            tempBookIdsRef.current.set(item.id, request);
+            return request;
+          }),
+          ...updated.map((item) =>
+            travelApi.updateBook(item.id, {
+              name: item.name,
+              description: item.description,
+              startDate: item.startDate,
+              endDate: item.endDate,
+              summary: item.summary,
+              status: item.status,
+              currency: item.currency,
+              budget: item.budget ?? undefined,
+            }),
+          ),
+          ...deletedIds.map((id) => travelApi.deleteBook(id)),
+        ]);
 
-  const handleBooksChange = useCallback(async (updater: (items: TravelBook[]) => TravelBook[]) => {
-    const previous = books;
-    const next = updater(previous);
-    setBooks(next);
+        await reload();
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '行程账本保存失败。'), 'error');
+        await reload();
+      }
+    },
+    [books, reload, showToast],
+  );
 
-    try {
-      const created = findCreated(previous, next);
-      const deletedIds = findDeletedIds(previous, next);
-      const updated = findUpdated(previous, next);
+  const handleRecordsChange = useCallback(
+    async (updater: (items: TravelExpenseRecord[]) => TravelExpenseRecord[]) => {
+      const previous = records;
+      const next = updater(previous);
+      setRecords(next);
 
-      await Promise.all([
-        ...created.map((item) => {
-          const request = travelApi.createBook({
-            name: item.name,
-            description: item.description,
-            startDate: item.startDate,
-            endDate: item.endDate,
-            summary: item.summary,
-            status: item.status,
-            currency: item.currency,
-            budget: item.budget ?? undefined,
-          }).then((createdItem) => createdItem.id);
-          tempBookIdsRef.current.set(item.id, request);
-          return request;
-        }),
-        ...updated.map((item) => travelApi.updateBook(item.id, {
-          name: item.name,
-          description: item.description,
-          startDate: item.startDate,
-          endDate: item.endDate,
-          summary: item.summary,
-          status: item.status,
-          currency: item.currency,
-          budget: item.budget ?? undefined,
-        })),
-        ...deletedIds.map((id) => travelApi.deleteBook(id)),
-      ]);
+      try {
+        const created = findCreated(previous, next);
+        const deletedIds = findDeletedIds(previous, next);
+        const updated = findUpdated(previous, next);
 
-      await reload();
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '行程账本保存失败。'), 'error');
-      await reload();
-    }
-  }, [books, reload, showToast]);
+        await Promise.all([
+          ...created.map(async (item) =>
+            travelApi.createRecord({
+              bookId: await resolveBookId(item.bookId),
+              date: item.date,
+              timeStart: item.timeStart,
+              timeEnd: item.timeEnd,
+              category: item.category,
+              title: item.title,
+              amount: item.amount,
+              discountAmount: item.discountAmount,
+              discountNote: item.discountNote,
+              vehicleInfo: item.vehicleInfo,
+              payChannel: item.payChannel,
+              remark: item.remark,
+            }),
+          ),
+          ...updated.map(async (item) =>
+            travelApi.updateRecord(item.id, {
+              bookId: await resolveBookId(item.bookId),
+              date: item.date,
+              timeStart: item.timeStart,
+              timeEnd: item.timeEnd,
+              category: item.category,
+              title: item.title,
+              amount: item.amount,
+              discountAmount: item.discountAmount,
+              discountNote: item.discountNote,
+              vehicleInfo: item.vehicleInfo,
+              payChannel: item.payChannel,
+              remark: item.remark,
+            }),
+          ),
+          ...deletedIds.map((id) => travelApi.deleteRecord(id)),
+        ]);
 
-  const handleRecordsChange = useCallback(async (updater: (items: TravelExpenseRecord[]) => TravelExpenseRecord[]) => {
-    const previous = records;
-    const next = updater(previous);
-    setRecords(next);
+        await reload();
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '旅行明细保存失败。'), 'error');
+        await reload();
+      }
+    },
+    [records, reload, resolveBookId, showToast],
+  );
 
-    try {
-      const created = findCreated(previous, next);
-      const deletedIds = findDeletedIds(previous, next);
-      const updated = findUpdated(previous, next);
+  const handlePayChannelsChange = useCallback(
+    async (updater: (items: TravelPayChannel[]) => TravelPayChannel[]) => {
+      const previous = payChannels;
+      const next = updater(previous);
+      setPayChannels(next);
 
-      await Promise.all([
-        ...created.map(async (item) => travelApi.createRecord({
-          bookId: await resolveBookId(item.bookId),
-          date: item.date,
-          timeStart: item.timeStart,
-          timeEnd: item.timeEnd,
-          category: item.category,
-          title: item.title,
-          amount: item.amount,
-          discountAmount: item.discountAmount,
-          discountNote: item.discountNote,
-          vehicleInfo: item.vehicleInfo,
-          payChannel: item.payChannel,
-          remark: item.remark,
-        })),
-        ...updated.map(async (item) => travelApi.updateRecord(item.id, {
-          bookId: await resolveBookId(item.bookId),
-          date: item.date,
-          timeStart: item.timeStart,
-          timeEnd: item.timeEnd,
-          category: item.category,
-          title: item.title,
-          amount: item.amount,
-          discountAmount: item.discountAmount,
-          discountNote: item.discountNote,
-          vehicleInfo: item.vehicleInfo,
-          payChannel: item.payChannel,
-          remark: item.remark,
-        })),
-        ...deletedIds.map((id) => travelApi.deleteRecord(id)),
-      ]);
+      try {
+        const created = findCreated(previous, next);
+        const deletedIds = findDeletedIds(previous, next);
+        const updated = findUpdated(previous, next);
 
-      await reload();
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '旅行明细保存失败。'), 'error');
-      await reload();
-    }
-  }, [records, reload, resolveBookId, showToast]);
+        await Promise.all([
+          ...created.map((item) =>
+            travelApi.createPayChannel({
+              value: item.value,
+              label: item.label,
+            }),
+          ),
+          ...updated.map((item) =>
+            travelApi.updatePayChannel(item.id, {
+              value: item.value,
+              label: item.label,
+            }),
+          ),
+          ...deletedIds.map((id) => travelApi.deletePayChannel(id)),
+        ]);
 
-  const handlePayChannelsChange = useCallback(async (updater: (items: TravelPayChannel[]) => TravelPayChannel[]) => {
-    const previous = payChannels;
-    const next = updater(previous);
-    setPayChannels(next);
-
-    try {
-      const created = findCreated(previous, next);
-      const deletedIds = findDeletedIds(previous, next);
-      const updated = findUpdated(previous, next);
-
-      await Promise.all([
-        ...created.map((item) => travelApi.createPayChannel({
-          value: item.value,
-          label: item.label,
-        })),
-        ...updated.map((item) => travelApi.updatePayChannel(item.id, {
-          value: item.value,
-          label: item.label,
-        })),
-        ...deletedIds.map((id) => travelApi.deletePayChannel(id)),
-      ]);
-
-      await reload();
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '支付渠道保存失败。'), 'error');
-      await reload();
-    }
-  }, [payChannels, reload, showToast]);
+        await reload();
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '支付渠道保存失败。'), 'error');
+        await reload();
+      }
+    },
+    [payChannels, reload, showToast],
+  );
 
   const activeBook = useMemo(
     () => books.find((book) => book.id === settings.activeBookId) ?? books[0] ?? null,
@@ -299,129 +337,153 @@ export default function TravelPage() {
   };
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        title="旅行游玩"
-        subtitle="记录行程账本与消费明细，支持多币种统计"
-        actions={(
-          <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as TravelTab)} />
-        )}
-      />
+    <div className="page-grid-wrapper">
+      <Row gutter={[24, 20]}>
+        <Col span={24}>
+          <PageHeader
+            title="旅行游玩"
+            subtitle="记录行程账本与消费明细，支持多币种统计"
+            actions={
+              <PillTabs
+                options={TAB_OPTIONS}
+                value={tab}
+                onChange={(value) => setTab(value as TravelTab)}
+              />
+            }
+          />
+        </Col>
 
-      <StatGrid
-        items={[
-          {
-            label: '当前账本',
-            value: activeBook?.name ?? '未选择账本',
-            helper: activeBook ? `${activeBook.startDate}${activeBook.endDate ? ` - ${activeBook.endDate}` : ''}` : '先创建一个账本再录入明细',
-          },
-          {
-            label: '实付总额',
-            value: formatTravelAmount(summary.totalPaidAmount),
-          },
-          {
-            label: '累计优惠',
-            value: formatTravelAmount(summary.totalSaved),
-          },
-          {
-            label: '记录数',
-            value: `${summary.totalCount}`,
-          },
-          {
-            label: '最大分类',
-            value: summary.topCategoryName || '暂无',
-            helper: summary.topPayChannelName ? `主要支付方式：${summary.topPayChannelName}` : undefined,
-          },
-        ]}
-      />
+        <Col span={24}>
+          <StatGrid
+            items={[
+              {
+                label: '当前账本',
+                value: activeBook?.name ?? '未选择账本',
+                helper: activeBook
+                  ? `${activeBook.startDate}${activeBook.endDate ? ` - ${activeBook.endDate}` : ''}`
+                  : '先创建一个账本再录入明细',
+              },
+              {
+                label: '实付总额',
+                value: formatTravelAmount(summary.totalPaidAmount),
+              },
+              {
+                label: '累计优惠',
+                value: formatTravelAmount(summary.totalSaved),
+              },
+              {
+                label: '记录数',
+                value: `${summary.totalCount}`,
+              },
+              {
+                label: '最大分类',
+                value: summary.topCategoryName || '暂无',
+                helper: summary.topPayChannelName
+                  ? `主要支付方式：${summary.topPayChannelName}`
+                  : undefined,
+              },
+            ]}
+          />
+        </Col>
 
-      {tab === 'books' ? (
-        <TravelBooksSection
-          activeBookId={activeBook?.id ?? ''}
-          books={books}
-          records={records}
-          payChannels={payChannels}
-          onActiveBookChange={handleActiveBookChange}
-          onChangeBooks={(updater) => {
-            void handleBooksChange(updater);
-          }}
-          onChangeRecords={(updater) => {
-            void handleRecordsChange(updater);
-          }}
-          onChangePayChannels={(updater) => {
-            void handlePayChannelsChange(updater);
-          }}
-          showToast={showToast}
-        />
-      ) : null}
+        <Col span={24}>
+          {tab === 'books' ? (
+            <TravelBooksSection
+              activeBookId={activeBook?.id ?? ''}
+              books={books}
+              records={records}
+              payChannels={payChannels}
+              onActiveBookChange={handleActiveBookChange}
+              onChangeBooks={(updater) => {
+                void handleBooksChange(updater);
+              }}
+              onChangeRecords={(updater) => {
+                void handleRecordsChange(updater);
+              }}
+              onChangePayChannels={(updater) => {
+                void handlePayChannelsChange(updater);
+              }}
+              showToast={showToast}
+            />
+          ) : null}
+        </Col>
 
-      {tab === 'details' ? (
-        <>
-        <TravelDetailsSection
-          activeBookId={activeBook?.id ?? ''}
-          detailsBookId={settings.detailsBookId}
-          books={books}
-          records={records}
-          payChannels={payChannels}
-          onDetailsBookIdChange={(bookId) => {
-            void updateSettings({ detailsBookId: bookId });
-          }}
-          onChangeBooks={(updater) => {
-            void handleBooksChange(updater);
-          }}
-          onChangeRecords={(updater) => {
-            void handleRecordsChange(updater);
-          }}
-          showToast={showToast}
-        />
-        <CurrencyConverter defaultFrom="USD" defaultTo="CNY" defaultAmount={100} />
-        </>
-      ) : null}
+        <Col span={24}>
+          {tab === 'details' ? (
+            <>
+              <TravelDetailsSection
+                activeBookId={activeBook?.id ?? ''}
+                detailsBookId={settings.detailsBookId}
+                books={books}
+                records={records}
+                payChannels={payChannels}
+                onDetailsBookIdChange={(bookId) => {
+                  void updateSettings({ detailsBookId: bookId });
+                }}
+                onChangeBooks={(updater) => {
+                  void handleBooksChange(updater);
+                }}
+                onChangeRecords={(updater) => {
+                  void handleRecordsChange(updater);
+                }}
+                showToast={showToast}
+              />
+              <CurrencyConverter defaultFrom="USD" defaultTo="CNY" defaultAmount={100} />
+            </>
+          ) : null}
+        </Col>
 
-      {tab === 'stats' ? (
-        <TravelStatsSection
-          statsBookId={settings.statsBookId}
-          books={books}
-          records={records}
-          payChannels={payChannels}
-          onStatsBookIdChange={(bookId) => {
-            void updateSettings({ statsBookId: bookId });
-          }}
-          onChangePayChannels={(updater) => {
-            void handlePayChannelsChange(updater);
-          }}
-          showToast={showToast}
-        />
-      ) : null}
+        <Col span={24}>
+          {tab === 'stats' ? (
+            <TravelStatsSection
+              statsBookId={settings.statsBookId}
+              books={books}
+              records={records}
+              payChannels={payChannels}
+              onStatsBookIdChange={(bookId) => {
+                void updateSettings({ statsBookId: bookId });
+              }}
+              onChangePayChannels={(updater) => {
+                void handlePayChannelsChange(updater);
+              }}
+              showToast={showToast}
+            />
+          ) : null}
+        </Col>
 
-      {tab === 'leaderboard' ? (
-        <TravelLeaderboardSection
-          books={books}
-          records={records}
-          onSelectBook={(bookId) => {
-            handleActiveBookChange(bookId);
-            setTab('details');
-            showToast('已切换到对应账本，并打开行程明细。');
-          }}
-        />
-      ) : null}
+        <Col span={24}>
+          {tab === 'leaderboard' ? (
+            <TravelLeaderboardSection
+              books={books}
+              records={records}
+              onSelectBook={(bookId) => {
+                handleActiveBookChange(bookId);
+                setTab('details');
+                showToast('已切换到对应账本，并打开行程明细。');
+              }}
+            />
+          ) : null}
+        </Col>
 
-      {tab === 'report' ? (
-        <TravelReportSection
-          reportBookId={settings.reportBookId}
-          reportColumns={settings.reportColumns}
-          books={books}
-          records={records}
-          payChannels={payChannels}
-          onReportBookIdChange={(bookId) => {
-            void updateSettings({ reportBookId: bookId });
-          }}
-          onReportColumnsChange={(columns) => {
-            void updateSettings({ reportColumns: columns });
-          }}
-          showToast={showToast}
-        />
-      ) : null}
+        <Col span={24}>
+          {tab === 'report' ? (
+            <TravelReportSection
+              reportBookId={settings.reportBookId}
+              reportColumns={settings.reportColumns}
+              books={books}
+              records={records}
+              payChannels={payChannels}
+              onReportBookIdChange={(bookId) => {
+                void updateSettings({ reportBookId: bookId });
+              }}
+              onReportColumnsChange={(columns) => {
+                void updateSettings({ reportColumns: columns });
+              }}
+              showToast={showToast}
+            />
+          ) : null}
+        </Col>
+      </Row>
 
       <Toast toast={toast} />
     </div>

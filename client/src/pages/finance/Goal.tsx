@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
+
 import dayjs from 'dayjs';
 
 import { EmptyState, PageHeader, SectionCard, StatGrid } from '../../components/page';
@@ -355,163 +360,179 @@ export default function GoalPage({ embedded = false }: { embedded?: boolean }) {
   };
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        title="储蓄目标"
-        subtitle="设定储蓄目标，跟踪达成进度与建议"
-        actions={
-          <Btn tone="primary" onClick={handleCreateGoal}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <PlusIcon size={16} />
-              新建目标
-            </span>
-          </Btn>
-        }
-      />
-
-      <StatGrid items={statItems} />
-
-      <SectionCard
-        title="我的目标"
-        description={`共 ${goals.length} 个目标`}
-        action={
-          <div className="section-card-toolbar">
-            <PillTabs
-              options={TAB_OPTIONS}
-              value={activeTab}
-              onChange={(v) => setActiveTab(v as TabKey)}
-            />
-            {embedded ? (
+    <div className="page-grid-wrapper">
+      <Row gutter={[24, 20]}>
+        <Col span={24}>
+          <PageHeader
+            title="储蓄目标"
+            subtitle="设定储蓄目标，跟踪达成进度与建议"
+            actions={
               <Btn tone="primary" onClick={handleCreateGoal}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <PlusIcon size={16} />
                   新建目标
                 </span>
               </Btn>
-            ) : null}
-          </div>
-        }
-      >
-        {goalsLoading ? (
-          <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--color-ink-mute)' }}>
-            加载中...
-          </div>
-        ) : goals.length === 0 ? (
-          <EmptyState title="暂无目标" description="创建你的第一个储蓄目标，开始存钱之旅吧！" />
-        ) : (
-          <div className="goal-grid">
-            {goals.map((goal) => (
-              <div
-                key={goal.id}
-                className="goal-card"
-                style={{ borderLeftColor: goal.color }}
-                onClick={() => handleViewDetail(goal)}
-              >
-                <div className="goal-card-header">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span
-                      className="goal-icon"
-                      style={{ background: goal.color + '20', color: goal.color }}
-                    >
-                      <TargetIcon />
+            }
+          />
+        </Col>
+
+        <Col span={24}>
+          <StatGrid items={statItems} />
+        </Col>
+
+        <Col span={24}>
+          <SectionCard
+            title="我的目标"
+            description={`共 ${goals.length} 个目标`}
+            action={
+              <div className="section-card-toolbar">
+                <PillTabs
+                  options={TAB_OPTIONS}
+                  value={activeTab}
+                  onChange={(v) => setActiveTab(v as TabKey)}
+                />
+                {embedded ? (
+                  <Btn tone="primary" onClick={handleCreateGoal}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <PlusIcon size={16} />
+                      新建目标
                     </span>
-                    <div>
-                      <h4 className="goal-name">{goal.name}</h4>
-                      <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
-                        <Tag tone="blue" size="sm">
-                          {GOAL_TYPE_LABELS[goal.type]}
-                        </Tag>
-                        <Tag
-                          tone={
-                            goal.status === 'completed'
-                              ? 'green'
-                              : goal.status === 'paused'
-                                ? 'orange'
-                                : 'blue'
-                          }
-                          size="sm"
-                        >
-                          {GOAL_STATUS_LABELS[goal.status]}
-                        </Tag>
+                  </Btn>
+                ) : null}
+              </div>
+            }
+          >
+            {goalsLoading ? (
+              <div
+                style={{ padding: '40px 0', textAlign: 'center', color: 'var(--color-ink-mute)' }}
+              >
+                加载中...
+              </div>
+            ) : goals.length === 0 ? (
+              <EmptyState title="暂无目标" description="创建你的第一个储蓄目标，开始存钱之旅吧！" />
+            ) : (
+              <Row gutter={[16, 16]}>
+                {goals.map((goal) => (
+                  <Col span={12}>
+                    <div
+                      key={goal.id}
+                      className="goal-card"
+                      style={{ borderLeftColor: goal.color }}
+                      onClick={() => handleViewDetail(goal)}
+                    >
+                      <div className="goal-card-header">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span
+                            className="goal-icon"
+                            style={{ background: goal.color + '20', color: goal.color }}
+                          >
+                            <TargetIcon />
+                          </span>
+                          <div>
+                            <h4 className="goal-name">{goal.name}</h4>
+                            <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
+                              <Tag tone="blue" size="sm">
+                                {GOAL_TYPE_LABELS[goal.type]}
+                              </Tag>
+                              <Tag
+                                tone={
+                                  goal.status === 'completed'
+                                    ? 'green'
+                                    : goal.status === 'paused'
+                                      ? 'orange'
+                                      : 'blue'
+                                }
+                                size="sm"
+                              >
+                                {GOAL_STATUS_LABELS[goal.status]}
+                              </Tag>
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <IconBtn
+                            icon={<EditIcon />}
+                            title="编辑"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditGoal(goal);
+                            }}
+                          />
+                          <IconBtn
+                            icon={<DeleteIcon />}
+                            title="删除"
+                            tone="danger"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick(goal);
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="goal-amounts">
+                        <div>
+                          <span className="goal-amount-label">已存</span>
+                          <span className="goal-amount-current">
+                            ¥{goal.currentAmount.toFixed(2)}
+                          </span>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span className="goal-amount-label">目标</span>
+                          <span className="goal-amount-target">
+                            ¥{goal.targetAmount.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="goal-progress-container">
+                        <div className="goal-progress-bar">
+                          <div
+                            className="goal-progress-fill"
+                            style={{
+                              width: `${Math.min(100, goal.progressPercent)}%`,
+                              background: goal.color,
+                            }}
+                          />
+                        </div>
+                        <div className="goal-progress-info">
+                          <span>{goal.progressPercent.toFixed(1)}%</span>
+                          <span>剩余 {goal.daysRemaining} 天</span>
+                        </div>
+                      </div>
+
+                      <div className="goal-footer">
+                        <div style={{ fontSize: 13, color: 'var(--color-ink-mute)' }}>
+                          每月需存{' '}
+                          <span style={{ fontWeight: 600, color: goal.color }}>
+                            ¥{goal.monthlySavingsNeeded.toFixed(2)}
+                          </span>
+                        </div>
+                        <div>
+                          {goal.isOnTrack ? (
+                            <Tag tone="green" size="sm">
+                              进度正常
+                            </Tag>
+                          ) : goal.isWarning ? (
+                            <Tag tone="orange" size="sm">
+                              进度偏慢
+                            </Tag>
+                          ) : (
+                            <Tag tone="red" size="sm">
+                              严重落后
+                            </Tag>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <IconBtn
-                      icon={<EditIcon />}
-                      title="编辑"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditGoal(goal);
-                      }}
-                    />
-                    <IconBtn
-                      icon={<DeleteIcon />}
-                      title="删除"
-                      tone="danger"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClick(goal);
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="goal-amounts">
-                  <div>
-                    <span className="goal-amount-label">已存</span>
-                    <span className="goal-amount-current">¥{goal.currentAmount.toFixed(2)}</span>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <span className="goal-amount-label">目标</span>
-                    <span className="goal-amount-target">¥{goal.targetAmount.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <div className="goal-progress-container">
-                  <div className="goal-progress-bar">
-                    <div
-                      className="goal-progress-fill"
-                      style={{
-                        width: `${Math.min(100, goal.progressPercent)}%`,
-                        background: goal.color,
-                      }}
-                    />
-                  </div>
-                  <div className="goal-progress-info">
-                    <span>{goal.progressPercent.toFixed(1)}%</span>
-                    <span>剩余 {goal.daysRemaining} 天</span>
-                  </div>
-                </div>
-
-                <div className="goal-footer">
-                  <div style={{ fontSize: 13, color: 'var(--color-ink-mute)' }}>
-                    每月需存{' '}
-                    <span style={{ fontWeight: 600, color: goal.color }}>
-                      ¥{goal.monthlySavingsNeeded.toFixed(2)}
-                    </span>
-                  </div>
-                  <div>
-                    {goal.isOnTrack ? (
-                      <Tag tone="green" size="sm">
-                        进度正常
-                      </Tag>
-                    ) : goal.isWarning ? (
-                      <Tag tone="orange" size="sm">
-                        进度偏慢
-                      </Tag>
-                    ) : (
-                      <Tag tone="red" size="sm">
-                        严重落后
-                      </Tag>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </SectionCard>
+                  </Col>
+                ))}
+              </Row>
+            )}
+          </SectionCard>
+        </Col>
+      </Row>
 
       {/* 目标编辑弹窗 */}
       <Modal

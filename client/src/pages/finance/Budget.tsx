@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
+
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
+
 import dayjs from 'dayjs';
 
 import { EmptyState, PageHeader, SectionCard, StatGrid } from '../../components/page';
@@ -57,7 +62,11 @@ const HISTORY_PAGE_SIZE = 20;
  */
 export default function BudgetPage({ embedded = false }: { embedded?: boolean }) {
   const { toast, showToast } = useToastState();
-  const [activeTab, setActiveTab] = usePageTab<TabKey>('overview', ['overview', 'budgets', 'comparison', 'history'], 'budgetTab');
+  const [activeTab, setActiveTab] = usePageTab<TabKey>(
+    'overview',
+    ['overview', 'budgets', 'comparison', 'history'],
+    'budgetTab',
+  );
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format('YYYY-MM'));
   const [selectedYear, setSelectedYear] = useState(dayjs().year());
 
@@ -136,7 +145,14 @@ export default function BudgetPage({ embedded = false }: { embedded?: boolean })
     } finally {
       setBudgetsLoading(false);
     }
-  }, [budgetPage, budgetFilterType, budgetFilterPeriod, budgetFilterActive, budgetKeyword, showToast]);
+  }, [
+    budgetPage,
+    budgetFilterType,
+    budgetFilterPeriod,
+    budgetFilterActive,
+    budgetKeyword,
+    showToast,
+  ]);
 
   /**
    * 加载预算分类。
@@ -266,99 +282,139 @@ export default function BudgetPage({ embedded = false }: { embedded?: boolean })
 
   const overviewCards = progressOverview
     ? [
-        { label: '当月预算总额', value: `¥${progressOverview.totalBudget.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}` },
-        { label: '已支出', value: `¥${progressOverview.totalActual.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`, helper: `进度 ${progressOverview.overallPercent.toFixed(1)}%` },
+        {
+          label: '当月预算总额',
+          value: `¥${progressOverview.totalBudget.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`,
+        },
+        {
+          label: '已支出',
+          value: `¥${progressOverview.totalActual.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`,
+          helper: `进度 ${progressOverview.overallPercent.toFixed(1)}%`,
+        },
         {
           label: '剩余预算',
           value: `¥${progressOverview.totalRemaining.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`,
-          accent: progressOverview.totalRemaining >= 0 ? 'var(--color-success-strong)' : 'var(--color-danger-strong)',
+          accent:
+            progressOverview.totalRemaining >= 0
+              ? 'var(--color-success-strong)'
+              : 'var(--color-danger-strong)',
         },
       ]
     : [];
 
   return (
-    <div className="page-stack">
-      {embedded ? (
-        <div className="merged-tabs-top">
-          <PillTabs
-            options={TAB_OPTIONS}
-            value={activeTab}
-            onChange={(value) => setActiveTab(value as TabKey)}
-          />
-        </div>
-      ) : (
-        <PageHeader
-          title="预算管理"
-          subtitle="设定月度预算，跟踪支出对比与调整记录"
-          actions={
-            <>
+    <div className="page-grid-wrapper">
+      <Row gutter={[24, 20]}>
+        <Col span={24}>
+          {embedded ? (
+            <div className="merged-tabs-top">
               <PillTabs
                 options={TAB_OPTIONS}
                 value={activeTab}
                 onChange={(value) => setActiveTab(value as TabKey)}
               />
-              <Btn tone="secondary" onClick={handleTriggerAlerts}>检查预警</Btn>
-              <Btn tone="primary" onClick={handleAddBudget}>新增预算</Btn>
-            </>
-          }
-        />
-      )}
+            </div>
+          ) : (
+            <PageHeader
+              title="预算管理"
+              subtitle="设定月度预算，跟踪支出对比与调整记录"
+              actions={
+                <>
+                  <PillTabs
+                    options={TAB_OPTIONS}
+                    value={activeTab}
+                    onChange={(value) => setActiveTab(value as TabKey)}
+                  />
+                  <Btn tone="secondary" onClick={handleTriggerAlerts}>
+                    检查预警
+                  </Btn>
+                  <Btn tone="primary" onClick={handleAddBudget}>
+                    新增预算
+                  </Btn>
+                </>
+              }
+            />
+          )}
+        </Col>
 
-      {activeTab === 'overview' && progressOverview && (
-        <StatGrid items={overviewCards} />
-      )}
+        {activeTab === 'overview' && progressOverview && (
+          <Col span={24}>
+            <StatGrid items={overviewCards} />
+          </Col>
+        )}
 
-      {activeTab === 'overview' && progressOverview && (
-        <BudgetOverviewSection
-          overview={progressOverview}
-          loading={overviewLoading}
-          month={selectedMonth}
-          onMonthChange={setSelectedMonth}
-          onTriggerAlerts={embedded ? () => void handleTriggerAlerts() : undefined}
-        />
-      )}
+        {activeTab === 'overview' && progressOverview && (
+          <Col span={24}>
+            <BudgetOverviewSection
+              overview={progressOverview}
+              loading={overviewLoading}
+              month={selectedMonth}
+              onMonthChange={setSelectedMonth}
+              onTriggerAlerts={embedded ? () => void handleTriggerAlerts() : undefined}
+            />
+          </Col>
+        )}
 
-      {activeTab === 'budgets' && (
-        <BudgetListSection
-          budgets={budgets}
-          total={budgetsTotal}
-          loading={budgetsLoading}
-          page={budgetPage}
-          filterType={budgetFilterType}
-          filterPeriod={budgetFilterPeriod}
-          filterActive={budgetFilterActive}
-          keyword={budgetKeyword}
-          categories={categories}
-          onPageChange={setBudgetPage}
-          onFilterTypeChange={(v) => { setBudgetFilterType(v); setBudgetPage(1); }}
-          onFilterPeriodChange={(v) => { setBudgetFilterPeriod(v); setBudgetPage(1); }}
-          onFilterActiveChange={(v) => { setBudgetFilterActive(v); setBudgetPage(1); }}
-          onKeywordChange={(v) => { setBudgetKeyword(v); setBudgetPage(1); }}
-          onEdit={handleEditBudget}
-          onDelete={handleDeleteBudget}
-          onManageCategories={() => setCategoryModalOpen(true)}
-          onAddBudget={embedded ? handleAddBudget : undefined}
-        />
-      )}
+        {activeTab === 'budgets' && (
+          <Col span={24}>
+            <BudgetListSection
+              budgets={budgets}
+              total={budgetsTotal}
+              loading={budgetsLoading}
+              page={budgetPage}
+              filterType={budgetFilterType}
+              filterPeriod={budgetFilterPeriod}
+              filterActive={budgetFilterActive}
+              keyword={budgetKeyword}
+              categories={categories}
+              onPageChange={setBudgetPage}
+              onFilterTypeChange={(v) => {
+                setBudgetFilterType(v);
+                setBudgetPage(1);
+              }}
+              onFilterPeriodChange={(v) => {
+                setBudgetFilterPeriod(v);
+                setBudgetPage(1);
+              }}
+              onFilterActiveChange={(v) => {
+                setBudgetFilterActive(v);
+                setBudgetPage(1);
+              }}
+              onKeywordChange={(v) => {
+                setBudgetKeyword(v);
+                setBudgetPage(1);
+              }}
+              onEdit={handleEditBudget}
+              onDelete={handleDeleteBudget}
+              onManageCategories={() => setCategoryModalOpen(true)}
+              onAddBudget={embedded ? handleAddBudget : undefined}
+            />
+          </Col>
+        )}
 
-      {activeTab === 'comparison' && yearlyComparison && (
-        <BudgetComparisonSection
-          comparison={yearlyComparison}
-          loading={comparisonLoading}
-          year={selectedYear}
-          onYearChange={setSelectedYear}
-        />
-      )}
+        {activeTab === 'comparison' && yearlyComparison && (
+          <Col span={24}>
+            <BudgetComparisonSection
+              comparison={yearlyComparison}
+              loading={comparisonLoading}
+              year={selectedYear}
+              onYearChange={setSelectedYear}
+            />
+          </Col>
+        )}
 
-      {activeTab === 'history' && (
-        <BudgetHistorySection
-          history={history}
-          total={historyTotal}
-          loading={historyLoading}
-          page={historyPage}
-          onPageChange={setHistoryPage}
-        />
-      )}
+        {activeTab === 'history' && (
+          <Col span={24}>
+            <BudgetHistorySection
+              history={history}
+              total={historyTotal}
+              loading={historyLoading}
+              page={historyPage}
+              onPageChange={setHistoryPage}
+            />
+          </Col>
+        )}
+      </Row>
 
       {budgetModalOpen && (
         <BudgetEditModal
@@ -423,7 +479,7 @@ function BudgetOverviewSection({
     <SectionCard
       title="各分类预算执行"
       description={`${overview.month ?? ''} 预算执行明细，进度条按实际支出占比填充。`}
-      action={(
+      action={
         <div className="section-card-toolbar">
           <Field
             type="month"
@@ -433,27 +489,32 @@ function BudgetOverviewSection({
           />
           <div style={{ display: 'flex', gap: 8 }}>
             {statusTags.map((tag) => (
-              <Tag key={tag.label} tone={tag.tone}>{tag.label} {tag.count}</Tag>
+              <Tag key={tag.label} tone={tag.tone}>
+                {tag.label} {tag.count}
+              </Tag>
             ))}
           </div>
           {onTriggerAlerts ? (
-            <Btn tone="secondary" onClick={onTriggerAlerts}>检查预警</Btn>
+            <Btn tone="secondary" onClick={onTriggerAlerts}>
+              检查预警
+            </Btn>
           ) : null}
         </div>
-      )}
+      }
     >
       {loading ? (
         <div className="empty-state">正在加载预算执行数据...</div>
       ) : overview.items.length === 0 ? (
         <EmptyState title="暂无预算" description="点击右上角「新增预算」开始设置分类预算。" />
       ) : (
-        <div className="page-stack">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {overview.items.map((item) => {
-            const barColor = item.status === 'over_budget'
-              ? 'var(--color-danger)'
-              : item.status === 'warning'
-                ? 'var(--color-warning)'
-                : 'var(--color-success)';
+            const barColor =
+              item.status === 'over_budget'
+                ? 'var(--color-danger)'
+                : item.status === 'warning'
+                  ? 'var(--color-warning)'
+                  : 'var(--color-success)';
             const barWidth = Math.min(item.progressPercent, 100);
             return (
               <div key={item.budgetId} className="budget-progress-row">
@@ -461,8 +522,8 @@ function BudgetOverviewSection({
                   <span className="budget-progress-name">{item.budgetName}</span>
                   <span className="subtle-text">
                     ¥{item.actualAmount.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}
-                    {' / '}
-                    ¥{item.budgetAmount.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}
+                    {' / '}¥
+                    {item.budgetAmount.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="budget-progress-track">
@@ -506,28 +567,52 @@ function BudgetListSection(props: {
   onAddBudget?: () => void;
 }) {
   const {
-    budgets, total, loading, page,
-    filterType, filterPeriod, filterActive, keyword, categories,
-    onPageChange, onFilterTypeChange, onFilterPeriodChange, onFilterActiveChange, onKeywordChange,
-    onEdit, onDelete, onManageCategories, onAddBudget,
+    budgets,
+    total,
+    loading,
+    page,
+    filterType,
+    filterPeriod,
+    filterActive,
+    keyword,
+    categories,
+    onPageChange,
+    onFilterTypeChange,
+    onFilterPeriodChange,
+    onFilterActiveChange,
+    onKeywordChange,
+    onEdit,
+    onDelete,
+    onManageCategories,
+    onAddBudget,
   } = props;
 
   const totalPages = Math.max(1, Math.ceil(total / BUDGET_PAGE_SIZE));
 
   const columns: TableColumn<Budget>[] = [
     {
-      key: 'name', title: '预算名称', dataIndex: 'name',
+      key: 'name',
+      title: '预算名称',
+      dataIndex: 'name',
       render: (_value, row) => <strong>{row.name}</strong>,
     },
     {
-      key: 'category', title: '分类', dataIndex: 'categoryName',
+      key: 'category',
+      title: '分类',
+      dataIndex: 'categoryName',
     },
     {
-      key: 'amount', title: '金额', dataIndex: 'amount', align: 'right',
-      render: (_value, row) => `¥${row.amount.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`,
+      key: 'amount',
+      title: '金额',
+      dataIndex: 'amount',
+      align: 'right',
+      render: (_value, row) =>
+        `¥${row.amount.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`,
     },
     {
-      key: 'period', title: '周期', align: 'center',
+      key: 'period',
+      title: '周期',
+      align: 'center',
       render: (_value, row) => (
         <Tag tone="default">
           {row.periodType === 'monthly' ? '月度' : row.periodType === 'yearly' ? '年度' : '自定义'}
@@ -535,19 +620,23 @@ function BudgetListSection(props: {
       ),
     },
     {
-      key: 'threshold', title: '预警阈值', align: 'center',
+      key: 'threshold',
+      title: '预警阈值',
+      align: 'center',
       render: (_value, row) => `${row.warningThresholdPercent}%`,
     },
     {
-      key: 'status', title: '状态', align: 'center',
+      key: 'status',
+      title: '状态',
+      align: 'center',
       render: (_value, row) => (
-        <Tag tone={row.isActive ? 'green' : 'default'}>
-          {row.isActive ? '启用' : '停用'}
-        </Tag>
+        <Tag tone={row.isActive ? 'green' : 'default'}>{row.isActive ? '启用' : '停用'}</Tag>
       ),
     },
     {
-      key: 'actions', title: '操作', align: 'right',
+      key: 'actions',
+      title: '操作',
+      align: 'right',
       render: (_value, row) => (
         <div className="table-actions">
           <IconBtn icon={<EditIcon />} title="编辑" tone="secondary" onClick={() => onEdit(row)} />
@@ -562,48 +651,67 @@ function BudgetListSection(props: {
       <SectionCard
         title="预算列表"
         description="管理所有预算项，支持按类型、周期、状态筛选。"
-        action={(
+        action={
           <div className="section-card-toolbar">
-            <Btn tone="ghost" onClick={onManageCategories}>管理分类</Btn>
+            <Btn tone="ghost" onClick={onManageCategories}>
+              管理分类
+            </Btn>
             {onAddBudget ? (
-              <Btn tone="primary" onClick={onAddBudget}>新增预算</Btn>
+              <Btn tone="primary" onClick={onAddBudget}>
+                新增预算
+              </Btn>
             ) : null}
           </div>
-        )}
+        }
       >
-        <div className="page-stack">
-          <div className="filter-grid">
-            <Field
-              label="关键词"
-              value={keyword}
-              onChange={(e) => onKeywordChange(e.target.value)}
-              placeholder="搜索预算名称..."
-            />
-            <SelectField label="类型" value={filterType} onChange={(e) => onFilterTypeChange(e.target.value)}>
-              <option value="all">全部类型</option>
-              <option value="expense">支出</option>
-              <option value="income">收入</option>
-            </SelectField>
-            <SelectField label="周期" value={filterPeriod} onChange={(e) => onFilterPeriodChange(e.target.value)}>
-              <option value="all">全部周期</option>
-              <option value="monthly">月度</option>
-              <option value="yearly">年度</option>
-              <option value="custom">自定义</option>
-            </SelectField>
-            <SelectField label="状态" value={filterActive} onChange={(e) => onFilterActiveChange(e.target.value)}>
-              <option value="all">全部状态</option>
-              <option value="active">启用中</option>
-              <option value="inactive">已停用</option>
-            </SelectField>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Row gutter={[12, 12]}>
+            <Col span={6}>
+              <Field
+                label="关键词"
+                value={keyword}
+                onChange={(e) => onKeywordChange(e.target.value)}
+                placeholder="搜索预算名称..."
+              />
+            </Col>
+            <Col span={6}>
+              <SelectField
+                label="类型"
+                value={filterType}
+                onChange={(e) => onFilterTypeChange(e.target.value)}
+              >
+                <option value="all">全部类型</option>
+                <option value="expense">支出</option>
+                <option value="income">收入</option>
+              </SelectField>
+            </Col>
+            <Col span={6}>
+              <SelectField
+                label="周期"
+                value={filterPeriod}
+                onChange={(e) => onFilterPeriodChange(e.target.value)}
+              >
+                <option value="all">全部周期</option>
+                <option value="monthly">月度</option>
+                <option value="yearly">年度</option>
+                <option value="custom">自定义</option>
+              </SelectField>
+            </Col>
+            <Col span={6}>
+              <SelectField
+                label="状态"
+                value={filterActive}
+                onChange={(e) => onFilterActiveChange(e.target.value)}
+              >
+                <option value="all">全部状态</option>
+                <option value="active">启用中</option>
+                <option value="inactive">已停用</option>
+              </SelectField>
+            </Col>
+          </Row>
 
           <div style={{ opacity: loading ? 0.6 : 1, pointerEvents: loading ? 'none' : 'auto' }}>
-            <DataTable
-              columns={columns}
-              data={budgets}
-              rowKey="id"
-              emptyText="暂无预算数据"
-            />
+            <DataTable columns={columns} data={budgets} rowKey="id" emptyText="暂无预算数据" />
           </div>
 
           <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
@@ -631,12 +739,21 @@ function BudgetComparisonSection({
   onYearChange: (value: number) => void;
 }) {
   const summaryCards = [
-    { label: '年度预算', value: `¥${comparison.totalBudgeted.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}` },
-    { label: '实际支出', value: `¥${comparison.totalActual.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}` },
+    {
+      label: '年度预算',
+      value: `¥${comparison.totalBudgeted.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`,
+    },
+    {
+      label: '实际支出',
+      value: `¥${comparison.totalActual.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`,
+    },
     {
       label: '年度差额',
       value: `${comparison.totalDifference >= 0 ? '+' : ''}¥${comparison.totalDifference.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`,
-      accent: comparison.totalDifference >= 0 ? 'var(--color-success-strong)' : 'var(--color-danger-strong)',
+      accent:
+        comparison.totalDifference >= 0
+          ? 'var(--color-success-strong)'
+          : 'var(--color-danger-strong)',
     },
     {
       label: '执行率',
@@ -653,23 +770,25 @@ function BudgetComparisonSection({
       <SectionCard
         title="月度预算 vs 实际支出"
         description={`${comparison.year} 年逐月对比，蓝色为预算，绿色/红色为实际支出。`}
-        action={(
+        action={
           <SelectField
             value={year}
             onChange={(e) => onYearChange(Number(e.target.value))}
             style={{ width: 'auto' }}
           >
             {Array.from({ length: 5 }, (_, i) => dayjs().year() - 2 + i).map((y) => (
-              <option key={y} value={y}>{y} 年</option>
+              <option key={y} value={y}>
+                {y} 年
+              </option>
             ))}
           </SelectField>
-        )}
+        }
       >
         {loading ? (
           <div className="empty-state">正在加载对比数据...</div>
         ) : (
-          <div className="page-stack">
-            <div className="budget-chart-row">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 200 }}>
               {comparison.monthly.map((m) => {
                 const budgetHeight = (m.budgeted / maxVal) * 100;
                 const actualHeight = (m.actual / maxVal) * 100;
@@ -686,7 +805,8 @@ function BudgetComparisonSection({
                         className="budget-chart-bar budget-chart-bar-actual"
                         style={{
                           height: `${actualHeight}%`,
-                          background: m.actual > m.budgeted ? 'var(--color-danger)' : 'var(--color-success)',
+                          background:
+                            m.actual > m.budgeted ? 'var(--color-danger)' : 'var(--color-success)',
                         }}
                         title={`实际: ¥${m.actual.toFixed(2)}`}
                       />
@@ -698,11 +818,17 @@ function BudgetComparisonSection({
             </div>
             <div className="budget-chart-legend">
               <span className="budget-chart-legend-item">
-                <span className="budget-chart-legend-dot" style={{ background: 'var(--color-primary-soft)' }} />
+                <span
+                  className="budget-chart-legend-dot"
+                  style={{ background: 'var(--color-primary-soft)' }}
+                />
                 预算
               </span>
               <span className="budget-chart-legend-item">
-                <span className="budget-chart-legend-dot" style={{ background: 'var(--color-success)' }} />
+                <span
+                  className="budget-chart-legend-dot"
+                  style={{ background: 'var(--color-success)' }}
+                />
                 实际支出
               </span>
             </div>
@@ -727,25 +853,39 @@ function BudgetHistorySection(props: {
 
   const columns: TableColumn<BudgetHistory>[] = [
     {
-      key: 'date', title: '生效日期', dataIndex: 'effectiveDate',
+      key: 'date',
+      title: '生效日期',
+      dataIndex: 'effectiveDate',
     },
     {
-      key: 'name', title: '预算名称', dataIndex: 'budgetName',
+      key: 'name',
+      title: '预算名称',
+      dataIndex: 'budgetName',
       render: (_value, row) => <strong>{row.budgetName}</strong>,
     },
     {
-      key: 'category', title: '分类', dataIndex: 'categoryName',
+      key: 'category',
+      title: '分类',
+      dataIndex: 'categoryName',
     },
     {
-      key: 'prev', title: '调整前', align: 'right',
-      render: (_value, row) => `¥${row.previousAmount.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`,
+      key: 'prev',
+      title: '调整前',
+      align: 'right',
+      render: (_value, row) =>
+        `¥${row.previousAmount.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`,
     },
     {
-      key: 'next', title: '调整后', align: 'right',
-      render: (_value, row) => `¥${row.newAmount.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`,
+      key: 'next',
+      title: '调整后',
+      align: 'right',
+      render: (_value, row) =>
+        `¥${row.newAmount.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`,
     },
     {
-      key: 'diff', title: '变化', align: 'right',
+      key: 'diff',
+      title: '变化',
+      align: 'right',
       render: (_value, row) => {
         const diff = row.newAmount - row.previousAmount;
         return (
@@ -756,23 +896,17 @@ function BudgetHistorySection(props: {
       },
     },
     {
-      key: 'reason', title: '原因', dataIndex: 'changeReason',
+      key: 'reason',
+      title: '原因',
+      dataIndex: 'changeReason',
       render: (value) => String(value ?? '-'),
     },
   ];
 
   return (
-    <SectionCard
-      title="预算调整历史"
-      description="每次预算金额变更都会记录在此，便于追溯。"
-    >
+    <SectionCard title="预算调整历史" description="每次预算金额变更都会记录在此，便于追溯。">
       <div style={{ opacity: loading ? 0.6 : 1, pointerEvents: loading ? 'none' : 'auto' }}>
-        <DataTable
-          columns={columns}
-          data={history}
-          rowKey="id"
-          emptyText="暂无调整记录"
-        />
+        <DataTable columns={columns} data={history} rowKey="id" emptyText="暂无调整记录" />
       </div>
       <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
     </SectionCard>
@@ -808,11 +942,13 @@ function BudgetEditModal(props: {
 
   const [name, setName] = useState(budget?.name ?? '');
   const [description, setDescription] = useState(budget?.description ?? '');
-  const [categoryId, setCategoryId] = useState(budget?.categoryId ?? (categories[0]?.id ?? ''));
+  const [categoryId, setCategoryId] = useState(budget?.categoryId ?? categories[0]?.id ?? '');
   const [amount, setAmount] = useState(budget?.amount?.toString() ?? '');
   const [periodType, setPeriodType] = useState<BudgetPeriodType>(budget?.periodType ?? 'monthly');
   const [type, setType] = useState<BudgetType>(budget?.type ?? 'expense');
-  const [warningThresholdPercent, setWarningThresholdPercent] = useState(budget?.warningThresholdPercent?.toString() ?? '80');
+  const [warningThresholdPercent, setWarningThresholdPercent] = useState(
+    budget?.warningThresholdPercent?.toString() ?? '80',
+  );
   const [isActive, setIsActive] = useState(budget?.isActive ?? true);
   const [alertEnabled, setAlertEnabled] = useState(budget?.alertEnabled ?? true);
   const [changeReason, setChangeReason] = useState('');
@@ -855,8 +991,14 @@ function BudgetEditModal(props: {
       width={560}
       footer={
         <>
-          <Btn tone="secondary" onClick={onClose}>取消</Btn>
-          <Btn tone="primary" onClick={handleSubmit} disabled={saving || !name.trim() || !categoryId}>
+          <Btn tone="secondary" onClick={onClose}>
+            取消
+          </Btn>
+          <Btn
+            tone="primary"
+            onClick={handleSubmit}
+            disabled={saving || !name.trim() || !categoryId}
+          >
             {isEdit ? '保存修改' : '创建预算'}
           </Btn>
         </>
@@ -870,53 +1012,79 @@ function BudgetEditModal(props: {
           placeholder="例如：餐饮月度预算"
         />
 
-        <div className="form-grid-2">
-          <SelectField label="预算类型" value={type} onChange={(e) => setType(e.target.value as BudgetType)}>
-            <option value="expense">支出预算</option>
-            <option value="income">收入预算</option>
-          </SelectField>
-          <SelectField label="周期类型" value={periodType} onChange={(e) => setPeriodType(e.target.value as BudgetPeriodType)}>
-            <option value="monthly">月度</option>
-            <option value="yearly">年度</option>
-            <option value="custom">自定义</option>
-          </SelectField>
-        </div>
+        <Row gutter={[12, 12]}>
+          <Col span={12}>
+            <SelectField
+              label="预算类型"
+              value={type}
+              onChange={(e) => setType(e.target.value as BudgetType)}
+            >
+              <option value="expense">支出预算</option>
+              <option value="income">收入预算</option>
+            </SelectField>
+          </Col>
+          <Col span={12}>
+            <SelectField
+              label="周期类型"
+              value={periodType}
+              onChange={(e) => setPeriodType(e.target.value as BudgetPeriodType)}
+            >
+              <option value="monthly">月度</option>
+              <option value="yearly">年度</option>
+              <option value="custom">自定义</option>
+            </SelectField>
+          </Col>
+        </Row>
 
-        <div className="form-grid-2">
-          <SelectField label="分类" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-            {categories.length === 0 && <option value="">请先创建分类</option>}
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </SelectField>
-          <Field
-            label="预算金额"
-            type="number"
-            min={0}
-            step="0.01"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="0.00"
-          />
-        </div>
+        <Row gutter={[12, 12]}>
+          <Col span={12}>
+            <SelectField
+              label="分类"
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+            >
+              {categories.length === 0 && <option value="">请先创建分类</option>}
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </SelectField>
+          </Col>
+          <Col span={12}>
+            <Field
+              label="预算金额"
+              type="number"
+              min={0}
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+            />
+          </Col>
+        </Row>
 
-        <div className="form-grid-2">
-          <Field
-            label="预警阈值 (%)"
-            type="number"
-            min={0}
-            max={200}
-            value={warningThresholdPercent}
-            onChange={(e) => setWarningThresholdPercent(e.target.value)}
-          />
-          <div className="field">
-            <span className="field-label">开关</span>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <Switch checked={isActive} onChange={setIsActive} label="启用" />
-              <Switch checked={alertEnabled} onChange={setAlertEnabled} label="预警通知" />
+        <Row gutter={[12, 12]}>
+          <Col span={12}>
+            <Field
+              label="预警阈值 (%)"
+              type="number"
+              min={0}
+              max={200}
+              value={warningThresholdPercent}
+              onChange={(e) => setWarningThresholdPercent(e.target.value)}
+            />
+          </Col>
+          <Col span={12}>
+            <div className="field">
+              <span className="field-label">开关</span>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <Switch checked={isActive} onChange={setIsActive} label="启用" />
+                <Switch checked={alertEnabled} onChange={setAlertEnabled} label="预警通知" />
+              </div>
             </div>
-          </div>
-        </div>
+          </Col>
+        </Row>
 
         {isEdit && (
           <Field
@@ -986,15 +1154,15 @@ function CategoryManageModal(props: {
       onClose={onClose}
       title="管理预算分类"
       width={480}
-      footer={<Btn tone="secondary" onClick={onClose}>关闭</Btn>}
+      footer={
+        <Btn tone="secondary" onClick={onClose}>
+          关闭
+        </Btn>
+      }
     >
       <div className="page-stack">
         <div className="category-add-row">
-          <Field
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="新分类名称"
-          />
+          <Field value={name} onChange={(e) => setName(e.target.value)} placeholder="新分类名称" />
           <SelectField
             value={type}
             onChange={(e) => setType(e.target.value as 'income' | 'expense')}
@@ -1002,7 +1170,9 @@ function CategoryManageModal(props: {
             <option value="expense">支出</option>
             <option value="income">收入</option>
           </SelectField>
-          <Btn tone="primary" onClick={handleAdd} disabled={adding || !name.trim()}>添加</Btn>
+          <Btn tone="primary" onClick={handleAdd} disabled={adding || !name.trim()}>
+            添加
+          </Btn>
         </div>
 
         {expenseCats.length > 0 && (
@@ -1011,7 +1181,12 @@ function CategoryManageModal(props: {
             {expenseCats.map((cat) => (
               <div key={cat.id} className="category-item-row">
                 <span>{cat.name}</span>
-                <IconBtn icon={<DeleteIcon />} title="删除" tone="danger" onClick={() => handleDelete(cat.id)} />
+                <IconBtn
+                  icon={<DeleteIcon />}
+                  title="删除"
+                  tone="danger"
+                  onClick={() => handleDelete(cat.id)}
+                />
               </div>
             ))}
           </div>
@@ -1023,7 +1198,12 @@ function CategoryManageModal(props: {
             {incomeCats.map((cat) => (
               <div key={cat.id} className="category-item-row">
                 <span>{cat.name}</span>
-                <IconBtn icon={<DeleteIcon />} title="删除" tone="danger" onClick={() => handleDelete(cat.id)} />
+                <IconBtn
+                  icon={<DeleteIcon />}
+                  title="删除"
+                  tone="danger"
+                  onClick={() => handleDelete(cat.id)}
+                />
               </div>
             ))}
           </div>

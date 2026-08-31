@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
 import dayjs from 'dayjs';
 
 import { EmptyState, PageHeader, SectionCard, StatGrid } from '../../components/page';
@@ -21,7 +24,13 @@ import { buildApiErrorMessage } from '../../lib/api';
 import { usePageTab } from '../../hooks/usePageTab';
 import { billApi } from '../../services/billApi';
 import { loanApi } from '../../services/loanApi';
-import type { UnifiedBill, BillSummary, BillReminderSetting, BillType, BillStatus } from '../../types/bill';
+import type {
+  UnifiedBill,
+  BillSummary,
+  BillReminderSetting,
+  BillType,
+  BillStatus,
+} from '../../types/bill';
 import { BILL_TYPE_LABELS, BILL_STATUS_LABELS } from '../../types/bill';
 import type { TableColumn } from '../../types/ui';
 
@@ -52,7 +61,11 @@ const TYPE_COLOR: Record<BillType, 'blue' | 'pink' | 'green'> = {
  */
 export default function BillPage() {
   const { toast, showToast } = useToastState();
-  const [viewMode, setViewMode] = usePageTab<ViewMode>('calendar', ['calendar', 'list'], 'billView');
+  const [viewMode, setViewMode] = usePageTab<ViewMode>(
+    'calendar',
+    ['calendar', 'list'],
+    'billView',
+  );
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format('YYYY-MM'));
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -70,30 +83,36 @@ export default function BillPage() {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedBill, setSelectedBill] = useState<UnifiedBill | null>(null);
 
-  const loadSummary = useCallback(async (month: string) => {
-    setSummaryLoading(true);
-    try {
-      const data = await billApi.getSummary(month);
-      setSummary(data);
-    } catch (err) {
-      showToast(`加载统计失败：${buildApiErrorMessage(err)}`, 'error');
-    } finally {
-      setSummaryLoading(false);
-    }
-  }, [showToast]);
+  const loadSummary = useCallback(
+    async (month: string) => {
+      setSummaryLoading(true);
+      try {
+        const data = await billApi.getSummary(month);
+        setSummary(data);
+      } catch (err) {
+        showToast(`加载统计失败：${buildApiErrorMessage(err)}`, 'error');
+      } finally {
+        setSummaryLoading(false);
+      }
+    },
+    [showToast],
+  );
 
-  const loadBills = useCallback(async (month: string, typeFilter: string) => {
-    setBillsLoading(true);
-    try {
-      const types = typeFilter === 'all' ? undefined : [typeFilter as BillType];
-      const data = await billApi.getCalendar(month, types);
-      setBills(data);
-    } catch (err) {
-      showToast(`加载账单失败：${buildApiErrorMessage(err)}`, 'error');
-    } finally {
-      setBillsLoading(false);
-    }
-  }, [showToast]);
+  const loadBills = useCallback(
+    async (month: string, typeFilter: string) => {
+      setBillsLoading(true);
+      try {
+        const types = typeFilter === 'all' ? undefined : [typeFilter as BillType];
+        const data = await billApi.getCalendar(month, types);
+        setBills(data);
+      } catch (err) {
+        showToast(`加载账单失败：${buildApiErrorMessage(err)}`, 'error');
+      } finally {
+        setBillsLoading(false);
+      }
+    },
+    [showToast],
+  );
 
   const loadSetting = useCallback(async () => {
     try {
@@ -207,10 +226,29 @@ export default function BillPage() {
   const statItems = useMemo(() => {
     if (!summary) return [];
     return [
-      { label: '账单总数', value: String(summary.total_count), helper: `¥${summary.total_amount.toFixed(2)}` },
-      { label: '待支付', value: String(summary.pending_count), helper: `¥${summary.pending_amount.toFixed(2)}`, accent: '#f59e0b' },
-      { label: '已支付', value: String(summary.paid_count), helper: `¥${summary.paid_amount.toFixed(2)}`, accent: '#10b981' },
-      { label: '已逾期', value: String(summary.overdue_count), helper: `¥${summary.overdue_amount.toFixed(2)}`, accent: '#ef4444' },
+      {
+        label: '账单总数',
+        value: String(summary.total_count),
+        helper: `¥${summary.total_amount.toFixed(2)}`,
+      },
+      {
+        label: '待支付',
+        value: String(summary.pending_count),
+        helper: `¥${summary.pending_amount.toFixed(2)}`,
+        accent: '#f59e0b',
+      },
+      {
+        label: '已支付',
+        value: String(summary.paid_count),
+        helper: `¥${summary.paid_amount.toFixed(2)}`,
+        accent: '#10b981',
+      },
+      {
+        label: '已逾期',
+        value: String(summary.overdue_count),
+        helper: `¥${summary.overdue_amount.toFixed(2)}`,
+        accent: '#ef4444',
+      },
     ];
   }, [summary]);
 
@@ -222,8 +260,12 @@ export default function BillPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ fontWeight: 500 }}>{row.title}</span>
           <div style={{ display: 'flex', gap: 6 }}>
-            <Tag tone={TYPE_COLOR[row.type]} size="sm">{BILL_TYPE_LABELS[row.type]}</Tag>
-            <Tag tone={STATUS_COLOR[row.status]} size="sm">{BILL_STATUS_LABELS[row.status]}</Tag>
+            <Tag tone={TYPE_COLOR[row.type]} size="sm">
+              {BILL_TYPE_LABELS[row.type]}
+            </Tag>
+            <Tag tone={STATUS_COLOR[row.status]} size="sm">
+              {BILL_STATUS_LABELS[row.status]}
+            </Tag>
           </div>
         </div>
       ),
@@ -242,7 +284,9 @@ export default function BillPage() {
     {
       key: 'category',
       title: '分类',
-      render: (_value, row) => <span style={{ color: 'var(--color-ink-mute)' }}>{row.category}</span>,
+      render: (_value, row) => (
+        <span style={{ color: 'var(--color-ink-mute)' }}>{row.category}</span>
+      ),
     },
     {
       key: 'actions',
@@ -260,107 +304,132 @@ export default function BillPage() {
   const WEEK_DAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        title="账单提醒"
-        subtitle="统一管理贷款、订阅、房租等账单，避免逾期"
-        actions={
-          <Btn tone="ghost" onClick={handleOpenSetting}>
-            提醒设置
-          </Btn>
-        }
-      />
-
-      <StatGrid items={statItems} />
-
-      <SectionCard
-        title="账单日历"
-        description={`${dayjs(selectedMonth).format('YYYY年M月')} 共 ${filteredBills.length} 笔账单`}
-        action={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <SelectField
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              style={{ width: 120 }}
-            >
-              <option value="all">全部类型</option>
-              <option value="loan">贷款还款</option>
-              <option value="subscription">服务订阅</option>
-              <option value="rent">房租水电</option>
-            </SelectField>
-            <PillTabs
-              value={viewMode}
-              onChange={(v) => setViewMode(v as ViewMode)}
-              options={VIEW_OPTIONS}
-            />
-          </div>
-        }
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Btn tone="ghost" onClick={handlePrevMonth}>上月</Btn>
-            <Btn tone="ghost" onClick={handleToday}>今天</Btn>
-            <Btn tone="ghost" onClick={handleNextMonth}>下月</Btn>
-          </div>
-          <SelectField
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{ width: 120 }}
-          >
-            <option value="all">全部状态</option>
-            <option value="pending">待支付</option>
-            <option value="paid">已支付</option>
-            <option value="overdue">已逾期</option>
-          </SelectField>
-        </div>
-
-        {viewMode === 'calendar' ? (
-          <div className="bill-calendar">
-            <div className="bill-calendar-header">
-              {WEEK_DAYS.map((d) => (
-                <div key={d} className="bill-calendar-weekday">{d}</div>
-              ))}
-            </div>
-            <div className="bill-calendar-grid">
-              {calendarDays.map((day) => (
-                <div
-                  key={day.date}
-                  className={`bill-calendar-day ${!day.isCurrentMonth ? 'is-other-month' : ''} ${day.isToday ? 'is-today' : ''}`}
-                >
-                  <div className="bill-calendar-day-num">{day.day}</div>
-                  <div className="bill-calendar-day-bills">
-                    {day.bills.slice(0, 3).map((bill) => (
-                      <div
-                        key={bill.id}
-                        className={`bill-calendar-item bill-type-${bill.type} bill-status-${bill.status}`}
-                        onClick={() => handleViewDetail(bill)}
-                        title={`${bill.title} - ¥${bill.amount.toFixed(2)}`}
-                      >
-                        <span className="bill-calendar-item-title">{bill.title}</span>
-                        <span className="bill-calendar-item-amount">¥{bill.amount.toFixed(0)}</span>
-                      </div>
-                    ))}
-                    {day.bills.length > 3 && (
-                      <div className="bill-calendar-more">+{day.bills.length - 3} 更多</div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <DataTable
-            columns={tableColumns}
-            data={filteredBills}
-            rowKey="id"
-            emptyText="暂无账单记录"
+    <div className="page-grid-wrapper">
+      <Row gutter={[24, 20]}>
+        <Col span={24}>
+          <PageHeader
+            title="账单提醒"
+            subtitle="统一管理贷款、订阅、房租等账单，避免逾期"
+            actions={
+              <Btn tone="ghost" onClick={handleOpenSetting}>
+                提醒设置
+              </Btn>
+            }
           />
-        )}
+        </Col>
 
-        {filteredBills.length === 0 && !billsLoading && (
-          <EmptyState title="暂无账单" description="当前筛选条件下没有账单记录" />
-        )}
-      </SectionCard>
+        <Col span={24}>
+          <StatGrid items={statItems} />
+        </Col>
+
+        <Col span={24}>
+          <SectionCard
+            title="账单日历"
+            description={`${dayjs(selectedMonth).format('YYYY年M月')} 共 ${filteredBills.length} 笔账单`}
+            action={
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <SelectField
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  style={{ width: 120 }}
+                >
+                  <option value="all">全部类型</option>
+                  <option value="loan">贷款还款</option>
+                  <option value="subscription">服务订阅</option>
+                  <option value="rent">房租水电</option>
+                </SelectField>
+                <PillTabs
+                  value={viewMode}
+                  onChange={(v) => setViewMode(v as ViewMode)}
+                  options={VIEW_OPTIONS}
+                />
+              </div>
+            }
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 16,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Btn tone="ghost" onClick={handlePrevMonth}>
+                  上月
+                </Btn>
+                <Btn tone="ghost" onClick={handleToday}>
+                  今天
+                </Btn>
+                <Btn tone="ghost" onClick={handleNextMonth}>
+                  下月
+                </Btn>
+              </div>
+              <SelectField
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{ width: 120 }}
+              >
+                <option value="all">全部状态</option>
+                <option value="pending">待支付</option>
+                <option value="paid">已支付</option>
+                <option value="overdue">已逾期</option>
+              </SelectField>
+            </div>
+
+            {viewMode === 'calendar' ? (
+              <div className="bill-calendar">
+                <div className="bill-calendar-header">
+                  {WEEK_DAYS.map((d) => (
+                    <div key={d} className="bill-calendar-weekday">
+                      {d}
+                    </div>
+                  ))}
+                </div>
+                <div className="bill-calendar-grid">
+                  {calendarDays.map((day) => (
+                    <div
+                      key={day.date}
+                      className={`bill-calendar-day ${!day.isCurrentMonth ? 'is-other-month' : ''} ${day.isToday ? 'is-today' : ''}`}
+                    >
+                      <div className="bill-calendar-day-num">{day.day}</div>
+                      <div className="bill-calendar-day-bills">
+                        {day.bills.slice(0, 3).map((bill) => (
+                          <div
+                            key={bill.id}
+                            className={`bill-calendar-item bill-type-${bill.type} bill-status-${bill.status}`}
+                            onClick={() => handleViewDetail(bill)}
+                            title={`${bill.title} - ¥${bill.amount.toFixed(2)}`}
+                          >
+                            <span className="bill-calendar-item-title">{bill.title}</span>
+                            <span className="bill-calendar-item-amount">
+                              ¥{bill.amount.toFixed(0)}
+                            </span>
+                          </div>
+                        ))}
+                        {day.bills.length > 3 && (
+                          <div className="bill-calendar-more">+{day.bills.length - 3} 更多</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <DataTable
+                columns={tableColumns}
+                data={filteredBills}
+                rowKey="id"
+                emptyText="暂无账单记录"
+              />
+            )}
+
+            {filteredBills.length === 0 && !billsLoading && (
+              <EmptyState title="暂无账单" description="当前筛选条件下没有账单记录" />
+            )}
+          </SectionCard>
+        </Col>
+      </Row>
 
       {/* 账单详情弹窗 */}
       <Modal
@@ -370,25 +439,37 @@ export default function BillPage() {
         width={480}
         footer={
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Btn tone="ghost" onClick={() => setDetailModalOpen(false)}>关闭</Btn>
+            <Btn tone="ghost" onClick={() => setDetailModalOpen(false)}>
+              关闭
+            </Btn>
             {selectedBill?.status === 'pending' && selectedBill?.type === 'loan' && (
-              <Btn tone="primary" onClick={() => handleMarkPaid(selectedBill)}>标记已支付</Btn>
+              <Btn tone="primary" onClick={() => handleMarkPaid(selectedBill)}>
+                标记已支付
+              </Btn>
             )}
           </div>
         }
       >
         {selectedBill && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <div
+              style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}
+            >
               <div>
                 <h3 style={{ fontSize: 18, fontWeight: 600, margin: 0 }}>{selectedBill.title}</h3>
                 <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                  <Tag tone={TYPE_COLOR[selectedBill.type]}>{BILL_TYPE_LABELS[selectedBill.type]}</Tag>
-                  <Tag tone={STATUS_COLOR[selectedBill.status]}>{BILL_STATUS_LABELS[selectedBill.status]}</Tag>
+                  <Tag tone={TYPE_COLOR[selectedBill.type]}>
+                    {BILL_TYPE_LABELS[selectedBill.type]}
+                  </Tag>
+                  <Tag tone={STATUS_COLOR[selectedBill.status]}>
+                    {BILL_STATUS_LABELS[selectedBill.status]}
+                  </Tag>
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 24, fontWeight: 700 }}>¥{selectedBill.amount.toFixed(2)}</div>
+                <div style={{ fontSize: 24, fontWeight: 700 }}>
+                  ¥{selectedBill.amount.toFixed(2)}
+                </div>
                 <div style={{ fontSize: 13, color: 'var(--color-ink-mute)' }}>到期金额</div>
               </div>
             </div>
@@ -403,20 +484,28 @@ export default function BillPage() {
               }}
             >
               <div>
-                <div style={{ fontSize: 13, color: 'var(--color-ink-mute)', marginBottom: 4 }}>到期日</div>
+                <div style={{ fontSize: 13, color: 'var(--color-ink-mute)', marginBottom: 4 }}>
+                  到期日
+                </div>
                 <div style={{ fontWeight: 500 }}>{selectedBill.due_date}</div>
               </div>
               <div>
-                <div style={{ fontSize: 13, color: 'var(--color-ink-mute)', marginBottom: 4 }}>来源</div>
+                <div style={{ fontSize: 13, color: 'var(--color-ink-mute)', marginBottom: 4 }}>
+                  来源
+                </div>
                 <div style={{ fontWeight: 500 }}>{selectedBill.source_name}</div>
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <div style={{ fontSize: 13, color: 'var(--color-ink-mute)', marginBottom: 4 }}>分类</div>
+                <div style={{ fontSize: 13, color: 'var(--color-ink-mute)', marginBottom: 4 }}>
+                  分类
+                </div>
                 <div style={{ fontWeight: 500 }}>{selectedBill.category}</div>
               </div>
               {selectedBill.notes && (
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <div style={{ fontSize: 13, color: 'var(--color-ink-mute)', marginBottom: 4 }}>备注</div>
+                  <div style={{ fontSize: 13, color: 'var(--color-ink-mute)', marginBottom: 4 }}>
+                    备注
+                  </div>
                   <div>{selectedBill.notes}</div>
                 </div>
               )}
@@ -433,7 +522,9 @@ export default function BillPage() {
         width={480}
         footer={
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Btn tone="ghost" onClick={() => setSettingModalOpen(false)}>取消</Btn>
+            <Btn tone="ghost" onClick={() => setSettingModalOpen(false)}>
+              取消
+            </Btn>
             <Btn tone="primary" onClick={handleSaveSetting} disabled={settingSaving}>
               {settingSaving ? '保存中...' : '保存'}
             </Btn>
@@ -463,18 +554,28 @@ export default function BillPage() {
             <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>提醒的账单类型</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
               {(['loan', 'subscription', 'rent'] as BillType[]).map((type) => {
-                const types = (settingForm.enabled_types ?? 'loan,subscription,rent').split(',').filter(Boolean);
+                const types = (settingForm.enabled_types ?? 'loan,subscription,rent')
+                  .split(',')
+                  .filter(Boolean);
                 const checked = types.includes(type);
                 return (
                   <Checkbox
                     key={type}
                     checked={checked}
                     onChange={(v) => {
-                      const current = (settingForm.enabled_types ?? 'loan,subscription,rent').split(',').filter(Boolean);
+                      const current = (settingForm.enabled_types ?? 'loan,subscription,rent')
+                        .split(',')
+                        .filter(Boolean);
                       if (v) {
-                        setSettingForm({ ...settingForm, enabled_types: [...current, type].join(',') });
+                        setSettingForm({
+                          ...settingForm,
+                          enabled_types: [...current, type].join(','),
+                        });
                       } else {
-                        setSettingForm({ ...settingForm, enabled_types: current.filter((t) => t !== type).join(',') });
+                        setSettingForm({
+                          ...settingForm,
+                          enabled_types: current.filter((t) => t !== type).join(','),
+                        });
                       }
                     }}
                   >

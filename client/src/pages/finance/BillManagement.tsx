@@ -1,3 +1,6 @@
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
 import { usePageTab } from '../../hooks/usePageTab';
 import { PageHeader } from '../../components/page';
 import { PillTabs } from '../../components/ui';
@@ -15,7 +18,11 @@ const TAB_OPTIONS: Array<{ value: BillMgmtTab; label: string }> = [
 ];
 
 export default function BillManagementPage() {
-  const [activeTab] = usePageTab<BillMgmtTab>('loan', ['loan', 'subscription', 'rent'], 'billMgmtTab');
+  const [activeTab] = usePageTab<BillMgmtTab>(
+    'loan',
+    ['loan', 'subscription', 'rent'],
+    'billMgmtTab',
+  );
   const [, setSearchParams] = useSearchParams();
 
   /**
@@ -32,24 +39,26 @@ export default function BillManagementPage() {
   };
 
   return (
-    <div className="page-stack finance-merged-page">
-      <PageHeader
-        title="账单管理"
-        subtitle="统一管理贷款、订阅与房租账单"
-        actions={(
-          <PillTabs
-            options={TAB_OPTIONS}
-            value={activeTab}
-            onChange={handleTabChange}
+    <div className="page-grid-wrapper finance-merged-page">
+      <Row gutter={[24, 20]}>
+        <Col span={24}>
+          <PageHeader
+            title="账单管理"
+            subtitle="统一管理贷款、订阅与房租账单"
+            actions={
+              <PillTabs options={TAB_OPTIONS} value={activeTab} onChange={handleTabChange} />
+            }
           />
-        )}
-      />
+        </Col>
 
-      <div className="merged-content">
-        {activeTab === 'loan' ? <LoanPage embedded /> : null}
-        {activeTab === 'subscription' ? <SubscriptionPage embedded /> : null}
-        {activeTab === 'rent' ? <RentPage embedded /> : null}
-      </div>
+        <Col span={24}>
+          <div className="merged-content">
+            {activeTab === 'loan' ? <LoanPage embedded /> : null}
+            {activeTab === 'subscription' ? <SubscriptionPage embedded /> : null}
+            {activeTab === 'rent' ? <RentPage embedded /> : null}
+          </div>
+        </Col>
+      </Row>
     </div>
   );
 }

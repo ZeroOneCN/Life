@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Grid } from '@arco-design/web-react';
+const Row = Grid.Row;
+const Col = Grid.Col;
 
 import { LoanBillsSection } from '../../components/finance/LoanBillsSection';
 import { LoanDashboardSection } from '../../components/finance/LoanDashboardSection';
@@ -53,7 +56,11 @@ const EMPTY_OVERVIEW: LoanOverviewSummary = {
 };
 
 export default function LoanPage({ embedded = false }: { embedded?: boolean }) {
-  const [tab, setTab] = usePageTab<LoanTab>('dashboard', TAB_OPTIONS.map((item) => item.value), 'loanTab');
+  const [tab, setTab] = usePageTab<LoanTab>(
+    'dashboard',
+    TAB_OPTIONS.map((item) => item.value),
+    'loanTab',
+  );
   useBreadcrumbTail(TAB_OPTIONS.find((item) => item.value === tab)?.label);
   const { toast, showToast } = useToastState();
   const [platforms, setPlatforms] = useState<LoanPlatform[]>([]);
@@ -124,33 +131,39 @@ export default function LoanPage({ embedded = false }: { embedded?: boolean }) {
     };
   }, [reload, refreshToken]);
 
-  const runWithRefresh = useCallback(async (action: () => Promise<void>, successMessage?: string) => {
-    try {
-      await action();
-      await reload();
-      if (successMessage) {
-        showToast(successMessage);
+  const runWithRefresh = useCallback(
+    async (action: () => Promise<void>, successMessage?: string) => {
+      try {
+        await action();
+        await reload();
+        if (successMessage) {
+          showToast(successMessage);
+        }
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '借贷数据保存失败。'), 'error');
+        await reload();
+        throw error;
       }
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '借贷数据保存失败。'), 'error');
-      await reload();
-      throw error;
-    }
-  }, [reload, showToast]);
+    },
+    [reload, showToast],
+  );
 
-  const updateSettings = useCallback(async (patch: Partial<LoanSettings>) => {
-    try {
-      const next = await loanApi.updateSettings(patch);
-      setSettings((current) => ({
-        ...current,
-        ...next,
-      }));
-      await hydrateNotificationCenterState();
-      showToast('借贷提醒设置已更新。');
-    } catch (error) {
-      showToast(buildApiErrorMessage(error, '借贷提醒设置更新失败。'), 'error');
-    }
-  }, [showToast]);
+  const updateSettings = useCallback(
+    async (patch: Partial<LoanSettings>) => {
+      try {
+        const next = await loanApi.updateSettings(patch);
+        setSettings((current) => ({
+          ...current,
+          ...next,
+        }));
+        await hydrateNotificationCenterState();
+        showToast('借贷提醒设置已更新。');
+      } catch (error) {
+        showToast(buildApiErrorMessage(error, '借贷提醒设置更新失败。'), 'error');
+      }
+    },
+    [showToast],
+  );
 
   const handleMarkPaid = useCallback(async (billId: string) => {
     setPendingMarkPaidId(billId);
@@ -178,121 +191,194 @@ export default function LoanPage({ embedded = false }: { embedded?: boolean }) {
    * @param options.repaymentDate 可选还款日期
    * @param options.notes 可选备注
    */
-  const handlePartialRepay = useCallback(async (
-    billId: string,
-    amount: number,
-    options?: { repaymentDate?: string; notes?: string },
-  ) => {
-    await loanApi.partialRepay(billId, amount, options);
-    await reload();
-  }, [reload]);
+  const handlePartialRepay = useCallback(
+    async (
+      billId: string,
+      amount: number,
+      options?: { repaymentDate?: string; notes?: string },
+    ) => {
+      await loanApi.partialRepay(billId, amount, options);
+      await reload();
+    },
+    [reload],
+  );
 
-  const summaryCards = useMemo(() => ([
-    { label: '总贷款', value: formatLoanAmount(overview.totalDebt), helper: `已还 ${formatLoanAmount(overview.totalPaid)}` },
-    // 待还金额 = 剩余欠款（amount 已含利息），不单独展示利息
-    { label: '待还金额', value: formatLoanAmount(overview.totalUnpaid) },
-    { label: '风险账单', value: `${overview.overdueCount} 逾期`, accent: overview.overdueCount > 0 ? 'var(--color-danger)' : undefined, helper: overview.upcomingCount > 0 ? `${overview.upcomingCount} 笔即将到期` : '无即将到期' },
-    { label: '当前账单数', value: `${overview.totalBillCount}`, helper: overview.totalBillCount > 0 ? '点击查看详情' : '暂无账单' },
-  ]), [overview]);
+  const summaryCards = useMemo(
+    () => [
+      {
+        label: '总贷款',
+        value: formatLoanAmount(overview.totalDebt),
+        helper: `已还 ${formatLoanAmount(overview.totalPaid)}`,
+      },
+      // 待还金额 = 剩余欠款（amount 已含利息），不单独展示利息
+      { label: '待还金额', value: formatLoanAmount(overview.totalUnpaid) },
+      {
+        label: '风险账单',
+        value: `${overview.overdueCount} 逾期`,
+        accent: overview.overdueCount > 0 ? 'var(--color-danger)' : undefined,
+        helper: overview.upcomingCount > 0 ? `${overview.upcomingCount} 笔即将到期` : '无即将到期',
+      },
+      {
+        label: '当前账单数',
+        value: `${overview.totalBillCount}`,
+        helper: overview.totalBillCount > 0 ? '点击查看详情' : '暂无账单',
+      },
+    ],
+    [overview],
+  );
 
   return (
-    <div className="page-stack">
-      {embedded ? (
-        <div className="merged-tabs-top">
-          <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as LoanTab)} />
-        </div>
-      ) : (
-        <PageHeader
-          title="借贷还款"
-          subtitle="管理借贷平台、账单还款与逾期提醒。"
-          actions={(
-            <>
-              <PillTabs options={TAB_OPTIONS} value={tab} onChange={(value) => setTab(value as LoanTab)} />
-              <Btn
-                tone="ghost"
-                onClick={() => setTab('settings')}
-              >
-                {tab === 'settings' ? '← 返回业务' : (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <circle cx="12" cy="12" r="3" />
-                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                    </svg>
-                    设置
-                  </span>
-                )}
-              </Btn>
-            </>
+    <div className="page-grid-wrapper">
+      <Row gutter={[24, 20]}>
+        <Col span={24}>
+          {embedded ? (
+            <div className="merged-tabs-top">
+              <PillTabs
+                options={TAB_OPTIONS}
+                value={tab}
+                onChange={(value) => setTab(value as LoanTab)}
+              />
+            </div>
+          ) : (
+            <PageHeader
+              title="借贷还款"
+              subtitle="管理借贷平台、账单还款与逾期提醒。"
+              actions={
+                <>
+                  <PillTabs
+                    options={TAB_OPTIONS}
+                    value={tab}
+                    onChange={(value) => setTab(value as LoanTab)}
+                  />
+                  <Btn tone="ghost" onClick={() => setTab('settings')}>
+                    {tab === 'settings' ? (
+                      '← 返回业务'
+                    ) : (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <circle cx="12" cy="12" r="3" />
+                          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                        </svg>
+                        设置
+                      </span>
+                    )}
+                  </Btn>
+                </>
+              }
+            />
           )}
-        />
-      )}
+        </Col>
 
-      <StatGrid items={summaryCards} />
+        <Col span={24}>
+          <StatGrid items={summaryCards} />
+        </Col>
 
-      {tab === 'dashboard' ? (
-        <LoanDashboardSection
-          overview={overview}
-          bills={bills}
-          platformBreakdown={platformBreakdown}
-          onMarkPaid={handleMarkPaid}
-          onOpenTab={(nextTab) => setTab(nextTab)}
-        />
-      ) : null}
+        <Col span={24}>
+          {tab === 'dashboard' ? (
+            <LoanDashboardSection
+              overview={overview}
+              bills={bills}
+              platformBreakdown={platformBreakdown}
+              onMarkPaid={handleMarkPaid}
+              onOpenTab={(nextTab) => setTab(nextTab)}
+            />
+          ) : null}
+        </Col>
 
-      {tab === 'platforms' ? (
-        <LoanPlatformsSection
-          bills={bills}
-          platforms={platforms}
-          repayments={repayments}
-          onCreate={(draft) => runWithRefresh(() => loanApi.createPlatform(draft).then(() => undefined))}
-          onUpdate={(platformId, draft) => runWithRefresh(() => loanApi.updatePlatform(platformId, draft).then(() => undefined))}
-          onDelete={(platformId) => runWithRefresh(() => loanApi.deletePlatform(platformId).then(() => undefined))}
-          showToast={showToast}
-        />
-      ) : null}
+        <Col span={24}>
+          {tab === 'platforms' ? (
+            <LoanPlatformsSection
+              bills={bills}
+              platforms={platforms}
+              repayments={repayments}
+              onCreate={(draft) =>
+                runWithRefresh(() => loanApi.createPlatform(draft).then(() => undefined))
+              }
+              onUpdate={(platformId, draft) =>
+                runWithRefresh(() =>
+                  loanApi.updatePlatform(platformId, draft).then(() => undefined),
+                )
+              }
+              onDelete={(platformId) =>
+                runWithRefresh(() => loanApi.deletePlatform(platformId).then(() => undefined))
+              }
+              showToast={showToast}
+            />
+          ) : null}
+        </Col>
 
-      {tab === 'bills' ? (
-        <LoanBillsSection
-          bills={bills}
-          platforms={platforms}
-          onCreate={(draft) => runWithRefresh(() => loanApi.createBill(draft).then(() => undefined))}
-          onUpdate={(billId, draft) => runWithRefresh(() => loanApi.updateBill(billId, draft).then(() => undefined))}
-          onDelete={(billId) => runWithRefresh(() => loanApi.deleteBill(billId).then(() => undefined))}
-          onMarkPaid={handleMarkPaid}
-          onPartialRepay={handlePartialRepay}
-          showToast={showToast}
-        />
-      ) : null}
+        <Col span={24}>
+          {tab === 'bills' ? (
+            <LoanBillsSection
+              bills={bills}
+              platforms={platforms}
+              onCreate={(draft) =>
+                runWithRefresh(() => loanApi.createBill(draft).then(() => undefined))
+              }
+              onUpdate={(billId, draft) =>
+                runWithRefresh(() => loanApi.updateBill(billId, draft).then(() => undefined))
+              }
+              onDelete={(billId) =>
+                runWithRefresh(() => loanApi.deleteBill(billId).then(() => undefined))
+              }
+              onMarkPaid={handleMarkPaid}
+              onPartialRepay={handlePartialRepay}
+              showToast={showToast}
+            />
+          ) : null}
+        </Col>
 
-      {tab === 'repayments' ? (
-        <LoanRepaymentsSection
-          bills={bills}
-          platforms={platforms}
-          repayments={repayments}
-          onCreate={(draft) => runWithRefresh(() => loanApi.createRepayment(draft).then(() => undefined))}
-          onUpdate={(repaymentId, draft) => runWithRefresh(() => loanApi.updateRepayment(repaymentId, draft).then(() => undefined))}
-          onDelete={(repaymentId) => runWithRefresh(() => loanApi.deleteRepayment(repaymentId).then(() => undefined))}
-          showToast={showToast}
-        />
-      ) : null}
+        <Col span={24}>
+          {tab === 'repayments' ? (
+            <LoanRepaymentsSection
+              bills={bills}
+              platforms={platforms}
+              repayments={repayments}
+              onCreate={(draft) =>
+                runWithRefresh(() => loanApi.createRepayment(draft).then(() => undefined))
+              }
+              onUpdate={(repaymentId, draft) =>
+                runWithRefresh(() =>
+                  loanApi.updateRepayment(repaymentId, draft).then(() => undefined),
+                )
+              }
+              onDelete={(repaymentId) =>
+                runWithRefresh(() => loanApi.deleteRepayment(repaymentId).then(() => undefined))
+              }
+              showToast={showToast}
+            />
+          ) : null}
+        </Col>
 
-      {tab === 'statistics' ? (
-        <LoanStatisticsSection
-          platforms={platforms}
-          showToast={showToast}
-        />
-      ) : null}
+        <Col span={24}>
+          {tab === 'statistics' ? (
+            <LoanStatisticsSection platforms={platforms} showToast={showToast} />
+          ) : null}
+        </Col>
 
-      {tab === 'settings' ? (
-        <LoanSettingsSection
-          bills={bills}
-          settings={settings}
-          onSettingsChange={(patch) => {
-            void updateSettings(patch);
-          }}
-          showToast={showToast}
-        />
-      ) : null}
+        <Col span={24}>
+          {tab === 'settings' ? (
+            <LoanSettingsSection
+              bills={bills}
+              settings={settings}
+              onSettingsChange={(patch) => {
+                void updateSettings(patch);
+              }}
+              showToast={showToast}
+            />
+          ) : null}
+        </Col>
+      </Row>
 
       <DeleteModal
         open={Boolean(pendingMarkPaidId)}
