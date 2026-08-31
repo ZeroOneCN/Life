@@ -9196,6 +9196,13 @@ img {
   opacity: 0.7;
 }
 
+/* ============ Arco Design Select/Dropdown 弹出层 z-index 修复 ============ */
+/* 确保下拉选项弹出层在 Modal 之上，可点击 */
+.arco-select-dropdown,
+.arco-dropdown-content {
+  z-index: 1050 !important;
+}
+
 .shopping-import-dropzone-icon {
   font-size: var(--fs-mega);
   line-height: 1;

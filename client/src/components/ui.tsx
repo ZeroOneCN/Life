@@ -77,6 +77,8 @@ interface ModalProps {
   width?: number;
   footer?: ReactNode;
   children: ReactNode;
+  autoFocus?: boolean;
+  focusLock?: boolean;
 }
 
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -403,6 +405,8 @@ export function Modal({ open, onClose, title, width = 560, footer, children }: M
       maskClosable={false}
       escToExit={false}
       closable
+      autoFocus={false}
+      focusLock={false}
     >
       {children}
     </ArcoModal>
@@ -452,6 +456,8 @@ export function DeleteModal({
           </Btn>
         </>
       }
+      autoFocus={false}
+      focusLock={false}
     >
       <p className="subtle-text">{children ?? '这个操作不可恢复，请确认是否继续。'}</p>
     </Modal>
@@ -667,6 +673,7 @@ export function SelectField({
         }}
         className={className}
         style={{ width: '100%' }}
+        getPopupContainer={() => document.body}
       >
         {options}
       </Select>
