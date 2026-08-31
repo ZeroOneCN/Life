@@ -46,101 +46,86 @@ export function TodoSettingsSection({ settings, showToast, onChanged }: TodoSett
         </Btn>
       }
     >
-      <div className="page-grid-wrapper">
-        <Row gutter={[24, 20]}>
-          <Col span={24}>
+      <Row gutter={[12, 12]}>
+        <Col span={8}>
+          <SettingSwitchCard
+            title="待办提醒"
+            description="到达设定时间后，按后端规则扫描有效待办并生成统一提醒日志。"
+            checked={settings.reminderEnabled}
+            onChange={(checked) => {
+              void savePatch(
+                { reminderEnabled: checked },
+                `待办提醒已${checked ? '启用' : '停用'}。`,
+              );
+            }}
+            statusText={settings.reminderEnabled ? '已启用' : '已停用'}
+            impact={`当前会在每天 ${settings.reminderTime} 后扫描提醒，提前窗口为 ${settings.leadDays} 天。`}
+          >
             <Row gutter={[12, 12]}>
               <Col span={8}>
-                <SettingSwitchCard
-                  title="待办提醒"
-                  description="到达设定时间后，按后端规则扫描有效待办并生成统一提醒日志。"
-                  checked={settings.reminderEnabled}
-                  onChange={(checked) => {
+                <Field
+                  label="每日提醒时间"
+                  type="time"
+                  value={settings.reminderTime}
+                  onChange={(event) => {
                     void savePatch(
-                      { reminderEnabled: checked },
-                      `待办提醒已${checked ? '启用' : '停用'}。`,
+                      { reminderTime: event.target.value || '09:00' },
+                      '提醒时间已更新。',
                     );
                   }}
-                  statusText={settings.reminderEnabled ? '已启用' : '已停用'}
-                  impact={`当前会在每天 ${settings.reminderTime} 后扫描提醒，提前窗口为 ${settings.leadDays} 天。`}
-                >
-                  <Row gutter={[12, 12]}>
-                    <Col span={8}>
-                      <Field
-                        label="每日提醒时间"
-                        type="time"
-                        value={settings.reminderTime}
-                        onChange={(event) => {
-                          void savePatch(
-                            { reminderTime: event.target.value || '09:00' },
-                            '提醒时间已更新。',
-                          );
-                        }}
-                      />
-                    </Col>
-                    <Col span={8}>
-                      <Field
-                        label="提前提醒天数"
-                        type="number"
-                        min="0"
-                        max="30"
-                        value={String(settings.leadDays)}
-                        onChange={(event) => {
-                          const leadDays = Math.max(
-                            0,
-                            Math.min(30, Number(event.target.value) || 0),
-                          );
-                          void savePatch({ leadDays }, '提醒窗口已更新。');
-                        }}
-                      />
-                    </Col>
-                    <Col span={8}>
-                      <label className="todo-checkbox-field">
-                        <span className="field-label">提醒口径</span>
-                        <Checkbox
-                          checked={settings.includeDailyTasks}
-                          onChange={(checked) => {
-                            void savePatch(
-                              { includeDailyTasks: checked },
-                              '每日任务提醒范围已更新。',
-                            );
-                          }}
-                        >
-                          纳入每日任务
-                        </Checkbox>
-                      </label>
-                    </Col>
-                    <Col span={8}>
-                      <label className="todo-checkbox-field">
-                        <span className="field-label">提醒口径</span>
-                        <Checkbox
-                          checked={settings.includeOverdueTasks}
-                          onChange={(checked) => {
-                            void savePatch(
-                              { includeOverdueTasks: checked },
-                              '逾期任务提醒范围已更新。',
-                            );
-                          }}
-                        >
-                          纳入逾期任务
-                        </Checkbox>
-                      </label>
-                    </Col>
-                  </Row>
-                </SettingSwitchCard>
-              </Col>
-
-              <Col span={8}>
-                <NotificationStatusCard
-                  sceneId="todo.reminder"
-                  title="通知中心场景状态"
-                  summary="查看当前绑定渠道、启用状态和统一发送入口。"
                 />
               </Col>
+              <Col span={8}>
+                <Field
+                  label="提前提醒天数"
+                  type="number"
+                  min="0"
+                  max="30"
+                  value={String(settings.leadDays)}
+                  onChange={(event) => {
+                    const leadDays = Math.max(0, Math.min(30, Number(event.target.value) || 0));
+                    void savePatch({ leadDays }, '提醒窗口已更新。');
+                  }}
+                />
+              </Col>
+              <Col span={8}>
+                <label className="todo-checkbox-field">
+                  <span className="field-label">提醒口径</span>
+                  <Checkbox
+                    checked={settings.includeDailyTasks}
+                    onChange={(checked) => {
+                      void savePatch({ includeDailyTasks: checked }, '每日任务提醒范围已更新。');
+                    }}
+                  >
+                    纳入每日任务
+                  </Checkbox>
+                </label>
+              </Col>
+              <Col span={8}>
+                <label className="todo-checkbox-field">
+                  <span className="field-label">提醒口径</span>
+                  <Checkbox
+                    checked={settings.includeOverdueTasks}
+                    onChange={(checked) => {
+                      void savePatch({ includeOverdueTasks: checked }, '逾期任务提醒范围已更新。');
+                    }}
+                  >
+                    纳入逾期任务
+                  </Checkbox>
+                </label>
+              </Col>
             </Row>
-          </Col>
-        </Row>
-      </div>
+          </SettingSwitchCard>
+        </Col>
+
+        <Col span={8}>
+          <NotificationStatusCard
+            sceneId="todo.reminder"
+            title="通知中心场景状态"
+            summary="查看当前绑定渠道、启用状态和统一发送入口。"
+          />
+        </Col>
+      </Row>
     </SectionCard>
   );
 }
