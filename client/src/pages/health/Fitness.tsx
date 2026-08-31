@@ -181,7 +181,7 @@ export default function FitnessPage() {
         />
 
         <Col span={24}>
-          <StatGrid className="fitness-overview-grid" items={topSummary} />
+          <StatGrid items={topSummary} />
         </Col>
 
         {innerTab === 'diet' ? (

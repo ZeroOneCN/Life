@@ -59,7 +59,7 @@ export const StatGrid = memo(function StatGrid({
   className?: string;
 }) {
   return (
-    <Row className={`stat-grid ${className}`.trim()} gutter={[12, 12]}>
+    <Row className={className || undefined} gutter={[12, 12]}>
       {items.map((item) => (
         <Col xs={24} sm={12} md={8} lg={6} key={item.label}>
           <div className="stat-card">
