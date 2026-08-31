@@ -259,286 +259,280 @@ export function StorageItemsSection({ settings, showToast, onChanged }: StorageI
         </Btn>
       }
     >
-      <div className="page-grid-wrapper">
-        <Row gutter={[24, 20]}>
-          <Row gutter={[12, 12]}>
-            <Col span={6}>
-              <div className="stat-card">
-                <span className="stat-label">当前页结果</span>
-                <strong className="stat-value">{items.length} 条</strong>
-              </div>
-            </Col>
-            <Col span={6}>
-              <div className="stat-card">
-                <span className="stat-label">当前页购入金额</span>
-                <strong className="stat-value">{formatStorageMoney(summary.totalPurchase)}</strong>
-              </div>
-            </Col>
-            <Col span={6}>
-              <div className="stat-card">
-                <span className="stat-label">当前页日均成本</span>
-                <strong className="stat-value">{formatStorageMoney(summary.totalDailyCost)}</strong>
-              </div>
-            </Col>
-            <Col span={6}>
-              <div className="stat-card">
-                <span className="stat-label">默认排序</span>
-                <strong className="stat-value">
-                  {settings.defaultSort === 'latest'
-                    ? '最近更新'
-                    : settings.defaultSort === 'purchasePrice'
-                      ? '购买价格'
-                      : '日均成本'}
-                </strong>
-              </div>
-            </Col>
-          </Row>
+      <Row gutter={[12, 12]}>
+        <Col span={6}>
+          <div className="stat-card">
+            <span className="stat-label">当前页结果</span>
+            <strong className="stat-value">{items.length} 条</strong>
+          </div>
+        </Col>
+        <Col span={6}>
+          <div className="stat-card">
+            <span className="stat-label">当前页购入金额</span>
+            <strong className="stat-value">{formatStorageMoney(summary.totalPurchase)}</strong>
+          </div>
+        </Col>
+        <Col span={6}>
+          <div className="stat-card">
+            <span className="stat-label">当前页日均成本</span>
+            <strong className="stat-value">{formatStorageMoney(summary.totalDailyCost)}</strong>
+          </div>
+        </Col>
+        <Col span={6}>
+          <div className="stat-card">
+            <span className="stat-label">默认排序</span>
+            <strong className="stat-value">
+              {settings.defaultSort === 'latest'
+                ? '最近更新'
+                : settings.defaultSort === 'purchasePrice'
+                  ? '购买价格'
+                  : '日均成本'}
+            </strong>
+          </div>
+        </Col>
+      </Row>
 
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              handleCreate();
-            }}
-          >
-            <Row gutter={[12, 12]}>
-              <Col span={8}>
-                <Field
-                  label="物品名称"
-                  value={form.itemName}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, itemName: event.target.value }))
-                  }
-                  placeholder="例如 跑步鞋"
-                />
-              </Col>
-              <Col span={8}>
-                <Field
-                  label="购买价格"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.purchasePrice}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, purchasePrice: event.target.value }))
-                  }
-                  placeholder="例如 600"
-                />
-              </Col>
-              <Col span={8}>
-                <DatePickerField
-                  label="购买日期"
-                  value={form.purchaseDate}
-                  onChange={(value) => setForm((current) => ({ ...current, purchaseDate: value }))}
-                  clearable={false}
-                  popoverStrategy="floating"
-                />
-              </Col>
-              <Col span={8}>
-                <DatePickerField
-                  label="结束使用日期"
-                  value={form.endDate}
-                  onChange={(value) => setForm((current) => ({ ...current, endDate: value }))}
-                  clearable
-                  minValue={form.purchaseDate}
-                  placeholder="仍在使用可留空"
-                  popoverStrategy="floating"
-                />
-              </Col>
-              <Col span={8}>
-                <Field
-                  label="备注"
-                  value={form.notes}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, notes: event.target.value }))
-                  }
-                  placeholder="记录用途或状态"
-                />
-              </Col>
-              <Col span={8}>
-                <div className="storage-action-bar">
-                  <Btn tone="primary" type="submit" className="storage-save-btn">
-                    保存物品
-                  </Btn>
-                  <Btn
-                    tone="secondary"
-                    onClick={handleSyncFromShopping}
-                    disabled={syncing}
-                    className="storage-import-btn"
-                  >
-                    {syncing ? '同步中...' : '同步购物数据'}
-                  </Btn>
-                </div>
-              </Col>
-            </Row>
-          </form>
-
-          <FilterBar
-            rightSlot={
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <SelectField
-                  value={sourceFilter}
-                  onChange={(event) => setSourceFilter(event.target.value as typeof sourceFilter)}
-                  style={{ width: 110 }}
-                >
-                  <option value="all">全部来源</option>
-                  <option value="manual">手动添加</option>
-                  <option value="shopping">购物导入</option>
-                </SelectField>
-                <DatePickerField
-                  value={purchaseStartDate}
-                  onChange={setPurchaseStartDate}
-                  placeholder="购买开始"
-                  clearable
-                />
-                <DatePickerField
-                  value={purchaseEndDate}
-                  onChange={setPurchaseEndDate}
-                  placeholder="购买结束"
-                  clearable
-                />
-                <ExportButton
-                  label="导出"
-                  onExport={(format) => {
-                    showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
-                  }}
-                />
-              </div>
-            }
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                flexWrap: 'wrap',
-                minWidth: 0,
-              }}
-            >
-              <div style={{ width: 260, flexShrink: 0 }}>
-                <SearchInput
-                  value={keyword}
-                  onChange={setKeyword}
-                  placeholder="搜索物品名称或备注..."
-                />
-              </div>
-              <FilterTag
-                label="使用中"
-                active={statusFilter === 'active'}
-                onClick={() => setStatusFilter('active')}
-              />
-              <FilterTag
-                label="全部"
-                active={statusFilter === 'all'}
-                onClick={() => setStatusFilter('all')}
-              />
-              <FilterTag
-                label="已停用"
-                active={statusFilter === 'retired'}
-                onClick={() => setStatusFilter('retired')}
-              />
-            </div>
-          </FilterBar>
-
-          {items.length ? (
-            <>
-              <DataTable
-                columns={[
-                  {
-                    key: 'itemName',
-                    title: '物品名称',
-                    dataIndex: 'itemName',
-                    width: 220,
-                    render: (_, row) => (
-                      <div
-                        className="storage-item-name"
-                        title={`${row.itemName}${row.notes ? ` - ${row.notes}` : ''}`}
-                      >
-                        <strong>{row.itemName}</strong>
-                        <span>{row.notes || '暂无备注'}</span>
-                      </div>
-                    ),
-                  },
-                  { key: 'purchaseDate', title: '购买日期', dataIndex: 'purchaseDate', width: 100 },
-                  {
-                    key: 'purchasePrice',
-                    title: '购买价格',
-                    width: 90,
-                    render: (_, row) => formatStorageMoney(row.purchasePrice),
-                  },
-                  {
-                    key: 'endDate',
-                    title: '结束使用',
-                    width: 90,
-                    render: (_, row) => row.endDate || '使用中',
-                  },
-                  {
-                    key: 'usageDays',
-                    title: '使用天数',
-                    width: 80,
-                    render: (_, row) => `${calculateStorageUsageDays(row)} 天`,
-                  },
-                  {
-                    key: 'dailyCost',
-                    title: '日均成本',
-                    width: 100,
-                    render: (_, row) => formatStorageMoney(calculateStorageDailyCost(row)),
-                  },
-                  {
-                    key: 'status',
-                    title: '状态',
-                    width: 70,
-                    render: (_, row) => (
-                      <Tag tone={getStatusTone(row.status)}>
-                        {getStorageStatusLabel(row.status)}
-                      </Tag>
-                    ),
-                  },
-                  {
-                    key: 'source',
-                    title: '来源',
-                    width: 80,
-                    render: (_, row) => (
-                      <Tag tone={row.source === 'shopping' ? 'blue' : 'green'}>
-                        {row.source === 'shopping' ? '购物' : '手动'}
-                      </Tag>
-                    ),
-                  },
-                  {
-                    key: 'actions',
-                    title: '操作',
-                    width: 170,
-                    render: (_, row) => (
-                      <div className="storage-table-actions">
-                        <Btn
-                          tone="secondary"
-                          onClick={() => {
-                            setEditingItem(row);
-                            setEditingForm(buildFormState(row));
-                          }}
-                        >
-                          编辑
-                        </Btn>
-                        <Btn tone="secondary" onClick={() => setArchivingItem(row)}>
-                          停用
-                        </Btn>
-                      </div>
-                    ),
-                  },
-                ]}
-                data={items}
-                rowKey="id"
-              />
-              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-            </>
-          ) : (
-            <EmptyState
-              title="暂无符合条件的物品"
-              description="可以先录入一件正在使用的物品，或者放宽筛选条件后再查看。"
-              icon="📦"
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          handleCreate();
+        }}
+      >
+        <Row gutter={[12, 12]}>
+          <Col span={8}>
+            <Field
+              label="物品名称"
+              value={form.itemName}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, itemName: event.target.value }))
+              }
+              placeholder="例如 跑步鞋"
             />
-          )}
+          </Col>
+          <Col span={8}>
+            <Field
+              label="购买价格"
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.purchasePrice}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, purchasePrice: event.target.value }))
+              }
+              placeholder="例如 600"
+            />
+          </Col>
+          <Col span={8}>
+            <DatePickerField
+              label="购买日期"
+              value={form.purchaseDate}
+              onChange={(value) => setForm((current) => ({ ...current, purchaseDate: value }))}
+              clearable={false}
+              popoverStrategy="floating"
+            />
+          </Col>
+          <Col span={8}>
+            <DatePickerField
+              label="结束使用日期"
+              value={form.endDate}
+              onChange={(value) => setForm((current) => ({ ...current, endDate: value }))}
+              clearable
+              minValue={form.purchaseDate}
+              placeholder="仍在使用可留空"
+              popoverStrategy="floating"
+            />
+          </Col>
+          <Col span={8}>
+            <Field
+              label="备注"
+              value={form.notes}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, notes: event.target.value }))
+              }
+              placeholder="记录用途或状态"
+            />
+          </Col>
+          <Col span={8}>
+            <div className="storage-action-bar">
+              <Btn tone="primary" type="submit" className="storage-save-btn">
+                保存物品
+              </Btn>
+              <Btn
+                tone="secondary"
+                onClick={handleSyncFromShopping}
+                disabled={syncing}
+                className="storage-import-btn"
+              >
+                {syncing ? '同步中...' : '同步购物数据'}
+              </Btn>
+            </div>
+          </Col>
         </Row>
-      </div>
+      </form>
+
+      <FilterBar
+        rightSlot={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <SelectField
+              value={sourceFilter}
+              onChange={(event) => setSourceFilter(event.target.value as typeof sourceFilter)}
+              style={{ width: 110 }}
+            >
+              <option value="all">全部来源</option>
+              <option value="manual">手动添加</option>
+              <option value="shopping">购物导入</option>
+            </SelectField>
+            <DatePickerField
+              value={purchaseStartDate}
+              onChange={setPurchaseStartDate}
+              placeholder="购买开始"
+              clearable
+            />
+            <DatePickerField
+              value={purchaseEndDate}
+              onChange={setPurchaseEndDate}
+              placeholder="购买结束"
+              clearable
+            />
+            <ExportButton
+              label="导出"
+              onExport={(format) => {
+                showToast(`${format.toUpperCase()} 导出功能开发中`, 'error');
+              }}
+            />
+          </div>
+        }
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            flexWrap: 'wrap',
+            minWidth: 0,
+          }}
+        >
+          <div style={{ width: 260, flexShrink: 0 }}>
+            <SearchInput
+              value={keyword}
+              onChange={setKeyword}
+              placeholder="搜索物品名称或备注..."
+            />
+          </div>
+          <FilterTag
+            label="使用中"
+            active={statusFilter === 'active'}
+            onClick={() => setStatusFilter('active')}
+          />
+          <FilterTag
+            label="全部"
+            active={statusFilter === 'all'}
+            onClick={() => setStatusFilter('all')}
+          />
+          <FilterTag
+            label="已停用"
+            active={statusFilter === 'retired'}
+            onClick={() => setStatusFilter('retired')}
+          />
+        </div>
+      </FilterBar>
+
+      {items.length ? (
+        <>
+          <DataTable
+            columns={[
+              {
+                key: 'itemName',
+                title: '物品名称',
+                dataIndex: 'itemName',
+                width: 220,
+                render: (_, row) => (
+                  <div
+                    className="storage-item-name"
+                    title={`${row.itemName}${row.notes ? ` - ${row.notes}` : ''}`}
+                  >
+                    <strong>{row.itemName}</strong>
+                    <span>{row.notes || '暂无备注'}</span>
+                  </div>
+                ),
+              },
+              { key: 'purchaseDate', title: '购买日期', dataIndex: 'purchaseDate', width: 100 },
+              {
+                key: 'purchasePrice',
+                title: '购买价格',
+                width: 90,
+                render: (_, row) => formatStorageMoney(row.purchasePrice),
+              },
+              {
+                key: 'endDate',
+                title: '结束使用',
+                width: 90,
+                render: (_, row) => row.endDate || '使用中',
+              },
+              {
+                key: 'usageDays',
+                title: '使用天数',
+                width: 80,
+                render: (_, row) => `${calculateStorageUsageDays(row)} 天`,
+              },
+              {
+                key: 'dailyCost',
+                title: '日均成本',
+                width: 100,
+                render: (_, row) => formatStorageMoney(calculateStorageDailyCost(row)),
+              },
+              {
+                key: 'status',
+                title: '状态',
+                width: 70,
+                render: (_, row) => (
+                  <Tag tone={getStatusTone(row.status)}>{getStorageStatusLabel(row.status)}</Tag>
+                ),
+              },
+              {
+                key: 'source',
+                title: '来源',
+                width: 80,
+                render: (_, row) => (
+                  <Tag tone={row.source === 'shopping' ? 'blue' : 'green'}>
+                    {row.source === 'shopping' ? '购物' : '手动'}
+                  </Tag>
+                ),
+              },
+              {
+                key: 'actions',
+                title: '操作',
+                width: 170,
+                render: (_, row) => (
+                  <div className="storage-table-actions">
+                    <Btn
+                      tone="secondary"
+                      onClick={() => {
+                        setEditingItem(row);
+                        setEditingForm(buildFormState(row));
+                      }}
+                    >
+                      编辑
+                    </Btn>
+                    <Btn tone="secondary" onClick={() => setArchivingItem(row)}>
+                      停用
+                    </Btn>
+                  </div>
+                ),
+              },
+            ]}
+            data={items}
+            rowKey="id"
+          />
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
+      ) : (
+        <EmptyState
+          title="暂无符合条件的物品"
+          description="可以先录入一件正在使用的物品，或者放宽筛选条件后再查看。"
+          icon="📦"
+        />
+      )}
 
       <Modal
         open={Boolean(editingItem)}
