@@ -78,7 +78,7 @@
 }
 
 /* Arco Grid 响应式适配 */
-.dash-arco-grid {
+.dash-arco-grid > .arco-row {
   overflow-x: hidden;
 }
 @media (max-width: 900px) {
