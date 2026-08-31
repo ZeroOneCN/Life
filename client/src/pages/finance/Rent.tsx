@@ -377,6 +377,7 @@ export default function RentPage({ embedded = false }: { embedded?: boolean }) {
                   ? (records.find((r) => r.id === activeBillRecordId)?.address ?? '')
                   : ''
               }
+              records={records}
               showToast={showToast}
             />
           ) : null}

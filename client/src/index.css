@@ -1924,24 +1924,43 @@ html *::after {
   margin-top: 16px;
 }
 
-.pagination-btn {
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-bg-card);
+/* 分页包裹层：居中 */
+.pagination-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* 首页/末页翻页按钮 */
+.pagination-wrapper .pagination-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-canvas);
   cursor: pointer;
-  font-size: 16px;
-  transition: all 0.2s;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--color-ink-secondary);
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
 }
 
-.pagination-btn:hover:not(:disabled) {
-  background: var(--color-primary-light);
-  border-color: var(--color-primary);
+.pagination-wrapper .pagination-btn:hover:not(:disabled) {
+  background: var(--color-surface-2);
+  border-color: var(--color-hairline-strong);
+  color: var(--color-ink);
 }
 
-.pagination-btn:disabled {
-  opacity: 0.4;
+.pagination-wrapper .pagination-btn:disabled {
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
@@ -9201,6 +9220,11 @@ img {
 .arco-select-dropdown,
 .arco-dropdown-content {
   z-index: 1050 !important;
+}
+
+/* 全局分页组件与上方内容保持间距 */
+.arco-pagination-list {
+  margin-top: 16px;
 }
 
 .shopping-import-dropzone-icon {

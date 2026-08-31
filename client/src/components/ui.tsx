@@ -774,14 +774,33 @@ export const Pagination = memo(function Pagination({
   }
 
   return (
-    <ArcoPagination
-      current={page}
-      total={totalPages}
-      pageSize={1}
-      onChange={(current) => onPageChange(current)}
-      size="small"
-      hideOnSinglePage
-    />
+    <div className="pagination-wrapper">
+      <button
+        className="pagination-btn"
+        onClick={() => onPageChange(1)}
+        disabled={page === 1}
+        title="首页"
+      >
+        «
+      </button>
+      <ArcoPagination
+        current={page}
+        total={totalPages}
+        pageSize={1}
+        onChange={(current) => onPageChange(current)}
+        size="small"
+        hideOnSinglePage
+        showJumper
+      />
+      <button
+        className="pagination-btn"
+        onClick={() => onPageChange(totalPages)}
+        disabled={page === totalPages}
+        title="末页"
+      >
+        »
+      </button>
+    </div>
   );
 });
 
