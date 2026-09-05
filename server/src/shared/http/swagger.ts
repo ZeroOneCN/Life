@@ -1,6 +1,6 @@
 /**
  * Swagger/OpenAPI 文档配置。
- * 访问地址：http://localhost:3100/api-docs
+ * 访问地址：http://localhost:9509/api-docs
  */
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';

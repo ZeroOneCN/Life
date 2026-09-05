@@ -115,6 +115,14 @@
 
 > 🔒 只响应私聊；只做新增 / 更新；没配 Token 时优雅跳过。
 
+### 📤 数据导出（`/system/export`）
+- **全量导出**：6 大模块（财务/健康/生活/投资/通知/系统）70+ 数据表一键导出
+- **双格式支持**：JSON（保留完整数据结构，适合迁移） / CSV（UTF-8 BOM，Excel 可直接打开）
+- **ZIP 打包**：流式打包，每个模块一个目录，每个数据表一个独立文件
+- **局域网访问**：支持局域网内其他设备访问导出页面
+- **元数据**：压缩包内包含 metadata.json，记录导出时间、格式、模块信息
+- **访问**：`http://localhost:9009/system/export`
+
 ---
 
 ### 🎯 仪表盘首页 (`/dashboard`)
@@ -165,7 +173,7 @@
 ### 工具链
 - 包管理：**npm**
 - 类型检查：`tsc --noEmit`（前端 `typecheck` · 后端 `check`）
-- 开发：Vite dev（3000）+ tsx watch（3100）
+- 开发：Vite dev（9009）+ tsx watch（9509）
 - 迁移：TypeORM CLI
 
 ---
@@ -236,6 +244,7 @@ LifeOS2/
 │   │   ├── modules/                        # 业务模块
 │   │   │   ├── health/ finance/ investment/ life/
 │   │   │   ├── notifications/ system/ telegram/
+│   │   │   │   └── system/export.router.ts  # ★ 数据导出（ZIP/JSON/CSV）
 │   │   ├── routes/                         # 路由注册
 │   │   └── shared/                         # 工具函数 / AI 客户端 / 共享服务
 │   ├── .env.example
@@ -271,13 +280,13 @@ mysql -u root -p -e \
   "CREATE DATABASE IF NOT EXISTS lifeos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
 # 4. 启动（两个终端）
-# 终端 A — 后端（:3100）
+# 终端 A — 后端（:9509）
 cd server && npm run dev
-# 终端 B — 前端（:3000，代理 /api → :3100）
+# 终端 B — 前端（:9009，代理 /api → :9509）
 cd client && npm run dev
 ```
 
-🌐 打开 [http://localhost:3000](http://localhost:3000)
+🌐 打开 [http://localhost:9009](http://localhost:9009)
 > 首次访问：检测到无用户时自动开放注册；创建第一个账号后注册入口关闭。
 
 ### 核心环境变量（`server/.env`）
@@ -348,6 +357,7 @@ cd server && npm start           # 或 PM2 / systemd 守护
 | 投资 | `GET/POST/PATCH/DELETE /api/investment/forex/trades` · `/capital-flows` · `/settings` |
 | 通知 | `/notifications/channels|scenes|templates|logs`（GET scenes/templates 自动补齐种子） |
 | Telegram | `POST /api/telegram/bind-code` · `GET /api/telegram/status` |
+| 数据导出 | `GET /api/system/export/modules` · `POST /api/system/export/export` |
 | 健康探针 | `GET /api/system/health`（免鉴权） |
 
 ---
@@ -357,10 +367,10 @@ cd server && npm start           # 或 PM2 / systemd 守护
 ### 常用命令
 | 命令 | 说明 |
 |---|---|
-| `cd client && npm run dev` | 前端（:3000） |
+| `cd client && npm run dev` | 前端（:9009） |
 | `cd client && npm run typecheck` | 前端类型检查 |
 | `cd client && npm run build` | 前端构建 |
-| `cd server && npm run dev` | 后端（:3100） |
+| `cd server && npm run dev` | 后端（:9509） |
 | `cd server && npm run check` | 后端类型检查 |
 | `cd server && npm run build` | 后端编译 |
 | `cd server && npm run seed` | 种子数据 |
@@ -423,7 +433,7 @@ cd server && npm start           # 或 PM2 / systemd 守护
 ## ❓ 故障排查速查
 | 现象 | 根因 | 解决 |
 |---|---|---|
-| 前端 `Network Error` | 后端未起 / 端口不对 | 确认 :3100 运行；查 Vite 代理 |
+| 前端 `Network Error` | 后端未起 / 端口不对 | 确认 :9509 运行；查 Vite 代理 |
 | 登录 401 | JWT 过期 / 密钥变更 | 重新登录；保持 `JWT_SECRET` 稳定 |
 | 注册入口消失 | 已存在用户 | 登录；或清空 `system_user_account` |
 | `.toFixed is not a function` | 后端返回 string | 后端加 `Number()`；前端 `Number(x).toFixed(n)` |
