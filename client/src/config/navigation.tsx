@@ -24,6 +24,7 @@ const GoalPage = lazyWithProgress(() => import('../pages/finance/Goal'));
 const BillManagementPage = lazyWithProgress(() => import('../pages/finance/BillManagement'));
 const AuditLogPage = lazyWithProgress(() => import('../pages/system/AuditLogPage'));
 const UserManagementPage = lazyWithProgress(() => import('../pages/system/UserManagementPage'));
+const DataExportPage = lazyWithProgress(() => import('../pages/system/DataExportPage'));
 const PlanningPage = lazyWithProgress(() => import('../pages/finance/Planning'));
 const StoragePage = lazyWithProgress(() => import('../pages/life/Storage'));
 const CardPage = lazyWithProgress(() => import('../pages/life/Card'));
@@ -90,6 +91,7 @@ export const menuItems: MenuItemConfig[] = [
   { key: '/settings/profile', icon: 'user', label: '个人中心', groupLabel: '系统' },
   { key: '/system/audit-log', icon: 'list', label: '操作日志', groupLabel: '系统' },
   { key: '/system/users', icon: 'user', label: '用户管理', groupLabel: '系统' },
+  { key: '/system/export', icon: 'export', label: '数据导出', groupLabel: '系统' },
 ];
 
 export const routes: RouteConfig[] = [
@@ -119,4 +121,5 @@ export const routes: RouteConfig[] = [
   { path: '/settings/profile', label: '个人中心', breadcrumb: ['系统设置', '个人中心'], menuKey: '/settings/profile', component: ProfileSettingsPage },
   { path: '/system/audit-log', label: '操作日志', breadcrumb: ['系统管理', '操作日志'], menuKey: '/system/audit-log', component: AuditLogPage },
   { path: '/system/users', label: '用户管理', breadcrumb: ['系统管理', '用户管理'], menuKey: '/system/users', component: UserManagementPage },
+  { path: '/system/export', label: '数据导出', breadcrumb: ['系统管理', '数据导出'], menuKey: '/system/export', component: DataExportPage },
 ];

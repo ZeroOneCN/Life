@@ -30,6 +30,7 @@ import { createExchangeRateRouter } from '../modules/finance/exchange-rate.route
 import { createBudgetRouter } from '../modules/finance/budget.router';
 import { createBillRouter } from '../modules/finance/bill.router';
 import { createGoalRouter } from '../modules/finance/goal.router';
+import { createExportRouter } from '../modules/system/export.router';
 
 import { requireJwtAuth } from '../shared/http/auth-middleware';
 import { asyncHandler } from '../shared/http/async-handler';
@@ -79,6 +80,7 @@ export function createApiRouter() {
   router.use('/finance/budget', createBudgetRouter());
   router.use('/finance/bill', createBillRouter());
   router.use('/finance/goal', createGoalRouter());
+  router.use('/system/export', createExportRouter());
 
   return router;
 }

@@ -26,7 +26,8 @@ export type IconKey =
   | 'card'
   | 'checklist'
   | 'calendar'
-  | 'exchange';
+  | 'exchange'
+  | 'export';
 
 export interface MenuItemConfig {
   key: string;

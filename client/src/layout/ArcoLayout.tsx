@@ -84,6 +84,7 @@ const COMPLETE_ICON_MAP: Record<string, React.ReactNode> = {
   checklist: <IconOrderedList />,
   calendar: <IconCalendar />,
   exchange: <IconSwap />,
+  export: <IconExport />,
   'user-group': <IconUser />,
 };
 
